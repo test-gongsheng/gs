@@ -37,7 +37,7 @@
 </head>
 <body>
     <div class="header">
-        <div><h1>📊 投资组合监控</h1><div style="color:#888;font-size:12px;margin-top:5px;">数据每30秒自动刷新 | 财联社数据源</div></div>
+        <div><h1>📊 投资组合监控</h1><div style="color:#888;font-size:12px;margin-top:5px;">数据更新时间: 2026-03-02 17:00 | 财联社数据源</div></div>
         <div class="header-stats">
             <div class="stat-item"><div class="stat-value">600万</div><div class="stat-label">总投资</div></div>
             <div class="stat-item"><div class="stat-value positive">约580万</div><div class="stat-label">当前市值</div></div>
@@ -48,8 +48,69 @@
     <div class="grid-container">
         <div>
             <div class="card">
-                <div class="card-title">📈 自选股持仓 (实时价格 2026-03-02 16:14)</div>
+                <div class="card-title">📈 自选股持仓 (实时价格)</div>
                 <table class="stock-table">
                     <tr><th>股票</th><th>现价</th><th>涨跌</th><th>中轴价</th><th>策略</th></tr>
                     <tr><td>万向钱潮(000559)</td><td>18.68</td><td class="negative">-6.93%</td><td><span class="axis-price">17.50</span></td><td><span class="tag-hold">持有</span></td></tr>
-                    <tr><td>三花智控(002050)</td><td>49.40</td><td class="negative">-3.53%</td>
+                    <tr><td>三花智控(002050)</td><td>49.40</td><td class="negative">-3.53%</td><td><span class="axis-price">52.00</span></td><td><span class="tag-buy">-8%加仓</span></td></tr>
+                    <tr><td>比亚迪(002594)</td><td>96.79</td><td class="positive">+8.36%</td><td><span class="axis-price">95.00</span></td><td><span class="tag-sell">+8%减仓</span></td></tr>
+                    <tr><td>拓尔思(300229)</td><td>23.39</td><td class="positive">+1.04%</td><td><span class="axis-price">23.00</span></td><td><span class="tag-hold">持有</span></td></tr>
+                    <tr><td>晶盛机电(300316)</td><td>56.08</td><td class="positive">+0.61%</td><td><span class="axis-price">53.00</span></td><td><span class="tag-sell">+8%减仓</span></td></tr>
+                    <tr><td>中国铝业(601600)</td><td>14.27</td><td class="positive">+4.01%</td><td><span class="axis-price">15.00</span></td><td><span class="tag-hold">持有</span></td></tr>
+                    <tr><td>摩尔线程(688795)</td><td>585.13</td><td class="negative">-3.81%</td><td><span class="axis-price">620.00</span></td><td><span class="tag-buy">-8%加仓</span></td></tr>
+                    <tr><td>比亚迪电子(00285)</td><td>31.56</td><td class="negative">-2.17%</td><td><span class="axis-price">30.00</span></td><td><span class="tag-buy">-8%加仓</span></td></tr>
+                    <tr><td>腾讯控股(00700)</td><td>514.00</td><td class="negative">-0.77%</td><td><span class="axis-price">400.00</span></td><td><span class="tag-sell">+8%减仓</span></td></tr>
+                    <tr><td>阿里巴巴(09988)</td><td>136.40</td><td class="negative">-4.55%</td><td><span class="axis-price">105.00</span></td><td><span class="tag-sell">+8%减仓</span></td></tr>
+                </table>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🔔 策略提醒</div>
+                <div class="alert-box">
+                    <div style="font-size:14px;font-weight:600;color:#00d4aa;margin-bottom:10px;">买入信号 (-8%加仓)</div>
+                    <div style="font-size:12px;padding:5px 0;">📉 三花智控(002050) 接近加仓线</div>
+                    <div style="font-size:12px;padding:5px 0;">📉 摩尔线程(688795) 接近加仓线</div>
+                    <div style="font-size:12px;padding:5px 0;">📉 比亚迪电子(00285) 接近加仓线</div>
+                </div>
+                <div class="alert-box sell">
+                    <div style="font-size:14px;font-weight:600;color:#ff6b6b;margin-bottom:10px;">卖出信号 (+8%减仓)</div>
+                    <div style="font-size:12px;padding:5px 0;">📈 比亚迪(002594) 触发减仓</div>
+                    <div style="font-size:12px;padding:5px 0;">📈 晶盛机电(300316) 触发减仓</div>
+                    <div style="font-size:12px;padding:5px 0;">📈 腾讯控股(00700) 触发减仓</div>
+                    <div style="font-size:12px;padding:5px 0;">📈 阿里巴巴(09988) 触发减仓</div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="card">
+                <div class="card-title">📊 市场情绪</div>
+                <div class="sentiment-item"><div><div style="font-size:13px;font-weight:500;">万向钱潮</div><div style="font-size:11px;color:#888;margin-top:4px;">汽车零部件回调</div></div><span class="score-bearish">bearish</span></div>
+                <div class="sentiment-item"><div><div style="font-size:13px;font-weight:500;">三花智控</div><div style="font-size:11px;color:#888;margin-top:4px;">热管理概念回调</div></div><span class="score-bearish">bearish</span></div>
+                <div class="sentiment-item"><div><div style="font-size:13px;font-weight:500;">比亚迪</div><div style="font-size:11px;color:#888;margin-top:4px;">新能源车销量稳健</div></div><span class="score-bullish">bullish</span></div>
+                <div class="sentiment-item"><div><div style="font-size:13px;font-weight:500;">腾讯控股</div><div style="font-size:11px;color:#888;margin-top:4px;">游戏业务稳健</div></div><span class="score-bullish">bullish</span></div>
+                <div class="sentiment-item"><div><div style="font-size:13px;font-weight:500;">阿里巴巴</div><div style="font-size:11px;color:#888;margin-top:4px;">AI业务增长强劲</div></div><span class="score-bullish">bullish</span></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🔥 板块热点</div>
+                <div class="sector-grid">
+                    <div class="sector-item"><div style="font-size:13px;font-weight:500;">半导体</div><div style="font-size:11px;color:#888;margin-top:4px;">国产替代加速</div></div>
+                    <div class="sector-item"><div style="font-size:13px;font-weight:500;">AI算力</div><div style="font-size:11px;color:#888;margin-top:4px;">需求持续增长</div></div>
+                    <div class="sector-item" style="border-left-color:#f39c12;"><div style="font-size:13px;font-weight:500;">铜</div><div style="font-size:11px;color:#888;margin-top:4px;">供需紧张涨价</div></div>
+                    <div class="sector-item" style="border-left-color:#f39c12;"><div style="font-size:13px;font-weight:500;">铝</div><div style="font-size:11px;color:#888;margin-top:4px;">新能源需求支撑</div></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📰 财联社热点</div>
+                <div style="padding:10px;background:rgba(255,255,255,0.02);border-radius:8px;margin-bottom:10px;"><div style="font-size:11px;color:#666;">16:30</div><div style="font-size:12px;margin-top:4px;">比亚迪今日大涨8%，新能源车销量超预期</div></div>
+                <div style="padding:10px;background:rgba(255,255,255,0.02);border-radius:8px;margin-bottom:10px;"><div style="font-size:11px;color:#666;">16:15</div><div style="font-size:12px;margin-top:4px;">铜价突破9000美元，有色板块集体走强</div></div>
+                <div style="padding:10px;background:rgba(255,255,255,0.02);border-radius:8px;"><div style="font-size:11px;color:#666;">15:45</div><div style="font-size:12px;margin-top:4px;">腾讯游戏业务Q1预期向好</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="update-time">数据更新时间: 2026-03-02 17:00 | 财联社数据源 | 仅供参考</div>
+</body>
+</html>
