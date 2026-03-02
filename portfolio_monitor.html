@@ -6,78 +6,299 @@
     <title>股票投资组合监控 - 专业版</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, sans-serif; background: linear-gradient(135deg, #0a0a0f, #1a1a2e, #16213e); min-height: 100vh; color: #fff; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 20px; background: rgba(255,255,255,0.03); border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); }
-        .header h1 { font-size: 24px; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%); 
+            min-height: 100vh; 
+            color: #fff; 
+            padding: 20px;
+        }
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            padding: 20px; 
+            background: rgba(255,255,255,0.03); 
+            border-radius: 16px; 
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .header h1 { font-size: 24px; display: flex; align-items: center; gap: 10px; }
         .header-stats { display: flex; gap: 30px; }
         .stat-item { text-align: center; }
         .stat-value { font-size: 20px; font-weight: 700; }
         .stat-label { font-size: 11px; color: #888; margin-top: 4px; }
-        .positive { color: #00d4aa; } .negative { color: #ff6b6b; }
+        .positive { color: #00d4aa; } 
+        .negative { color: #ff6b6b; }
+        .warning { color: #f39c12; }
+        
         .grid-container { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
         @media (max-width: 1200px) { .grid-container { grid-template-columns: 1fr; } }
-        .card { background: rgba(255,255,255,0.03); border-radius: 16px; padding: 20px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 20px; }
-        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; }
+        
+        .card { 
+            background: rgba(255,255,255,0.03); 
+            border-radius: 16px; 
+            padding: 20px; 
+            border: 1px solid rgba(255,255,255,0.08); 
+            margin-bottom: 20px;
+        }
+        .card-title { 
+            font-size: 16px; 
+            font-weight: 600; 
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
         .stock-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .stock-table th { text-align: left; padding: 12px 8px; color: #888; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .stock-table td { padding: 12px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .axis-price { background: rgba(155,89,182,0.15); padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #bb8fce; }
-        .tag-buy { background: rgba(0,212,170,0.2); color: #00d4aa; padding: 4px 8px; border-radius: 4px; font-size: 11px; }
-        .tag-sell { background: rgba(255,107,107,0.2); color: #ff6b6b; padding: 4px 8px; border-radius: 4px; font-size: 11px; }
-        .tag-hold { background: rgba(255,255,255,0.1); color: #888; padding: 4px 8px; border-radius: 4px; font-size: 11px; }
-        .sentiment-item { display: flex; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 10px; margin-bottom: 10px; }
-        .score-bullish { background: rgba(0,212,170,0.2); color: #00d4aa; padding: 6px 12px; border-radius: 6px; font-size: 12px; }
-        .score-bearish { background: rgba(255,107,107,0.2); color: #ff6b6b; padding: 6px 12px; border-radius: 6px; font-size: 12px; }
+        .stock-table th { 
+            text-align: left; 
+            padding: 12px 8px; 
+            color: #888; 
+            font-weight: 500;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .stock-table td { 
+            padding: 12px 8px; 
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .stock-table tr:hover { background: rgba(255,255,255,0.02); }
+        .stock-name { font-weight: 600; }
+        .stock-code { font-size: 11px; color: #888; }
+        
+        .price { font-weight: 700; font-size: 14px; }
+        .price-up { color: #ff6b6b; }
+        .price-down { color: #00d4aa; }
+        
+        .axis-price {
+            background: rgba(155,89,182,0.15);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #bb8fce;
+        }
+        .strategy-tag {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .tag-buy { background: rgba(0,212,170,0.2); color: #00d4aa; }
+        .tag-sell { background: rgba(255,107,107,0.2); color: #ff6b6b; }
+        .tag-hold { background: rgba(255,255,255,0.1); color: #888; }
+        .tag-alert { background: rgba(243,156,18,0.2); color: #f39c12; animation: pulse 2s infinite; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        .sentiment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        .sentiment-title { font-size: 13px; font-weight: 500; }
+        .sentiment-desc { font-size: 11px; color: #888; margin-top: 4px; }
+        .sentiment-score {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .score-bullish { background: rgba(0,212,170,0.2); color: #00d4aa; }
+        .score-bearish { background: rgba(255,107,107,0.2); color: #ff6b6b; }
+        .score-neutral { background: rgba(255,255,255,0.1); color: #888; }
+        
         .sector-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-        .sector-item { padding: 12px; background: rgba(255,255,255,0.02); border-radius: 10px; border-left: 3px solid #4a90d9; }
-        .alert-box { background: linear-gradient(135deg, rgba(0,212,170,0.1), rgba(0,212,170,0.05)); border: 1px solid rgba(0,212,170,0.3); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
-        .alert-box.sell { background: linear-gradient(135deg, rgba(255,107,107,0.1), rgba(255,107,107,0.05)); border-color: rgba(255,107,107,0.3); }
-        .update-time { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+        .sector-item {
+            padding: 12px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 10px;
+            border-left: 3px solid transparent;
+        }
+        .sector-item.tech { border-left-color: #4a90d9; }
+        .sector-item.metal { border-left-color: #f39c12; }
+        .sector-name { font-size: 13px; font-weight: 500; }
+        .sector-trend { font-size: 11px; color: #888; margin-top: 4px; }
+        
+        .alert-box {
+            background: linear-gradient(135deg, rgba(0,212,170,0.1), rgba(0,212,170,0.05));
+            border: 1px solid rgba(0,212,170,0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .alert-box.sell {
+            background: linear-gradient(135deg, rgba(255,107,107,0.1), rgba(255,107,107,0.05));
+            border-color: rgba(255,107,107,0.3);
+        }
+        .alert-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+        .alert-title.buy { color: #00d4aa; }
+        .alert-title.sell { color: #ff6b6b; }
+        .alert-item { 
+            font-size: 12px; 
+            padding: 8px 0; 
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .alert-item:last-child { border-bottom: none; }
+        .alert-time { color: #666; font-size: 11px; }
+        
+        .update-time { 
+            text-align: center; 
+            color: #666; 
+            font-size: 12px; 
+            margin-top: 20px;
+            padding: 10px;
+        }
+        .loading { color: #888; }
+        .error { color: #ff6b6b; }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .btn-primary { background: #00d4aa; color: #000; }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: #1a1a2e;
+            padding: 30px;
+            border-radius: 16px;
+            max-width: 500px;
+            width: 90%;
+        }
+        .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-label { display: block; font-size: 12px; color: #888; margin-bottom: 5px; }
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 1001;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .notification.buy { background: rgba(0,212,170,0.9); color: #000; }
+        .notification.sell { background: rgba(255,107,107,0.9); color: #fff; }
+        
+        .refresh-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #00d4aa;
+            font-size: 12px;
+        }
+        .refresh-indicator::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: #00d4aa;
+            border-radius: 50%;
+            animation: blink 2s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <div><h1>📊 投资组合监控</h1><div style="color:#888;font-size:12px;margin-top:5px;">数据更新时间: 2026-03-02 17:00 | 财联社数据源</div></div>
+        <div>
+            <h1>📊 投资组合监控</h1>
+            <div style="color:#888;font-size:12px;margin-top:5px;">
+                <span class="refresh-indicator">实时数据</span> | 
+                中轴±8%策略 | 
+                财联社数据源
+            </div>
+        </div>
         <div class="header-stats">
-            <div class="stat-item"><div class="stat-value">600万</div><div class="stat-label">总投资</div></div>
-            <div class="stat-item"><div class="stat-value positive">约580万</div><div class="stat-label">当前市值</div></div>
-            <div class="stat-item"><div class="stat-value positive">约+85万</div><div class="stat-label">浮动盈亏</div></div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalInvestment">600万</div>
+                <div class="stat-label">总投资</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value positive" id="currentValue">计算中...</div>
+                <div class="stat-label">当前市值</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalProfit">计算中...</div>
+                <div class="stat-label">浮动盈亏</div>
+            </div>
         </div>
     </div>
 
     <div class="grid-container">
         <div>
             <div class="card">
-                <div class="card-title">📈 自选股持仓 (实时价格)</div>
-                <table class="stock-table">
-                    <tr><th>股票</th><th>现价</th><th>涨跌</th><th>中轴价</th><th>策略</th></tr>
-                    <tr><td>万向钱潮(000559)</td><td>18.68</td><td class="negative">-6.93%</td><td><span class="axis-price">17.50</span></td><td><span class="tag-hold">持有</span></td></tr>
-                    <tr><td>三花智控(002050)</td><td>49.40</td><td class="negative">-3.53%</td><td><span class="axis-price">52.00</span></td><td><span class="tag-buy">-8%加仓</span></td></tr>
-                    <tr><td>比亚迪(002594)</td><td>96.79</td><td class="positive">+8.36%</td><td><span class="axis-price">95.00</span></td><td><span class="tag-sell">+8%减仓</span></td></tr>
-                    <tr><td>拓尔思(300229)</td><td>23.39</td><td class="positive">+1.04%</td><td><span class="axis-price">23.00</span></td><td><span class="tag-hold">持有</span></td></tr>
-                    <tr><td>晶盛机电(300316)</td><td>56.08</td><td class="positive">+0.61%</td><td><span class="axis-price">53.00</span></td><td><span class="tag-sell">+8%减仓</span></td></tr>
-                    <tr><td>中国铝业(601600)</td><td>14.27</td><td class="positive">+4.01%</td><td><span class="axis-price">15.00</span></td><td><span class="tag-hold">持有</span></td></tr>
-                    <tr><td>摩尔线程(688795)</td><td>585.13</td><td class="negative">-3.81%</td><td><span class="axis-price">620.00</span></td><td><span class="tag-buy">-8%加仓</span></td></tr>
-                    <tr><td>比亚迪电子(00285)</td><td>31.56</td><td class="negative">-2.17%</td><td><span class="axis-price">30.00</span></td><td><span class="tag-buy">-8%加仓</span></td></tr>
-                    <tr><td>腾讯控股(00700)</td><td>514.00</td><td class="negative">-0.77%</td><td><span class="axis-price">400.00</span></td><td><span class="tag-sell">+8%减仓</span></td></tr>
-                    <tr><td>阿里巴巴(09988)</td><td>136.40</td><td class="negative">-4.55%</td><td><span class="axis-price">105.00</span></td><td><span class="tag-sell">+8%减仓</span></td></tr>
+                <div class="card-title">
+                    📈 自选股持仓
+                    <button class="btn btn-primary" onclick="openModal()" style="margin-left:auto;">+ 添加股票</button>
+                </div>
+                <table class="stock-table" id="stockTable">
+                    <thead>
+                        <tr>
+                            <th>股票</th>
+                            <th>现价</th>
+                            <th>涨跌</th>
+                            <th>中轴价</th>
+                            <th>策略</th>
+                            <th>盈亏</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stockTableBody">
+                        <!-- 动态生成 -->
+                    </tbody>
                 </table>
             </div>
 
             <div class="card">
                 <div class="card-title">🔔 策略提醒</div>
-                <div class="alert-box">
-                    <div style="font-size:14px;font-weight:600;color:#00d4aa;margin-bottom:10px;">买入信号 (-8%加仓)</div>
-                    <div style="font-size:12px;padding:5px 0;">📉 三花智控(002050) 接近加仓线</div>
-                    <div style="font-size:12px;padding:5px 0;">📉 摩尔线程(688795) 接近加仓线</div>
-                    <div style="font-size:12px;padding:5px 0;">📉 比亚迪电子(00285) 接近加仓线</div>
-                </div>
-                <div class="alert-box sell">
-                    <div style="font-size:14px;font-weight:600;color:#ff6b6b;margin-bottom:10px;">卖出信号 (+8%减仓)</div>
-                    <div style="font-size:12px;padding:5px 0;">📈 比亚迪(002594) 触发减仓</div>
-                    <div style="font-size:12px;padding:5px 0;">📈 晶盛机电(300316) 触发减仓</div>
-                    <div style="font-size:12px;padding:5px 0;">📈 腾讯控股(00700) 触发减仓</div>
-                    <div style="font-size:12px;padding:5px 0;">📈 阿里巴巴(09988) 触发减仓</div>
+                <div id="alertContainer">
+                    <!-- 动态生成 -->
                 </div>
             </div>
         </div>
@@ -85,32 +306,262 @@
         <div>
             <div class="card">
                 <div class="card-title">📊 市场情绪</div>
-                <div class="sentiment-item"><div><div style="font-size:13px;font-weight:500;">万向钱潮</div><div style="font-size:11px;color:#888;margin-top:4px;">汽车零部件回调</div></div><span class="score-bearish">bearish</span></div>
-                <div class="sentiment-item"><div><div style="font-size:13px;font-weight:500;">三花智控</div><div style="font-size:11px;color:#888;margin-top:4px;">热管理概念回调</div></div><span class="score-bearish">bearish</span></div>
-                <div class="sentiment-item"><div><div style="font-size:13px;font-weight:500;">比亚迪</div><div style="font-size:11px;color:#888;margin-top:4px;">新能源车销量稳健</div></div><span class="score-bullish">bullish</span></div>
-                <div class="sentiment-item"><div><div style="font-size:13px;font-weight:500;">腾讯控股</div><div style="font-size:11px;color:#888;margin-top:4px;">游戏业务稳健</div></div><span class="score-bullish">bullish</span></div>
-                <div class="sentiment-item"><div><div style="font-size:13px;font-weight:500;">阿里巴巴</div><div style="font-size:11px;color:#888;margin-top:4px;">AI业务增长强劲</div></div><span class="score-bullish">bullish</span></div>
+                <div id="sentimentContainer">
+                    <!-- 动态生成 -->
+                </div>
             </div>
 
             <div class="card">
                 <div class="card-title">🔥 板块热点</div>
-                <div class="sector-grid">
-                    <div class="sector-item"><div style="font-size:13px;font-weight:500;">半导体</div><div style="font-size:11px;color:#888;margin-top:4px;">国产替代加速</div></div>
-                    <div class="sector-item"><div style="font-size:13px;font-weight:500;">AI算力</div><div style="font-size:11px;color:#888;margin-top:4px;">需求持续增长</div></div>
-                    <div class="sector-item" style="border-left-color:#f39c12;"><div style="font-size:13px;font-weight:500;">铜</div><div style="font-size:11px;color:#888;margin-top:4px;">供需紧张涨价</div></div>
-                    <div class="sector-item" style="border-left-color:#f39c12;"><div style="font-size:13px;font-weight:500;">铝</div><div style="font-size:11px;color:#888;margin-top:4px;">新能源需求支撑</div></div>
+                <div class="sector-grid" id="sectorContainer">
+                    <!-- 动态生成 -->
                 </div>
             </div>
 
             <div class="card">
                 <div class="card-title">📰 财联社热点</div>
-                <div style="padding:10px;background:rgba(255,255,255,0.02);border-radius:8px;margin-bottom:10px;"><div style="font-size:11px;color:#666;">16:30</div><div style="font-size:12px;margin-top:4px;">比亚迪今日大涨8%，新能源车销量超预期</div></div>
-                <div style="padding:10px;background:rgba(255,255,255,0.02);border-radius:8px;margin-bottom:10px;"><div style="font-size:11px;color:#666;">16:15</div><div style="font-size:12px;margin-top:4px;">铜价突破9000美元，有色板块集体走强</div></div>
-                <div style="padding:10px;background:rgba(255,255,255,0.02);border-radius:8px;"><div style="font-size:11px;color:#666;">15:45</div><div style="font-size:12px;margin-top:4px;">腾讯游戏业务Q1预期向好</div></div>
+                <div id="newsContainer">
+                    <!-- 动态生成 -->
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="update-time">数据更新时间: 2026-03-02 17:00 | 财联社数据源 | 仅供参考</div>
+    <div class="update-time" id="updateTime">正在初始化数据...</div>
+
+    <!-- 添加股票弹窗 -->
+    <div class="modal" id="addStockModal">
+        <div class="modal-content">
+            <div class="modal-title">添加自选股</div>
+            <div class="form-group">
+                <label class="form-label">股票代码</label>
+                <input type="text" class="form-input" id="newStockCode" placeholder="如: 000559">
+            </div>
+            <div class="form-group">
+                <label class="form-label">股票名称</label>
+                <input type="text" class="form-input" id="newStockName" placeholder="如: 万向钱潮">
+            </div>
+            <div class="form-group">
+                <label class="form-label">持仓数量</label>
+                <input type="number" class="form-input" id="newStockQuantity" placeholder="如: 17000">
+            </div>
+            <div class="form-group">
+                <label class="form-label">成本价</label>
+                <input type="number" class="form-input" id="newStockCost" placeholder="如: 17.59" step="0.01">
+            </div>
+            <div class="form-group">
+                <label class="form-label">中轴价</label>
+                <input type="number" class="form-input" id="newStockAxis" placeholder="如: 17.50" step="0.01">
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+                <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="addStock()">添加</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 配置数据 ====================
+        const CONFIG = {
+            totalInvestment: 6000000,  // 总投资600万
+            aStockLimit: 500000,       // A股上限50万
+            hkStockLimit: 1500000,     // 港股上限150万
+            refreshInterval: 30000,    // 30秒刷新
+            strategyPercent: 0.08      // ±8%策略
+        };
+
+        // 初始股票数据
+        let stocks = [
+            { code: '000559', name: '万向钱潮', market: 'sz', quantity: 17000, cost: 17.594, axis: 17.50, limit: 500000 },
+            { code: '002050', name: '三花智控', market: 'sz', quantity: 5000, cost: 51.144, axis: 52.00, limit: 500000 },
+            { code: '002594', name: '比亚迪', market: 'sz', quantity: 100, cost: -1912.943, axis: 95.00, limit: 1000000 },
+            { code: '300229', name: '拓尔思', market: 'sz', quantity: 12000, cost: 23.149, axis: 23.00, limit: 500000 },
+            { code: '300316', name: '晶盛机电', market: 'sz', quantity: 4000, cost: 53.031, axis: 53.00, limit: 500000 },
+            { code: '601600', name: '中国铝业', market: 'sh', quantity: 100, cost: 110.094, axis: 15.00, limit: 500000 },
+            { code: '688795', name: '摩尔线程', market: 'sh', quantity: 2200, cost: 633.784, axis: 620.00, limit: 500000 },
+            { code: '00285', name: '比亚迪电子', market: 'hk', quantity: 23000, cost: 32.573, axis: 30.00, limit: 1500000 },
+            { code: '00700', name: '腾讯控股', market: 'hk', quantity: 2600, cost: 390.314, axis: 400.00, limit: 1500000 },
+            { code: '09988', name: '阿里巴巴', market: 'hk', quantity: 7300, cost: 98.231, axis: 105.00, limit: 1500000 }
+        ];
+
+        // 市场情绪数据
+        const sentimentData = {
+            '000559': { mood: 'bearish', desc: '汽车零部件回调' },
+            '002050': { mood: 'bearish', desc: '热管理概念回调' },
+            '002594': { mood: 'bullish', desc: '新能源车销量稳健' },
+            '300229': { mood: 'neutral', desc: 'AI应用端观望' },
+            '300316': { mood: 'bullish', desc: '光伏设备订单饱满' },
+            '601600': { mood: 'bullish', desc: '铝价上涨受益' },
+            '688795': { mood: 'bearish', desc: 'GPU板块回调' },
+            '00285': { mood: 'bearish', desc: '港股电池业务承压' },
+            '00700': { mood: 'bullish', desc: '游戏业务稳健' },
+            '09988': { mood: 'bullish', desc: 'AI业务增长强劲' }
+        };
+
+        // 板块热点数据
+        const sectorData = [
+            { name: '半导体', trend: '国产替代加速', type: 'tech' },
+            { name: 'AI算力', trend: '需求持续增长', type: 'tech' },
+            { name: '铜', trend: '供需紧张涨价', type: 'metal' },
+            { name: '铝', trend: '新能源需求支撑', type: 'metal' }
+        ];
+
+        // 财联社新闻
+        const newsData = [
+            { time: '16:30', content: '比亚迪今日大涨8%，新能源车销量超预期', tag: '个股' },
+            { time: '16:15', content: '铜价突破9000美元，有色板块集体走强', tag: '板块' },
+            { time: '15:45', content: '腾讯游戏业务Q1预期向好', tag: '个股' }
+        ];
+
+        // ==================== 数据获取 ====================
+        async function fetchStockData(stock) {
+            try {
+                const code = stock.market + stock.code;
+                const url = `https://qt.gtimg.cn/q=${code}`;
+                const response = await fetch(url);
+                const text = await response.text();
+                
+                const match = text.match(new RegExp(`v_${code}="([^"]+)"`));
+                if (!match) return null;
+                
+                const data = match[1].split('~');
+                return {
+                    name: data[1],
+                    price: parseFloat(data[3]),
+                    open: parseFloat(data[5]),
+                    high: parseFloat(data[33]),
+                    low: parseFloat(data[34]),
+                    prevClose: parseFloat(data[4]),
+                    volume: parseInt(data[36]),
+                    change: parseFloat(data[32]),
+                    changePercent: parseFloat(data[32]) / parseFloat(data[4]) * 100
+                };
+            } catch (error) {
+                console.error(`获取${stock.name}数据失败:`, error);
+                return null;
+            }
+        }
+
+        // ==================== 界面更新 ====================
+        function updateStockTable() {
+            const tbody = document.getElementById('stockTableBody');
+            tbody.innerHTML = '';
+            
+            let totalValue = 0;
+            let totalCost = 0;
+            
+            stocks.forEach(stock => {
+                const data = stock.realtimeData;
+                if (!data) return;
+                
+                const currentValue = data.price * stock.quantity;
+                const costValue = Math.abs(stock.cost) * stock.quantity;
+                const profit = currentValue - costValue;
+                const profitPercent = (profit / costValue * 100).toFixed(2);
+                
+                totalValue += currentValue;
+                totalCost += costValue;
+                
+                // 策略判断
+                const upperLimit = stock.axis * (1 + CONFIG.strategyPercent);
+                const lowerLimit = stock.axis * (1 - CONFIG.strategyPercent);
+                let strategyTag = '<span class="strategy-tag tag-hold">持有</span>';
+                let strategyClass = '';
+                
+                if (data.price >= upperLimit) {
+                    strategyTag = '<span class="strategy-tag tag-sell" onclick="showNotification(\'sell\', \'' + stock.name + '\')">+8%减仓</span>';
+                    strategyClass = 'price-up';
+                } else if (data.price <= lowerLimit) {
+                    strategyTag = '<span class="strategy-tag tag-buy" onclick="showNotification(\'buy\', \'' + stock.name + '\')">-8%加仓</span>';
+                    strategyClass = 'price-down';
+                }
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="stock-name">${stock.name}</div>
+                        <div class="stock-code">${stock.code}</div>
+                    </td>
+                    <td class="price ${data.change >= 0 ? 'price-up' : 'price-down'}">${data.price.toFixed(2)}</td>
+                    <td class="${data.change >= 0 ? 'positive' : 'negative'}">${data.change >= 0 ? '+' : ''}${data.changePercent.toFixed(2)}%</td>
+                    <td><span class="axis-price">${stock.axis.toFixed(2)}</span></td>
+                    <td>${strategyTag}</td>
+                    <td class="${profit >= 0 ? 'positive' : 'negative'}">${profit >= 0 ? '+' : ''}${profitPercent}%</td>
+
+            });
+            
+            const totalProfit = totalValue - totalCost;
+            document.getElementById('currentValue').textContent = (totalValue / 10000).toFixed(1) + '万';
+            document.getElementById('totalProfit').textContent = (totalProfit >= 0 ? '+' : '') + (totalProfit / 10000).toFixed(1) + '万';
+            document.getElementById('totalProfit').className = 'stat-value ' + (totalProfit >= 0 ? 'positive' : 'negative');
+        }
+
+        function updateAlerts() {
+            const container = document.getElementById('alertContainer');
+            const buyAlerts = [], sellAlerts = [];
+            stocks.forEach(stock => {
+                const data = stock.realtimeData;
+                if (!data) return;
+                const upper = stock.axis * 1.08, lower = stock.axis * 0.92;
+                const time = new Date().toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'});
+                if (data.price >= upper) sellAlerts.push({name: stock.name, code: stock.code, price: data.price, axis: stock.axis, time});
+                else if (data.price <= lower) buyAlerts.push({name: stock.name, code: stock.code, price: data.price, axis: stock.axis, time});
+            });
+            let html = '';
+            if (buyAlerts.length) html += `<div class="alert-box"><div class="alert-title buy">买入信号 (-8%加仓)</div>${buyAlerts.map(a=>`<div class="alert-item"><span>📉 ${a.name}(${a.code}) ${a.price.toFixed(2)} < ${(a.axis*0.92).toFixed(2)}</span><span class="alert-time">${a.time}</span></div>`).join('')}</div>`;
+            if (sellAlerts.length) html += `<div class="alert-box sell"><div class="alert-title sell">卖出信号 (+8%减仓)</div>${sellAlerts.map(a=>`<div class="alert-item"><span>📈 ${a.name}(${a.code}) ${a.price.toFixed(2)} > ${(a.axis*1.08).toFixed(2)}</span><span class="alert-time">${a.time}</span></div>`).join('')}</div>`;
+            if (!html) html = '<div style="color:#888;font-size:13px;text-align:center;padding:20px;">暂无策略提醒</div>';
+            container.innerHTML = html;
+        }
+
+        function updateSentiment() {
+            document.getElementById('sentimentContainer').innerHTML = stocks.map(stock=>{
+                const s = sentimentData[stock.code] || {mood:'neutral', desc:'观望'};
+                const cls = s.mood==='bullish'?'score-bullish':s.mood==='bearish'?'score-bearish':'score-neutral';
+                return `<div class="sentiment-item"><div><div class="sentiment-title">${stock.name}</div><div class="sentiment-desc">${s.desc}</div></div><span class="sentiment-score ${cls}">${s.mood}</span></div>`;
+            }).join('');
+        }
+
+        function updateSectors() {
+            document.getElementById('sectorContainer').innerHTML = sectorData.map(s=>`<div class="sector-item ${s.type}"><div class="sector-name">${s.name}</div><div class="sector-trend">${s.trend}</div></div>`).join('');
+        }
+
+        function updateNews() {
+            document.getElementById('newsContainer').innerHTML = newsData.map(n=>`<div style="padding:10px;background:rgba(255,255,255,0.02);border-radius:8px;margin-bottom:10px;"><div style="font-size:11px;color:#666;">${n.time} · ${n.tag}</div><div style="font-size:12px;margin-top:4px;">${n.content}</div></div>`).join('');
+        }
+
+        function showNotification(type, name) {
+            const n = document.createElement('div');
+            n.className = `notification ${type}`;
+            n.textContent = type==='buy'?`📉 ${name} 触发买入信号`:`📈 ${name} 触发卖出信号`;
+            document.body.appendChild(n);
+            setTimeout(()=>n.remove(), 3000);
+        }
+
+        function openModal() { document.getElementById('addStockModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('addStockModal').style.display = 'none'; }
+
+        function addStock() {
+            const code = document.getElementById('newStockCode').value;
+            const name = document.getElementById('newStockName').value;
+            const quantity = parseInt(document.getElementById('newStockQuantity').value);
+            const cost = parseFloat(document.getElementById('newStockCost').value);
+            const axis = parseFloat(document.getElementById('newStockAxis').value);
+            if (!code || !name || !quantity || !cost || !axis) { alert('请填写完整信息'); return; }
+            const market = code.startsWith('0') || code.startsWith('3') ? 'sz' : code.startsWith('6') ? 'sh' : 'hk';
+            stocks.push({code, name, market, quantity, cost, axis, limit: market==='hk'?CONFIG.hkStockLimit:CONFIG.aStockLimit});
+            closeModal(); refreshData();
+            ['newStockCode','newStockName','newStockQuantity','newStockCost','newStockAxis'].forEach(id=>document.getElementById(id).value='');
+        }
+
+        async function refreshData() {
+            document.getElementById('updateTime').textContent = '正在更新数据...';
+            for (let stock of stocks) stock.realtimeData = await fetchStockData(stock);
+            updateStockTable(); updateAlerts(); updateSentiment(); updateSectors(); updateNews();
+            document.getElementById('updateTime').textContent = '数据更新时间: ' + new Date().toLocaleString('zh-CN') + ' | 财联社数据源 | 仅供参考';
+        }
+
+        document.addEventListener('DOMContentLoaded', ()=> { refreshData(); setInterval(refreshData, CONFIG.refreshInterval); });
+    </script>
 </body>
 </html>
