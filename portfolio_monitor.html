@@ -61,16 +61,16 @@
 <script>
 // 股票配置
 const stocks=[
-    {code:'000559',name:'万向钱潮',market:'sz',qty:17000,cost:17.594,axis:17.50},
-    {code:'002050',name:'三花智控',market:'sz',qty:5000,cost:51.144,axis:52.00},
-    {code:'002594',name:'比亚迪',market:'sz',qty:100,cost:89.32,axis:95.00},
-    {code:'300229',name:'拓尔思',market:'sz',qty:12000,cost:23.149,axis:23.00},
-    {code:'300316',name:'晶盛机电',market:'sz',qty:4000,cost:53.031,axis:53.00},
-    {code:'601600',name:'中国铝业',market:'sh',qty:100,cost:13.72,axis:15.00},
-    {code:'688795',name:'摩尔线程',market:'sh',qty:2200,cost:608.30,axis:620.00},
-    {code:'00285',name:'比亚迪电子',market:'hk',qty:23000,cost:32.573,axis:30.00},
-    {code:'00700',name:'腾讯控股',market:'hk',qty:2600,cost:518.00,axis:400.00},
-    {code:'09988',name:'阿里巴巴',market:'hk',qty:7300,cost:142.90,axis:105.00}
+    {code:'000559',name:'万向钱潮',market:'sz',qty:17000,cost:17.594,axis:17.50,base:0,float:17000},
+    {code:'002050',name:'三花智控',market:'sz',qty:5000,cost:51.144,axis:52.00,base:0,float:5000},
+    {code:'002594',name:'比亚迪',market:'sz',qty:100,cost:89.32,axis:95.00,base:0,float:100},
+    {code:'300229',name:'拓尔思',market:'sz',qty:12000,cost:23.149,axis:23.00,base:0,float:12000},
+    {code:'300316',name:'晶盛机电',market:'sz',qty:4000,cost:53.031,axis:53.00,base:0,float:4000},
+    {code:'601600',name:'中国铝业',market:'sh',qty:100,cost:13.72,axis:15.00,base:0,float:100},
+    {code:'688795',name:'摩尔线程',market:'sh',qty:2200,cost:608.30,axis:620.00,base:0,float:2200},
+    {code:'00285',name:'比亚迪电子',market:'hk',qty:23000,cost:32.573,axis:30.00,base:0,float:23000},
+    {code:'00700',name:'腾讯控股',market:'hk',qty:2600,cost:518.00,axis:400.00,base:1362,float:1238},  // 70万底仓
+    {code:'09988',name:'阿里巴巴',market:'hk',qty:7300,cost:142.90,axis:105.00,base:5147,float:2153}  // 70万底仓
 ];
 
 // 市场情绪数据
@@ -139,14 +139,16 @@ function renderStockList(){
         const upper=s.axis*1.08;
         const lower=s.axis*0.92;
         let tag='<span class="tag-hold">持有</span>';
-        if(d.price>=upper){tag='<span class="tag-sell">+8%减仓</span>';sellAlerts.push(s.name);}
-        else if(d.price<=lower){tag='<span class="tag-buy">-8%加仓</span>';buyAlerts.push(s.name);}
+        if(d.price>=upper && s.float>0){tag='<span class="tag-sell">+8%减浮动</span>';sellAlerts.push(s.name);}
+        else if(d.price<=lower && s.float>0){tag='<span class="tag-buy">-8%加浮动</span>';buyAlerts.push(s.name);}
         
         const changePct=((d.price-d.prevClose)/d.prevClose*100).toFixed(2);
         const changeClass=changePct>=0?'positive':'negative';
         
+        const baseInfo=s.base>0?'<br><span style="font-size:10px;color:#888">底:'+s.base+' 浮:'+s.float+'</span>':'';
+        
         html+='<tr>';
-        html+='<td>'+s.name+'('+s.code+')</td>';
+        html+='<td>'+s.name+'('+s.code+')'+baseInfo+'</td>';
         html+='<td>'+d.price.toFixed(2)+'</td>';
         html+='<td class="'+changeClass+'">'+(changePct>=0?'+':'')+changePct+'%</td>';
         html+='<td><span class="axis-price">'+s.axis.toFixed(2)+'</span></td>';
