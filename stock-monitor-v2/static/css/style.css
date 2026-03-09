@@ -1,0 +1,248 @@
+
+
+/* ========================================
+   数据导入增强样式
+   ======================================== */
+
+/* 上传包装器 */
+.upload-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* 模板下载 */
+.template-download {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: var(--bg-tertiary);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+.template-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.template-label i {
+    color: var(--accent-blue);
+}
+
+.btn-template {
+    padding: 8px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-template:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+}
+
+.btn-template i {
+    color: var(--accent-gold);
+}
+
+/* 手动输入区域改进 */
+.manual-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.manual-header label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.manual-header label i {
+    color: var(--accent-blue);
+}
+
+.manual-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.manual-examples {
+    margin-bottom: 12px;
+}
+
+.manual-examples details {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.manual-examples summary {
+    padding: 12px 16px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+}
+
+.manual-examples summary i {
+    color: var(--accent-gold);
+}
+
+.manual-examples summary:hover {
+    background: var(--bg-hover);
+}
+
+.example-content {
+    padding: 16px;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.75rem;
+}
+
+.example-content p {
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+}
+
+.example-content pre {
+    background: var(--bg-card);
+    padding: 12px;
+    border-radius: var(--border-radius);
+    overflow-x: auto;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+    line-height: 1.8;
+}
+
+/* 历史记录动作 */
+.history-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* 通知样式 */
+.notification {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    padding: 14px 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 9999;
+    box-shadow: var(--shadow-lg);
+    max-width: 400px;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from { 
+        transform: translateX(100%); 
+        opacity: 0; 
+    }
+    to { 
+        transform: translateX(0); 
+        opacity: 1; 
+    }
+}
+
+@keyframes slideOut {
+    from { 
+        transform: translateX(0); 
+        opacity: 1; 
+    }
+    to { 
+        transform: translateX(100%); 
+        opacity: 0; 
+    }
+}
+
+.notification i {
+    font-size: 1.25rem;
+}
+
+.notification-success {
+    border-left: 4px solid var(--status-success);
+}
+
+.notification-success i {
+    color: var(--status-success);
+}
+
+.notification-error {
+    border-left: 4px solid var(--status-danger);
+}
+
+.notification-error i {
+    color: var(--status-danger);
+}
+
+.notification-warning {
+    border-left: 4px solid var(--accent-gold);
+}
+
+.notification-warning i {
+    color: var(--accent-gold);
+}
+
+.notification-info {
+    border-left: 4px solid var(--accent-blue);
+}
+
+.notification-info i {
+    color: var(--accent-blue);
+}
+
+/* 预览表格样式增强 */
+.preview-table td.up,
+.preview-table td.down {
+    font-weight: 600;
+}
+
+.preview-table td.up {
+    color: var(--color-up);
+}
+
+.preview-table td.down {
+    color: var(--color-down);
+}
+
+/* 预览区域动画 */
+.file-preview {
+    animation: fadeIn 0.3s ease;
+}
+
+/* 拖拽区域增强 */
+.upload-area.dragover {
+    border-color: var(--accent-blue);
+    background: rgba(24, 144, 255, 0.1);
+    transform: scale(1.01);
+}

@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票投资监控系统 v2.0</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <span>股票投资监控系统</span>
+                <span class="version">v2.0</span>
+            </div>
+        </div>
+        <div class="header-center">
+            <div class="market-status">
+                <span class="status-dot" id="marketStatusDot"></span>
+                <span id="marketStatusText">加载中...</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="btn-header" onclick="showDataImportModal()">
+                <i class="fas fa-file-import"></i>
+                <span>数据导入</span>
+            </button>
+            <button class="btn-header" onclick="showAnalysisModal()">
+                <i class="fas fa-chart-pie"></i>
+                <span>数据分析</span>
+            </button>
+            <div class="current-time" id="currentTime"></div>
+            <button class="btn-icon" title="设置">
+                <i class="fas fa-cog"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- 顶部资产总览 -->
+    <section class="asset-overview">
+        <div class="asset-card total">
+            <div class="asset-icon">
+                <i class="fas fa-wallet"></i>
+            </div>
+            <div class="asset-info">
+                <div class="asset-label">总资产</div>
+                <div class="asset-value" id="totalAssets">--</div>
+            </div>
+        </div>
+        <div class="asset-card position">
+            <div class="asset-icon">
+                <i class="fas fa-chart-pie"></i>
+            </div>
+            <div class="asset-info">
+                <div class="asset-label">持仓市值</div>
+                <div class="asset-value" id="totalPosition">--</div>
+            </div>
+        </div>
+        <div class="asset-card cash">
+            <div class="asset-icon">
+                <i class="fas fa-coins"></i>
+            </div>
+            <div class="asset-info">
+                <div class="asset-label">可用资金</div>
+                <div class="asset-value" id="availableCash">--</div>
+            </div>
+        </div>
+        <div class="asset-card pnl" id="todayPnLCards">
+            <div class="asset-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="asset-info">
+                <div class="asset-label">当日盈亏</div>
+                <div class="asset-value">
+                    <span id="todayPnLValue">--</span>
+                    <span class="pnl-percent" id="todayPnLPercent">--</span>
+                </div>
+            </div>
+        </div>
+        <div class="asset-card ratio">
+            <div class="asset-icon">
+                <i class="fas fa-percentage"></i>
+            </div>
+            <div class="asset-info">
+                <div class="asset-label">仓位比例</div>
+                <div class="position-ring-container">
+                    <svg class="position-ring" viewBox="0 0 36 36">
+                        <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path class="ring-fill" id="positionRing" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    </svg>
+                    <span class="ring-text" id="positionRatio">--</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 主内容区 -->
+    <main class="main-container">
+        <!-- 左侧：股票列表 -->
+        <aside class="sidebar-left">
+            <div class="panel-header">
+                <h3><i class="fas fa-list-ul"></i> 自选股</h3>
+                <button class="btn-add" onclick="showAddStockModal()">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <div class="stock-list-header">
+                <span class="col-code">代码/名称</span>
+                <span class="col-price">现价</span>
+                <span class="col-change">涨跌</span>
+                <span class="col-pnl">盈亏</span>
+            </div>
+            <div class="stock-list" id="stockList">
+                <!-- 动态生成 -->
+            </div>
+        </aside>
+
+        <!-- 中间：股票详情 -->
+        <section class="main-content">
+            <div class="stock-detail" id="stockDetail">
+                <!-- 股票标题栏 -->
+                <div class="detail-header">
+                    <div class="stock-title">
+                        <div class="title-main">
+                            <span class="stock-name" id="detailName">--</span>
+                            <span class="stock-code" id="detailCode">--</span>
+                            <span class="market-tag" id="detailMarket">--</span>
+                        </div>
+                        <span class="strategy-badge" id="detailStrategy">--</span>
+                    </div>
+                    <div class="stock-price-section">
+                        <span class="current-price" id="detailPrice">--</span>
+                        <div class="price-change-group">
+                            <span class="price-change" id="detailChange">--</span>
+                            <span class="price-change-percent" id="detailChangePercent">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 策略信息卡片网格 -->
+                <div class="strategy-grid">
+                    <div class="strategy-card">
+                        <div class="card-header-mini">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <span>投资上限</span>
+                        </div>
+                        <div class="card-value" id="detailLimit">--</div>
+                    </div>
+                    <div class="strategy-card">
+                        <div class="card-header-mini">
+                            <i class="fas fa-database"></i>
+                            <span>当前持仓</span>
+                        </div>
+                        <div class="card-value" id="detailPosition">--</div>
+                    </div>
+                    <div class="strategy-card">
+                        <div class="card-header-mini">
+                            <i class="fas fa-coins"></i>
+                            <span>持仓成本</span>
+                        </div>
+                        <div class="card-value" id="detailCost">--</div>
+                    </div>
+                    <div class="strategy-card highlight">
+                        <div class="card-header-mini">
+                            <i class="fas fa-crosshairs"></i>
+                            <span>中轴价格</span>
+                        </div>
+                        <div class="card-value" id="detailPivot">--</div>
+                    </div>
+                    <div class="strategy-card">
+                        <div class="card-header-mini">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>浮动盈亏</span>
+                        </div>
+                        <div class="card-value" id="detailPnL">--</div>
+                    </div>
+                    <div class="strategy-card">
+                        <div class="card-header-mini">
+                            <i class="fas fa-percent"></i>
+                            <span>盈亏比例</span>
+                        </div>
+                        <div class="card-value" id="detailPnLPercent">--</div>
+                    </div>
+                </div>
+
+                <!-- 中轴价格可视化 -->
+                <div class="pivot-visualization">
+                    <div class="pivot-header">
+                        <span class="pivot-title"><i class="fas fa-ruler-horizontal"></i> 中轴价格区间</span>
+                        <span class="pivot-range">-8% ~ +8%</span>
+                    </div>
+                    <div class="pivot-progress-container">
+                        <div class="pivot-labels">
+                            <span class="label-left">
+                                <span class="label-title">买入触发</span>
+                                <span class="label-price" id="triggerBuy">--</span>
+                            </span>
+                            <span class="label-center">
+                                <span class="label-title">中轴价格</span>
+                                <span class="label-price" id="pivotCenter">--</span>
+                            </span>
+                            <span class="label-right">
+                                <span class="label-title">卖出触发</span>
+                                <span class="label-price" id="triggerSell">--</span>
+                            </span>
+                        </div>
+                        <div class="pivot-progress">
+                            <div class="progress-bg"></div>
+                            <div class="progress-fill" id="pivotProgressFill"></div>
+                            <div class="progress-markers">
+                                <div class="marker buy" id="markerBuy"></div>
+                                <div class="marker current" id="markerCurrent">
+                                    <div class="marker-label" id="currentPriceLabel">--</div>
+                                </div>
+                                <div class="marker sell" id="markerSell"></div>
+                            </div>
+                        </div>
+                        <div class="pivot-percent-labels">
+                            <span>-8%</span>
+                            <span>0%</span>
+                            <span>+8%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 网格策略表格 -->
+                <div class="grid-strategy-section">
+                    <div class="section-header">
+                        <span class="section-title"><i class="fas fa-th"></i> 网格策略</span>
+                        <span class="section-subtitle" id="gridStrategyInfo">--</span>
+                    </div>
+                    <div class="grid-table-container">
+                        <table class="grid-table">
+                            <thead>
+                                <tr>
+                                    <th>档位</th>
+                                    <th>触发价格</th>
+                                    <th>操作</th>
+                                    <th>数量</th>
+                                    <th>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gridTableBody">
+                                <!-- 动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 操作建议 -->
+                <div class="action-suggestion" id="actionSuggestion">
+                    <div class="suggestion-header">
+                        <i class="fas fa-lightbulb"></i>
+                        <span>操作建议</span>
+                    </div>
+                    <div class="suggestion-content" id="suggestionContent">
+                        <div class="suggestion-empty">请选择股票查看建议</div>
+                    </div>
+                </div>
+
+                <!-- 价格走势图 -->
+                <div class="chart-section">
+                    <div class="chart-header">
+                        <span class="chart-title"><i class="fas fa-chart-area"></i> 价格走势</span>
+                        <div class="chart-periods">
+                            <button class="period-btn active" data-period="1D">分时</button>
+                            <button class="period-btn" data-period="5D">5日</button>
+                            <button class="period-btn" data-period="1M">日K</button>
+                            <button class="period-btn" data-period="1Y">周K</button>
+                        </div>
+                    </div>
+                    <div class="chart-container" id="priceChart">
+                        <div class="chart-placeholder">
+                            <i class="fas fa-chart-line"></i>
+                            <p>价格走势图</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右侧：市场情报 -->
+        <aside class="sidebar-right">
+            <!-- 热点板块 -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-fire"></i> 热点板块</h3>
+                    <span class="panel-badge">实时</span>
+                </div>
+                <div class="hot-sectors" id="hotSectors">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+
+            <!-- 实时新闻 -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-newspaper"></i> 实时新闻</h3>
+                    <span class="panel-badge">24H</span>
+                </div>
+                <div class="news-list" id="newsList">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+
+            <!-- 提醒列表 -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-bell"></i> 交易提醒</h3>
+                    <span class="panel-badge alert" id="alertCount">0</span>
+                </div>
+                <div class="alert-list" id="alertList">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- 添加股票弹窗 -->
+    <div class="modal" id="addStockModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-plus-circle"></i> 添加自选股</h3>
+                <button class="btn-close" onclick="hideAddStockModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="addStockForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>股票代码</label>
+                            <input type="text" id="stockCode" placeholder="如：09988.HK" required>
+                        </div>
+                        <div class="form-group">
+                            <label>股票名称</label>
+                            <input type="text" id="stockName" placeholder="如：阿里巴巴-W" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>市场类型</label>
+                            <select id="marketType">
+                                <option value="A股">A股</option>
+                                <option value="港股">港股</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>投资上限（万元）</label>
+                            <input type="number" id="investLimit" placeholder="A股50，港股150" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>当前持仓数量</label>
+                            <input type="number" id="holdQuantity" placeholder="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>持仓成本</label>
+                            <input type="number" id="holdCost" placeholder="0" value="0" step="0.01">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>策略模式</label>
+                        <select id="strategyMode">
+                            <option value="基础">基础策略（中轴价格±8%）</option>
+                            <option value="进阶">进阶策略（个性化网格）</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel" onclick="hideAddStockModal()">取消</button>
+                        <button type="submit" class="btn-submit"><i class="fas fa-check"></i> 添加</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 数据导入弹窗 -->
+    <div class="modal" id="dataImportModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3><i class="fas fa-file-import"></i> 数据导入</h3>
+                <button class="btn-close" onclick="hideDataImportModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="import-tabs">
+                    <button class="import-tab active" data-tab="upload"><i class="fas fa-upload"></i> 文件上传</button>
+                    <button class="import-tab" data-tab="manual"><i class="fas fa-edit"></i> 手动录入</button>
+                    <button class="import-tab" data-tab="history"><i class="fas fa-history"></i> 导入历史</button>
+                </div>
+
+                <!-- 文件上传区域 -->
+                <div class="import-content active" id="uploadTab">
+                    <div class="upload-wrapper" id="uploadWrapper">
+                        <div class="upload-area" id="uploadArea">
+                            <input type="file" id="fileInput" accept=".txt,.csv,.xls,.xlsx" hidden>
+                            <div class="upload-placeholder">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p class="upload-title">点击或拖拽文件到此处上传</p>
+                                <p class="upload-desc">支持 .txt、.csv、Excel 格式</p>
+                                <p class="upload-hint">支持同花顺、东方财富、通达信等券商导出格式</p>
+                            </div>
+                        </div>
+
+                        <!-- 模板下载区域 -->
+                        <div class="template-download">
+                            <span class="template-label"><i class="fas fa-download"></i> 下载示例模板：</span>
+                            <button class="btn-template" onclick="downloadTemplate('txt')">
+                                <i class="fas fa-file-alt"></i> 记事本格式
+                            </button>
+                            <button class="btn-template" onclick="downloadTemplate('csv')">
+                                <i class="fas fa-file-csv"></i> CSV格式
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="file-preview" id="filePreview" style="display: none;">
+                        <div class="preview-header">
+                            <span class="file-name" id="previewFileName"></span>
+                            <button class="btn-text" onclick="clearFile()"><i class="fas fa-trash"></i> 清除</button>
+                        </div>
+                        <div class="preview-content">
+                            <table class="preview-table" id="previewTable">
+                                <!-- 动态生成预览表格 -->
+                            </table>
+                        </div>
+                        <div class="preview-stats" id="previewStats">
+                            <!-- 动态生成统计信息 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 手动录入区域 -->
+                <div class="import-content" id="manualTab">
+                    <div class="manual-input-area">
+                        <div class="manual-header">
+                            <label><i class="fas fa-paste"></i> 粘贴持仓数据</label>
+                            <span class="manual-hint">支持从同花顺、东方财富等券商APP直接复制</span>
+                        </div>
+                        <div class="manual-examples">
+                            <details>
+                                <summary><i class="fas fa-eye"></i> 查看格式示例</summary>
+                                <div class="example-content">
+                                    <p><strong>同花顺格式示例：</strong></p>
+                                    <pre>证券代码  证券名称  证券数量  参考成本价  当前价  最新市值  浮动盈亏
+000001    平安银行  1000      12.50       13.20   13200     700
+00700     腾讯控股  500       380.00      420.00  210000    20000</pre>
+                                    <p><strong>简单格式示例：</strong></p>
+                                    <pre>代码      名称      数量  成本价  现价
+000001    平安银行  1000  12.50   13.20
+00700     腾讯控股  500   380.00  420.00</pre>
+                                </div>
+                            </details>
+                        </div>
+                        <textarea id="manualDataInput" rows="10" placeholder="在这里粘贴你的持仓数据..."></textarea>
+                        <div class="manual-actions">
+                            <button class="btn-secondary" onclick="parseManualData()">
+                                <i class="fas fa-play"></i> 解析数据
+                            </button>
+                            <button class="btn-text" onclick="clearManualData()">
+                                <i class="fas fa-eraser"></i> 清空
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 导入历史区域 -->
+                <div class="import-content" id="historyTab">
+                    <div class="history-list" id="importHistoryList">
+                        <div class="history-empty">
+                            <i class="fas fa-inbox"></i>
+                            <p>暂无导入记录</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="hideDataImportModal()">取消</button>
+                <button class="btn-submit" id="confirmImportBtn" onclick="confirmImport()" disabled>
+                    <i class="fas fa-check"></i> 确认导入
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 数据分析弹窗 -->
+    <div class="modal" id="analysisModal">
+        <div class="modal-content modal-xlarge">
+            <div class="modal-header">
+                <h3><i class="fas fa-chart-pie"></i> 数据分析中心</h3>
+                <div class="analysis-date-selector">
+                    <select id="analysisDateRange">
+                        <option value="today">今日</option>
+                        <option value="week">本周</option>
+                        <option value="month">本月</option>
+                        <option value="quarter">本季度</option>
+                        <option value="year">本年</option>
+                    </select>
+                </div>
+                <button class="btn-close" onclick="hideAnalysisModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="analysis-tabs">
+                    <button class="analysis-tab active" data-tab="portfolio"><i class="fas fa-briefcase"></i> 持仓分析</button>
+                    <button class="analysis-tab" data-tab="profit"><i class="fas fa-coins"></i> 盈亏分析</button>
+                    <button class="analysis-tab" data-tab="risk"><i class="fas fa-shield-alt"></i> 风险分析</button>
+                    <button class="analysis-tab" data-tab="trend"><i class="fas fa-chart-line"></i> 趋势分析</button>
+                </div>
+
+                <!-- 持仓分析 -->
+                <div class="analysis-content active" id="portfolioTab">
+                    <div class="analysis-grid">
+                        <div class="analysis-card">
+                            <div class="card-title"><i class="fas fa-chart-pie"></i> 持仓分布</div>
+                            <div class="chart-container-mini" id="portfolioPieChart">
+                                <div class="chart-placeholder-mini">饼图区域</div>
+                            </div>
+                        </div>
+                        <div class="analysis-card">
+                            <div class="card-title"><i class="fas fa-industry"></i> 行业分布</div>
+                            <div class="chart-container-mini" id="sectorBarChart">
+                                <div class="chart-placeholder-mini">柱状图区域</div>
+                            </div>
+                        </div>
+                        <div class="analysis-card full-width">
+                            <div class="card-title"><i class="fas fa-list-ol"></i> 持仓明细</div>
+                            <div class="analysis-table-container">
+                                <table class="analysis-table" id="portfolioDetailTable">
+                                    <thead>
+                                        <tr>
+                                            <th>代码</th>
+                                            <th>名称</th>
+                                            <th>市值</th>
+                                            <th>占比</th>
+                                            <th>盈亏</th>
+                                            <th>盈亏率</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- 动态生成 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 盈亏分析 -->
+                <div class="analysis-content" id="profitTab">
+                    <div class="analysis-grid">
+                        <div class="analysis-card">
+                            <div class="card-title"><i class="fas fa-calendar-day"></i> 今日盈亏</div>
+                            <div class="profit-stats">
+                                <div class="profit-item">
+                                    <span class="label">总盈亏</span>
+                                    <span class="value up" id="todayTotalPnL">+12,580</span>
+                                </div>
+                                <div class="profit-item">
+                                    <span class="label">盈亏率</span>
+                                    <span class="value up" id="todayPnLRate">+1.58%</span>
+                                </div>
+                                <div class="profit-item">
+                                    <span class="label">盈利股数</span>
+                                    <span class="value" id="profitStockCount">8只</span>
+                                </div>
+                                <div class="profit-item">
+                                    <span class="label">亏损股数</span>
+                                    <span class="value" id="lossStockCount">3只</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="analysis-card">
+                            <div class="card-title"><i class="fas fa-history"></i> 累计盈亏</div>
+                            <div class="profit-stats">
+                                <div class="profit-item">
+                                    <span class="label">总盈亏</span>
+                                    <span class="value up" id="totalPnL">+125,800</span>
+                                </div>
+                                <div class="profit-item">
+                                    <span class="label">收益率</span>
+                                    <span class="value up" id="totalReturnRate">+15.8%</span>
+                                </div>
+                                <div class="profit-item">
+                                    <span class="label">年化收益</span>
+                                    <span class="value up" id="annualReturn">+23.5%</span>
+                                </div>
+                                <div class="profit-item">
+                                    <span class="label">最大回撤</span>
+                                    <span class="value down" id="maxDrawdown">-5.2%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="analysis-card full-width">
+                            <div class="card-title"><i class="fas fa-chart-area"></i> 盈亏走势</div>
+                            <div class="chart-container-large" id="pnlTrendChart">
+                                <div class="chart-placeholder-large">盈亏走势图</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 风险分析 -->
+                <div class="analysis-content" id="riskTab">
+                    <div class="analysis-grid">
+                        <div class="analysis-card">
+                            <div class="card-title"><i class="fas fa-exclamation-triangle"></i> 风险指标</div>
+                            <div class="risk-indicators">
+                                <div class="risk-item">
+                                    <span class="risk-name">集中度风险</span>
+                                    <div class="risk-bar">
+                                        <div class="risk-fill warning" style="width: 65%;"></div>
+                                    </div>
+                                    <span class="risk-value">65%</span>
+                                </div>
+                                <div class="risk-item">
+                                    <span class="risk-name">波动率风险</span>
+                                    <div class="risk-bar">
+                                        <div class="risk-fill safe" style="width: 35%;"></div>
+                                    </div>
+                                    <span class="risk-value">35%</span>
+                                </div>
+                                <div class="risk-item">
+                                    <span class="risk-name">流动性风险</span>
+                                    <div class="risk-bar">
+                                        <div class="risk-fill safe" style="width: 20%;"></div>
+                                    </div>
+                                    <span class="risk-value">20%</span>
+                                </div>
+                                <div class="risk-item">
+                                    <span class="risk-name">行业风险</span>
+                                    <div class="risk-bar">
+                                        <div class="risk-fill danger" style="width: 80%;"></div>
+                                    </div>
+                                    <span class="risk-value">80%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="analysis-card">
+                            <div class="card-title"><i class="fas fa-balance-scale"></i> 仓位建议</div>
+                            <div class="position-suggestion">
+                                <div class="suggestion-item">
+                                    <span class="sugg-label">当前仓位</span>
+                                    <span class="sugg-value">78%</span>
+                                </div>
+                                <div class="suggestion-item">
+                                    <span class="sugg-label">建议仓位</span>
+                                    <span class="sugg-value suggested">65%</span>
+                                </div>
+                                <div class="suggestion-reason">
+                                    <i class="fas fa-info-circle"></i>
+                                    <span>市场波动较大，建议适当降低仓位控制风险</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="analysis-card full-width">
+                            <div class="card-title"><i class="fas fa-list-ul"></i> 风险股票预警</div>
+                            <div class="risk-stock-list" id="riskStockList">
+                                <div class="risk-stock-item high">
+                                    <span class="stock-info"><strong>09988.HK</strong> 阿里巴巴-W</span>
+                                    <span class="risk-tag">集中度超标</span>
+                                    <span class="risk-desc">单一持仓占比超过30%</span>
+                                </div>
+                                <div class="risk-stock-item medium">
+                                    <span class="stock-info"><strong>00700.HK</strong> 腾讯控股</span>
+                                    <span class="risk-tag">波动率过高</span>
+                                    <span class="risk-desc">近20日波动率超过5%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 趋势分析 -->
+                <div class="analysis-content" id="trendTab">
+                    <div class="analysis-grid">
+                        <div class="analysis-card">
+                            <div class="card-title"><i class="fas fa-chart-line"></i> 净值走势</div>
+                            <div class="chart-container-large" id="netValueChart">
+                                <div class="chart-placeholder-large">净值走势图</div>
+                            </div>
+                        </div>
+                        <div class="analysis-card">
+                            <div class="card-title"><i class="fas fa-tachometer-alt"></i> 交易统计</div>
+                            <div class="trade-stats">
+                                <div class="stat-row">
+                                    <span>总交易次数</span>
+                                    <span class="stat-value">128次</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span>盈利次数</span>
+                                    <span class="stat-value up">86次</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span>亏损次数</span>
+                                    <span class="stat-value down">42次</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span>胜率</span>
+                                    <span class="stat-value">67.2%</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span>平均盈利</span>
+                                    <span class="stat-value up">+2,580</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span>平均亏损</span>
+                                    <span class="stat-value down">-1,240</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 买卖提醒弹窗 -->
+    <div class="modal alert-modal" id="tradeAlertModal">
+        <div class="modal-content">
+            <div class="modal-header alert-header">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>交易提醒</h3>
+            </div>
+            <div class="modal-body">
+                <div class="alert-content" id="tradeAlertContent">
+                    <!-- 动态生成 -->
+                </div>
+                <div class="alert-actions">
+                    <button class="btn-confirm" onclick="confirmTrade()"><i class="fas fa-check"></i> 确认</button>
+                    <button class="btn-snooze" onclick="snoozeAlert()"><i class="fas fa-clock"></i> 稍后</button>
+                    <button class="btn-ignore" onclick="ignoreAlert()"><i class="fas fa-times"></i> 忽略</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/import.js') }}"></script>
+</body>
+</html>
