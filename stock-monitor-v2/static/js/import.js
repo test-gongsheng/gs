@@ -736,9 +736,18 @@ function enableConfirmButton(enabled) {
 /**
  * 显示/隐藏弹窗
  */
+let importInitialized = false;
+
 function showDataImportModal() {
     const modal = document.getElementById('dataImportModal');
     if (modal) {
+        // 延迟初始化，确保弹窗元素可见
+        if (!importInitialized) {
+            setTimeout(() => {
+                initDataImport();
+                importInitialized = true;
+            }, 0);
+        }
         modal.classList.add('active');
         // 重置到第一个标签
         switchImportTab('upload');
