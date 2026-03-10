@@ -473,9 +473,19 @@ function formatMoney(amount) {
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
     init();
-    // 数据导入功能在import.js中初始化
+    // 数据导入功能在import.js中初始化 - v2
+    console.log('Checking initDataImport...', typeof initDataImport);
     if (typeof initDataImport === 'function') {
+        console.log('Calling initDataImport...');
         initDataImport();
+    } else {
+        console.warn('initDataImport not found, will retry in 100ms');
+        setTimeout(() => {
+            if (typeof initDataImport === 'function') {
+                console.log('Calling initDataImport (retry)...');
+                initDataImport();
+            }
+        }, 100);
     }
 });
 
