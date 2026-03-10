@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>阿里港股监控</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            background: linear-gradient(135deg, #1a1a2e, #16213e); 
+            min-height: 100vh; 
+            color: #fff; 
+            padding: 20px;
+        }
+        .card { 
+            background: rgba(255,255,255,0.05); 
+            border-radius: 16px; 
+            padding: 20px; 
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .price { font-size: 48px; font-weight: 700; }
+        .change { color: #ff6b6b; margin-top: 5px; }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px; }
+        .item { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 10px; }
+        .label { font-size: 12px; color: #888; margin-bottom: 5px; }
+        .value { font-size: 20px; font-weight: 600; }
+        .profit { color: #00d4aa; }
+        .trigger { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            background: rgba(155,89,182,0.1);
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+        .status { 
+            background: rgba(255,255,255,0.1); 
+            color: #888;
+            padding: 4px 10px; 
+            border-radius: 4px; 
+            font-size: 12px;
+        }
+        .time { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+            <h2>阿里巴巴-W <span style="font-size:14px;color:#888;">09988.HK</span></h2>
+            <span style="color:#00d4aa;font-size:12px;">● 财联社数据</span>
+        </div>
+        <div class="price">142.90</div>
+        <div class="change">-0.10 (-0.07%)</div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-bottom:15px;">📊 持仓概览</h3>
+        <div class="grid">
+            <div class="item">
+                <div class="label">当前持仓</div>
+                <div class="value">70万</div>
+            </div>
+            <div class="item">
+                <div class="label">可用现金</div>
+                <div class="value">30万</div>
+            </div>
+            <div class="item">
+                <div class="label">当前浮盈</div>
+                <div class="value profit">+20万</div>
+            </div>
+            <div class="item">
+                <div class="label">成本价</div>
+                <div class="value">~111港元</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-bottom:15px;">🎯 网格策略</h3>
+        <div class="trigger">
+            <span>📉 下跌8%买入线 (131港元)</span>
+            <span class="status">等待中</span>
+        </div>
+        <div class="trigger">
+            <span>📈 上涨5%卖出线 (150港元)</span>
+            <span class="status">等待中</span>
+        </div>
+    </div>
+
+    <div class="time">数据日期: 2026-02-28 | 仅供参考</div>
+</body>
+</html>

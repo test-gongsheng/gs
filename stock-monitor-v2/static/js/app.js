@@ -328,12 +328,22 @@ function renderNews() {
 
 // 显示添加股票弹窗
 function showAddStockModal() {
-    document.getElementById('addStockModal').classList.add('show');
+    document.getElementById('addStockModal').classList.add('active');
 }
 
 // 隐藏添加股票弹窗
 function hideAddStockModal() {
-    document.getElementById('addStockModal').classList.remove('show');
+    document.getElementById('addStockModal').classList.remove('active');
+}
+
+// 显示数据分析弹窗
+function showAnalysisModal() {
+    document.getElementById('analysisModal').classList.add('active');
+}
+
+// 隐藏数据分析弹窗
+function hideAnalysisModal() {
+    document.getElementById('analysisModal').classList.remove('active');
 }
 
 // 处理添加股票
@@ -421,24 +431,24 @@ function showTradeAlert(stock) {
         </div>
     `;
     
-    modal.classList.add('show');
+    modal.classList.add('active');
 }
 
 // 确认交易
 function confirmTrade() {
-    document.getElementById('tradeAlertModal').classList.remove('show');
+    document.getElementById('tradeAlertModal').classList.remove('active');
     addAlertLog('已确认交易操作');
 }
 
 // 稍后提醒
 function snoozeAlert() {
-    document.getElementById('tradeAlertModal').classList.remove('show');
+    document.getElementById('tradeAlertModal').classList.remove('active');
     addAlertLog('已设置稍后提醒');
 }
 
 // 忽略提醒
 function ignoreAlert() {
-    document.getElementById('tradeAlertModal').classList.remove('show');
+    document.getElementById('tradeAlertModal').classList.remove('active');
     addAlertLog('已忽略本次提醒');
 }
 
@@ -470,12 +480,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // 确保函数在全局作用域可用（用于HTML内联事件）
-window.showDataImportModal = showDataImportModal;
-window.hideDataImportModal = hideDataImportModal;
-window.showAnalysisModal = showAnalysisModal;
-window.hideAnalysisModal = hideAnalysisModal;
-window.handleFileUpload = handleFileUpload;
-window.clearFile = clearFile;
-window.switchImportTab = switchImportTab;
-window.analyzeData = analyzeData;
-window.viewHistory = viewHistory;
+// 注意：数据导入相关函数在 import.js 中定义并导出到 window
