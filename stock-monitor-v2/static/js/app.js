@@ -490,4 +490,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // 确保函数在全局作用域可用（用于HTML内联事件）
-// 注意：数据导入相关函数在 import.js 中定义并导出到 window
+window.showAddStockModal = showAddStockModal;
+window.hideAddStockModal = hideAddStockModal;
+window.showAnalysisModal = showAnalysisModal;
+window.hideAnalysisModal = hideAnalysisModal;
+window.renderStockList = renderStockList;
+window.updateAssetOverview = updateAssetOverview;
+window.selectStock = selectStock;
