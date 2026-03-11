@@ -285,7 +285,11 @@ function renderStockDetail() {
         detailPnLPercentEl.className = 'card-value ' + (pnl >= 0 ? 'up' : 'down');
     }
     
-    setText('detailPivot', (stock.pivotPrice || 0).toFixed(2));
+    // 调试中轴价格
+    console.log('中轴价格调试:', stock.code, 'pivotPrice=', stock.pivotPrice, 'type=', typeof stock.pivotPrice);
+    
+    const pivotPriceValue = parseFloat(stock.pivotPrice) || 0;
+    setText('detailPivot', pivotPriceValue.toFixed(2));
     setText('detailBase', (stock.baseRatio || 50) + '%');
     setText('detailFloat', (stock.floatRatio || 50) + '%');
     
