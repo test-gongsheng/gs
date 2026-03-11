@@ -2,7 +2,7 @@ from flask import Flask, render_template, jsonify, request
 import json
 import os
 from datetime import datetime
-from utils.stock_quote import get_stock_quotes
+from utils.stock_quote import get_stock_quotes, get_dynamic_axis_price
 
 app = Flask(__name__)
 
@@ -300,6 +300,36 @@ def get_quotes():
         return jsonify({'success': True, 'quotes': result})
     except Exception as e:
         print(f"获取行情失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/axis-price', methods=['POST'])
+def get_axis_price():
+    """
+    获取动态中轴价格（基于3个月历史数据）
+    
+    请求体: {"code": "000559", "market": "A股", "days": 90}
+    """
+    try:
+        data = request.json
+        code = data.get('code', '')
+        market = data.get('market', 'A股')
+        days = data.get('days', 90)
+        
+        if not code:
+            return jsonify({'success': False, 'error': '股票代码不能为空'}), 400
+        
+        axis_data = get_dynamic_axis_price(code, market, days)
+        
+        if not axis_data:
+            return jsonify({'success': False, 'error': '获取历史数据失败'}), 500
+        
+        return jsonify({
+            'success': True,
+            'data': axis_data
+        })
+    except Exception as e:
+        print(f"获取中轴价格失败: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':

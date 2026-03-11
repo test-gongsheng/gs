@@ -613,7 +613,7 @@ function restoreFromHistory(index) {
 /**
  * 确认导入
  */
-function confirmImport() {
+async function confirmImport() {
     console.log('确认导入被调用', pendingImportData);
     
     try {
@@ -641,31 +641,86 @@ function confirmImport() {
         // 清空原有数据，以新导入的数据为准
         appState.stocks = [];
         
-        stocks.forEach((newStock, index) => {
-            // 统一字段名：将导入的字段映射到应用期望的字段
-            const normalizedStock = {
-                ...newStock,
-                price: newStock.currentPrice || newStock.price || 0,
-                // 导入数据中没有当日涨跌幅，设为0（后续可通过实时行情API更新）
-                change: 0,
-                changePercent: 0,
-                holdQuantity: newStock.shares || newStock.holdQuantity || 0,
-                holdCost: newStock.costPrice || newStock.holdCost || 0,
-                marketValue: newStock.marketValue || 0,
-                triggerBuy: newStock.triggerBuy || newStock.pivotPrice * 0.92 || 0,
-                triggerSell: newStock.triggerSell || newStock.pivotPrice * 1.08 || 0,
-                strategy: newStock.strategy || '基础',
-                investLimit: newStock.investLimit || (newStock.market === '港股' ? 1500000 : 500000),
-                pivotPrice: newStock.pivotPrice || newStock.costPrice || newStock.currentPrice || 0,
-                baseRatio: newStock.baseRatio || 50,
-                floatRatio: newStock.floatRatio || 50,
-                id: String(index + 1),
-                status: '监控中'
-            };
-            
-            appState.stocks.push(normalizedStock);
-            added++;
+        // 获取动态中轴价格并创建股票数据
+        const stockPromises = stocks.map(async (newStock, index) => {
+            try {
+                // 调用API获取动态中轴价格
+                const response = await fetch('/api/axis-price', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        code: newStock.code,
+                        market: newStock.market || 'A股',
+                        days: 90
+                    })
+                });
+                
+                const axisData = await response.json();
+                
+                let pivotPrice, triggerBuy, triggerSell;
+                
+                if (axisData.success) {
+                    // 使用动态计算的中轴价格
+                    pivotPrice = axisData.data.axis_price;
+                    triggerBuy = axisData.data.trigger_buy;
+                    triggerSell = axisData.data.trigger_sell;
+                    console.log(`${newStock.code} 动态中轴: ${pivotPrice}, 触发区间: ${triggerBuy} - ${triggerSell}`);
+                } else {
+                    // API失败时回退到成本价
+                    pivotPrice = newStock.costPrice || newStock.currentPrice || 0;
+                    triggerBuy = pivotPrice * 0.92;
+                    triggerSell = pivotPrice * 1.08;
+                }
+                
+                // 统一字段名
+                return {
+                    ...newStock,
+                    price: newStock.currentPrice || newStock.price || 0,
+                    change: 0,
+                    changePercent: 0,
+                    holdQuantity: newStock.shares || newStock.holdQuantity || 0,
+                    holdCost: newStock.costPrice || newStock.holdCost || 0,
+                    marketValue: newStock.marketValue || 0,
+                    triggerBuy: triggerBuy,
+                    triggerSell: triggerSell,
+                    strategy: newStock.strategy || '基础',
+                    investLimit: newStock.investLimit || (newStock.market === '港股' ? 1500000 : 500000),
+                    pivotPrice: pivotPrice,
+                    baseRatio: newStock.baseRatio || 50,
+                    floatRatio: newStock.floatRatio || 50,
+                    id: String(index + 1),
+                    status: '监控中'
+                };
+            } catch (error) {
+                console.error(`获取 ${newStock.code} 中轴价格失败:`, error);
+                // 回退到成本价
+                const pivotPrice = newStock.costPrice || newStock.currentPrice || 0;
+                return {
+                    ...newStock,
+                    price: newStock.currentPrice || newStock.price || 0,
+                    change: 0,
+                    changePercent: 0,
+                    holdQuantity: newStock.shares || newStock.holdQuantity || 0,
+                    holdCost: newStock.costPrice || newStock.holdCost || 0,
+                    marketValue: newStock.marketValue || 0,
+                    triggerBuy: pivotPrice * 0.92,
+                    triggerSell: pivotPrice * 1.08,
+                    strategy: newStock.strategy || '基础',
+                    investLimit: newStock.investLimit || (newStock.market === '港股' ? 1500000 : 500000),
+                    pivotPrice: pivotPrice,
+                    baseRatio: newStock.baseRatio || 50,
+                    floatRatio: newStock.floatRatio || 50,
+                    id: String(index + 1),
+                    status: '监控中'
+                };
+            }
         });
+        
+        // 等待所有中轴价格获取完成
+        appState.stocks = await Promise.all(stockPromises);
+        added = appState.stocks.length;
         
         // 重新渲染
         renderStockList();
