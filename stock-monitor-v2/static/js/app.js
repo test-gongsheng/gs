@@ -240,40 +240,69 @@ function renderStockDetail() {
     const marketValue = stock.price * stock.holdQuantity;
     const costValue = stock.holdCost * stock.holdQuantity;
     const pnl = marketValue - costValue;
-    const pnlPercent = (pnl / costValue * 100).toFixed(2);
+    const pnlPercent = costValue > 0 ? (pnl / costValue * 100).toFixed(2) : '0.00';
+    
+    // 安全设置元素内容的辅助函数
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+    
+    const setHTML = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = value;
+    };
     
     // 基础信息
-    document.getElementById('detailName').textContent = stock.name;
-    document.getElementById('detailCode').textContent = stock.code;
-    document.getElementById('detailStrategy').textContent = stock.strategy + '策略';
-    document.getElementById('detailPrice').textContent = stock.price.toFixed(2);
-    document.getElementById('detailPrice').className = 'current-price ' + (isUp ? 'up' : 'down');
-    document.getElementById('detailChange').textContent = 
-        `${isUp ? '+' : ''}${stock.change.toFixed(2)} (${isUp ? '+' : ''}${stock.changePercent.toFixed(2)}%)`;
-    document.getElementById('detailChange').className = 'price-change ' + (isUp ? 'up' : 'down');
+    setText('detailName', stock.name);
+    setText('detailCode', stock.code);
+    setText('detailStrategy', stock.strategy + '策略');
+    setText('detailPrice', stock.price.toFixed(2));
+    const detailPriceEl = document.getElementById('detailPrice');
+    if (detailPriceEl) detailPriceEl.className = 'current-price ' + (isUp ? 'up' : 'down');
+    
+    const detailChangeEl = document.getElementById('detailChange');
+    if (detailChangeEl) {
+        detailChangeEl.textContent = `${isUp ? '+' : ''}${stock.change.toFixed(2)} (${isUp ? '+' : ''}${stock.changePercent.toFixed(2)}%)`;
+        detailChangeEl.className = 'price-change ' + (isUp ? 'up' : 'down');
+    }
     
     // 策略卡片
-    document.getElementById('detailLimit').textContent = formatMoney(stock.investLimit);
-    document.getElementById('detailPosition').textContent = formatMoney(marketValue);
-    document.getElementById('detailPnL').textContent = 
-        `${pnl >= 0 ? '+' : ''}${formatMoney(pnl)} (${pnlPercent}%)`;
-    document.getElementById('detailPnL').style.color = pnl >= 0 ? 'var(--up-color)' : 'var(--down-color)';
-    document.getElementById('detailPivot').textContent = stock.pivotPrice.toFixed(2);
-    document.getElementById('detailBase').textContent = stock.baseRatio + '%';
-    document.getElementById('detailFloat').textContent = stock.floatRatio + '%';
+    setText('detailLimit', formatMoney(stock.investLimit));
+    setText('detailPosition', formatMoney(marketValue));
+    
+    const detailPnLEl = document.getElementById('detailPnL');
+    if (detailPnLEl) {
+        detailPnLEl.textContent = `${pnl >= 0 ? '+' : ''}${formatMoney(pnl)} (${pnlPercent}%)`;
+        detailPnLEl.style.color = pnl >= 0 ? 'var(--up-color)' : 'var(--down-color)';
+    }
+    
+    setText('detailPivot', stock.pivotPrice.toFixed(2));
+    setText('detailBase', stock.baseRatio + '%');
+    setText('detailFloat', stock.floatRatio + '%');
     
     // 触发价格
-    document.getElementById('triggerBuy').textContent = stock.triggerBuy.toFixed(2);
-    document.getElementById('triggerSell').textContent = stock.triggerSell.toFixed(2);
+    setText('triggerBuy', stock.triggerBuy.toFixed(2));
+    setText('triggerSell', stock.triggerSell.toFixed(2));
     
-    const distBuy = ((stock.price - stock.triggerBuy) / stock.triggerBuy * 100).toFixed(1);
-    const distSell = ((stock.triggerSell - stock.price) / stock.price * 100).toFixed(1);
-    document.getElementById('distanceBuy').textContent = `距触发 ${distBuy}%`;
-    document.getElementById('distanceSell').textContent = `距触发 ${distSell}%`;
+    // 安全计算距离
+    let distBuy = '0.0';
+    let distSell = '0.0';
+    if (stock.triggerBuy > 0) {
+        distBuy = ((stock.price - stock.triggerBuy) / stock.triggerBuy * 100).toFixed(1);
+    }
+    if (stock.price > 0) {
+        distSell = ((stock.triggerSell - stock.price) / stock.price * 100).toFixed(1);
+    }
+    setText('distanceBuy', `距触发 ${distBuy}%`);
+    setText('distanceSell', `距触发 ${distSell}%`);
     
     // 进度条
-    const progress = ((stock.price - stock.triggerBuy) / (stock.triggerSell - stock.triggerBuy) * 100);
-    document.getElementById('markerCurrent').style.left = Math.max(0, Math.min(100, progress)) + '%';
+    const markerCurrentEl = document.getElementById('markerCurrent');
+    if (markerCurrentEl && stock.triggerSell !== stock.triggerBuy) {
+        const progress = ((stock.price - stock.triggerBuy) / (stock.triggerSell - stock.triggerBuy) * 100);
+        markerCurrentEl.style.left = Math.max(0, Math.min(100, progress)) + '%';
+    }
     
     // 操作建议
     let suggestion = '';
@@ -288,7 +317,7 @@ function renderStockDetail() {
     } else {
         suggestion = `📊 当前股价处于中轴附近，建议持有观望。等待股价达到 ${stock.triggerBuy.toFixed(2)}（买入）或 ${stock.triggerSell.toFixed(2)}（卖出）时触发操作。`;
     }
-    document.getElementById('suggestionContent').textContent = suggestion;
+    setText('suggestionContent', suggestion);
 }
 
 // 渲染热点板块
