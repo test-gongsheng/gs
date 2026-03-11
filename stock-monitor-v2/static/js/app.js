@@ -289,7 +289,15 @@ function renderStockDetail() {
     console.log('中轴价格调试:', stock.code, 'pivotPrice=', stock.pivotPrice, 'type=', typeof stock.pivotPrice);
     
     const pivotPriceValue = parseFloat(stock.pivotPrice) || 0;
-    setText('detailPivot', pivotPriceValue.toFixed(2));
+    const detailPivotEl = document.getElementById('detailPivot');
+    console.log('detailPivot元素:', detailPivotEl);
+    if (detailPivotEl) {
+        detailPivotEl.textContent = pivotPriceValue.toFixed(2);
+        console.log('已设置中轴价格为:', pivotPriceValue.toFixed(2));
+    } else {
+        console.error('找不到detailPivot元素');
+    }
+    
     setText('detailBase', (stock.baseRatio || 50) + '%');
     setText('detailFloat', (stock.floatRatio || 50) + '%');
     
