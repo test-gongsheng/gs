@@ -638,9 +638,10 @@ function confirmImport() {
         let updated = 0;
         let added = 0;
         
-        stocks.forEach(newStock => {
-            const idx = appState.stocks.findIndex(s => s.code === newStock.code);
-            
+        // 清空原有数据，以新导入的数据为准
+        appState.stocks = [];
+        
+        stocks.forEach((newStock, index) => {
             // 统一字段名：将导入的字段映射到应用期望的字段
             const normalizedStock = {
                 ...newStock,
@@ -656,20 +657,13 @@ function confirmImport() {
                 investLimit: newStock.investLimit || (newStock.market === '港股' ? 1500000 : 500000),
                 pivotPrice: newStock.pivotPrice || newStock.costPrice || newStock.currentPrice || 0,
                 baseRatio: newStock.baseRatio || 50,
-                floatRatio: newStock.floatRatio || 50
+                floatRatio: newStock.floatRatio || 50,
+                id: String(index + 1),
+                status: '监控中'
             };
             
-            if (idx >= 0) {
-                // 更新现有股票
-                appState.stocks[idx] = { ...appState.stocks[idx], ...normalizedStock };
-                updated++;
-            } else {
-                // 添加新股票
-                normalizedStock.id = String(appState.stocks.length + 1);
-                normalizedStock.status = '监控中';
-                appState.stocks.push(normalizedStock);
-                added++;
-            }
+            appState.stocks.push(normalizedStock);
+            added++;
         });
         
         // 重新渲染
@@ -696,7 +690,7 @@ function confirmImport() {
         clearFile();
         hideDataImportModal();
         
-        showNotification(`导入完成！新增 ${added} 只，更新 ${updated} 只`, 'success');
+        showNotification(`导入完成！共 ${appState.stocks.length} 只股票`, 'success');
         
         // 默认选中第一个
         if (appState.stocks.length > 0) {

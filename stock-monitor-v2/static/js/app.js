@@ -436,8 +436,38 @@ function simulatePriceUpdate() {
     updateAssetOverview();
 }
 
-// 显示买卖提醒
+// 显示买卖提醒 - 每天只提醒一次
+const ALERT_DATE_KEY = 'trade_alert_date';
+const ALERTED_STOCKS_KEY = 'trade_alerted_stocks';
+
 function showTradeAlert(stock) {
+    // 检查今天是否已经提醒过这只股票
+    const today = new Date().toDateString();
+    const lastAlertDate = localStorage.getItem(ALERT_DATE_KEY);
+    let alertedStocks = [];
+    
+    try {
+        alertedStocks = JSON.parse(localStorage.getItem(ALERTED_STOCKS_KEY) || '[]');
+    } catch (e) {
+        alertedStocks = [];
+    }
+    
+    // 如果是新的一天，清空已提醒列表
+    if (lastAlertDate !== today) {
+        localStorage.setItem(ALERT_DATE_KEY, today);
+        alertedStocks = [];
+        localStorage.setItem(ALERTED_STOCKS_KEY, JSON.stringify(alertedStocks));
+    }
+    
+    // 如果今天已经提醒过这只股票，不再提醒
+    if (alertedStocks.includes(stock.code)) {
+        return;
+    }
+    
+    // 记录已提醒
+    alertedStocks.push(stock.code);
+    localStorage.setItem(ALERTED_STOCKS_KEY, JSON.stringify(alertedStocks));
+    
     const isSell = stock.price >= stock.triggerSell;
     const modal = document.getElementById('tradeAlertModal');
     const content = document.getElementById('tradeAlertContent');
