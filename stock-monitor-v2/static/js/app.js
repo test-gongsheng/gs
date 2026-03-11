@@ -167,13 +167,14 @@ function updateAssetOverview() {
     document.getElementById('totalPosition').textContent = formatMoney(totalPosition);
     document.getElementById('availableCash').textContent = formatMoney(availableCash);
     
-    const pnlElement = document.getElementById('todayPnL');
-    const pnlValue = pnlElement.querySelector('.pnl-value');
-    const pnlPercentEl = pnlElement.querySelector('.pnl-percent');
+    const pnlValueEl = document.getElementById('todayPnLValue');
+    const pnlPercentEl = document.getElementById('todayPnLPercent');
     
-    pnlValue.textContent = (todayPnL >= 0 ? '+' : '') + formatMoney(todayPnL);
-    pnlPercentEl.textContent = (todayPnL >= 0 ? '+' : '') + pnlPercent + '%';
-    pnlPercentEl.className = 'pnl-percent ' + (todayPnL >= 0 ? '' : 'down');
+    if (pnlValueEl) pnlValueEl.textContent = (todayPnL >= 0 ? '+' : '') + formatMoney(todayPnL);
+    if (pnlPercentEl) {
+        pnlPercentEl.textContent = (todayPnL >= 0 ? '+' : '') + pnlPercent + '%';
+        pnlPercentEl.className = 'pnl-percent ' + (todayPnL >= 0 ? '' : 'down');
+    }
 }
 
 // 渲染股票列表
