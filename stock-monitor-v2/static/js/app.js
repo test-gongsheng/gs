@@ -277,13 +277,13 @@ function renderStockDetail() {
         detailPnLEl.style.color = pnl >= 0 ? 'var(--up-color)' : 'var(--down-color)';
     }
     
-    setText('detailPivot', stock.pivotPrice.toFixed(2));
-    setText('detailBase', stock.baseRatio + '%');
-    setText('detailFloat', stock.floatRatio + '%');
+    setText('detailPivot', (stock.pivotPrice || 0).toFixed(2));
+    setText('detailBase', (stock.baseRatio || 50) + '%');
+    setText('detailFloat', (stock.floatRatio || 50) + '%');
     
     // 触发价格
-    setText('triggerBuy', stock.triggerBuy.toFixed(2));
-    setText('triggerSell', stock.triggerSell.toFixed(2));
+    setText('triggerBuy', (stock.triggerBuy || 0).toFixed(2));
+    setText('triggerSell', (stock.triggerSell || 0).toFixed(2));
     
     // 安全计算距离
     let distBuy = '0.0';
