@@ -62,17 +62,18 @@ def parse_sina_response(response_text: str) -> Dict:
         
         try:
             if code_key.startswith('hk'):
-                # 港股格式
+                # 港股格式 (新浪)
+                # 0:英文名, 1:中文名, 2:最新价, 3:昨收, 4:最高价, 5:最低价, 6:开盘价...
                 result[code_key] = {
-                    'name': parts[0],
-                    'price': float(parts[1]) if parts[1] else 0,  # 最新价
-                    'open': float(parts[2]) if parts[2] else 0,
-                    'high': float(parts[3]) if parts[3] else 0,
-                    'low': float(parts[4]) if parts[4] else 0,
-                    'prev_close': float(parts[5]) if parts[5] else 0,
-                    'change': float(parts[1]) - float(parts[5]) if parts[1] and parts[5] else 0,
-                    'change_percent': ((float(parts[1]) - float(parts[5])) / float(parts[5]) * 100) if parts[1] and parts[5] and float(parts[5]) > 0 else 0,
-                    'volume': int(parts[8]) if len(parts) > 8 and parts[8] else 0,
+                    'name': parts[1] if len(parts) > 1 else parts[0],  # 中文名
+                    'price': float(parts[2]) if len(parts) > 2 and parts[2] else 0,  # 最新价
+                    'open': float(parts[6]) if len(parts) > 6 and parts[6] else 0,
+                    'high': float(parts[4]) if len(parts) > 4 and parts[4] else 0,
+                    'low': float(parts[5]) if len(parts) > 5 and parts[5] else 0,
+                    'prev_close': float(parts[3]) if len(parts) > 3 and parts[3] else 0,
+                    'change': float(parts[2]) - float(parts[3]) if len(parts) > 3 and parts[2] and parts[3] else 0,
+                    'change_percent': ((float(parts[2]) - float(parts[3])) / float(parts[3]) * 100) if len(parts) > 3 and parts[2] and parts[3] and float(parts[3]) > 0 else 0,
+                    'volume': int(float(parts[12])) if len(parts) > 12 and parts[12] else 0,
                     'market': '港股'
                 }
             else:
