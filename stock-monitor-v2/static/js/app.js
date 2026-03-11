@@ -413,6 +413,11 @@ function handleAddStock(e) {
 
 // 模拟价格更新
 function simulatePriceUpdate() {
+    // 只在开市时模拟价格更新
+    if (appState.marketStatus !== 'open') {
+        return;
+    }
+    
     appState.stocks.forEach(stock => {
         const change = (Math.random() - 0.5) * 0.5;
         stock.price += change;
