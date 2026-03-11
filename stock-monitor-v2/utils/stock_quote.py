@@ -22,7 +22,7 @@ def normalize_stock_code(code: str, market: str = 'A股') -> str:
     if code.startswith(('sh', 'sz', 'hk')):
         return code
     
-    # 移除可能的后缀（如.SZ, .HK）
+    # 移除可能的后缀（如.SZ, .HK, .SH）
     if '.' in code:
         code = code.split('.')[0]
     

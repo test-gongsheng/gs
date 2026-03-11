@@ -270,11 +270,19 @@ function renderStockDetail() {
     // 策略卡片
     setText('detailLimit', formatMoney(stock.investLimit));
     setText('detailPosition', formatMoney(marketValue));
+    setText('detailCost', (stock.holdCost || 0).toFixed(2));
     
     const detailPnLEl = document.getElementById('detailPnL');
     if (detailPnLEl) {
         detailPnLEl.textContent = `${pnl >= 0 ? '+' : ''}${formatMoney(pnl)} (${pnlPercent}%)`;
         detailPnLEl.style.color = pnl >= 0 ? 'var(--up-color)' : 'var(--down-color)';
+    }
+    
+    // 盈亏比例
+    const detailPnLPercentEl = document.getElementById('detailPnLPercent');
+    if (detailPnLPercentEl) {
+        detailPnLPercentEl.textContent = pnlPercent + '%';
+        detailPnLPercentEl.className = 'card-value ' + (pnl >= 0 ? 'up' : 'down');
     }
     
     setText('detailPivot', (stock.pivotPrice || 0).toFixed(2));
