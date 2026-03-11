@@ -2,6 +2,7 @@ from flask import Flask, render_template, jsonify, request
 import json
 import os
 from datetime import datetime
+from utils.stock_quote import get_stock_quotes
 
 app = Flask(__name__)
 
@@ -261,6 +262,45 @@ def update_risk_control(data):
         'stop_loss_triggered': stop_loss_triggered,
         'base_position_protected': True
     }
+
+@app.route('/api/quotes', methods=['POST'])
+def get_quotes():
+    """获取实时行情"""
+    try:
+        stocks = request.json.get('stocks', [])
+        if not stocks:
+            return jsonify({'success': False, 'error': '股票列表为空'}), 400
+        
+        quotes = get_stock_quotes(stocks)
+        
+        # 转换为前端格式
+        result = {}
+        for stock in stocks:
+            code = stock.get('code', '')
+            market = stock.get('market', 'A股')
+            
+            # 构造新浪代码key
+            from utils.stock_quote import normalize_stock_code
+            sina_code = normalize_stock_code(code, market)
+            
+            quote = quotes.get(sina_code)
+            if quote:
+                result[code] = {
+                    'price': quote['price'],
+                    'change': quote['change'],
+                    'change_percent': quote['change_percent'],
+                    'open': quote['open'],
+                    'high': quote['high'],
+                    'low': quote['low'],
+                    'prev_close': quote['prev_close'],
+                    'volume': quote['volume'],
+                    'name': quote['name']
+                }
+        
+        return jsonify({'success': True, 'quotes': result})
+    except Exception as e:
+        print(f"获取行情失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

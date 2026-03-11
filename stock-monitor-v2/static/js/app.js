@@ -412,33 +412,62 @@ function handleAddStock(e) {
 }
 
 // 模拟价格更新
-function simulatePriceUpdate() {
-    // 只在开市时模拟价格更新
+async function simulatePriceUpdate() {
+    // 只在开市时更新价格
     if (appState.marketStatus !== 'open') {
         return;
     }
     
-    appState.stocks.forEach(stock => {
-        const change = (Math.random() - 0.5) * 0.5;
-        stock.price += change;
-        stock.change += change;
-        stock.changePercent = (stock.change / (stock.price - stock.change) * 100);
-        
-        // 检查是否触发买卖提醒
-        if (stock.price >= stock.triggerSell || stock.price <= stock.triggerBuy) {
-            showTradeAlert(stock);
-        }
-    });
-    
-    renderStockList();
-    if (appState.selectedStock) {
-        const selected = appState.stocks.find(s => s.code === appState.selectedStock.code);
-        if (selected) {
-            appState.selectedStock = selected;
-            renderStockDetail();
-        }
+    if (appState.stocks.length === 0) {
+        return;
     }
-    updateAssetOverview();
+    
+    try {
+        // 调用后端API获取真实行情
+        const response = await fetch('/api/quotes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                stocks: appState.stocks.map(s => ({
+                    code: s.code,
+                    market: s.market
+                }))
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.quotes) {
+            // 更新股票价格和涨跌幅
+            appState.stocks.forEach(stock => {
+                const quote = data.quotes[stock.code];
+                if (quote) {
+                    stock.price = quote.price;
+                    stock.change = quote.change;
+                    stock.changePercent = quote.change_percent;
+                    
+                    // 检查是否触发买卖提醒
+                    if (stock.price >= stock.triggerSell || stock.price <= stock.triggerBuy) {
+                        showTradeAlert(stock);
+                    }
+                }
+            });
+            
+            renderStockList();
+            if (appState.selectedStock) {
+                const selected = appState.stocks.find(s => s.code === appState.selectedStock.code);
+                if (selected) {
+                    appState.selectedStock = selected;
+                    renderStockDetail();
+                }
+            }
+            updateAssetOverview();
+        }
+    } catch (error) {
+        console.error('获取行情失败:', error);
+    }
 }
 
 // 显示买卖提醒 - 每天只提醒一次
