@@ -646,8 +646,9 @@ function confirmImport() {
             const normalizedStock = {
                 ...newStock,
                 price: newStock.currentPrice || newStock.price || 0,
-                change: newStock.pnl || 0,
-                changePercent: newStock.pnlPercent || 0,
+                // 导入数据中没有当日涨跌幅，设为0（后续可通过实时行情API更新）
+                change: 0,
+                changePercent: 0,
                 holdQuantity: newStock.shares || newStock.holdQuantity || 0,
                 holdCost: newStock.costPrice || newStock.holdCost || 0,
                 marketValue: newStock.marketValue || 0,
