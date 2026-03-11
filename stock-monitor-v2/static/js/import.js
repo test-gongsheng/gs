@@ -733,14 +733,16 @@ async function confirmImport() {
         });
         
         // 等待所有中轴价格获取完成（设置总超时）
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('导入超时，请检查网络连接')), 60000)
-        );
-        
-        appState.stocks = await Promise.race([
-            Promise.all(stockPromises),
-            timeoutPromise
-        ]);
+        try {
+            appState.stocks = await Promise.all(stockPromises);
+        } catch (error) {
+            console.error('部分股票获取中轴价格失败:', error);
+            // 如果有失败的，使用已完成的
+            const results = await Promise.allSettled(stockPromises);
+            appState.stocks = results
+                .filter(r => r.status === 'fulfilled')
+                .map(r => r.value);
+        }
         added = appState.stocks.length;
         
         // 重新渲染
