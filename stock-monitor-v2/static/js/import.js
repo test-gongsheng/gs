@@ -641,11 +641,24 @@ async function confirmImport() {
         // 清空原有数据，以新导入的数据为准
         appState.stocks = [];
         
+        // 显示加载提示
+        showNotification('正在获取中轴价格，请稍候...', 'info');
+        
+        // fetch 带超时
+        const fetchWithTimeout = (url, options, timeout = 10000) => {
+            return Promise.race([
+                fetch(url, options),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('请求超时')), timeout)
+                )
+            ]);
+        };
+        
         // 获取动态中轴价格并创建股票数据
         const stockPromises = stocks.map(async (newStock, index) => {
             try {
-                // 调用API获取动态中轴价格
-                const response = await fetch('/api/axis-price', {
+                // 调用API获取动态中轴价格（带超时）
+                const response = await fetchWithTimeout('/api/axis-price', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -655,7 +668,7 @@ async function confirmImport() {
                         market: newStock.market || 'A股',
                         days: 90
                     })
-                });
+                }, 10000); // 10秒超时
                 
                 const axisData = await response.json();
                 
@@ -669,6 +682,7 @@ async function confirmImport() {
                     console.log(`${newStock.code} 动态中轴: ${pivotPrice}, 触发区间: ${triggerBuy} - ${triggerSell}`);
                 } else {
                     // API失败时回退到成本价
+                    console.warn(`${newStock.code} API返回失败，使用成本价`);
                     pivotPrice = newStock.costPrice || newStock.currentPrice || 0;
                     triggerBuy = pivotPrice * 0.92;
                     triggerSell = pivotPrice * 1.08;
@@ -694,7 +708,7 @@ async function confirmImport() {
                     status: '监控中'
                 };
             } catch (error) {
-                console.error(`获取 ${newStock.code} 中轴价格失败:`, error);
+                console.warn(`获取 ${newStock.code} 中轴价格失败: ${error.message}，使用成本价`);
                 // 回退到成本价
                 const pivotPrice = newStock.costPrice || newStock.currentPrice || 0;
                 return {
@@ -718,8 +732,15 @@ async function confirmImport() {
             }
         });
         
-        // 等待所有中轴价格获取完成
-        appState.stocks = await Promise.all(stockPromises);
+        // 等待所有中轴价格获取完成（设置总超时）
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('导入超时，请检查网络连接')), 60000)
+        );
+        
+        appState.stocks = await Promise.race([
+            Promise.all(stockPromises),
+            timeoutPromise
+        ]);
         added = appState.stocks.length;
         
         // 重新渲染
