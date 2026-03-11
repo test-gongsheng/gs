@@ -193,7 +193,7 @@ def get_stock_kline(code: str, market: str = 'A股', days: int = 90) -> List[Dic
                         'close': float(item[2]),
                         'low': float(item[3]),
                         'high': float(item[4]),
-                        'volume': int(item[5])
+                        'volume': int(float(item[5]))
                     })
             return result
         return []
