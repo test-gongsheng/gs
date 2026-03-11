@@ -614,59 +614,97 @@ function restoreFromHistory(index) {
  * 确认导入
  */
 function confirmImport() {
-    if (!pendingImportData || !pendingImportData.stocks.length) {
-        showNotification('没有待导入的数据', 'warning');
-        return;
-    }
+    console.log('确认导入被调用', pendingImportData);
     
-    const stocks = pendingImportData.stocks;
-    let updated = 0;
-    let added = 0;
-    
-    stocks.forEach(newStock => {
-        const idx = appState.stocks.findIndex(s => s.code === newStock.code);
-        if (idx >= 0) {
-            // 更新现有股票
-            appState.stocks[idx] = { ...appState.stocks[idx], ...newStock };
-            updated++;
-        } else {
-            // 添加新股票
-            newStock.id = String(appState.stocks.length + 1);
-            newStock.status = '监控中';
-            appState.stocks.push(newStock);
-            added++;
+    try {
+        if (!pendingImportData || !pendingImportData.stocks.length) {
+            showNotification('没有待导入的数据', 'warning');
+            return;
         }
-    });
-    
-    // 重新渲染
-    renderStockList();
-    updateAssetOverview();
-    
-    // 保存到历史记录
-    const stats = pendingImportData.stats;
-    const historyRecord = {
-        timestamp: pendingImportData.timestamp,
-        fileName: pendingImportData.fileName,
-        stockCount: stocks.length,
-        totalValue: stats.totalMarketValue,
-        stats: stats
-    };
-    
-    addImportHistory(historyRecord);
-    
-    // 保存完整数据到localStorage（用于恢复）
-    const key = `import_data_${pendingImportData.timestamp}`;
-    localStorage.setItem(key, JSON.stringify(stocks));
-    
-    // 清理
-    clearFile();
-    hideDataImportModal();
-    
-    showNotification(`导入完成！新增 ${added} 只，更新 ${updated} 只`, 'success');
-    
-    // 默认选中第一个
-    if (appState.stocks.length > 0) {
-        selectStock(0);
+        
+        // 检查 appState 是否可用
+        if (typeof appState === 'undefined') {
+            console.error('appState 未定义');
+            showNotification('应用状态未初始化，请刷新页面重试', 'error');
+            return;
+        }
+        
+        if (!Array.isArray(appState.stocks)) {
+            console.error('appState.stocks 不是数组', appState.stocks);
+            appState.stocks = [];
+        }
+        
+        const stocks = pendingImportData.stocks;
+        let updated = 0;
+        let added = 0;
+        
+        stocks.forEach(newStock => {
+            const idx = appState.stocks.findIndex(s => s.code === newStock.code);
+            
+            // 统一字段名：将导入的字段映射到应用期望的字段
+            const normalizedStock = {
+                ...newStock,
+                price: newStock.currentPrice || newStock.price || 0,
+                change: newStock.pnl || 0,
+                changePercent: newStock.pnlPercent || 0,
+                holdQuantity: newStock.shares || newStock.holdQuantity || 0,
+                holdCost: newStock.costPrice || newStock.holdCost || 0,
+                marketValue: newStock.marketValue || 0,
+                triggerBuy: newStock.triggerBuy || newStock.pivotPrice * 0.92 || 0,
+                triggerSell: newStock.triggerSell || newStock.pivotPrice * 1.08 || 0,
+                strategy: newStock.strategy || '基础',
+                investLimit: newStock.investLimit || (newStock.market === '港股' ? 1500000 : 500000),
+                pivotPrice: newStock.pivotPrice || newStock.costPrice || newStock.currentPrice || 0,
+                baseRatio: newStock.baseRatio || 50,
+                floatRatio: newStock.floatRatio || 50
+            };
+            
+            if (idx >= 0) {
+                // 更新现有股票
+                appState.stocks[idx] = { ...appState.stocks[idx], ...normalizedStock };
+                updated++;
+            } else {
+                // 添加新股票
+                normalizedStock.id = String(appState.stocks.length + 1);
+                normalizedStock.status = '监控中';
+                appState.stocks.push(normalizedStock);
+                added++;
+            }
+        });
+        
+        // 重新渲染
+        renderStockList();
+        updateAssetOverview();
+        
+        // 保存到历史记录
+        const stats = pendingImportData.stats;
+        const historyRecord = {
+            timestamp: pendingImportData.timestamp,
+            fileName: pendingImportData.fileName,
+            stockCount: stocks.length,
+            totalValue: stats.totalMarketValue,
+            stats: stats
+        };
+        
+        addImportHistory(historyRecord);
+        
+        // 保存完整数据到localStorage（用于恢复）
+        const key = `import_data_${pendingImportData.timestamp}`;
+        localStorage.setItem(key, JSON.stringify(stocks));
+        
+        // 清理
+        clearFile();
+        hideDataImportModal();
+        
+        showNotification(`导入完成！新增 ${added} 只，更新 ${updated} 只`, 'success');
+        
+        // 默认选中第一个
+        if (appState.stocks.length > 0) {
+            selectStock(0);
+        }
+    } catch (error) {
+        console.error('导入失败:', error);
+        showNotification('导入失败: ' + error.message, 'error');
     }
 }
 
@@ -730,6 +768,10 @@ function enableConfirmButton(enabled) {
     const btn = document.getElementById('confirmImportBtn');
     if (btn) {
         btn.disabled = !enabled;
+        // 添加视觉状态调试
+        console.log('确认导入按钮状态:', enabled ? '启用' : '禁用');
+    } else {
+        console.error('找不到确认导入按钮');
     }
 }
 
