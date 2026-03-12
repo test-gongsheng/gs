@@ -185,8 +185,15 @@ function parseStockData(content, fileName) {
         if (headerFound || formatType === 'simple') {
             const stock = parseStockLine(line, formatType);
             if (stock) {
-                // 计算市值和盈亏
-                const marketValue = stock.currentPrice * stock.shares;
+                // 对于港股，使用券商提供的最新市值（人民币）
+                // 对于A股，用当前价计算
+                let marketValue;
+                if (stock.market === '港股' && stock.marketValue > 0) {
+                    marketValue = stock.marketValue;  // 券商提供的市值（人民币）
+                } else {
+                    marketValue = stock.currentPrice * stock.shares;  // 实时计算
+                }
+                
                 const costValue = stock.costPrice * stock.shares;
                 const pnl = marketValue - costValue;
                 
