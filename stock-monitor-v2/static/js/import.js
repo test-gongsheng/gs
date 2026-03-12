@@ -274,11 +274,13 @@ function parseStockLine(line, formatType) {
         let exchange = '';
         
         // 根据不同格式解析
+        let marketValue = 0;
         if (formatType === 'ths' || parts.length >= 10) {
             // 同花顺格式: 代码 名称 数量 可用 冻结 成本价 当前价 市值 盈亏 盈亏率 代码
             shares = parseInt(parts[2]) || 0;
             costPrice = parseFloat(parts[5]) || 0;
             currentPrice = parseFloat(parts[6]) || 0;
+            marketValue = parseFloat(parts[7]) || 0;  // 最新市值
             exchange = parts[parts.length - 1] || '';
         } else if (formatType === 'eastmoney') {
             // 东方财富格式
@@ -310,7 +312,8 @@ function parseStockLine(line, formatType) {
             market,
             shares,
             costPrice,
-            currentPrice
+            currentPrice,
+            marketValue  // 券商提供的最新市值
         };
     } catch (e) {
         console.error('解析行失败:', line, e);
