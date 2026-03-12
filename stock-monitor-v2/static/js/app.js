@@ -156,11 +156,11 @@ function updateAssetOverview() {
     const exchangeRate = appState.exchangeRate || 1.09;
     
     appState.stocks.forEach(stock => {
-        // 港股需要使用人民币价格计算市值
+        // 港股市值 = 港币价格 / 汇率 * 持仓数量
         const isHKStock = stock.market === '港股';
-        const currentPrice = isHKStock ? (stock.priceCny || stock.price / exchangeRate) : stock.price;
+        const currentPriceCNY = isHKStock ? (stock.price / exchangeRate) : stock.price;
         
-        const marketValue = currentPrice * stock.holdQuantity;
+        const marketValue = currentPriceCNY * stock.holdQuantity;
         const costValue = stock.holdCost * stock.holdQuantity;
         totalPosition += marketValue;
         todayPnL += (marketValue - costValue) * (stock.changePercent / 100);
@@ -203,6 +203,7 @@ function updateAssetOverview() {
 function renderStockList() {
     const listEl = document.getElementById('stockList');
     listEl.innerHTML = '';
+    const exchangeRate = appState.exchangeRate || 1.09;
     
     appState.stocks.forEach((stock, index) => {
         const item = document.createElement('div');
@@ -210,9 +211,11 @@ function renderStockList() {
         item.onclick = () => selectStock(index);
         
         const isUp = stock.change >= 0;
+        const isHKStock = stock.market === '港股';
         
-        // 方案A：直接使用导入的人民币价格计算市值
-        const marketValue = (stock.price * stock.holdQuantity / 10000).toFixed(1);
+        // 港股市值 = 港币价格 / 汇率 * 持仓数量
+        const currentPriceCNY = isHKStock ? (stock.price / exchangeRate) : stock.price;
+        const marketValue = (currentPriceCNY * stock.holdQuantity / 10000).toFixed(1);
         
         // 检查是否触发买卖
         let alertBadge = '';
@@ -230,7 +233,7 @@ function renderStockList() {
                     ${alertBadge}
                 </div>
                 <div class="stock-item-price ${isUp ? 'up' : 'down'}">
-                    ${stock.price.toFixed(2)}
+                    ${isHKStock ? stock.price.toFixed(2) + ' HKD' : stock.price.toFixed(2)}
                 </div>
             </div>
             <div class="stock-item-info">
@@ -262,14 +265,29 @@ function renderStockDetail() {
     
     const isUp = stock.change >= 0;
     const isHKStock = stock.market === '港股';
+    const exchangeRate = stock.exchangeRate || appState.exchangeRate || 1.09;
     
-    // 方案A：港股直接使用导入的人民币价格
-    // A股：成本和现价都是人民币
-    const currentPrice = stock.price;  // 已经是人民币（导入时设置）
-    const marketValue = currentPrice * stock.holdQuantity;
-    const costValue = stock.holdCost * stock.holdQuantity;
-    const pnl = marketValue - costValue;
-    const pnlPercent = costValue > 0 ? (pnl / costValue * 100) : 0;
+    // 港股：
+    // - 显示实时港币价格 (stock.price)
+    // - 市值 = 港币价格 / 汇率 * 持仓数量
+    // - 成本 = 人民币成本 * 持仓数量
+    let currentPriceHKD, currentPriceCNY, marketValue, costValue, pnl, pnlPercent;
+    
+    if (isHKStock) {
+        currentPriceHKD = stock.price;  // 港币（从API获取）
+        currentPriceCNY = currentPriceHKD / exchangeRate;  // 换算成人民币
+        marketValue = currentPriceCNY * stock.holdQuantity;  // 人民币市值
+        costValue = stock.holdCost * stock.holdQuantity;     // 人民币成本
+        pnl = marketValue - costValue;
+        pnlPercent = costValue > 0 ? (pnl / costValue * 100) : 0;
+    } else {
+        // A股：都是人民币
+        currentPriceCNY = stock.price;
+        marketValue = stock.price * stock.holdQuantity;
+        costValue = stock.holdCost * stock.holdQuantity;
+        pnl = marketValue - costValue;
+        pnlPercent = costValue > 0 ? (pnl / costValue * 100) : 0;
+    }
     
     // 安全设置元素内容的辅助函数
     const setText = (id, value) => {
@@ -281,7 +299,13 @@ function renderStockDetail() {
     setText('detailName', stock.name);
     setText('detailCode', stock.code);
     setText('detailStrategy', stock.strategy + '策略');
-    setText('detailPrice', currentPrice.toFixed(2));
+    
+    // 港股显示实时港币价格
+    if (isHKStock) {
+        setText('detailPrice', `${currentPriceHKD.toFixed(2)} HKD`);
+    } else {
+        setText('detailPrice', stock.price.toFixed(2));
+    }
     
     const detailPriceEl = document.getElementById('detailPrice');
     if (detailPriceEl) detailPriceEl.className = 'current-price ' + (isUp ? 'up' : 'down');
@@ -296,9 +320,9 @@ function renderStockDetail() {
     setText('detailLimit', formatMoney(stock.investLimit));
     setText('detailPosition', formatMoney(marketValue));
     
-    // 港股显示备注
+    // 港股显示成本备注
     if (isHKStock) {
-        setText('detailCost', `${(stock.holdCost || 0).toFixed(2)} (人民币)`);
+        setText('detailCost', `${(stock.holdCost || 0).toFixed(2)} (汇率 ${exchangeRate.toFixed(4)})`);
     } else {
         setText('detailCost', (stock.holdCost || 0).toFixed(2));
     }

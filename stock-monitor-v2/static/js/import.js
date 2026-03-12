@@ -657,44 +657,43 @@ async function confirmImport() {
         // 获取动态中轴价格并创建股票数据
         const stockPromises = stocks.map(async (newStock, index) => {
             try {
-                const isHKStock = newStock.market === '港股';
                 let pivotPrice, triggerBuy, triggerSell;
                 
-                // 港股直接使用导入的人民币价格，不调API获取实时港币
-                if (isHKStock) {
-                    // 港股：使用导入的当前价（人民币）作为中轴
-                    pivotPrice = newStock.currentPrice || newStock.costPrice || 0;
+                // 所有股票都调用API获取动态中轴价格
+                const response = await fetchWithTimeout('/api/axis-price', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        code: newStock.code, 
+                        market: newStock.market || 'A股', 
+                        days: 90 
+                    })
+                }, 10000);
+                
+                const axisData = await response.json();
+                
+                if (axisData.success) {
+                    pivotPrice = axisData.data.axis_price;
+                    triggerBuy = axisData.data.trigger_buy;
+                    triggerSell = axisData.data.trigger_sell;
+                    console.log(`${newStock.code} 动态中轴: ${pivotPrice}, 触发区间: ${triggerBuy} - ${triggerSell}`);
+                } else {
+                    // API失败时回退到成本价
+                    pivotPrice = newStock.costPrice || newStock.currentPrice || 0;
                     triggerBuy = pivotPrice * 0.92;
                     triggerSell = pivotPrice * 1.08;
-                    console.log(`${newStock.code} 港股使用导入价格: ${pivotPrice}`);
-                } else {
-                    // A股：调用API获取动态中轴价格
-                    const response = await fetchWithTimeout('/api/axis-price', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ code: newStock.code, market: 'A股', days: 90 })
-                    }, 10000);
-                    
-                    const axisData = await response.json();
-                    if (axisData.success) {
-                        pivotPrice = axisData.data.axis_price;
-                        triggerBuy = axisData.data.trigger_buy;
-                        triggerSell = axisData.data.trigger_sell;
-                    } else {
-                        pivotPrice = newStock.costPrice || newStock.currentPrice || 0;
-                        triggerBuy = pivotPrice * 0.92;
-                        triggerSell = pivotPrice * 1.08;
-                    }
                 }
                 
-                // 统一字段名
+                // 港股保存导入的人民币成本，但价格后续会从API获取港币
+                const isHKStock = newStock.market === '港股';
+                
                 return {
                     ...newStock,
-                    price: newStock.currentPrice || newStock.price || 0,  // 直接使用导入的人民币价格
+                    price: newStock.currentPrice || newStock.price || 0,  // 先存导入的价格，后续会被API覆盖
                     change: 0,
                     changePercent: 0,
                     holdQuantity: newStock.shares || newStock.holdQuantity || 0,
-                    holdCost: newStock.costPrice || newStock.holdCost || 0,
+                    holdCost: newStock.costPrice || newStock.holdCost || 0,  // 人民币成本
                     marketValue: newStock.marketValue || 0,
                     triggerBuy: triggerBuy,
                     triggerSell: triggerSell,
@@ -705,10 +704,10 @@ async function confirmImport() {
                     floatRatio: newStock.floatRatio || 50,
                     id: String(index + 1),
                     status: '监控中',
-                    isImportedPrice: isHKStock  // 标记港股使用导入价格
+                    market: newStock.market || 'A股'
                 };
             } catch (error) {
-                console.warn(`处理 ${newStock.code} 失败: ${error.message}`);
+                console.warn(`获取 ${newStock.code} 中轴价格失败: ${error.message}，使用成本价`);
                 const pivotPrice = newStock.costPrice || newStock.currentPrice || 0;
                 return {
                     ...newStock,
@@ -726,7 +725,8 @@ async function confirmImport() {
                     baseRatio: newStock.baseRatio || 50,
                     floatRatio: newStock.floatRatio || 50,
                     id: String(index + 1),
-                    status: '监控中'
+                    status: '监控中',
+                    market: newStock.market || 'A股'
                 };
             }
         });
