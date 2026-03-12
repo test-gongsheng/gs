@@ -370,6 +370,76 @@ function renderStockDetail() {
         suggestion = `📊 当前股价处于中轴附近，建议持有观望。等待股价达到 ${stock.triggerBuy.toFixed(2)}（买入）或 ${stock.triggerSell.toFixed(2)}（卖出）时触发操作。`;
     }
     setText('suggestionContent', suggestion);
+    
+    // 渲染网格策略表格
+    renderGridStrategy(stock);
+}
+
+// 渲染网格策略表格
+function renderGridStrategy(stock) {
+    const tbody = document.getElementById('gridTableBody');
+    const gridInfoEl = document.getElementById('gridStrategyInfo');
+    if (!tbody) return;
+    
+    const pivotPrice = parseFloat(stock.pivotPrice) || stock.holdCost || stock.price || 0;
+    if (pivotPrice <= 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">暂无中轴价格数据</td></tr>';
+        return;
+    }
+    
+    // 生成5档网格（-4%到+4%，每档2%）
+    const gridLevels = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
+    const gridData = gridLevels.map(level => {
+        const triggerPrice = pivotPrice * (1 + level * 0.02);
+        const isBuy = level < 0;
+        const isSell = level > 0;
+        const isCenter = level === 0;
+        
+        // 计算数量：每档交易浮动仓的20%
+        const tradeAmount = stock.investLimit * (stock.floatRatio / 100) * 0.2;
+        const shares = Math.floor(tradeAmount / triggerPrice);
+        
+        // 判断状态：当前价格是否触发
+        let status = '未触发';
+        let statusClass = '';
+        if (isCenter) {
+            status = '中轴';
+            statusClass = 'center';
+        } else if (isBuy && stock.price <= triggerPrice) {
+            status = '已触发';
+            statusClass = 'triggered-buy';
+        } else if (isSell && stock.price >= triggerPrice) {
+            status = '已触发';
+            statusClass = 'triggered-sell';
+        }
+        
+        return {
+            level: level > 0 ? `+${level}` : level,
+            price: triggerPrice,
+            action: isBuy ? '买入' : isSell ? '卖出' : '持有',
+            actionClass: isBuy ? 'buy' : isSell ? 'sell' : 'hold',
+            shares: shares,
+            status: status,
+            statusClass: statusClass,
+            isCenter: isCenter
+        };
+    });
+    
+    // 更新网格策略信息
+    if (gridInfoEl) {
+        gridInfoEl.textContent = `${gridData.length}档网格 · 中轴${pivotPrice.toFixed(2)} · 每档2%`;
+    }
+    
+    // 渲染表格
+    tbody.innerHTML = gridData.map(row => `
+        <tr class="${row.isCenter ? 'grid-center-row' : ''}">
+            <td><span class="grid-level">${row.level}</span></td>
+            <td>${row.price.toFixed(2)}</td>
+            <td><span class="grid-action ${row.actionClass}">${row.action}</span></td>
+            <td>${row.shares > 0 ? row.shares + '股' : '--'}</td>
+            <td><span class="grid-status ${row.statusClass}">${row.status}</span></td>
+        </tr>
+    `).join('');
 }
 
 // 渲染热点板块

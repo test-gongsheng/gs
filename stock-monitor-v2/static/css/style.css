@@ -2468,3 +2468,100 @@ body {
 .price-down-flash {
   animation: flashDown 0.5s ease;
 }
+
+/* ========================================
+   网格策略表格样式
+   ======================================== */
+.grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.grid-table th {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  padding: 10px 8px;
+  text-align: center;
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.grid-table td {
+  padding: 10px 8px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.grid-table tr:hover {
+  background: var(--bg-hover);
+}
+
+.grid-center-row {
+  background: rgba(250, 173, 20, 0.08) !important;
+  font-weight: 600;
+}
+
+.grid-level {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.grid-action {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.grid-action.buy {
+  background: rgba(82, 196, 26, 0.15);
+  color: var(--color-down);
+}
+
+.grid-action.sell {
+  background: rgba(255, 77, 79, 0.15);
+  color: var(--color-up);
+}
+
+.grid-action.hold {
+  background: rgba(250, 173, 20, 0.15);
+  color: var(--accent-gold);
+}
+
+.grid-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.grid-status.center {
+  background: rgba(250, 173, 20, 0.2);
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+
+.grid-status.triggered-buy {
+  background: rgba(82, 196, 26, 0.2);
+  color: var(--color-down);
+  font-weight: 600;
+}
+
+.grid-status.triggered-sell {
+  background: rgba(255, 77, 79, 0.2);
+  color: var(--color-up);
+  font-weight: 600;
+}
+
+.grid-strategy-section .section-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-left: 12px;
+}
