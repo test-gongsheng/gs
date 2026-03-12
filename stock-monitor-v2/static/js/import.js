@@ -774,9 +774,62 @@ async function confirmImport() {
         if (appState.stocks.length > 0) {
             selectStock(0);
         }
+        
+        // 导入后立即获取实时行情（不受开市时间限制）
+        await refreshStockQuotes();
+        
     } catch (error) {
         console.error('导入失败:', error);
         showNotification('导入失败: ' + error.message, 'error');
+    }
+}
+
+/**
+ * 立即刷新股票行情（不检查开市状态）
+ */
+async function refreshStockQuotes() {
+    if (appState.stocks.length === 0) return;
+    
+    try {
+        const response = await fetch('/api/quotes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                stocks: appState.stocks.map(s => ({ code: s.code, market: s.market }))
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.quotes) {
+            if (data.exchange_rate) appState.exchangeRate = data.exchange_rate;
+            
+            appState.stocks.forEach(stock => {
+                const quote = data.quotes[stock.code];
+                if (quote) {
+                    stock.price = quote.price;
+                    stock.change = quote.change;
+                    stock.changePercent = quote.change_percent;
+                    if (quote.market === '港股') {
+                        stock.priceCny = quote.price_cny;
+                        stock.exchangeRate = quote.exchange_rate;
+                    }
+                }
+            });
+            
+            renderStockList();
+            if (appState.selectedStock) {
+                const selected = appState.stocks.find(s => s.code === appState.selectedStock.code);
+                if (selected) {
+                    appState.selectedStock = selected;
+                    renderStockDetail();
+                }
+            }
+            updateAssetOverview();
+            showNotification('已更新实时行情', 'success');
+        }
+    } catch (error) {
+        console.error('获取实时行情失败:', error);
     }
 }
 
@@ -957,3 +1010,4 @@ window.clearManualData = clearManualData;
 window.downloadTemplate = downloadTemplate;
 window.restoreFromHistory = restoreFromHistory;
 window.showNotification = showNotification;
+window.refreshStockQuotes = refreshStockQuotes;
