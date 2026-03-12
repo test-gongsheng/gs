@@ -162,11 +162,18 @@ function updateAssetOverview() {
     });
     
     const availableCash = appState.totalAssets - totalPosition;
-    const pnlPercent = (todayPnL / totalPosition * 100).toFixed(2);
+    const pnlPercent = totalPosition > 0 ? (todayPnL / totalPosition * 100).toFixed(2) : '0.00';
+    const positionRatio = appState.totalAssets > 0 ? (totalPosition / appState.totalAssets * 100).toFixed(1) : '0.0';
     
+    // 更新总资产
+    const totalAssetsEl = document.getElementById('totalAssets');
+    if (totalAssetsEl) totalAssetsEl.textContent = formatMoney(appState.totalAssets);
+    
+    // 更新持仓市值和可用资金
     document.getElementById('totalPosition').textContent = formatMoney(totalPosition);
     document.getElementById('availableCash').textContent = formatMoney(availableCash);
     
+    // 更新当日盈亏
     const pnlValueEl = document.getElementById('todayPnLValue');
     const pnlPercentEl = document.getElementById('todayPnLPercent');
     
@@ -174,6 +181,16 @@ function updateAssetOverview() {
     if (pnlPercentEl) {
         pnlPercentEl.textContent = (todayPnL >= 0 ? '+' : '') + pnlPercent + '%';
         pnlPercentEl.className = 'pnl-percent ' + (todayPnL >= 0 ? '' : 'down');
+    }
+    
+    // 更新仓位比例
+    const positionRatioEl = document.getElementById('positionRatio');
+    if (positionRatioEl) positionRatioEl.textContent = positionRatio + '%';
+    
+    // 更新仓位圆环
+    const positionRingEl = document.getElementById('positionRing');
+    if (positionRingEl) {
+        positionRingEl.setAttribute('stroke-dasharray', `${positionRatio}, 100`);
     }
 }
 
@@ -289,6 +306,8 @@ function renderStockDetail() {
     console.log('中轴价格调试:', stock.code, 'pivotPrice=', stock.pivotPrice, 'type=', typeof stock.pivotPrice);
     
     const pivotPriceValue = parseFloat(stock.pivotPrice) || 0;
+    
+    // 策略卡片中的中轴价格
     const detailPivotEl = document.getElementById('detailPivot');
     console.log('detailPivot元素:', detailPivotEl);
     if (detailPivotEl) {
@@ -296,6 +315,19 @@ function renderStockDetail() {
         console.log('已设置中轴价格为:', pivotPriceValue.toFixed(2));
     } else {
         console.error('找不到detailPivot元素');
+    }
+    
+    // 中轴价格可视化区域的中轴价格
+    const pivotCenterEl = document.getElementById('pivotCenter');
+    if (pivotCenterEl) {
+        pivotCenterEl.textContent = pivotPriceValue.toFixed(2);
+        console.log('已设置可视化区域中轴价格为:', pivotPriceValue.toFixed(2));
+    }
+    
+    // 当前价格标签
+    const currentPriceLabelEl = document.getElementById('currentPriceLabel');
+    if (currentPriceLabelEl) {
+        currentPriceLabelEl.textContent = stock.price.toFixed(2);
     }
     
     setText('detailBase', (stock.baseRatio || 50) + '%');
@@ -569,6 +601,10 @@ function ignoreAlert() {
 // 添加提醒日志
 function addAlertLog(message) {
     const logEl = document.getElementById('alertLog');
+    if (!logEl) {
+        console.warn('alertLog 元素不存在，跳过日志记录:', message);
+        return;
+    }
     const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
     logEl.innerHTML = `[${time}] ${message}`;
 }
