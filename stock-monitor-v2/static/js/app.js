@@ -153,9 +153,14 @@ function updateMarketStatus() {
 function updateAssetOverview() {
     let totalPosition = 0;
     let todayPnL = 0;
+    const exchangeRate = appState.exchangeRate || 1.09;
     
     appState.stocks.forEach(stock => {
-        const marketValue = stock.price * stock.holdQuantity;
+        // 港股需要使用人民币价格计算市值
+        const isHKStock = stock.market === '港股';
+        const currentPrice = isHKStock ? (stock.priceCny || stock.price / exchangeRate) : stock.price;
+        
+        const marketValue = currentPrice * stock.holdQuantity;
         const costValue = stock.holdCost * stock.holdQuantity;
         totalPosition += marketValue;
         todayPnL += (marketValue - costValue) * (stock.changePercent / 100);
@@ -198,6 +203,7 @@ function updateAssetOverview() {
 function renderStockList() {
     const listEl = document.getElementById('stockList');
     listEl.innerHTML = '';
+    const exchangeRate = appState.exchangeRate || 1.09;
     
     appState.stocks.forEach((stock, index) => {
         const item = document.createElement('div');
@@ -205,7 +211,11 @@ function renderStockList() {
         item.onclick = () => selectStock(index);
         
         const isUp = stock.change >= 0;
-        const marketValue = (stock.price * stock.holdQuantity / 10000).toFixed(1);
+        
+        // 港股使用人民币价格计算市值
+        const isHKStock = stock.market === '港股';
+        const currentPrice = isHKStock ? (stock.priceCny || stock.price / exchangeRate) : stock.price;
+        const marketValue = (currentPrice * stock.holdQuantity / 10000).toFixed(1);
         
         // 检查是否触发买卖
         let alertBadge = '';
