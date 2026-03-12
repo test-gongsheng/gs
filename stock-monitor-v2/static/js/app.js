@@ -203,7 +203,6 @@ function updateAssetOverview() {
 function renderStockList() {
     const listEl = document.getElementById('stockList');
     listEl.innerHTML = '';
-    const exchangeRate = appState.exchangeRate || 1.09;
     
     appState.stocks.forEach((stock, index) => {
         const item = document.createElement('div');
@@ -212,10 +211,8 @@ function renderStockList() {
         
         const isUp = stock.change >= 0;
         
-        // 港股使用人民币价格计算市值
-        const isHKStock = stock.market === '港股';
-        const currentPrice = isHKStock ? (stock.priceCny || stock.price / exchangeRate) : stock.price;
-        const marketValue = (currentPrice * stock.holdQuantity / 10000).toFixed(1);
+        // 方案A：直接使用导入的人民币价格计算市值
+        const marketValue = (stock.price * stock.holdQuantity / 10000).toFixed(1);
         
         // 检查是否触发买卖
         let alertBadge = '';
@@ -264,32 +261,15 @@ function renderStockDetail() {
     if (!stock) return;
     
     const isUp = stock.change >= 0;
-    
-    // 港股汇率处理
     const isHKStock = stock.market === '港股';
-    const exchangeRate = stock.exchangeRate || appState.exchangeRate || 1.09;
     
-    // 对于港股：
-    // - holdCost 是人民币成本（从券商导入）
-    // - price 是港币现价（从API获取）
-    // - 需要转换为人民币计算市值和盈亏
-    let currentPriceCNY, marketValue, costValue, pnl, pnlPercent;
-    
-    if (isHKStock) {
-        // 港股：成本是人民币，现价是港币，需要汇率转换
-        currentPriceCNY = stock.priceCny || (stock.price / exchangeRate);
-        marketValue = currentPriceCNY * stock.holdQuantity;  // 人民币市值
-        costValue = stock.holdCost * stock.holdQuantity;     // 人民币成本
-        pnl = marketValue - costValue;
-        pnlPercent = costValue > 0 ? (pnl / costValue * 100) : 0;
-    } else {
-        // A股：成本和现价都是人民币
-        currentPriceCNY = stock.price;
-        marketValue = stock.price * stock.holdQuantity;
-        costValue = stock.holdCost * stock.holdQuantity;
-        pnl = marketValue - costValue;
-        pnlPercent = costValue > 0 ? (pnl / costValue * 100) : 0;
-    }
+    // 方案A：港股直接使用导入的人民币价格
+    // A股：成本和现价都是人民币
+    const currentPrice = stock.price;  // 已经是人民币（导入时设置）
+    const marketValue = currentPrice * stock.holdQuantity;
+    const costValue = stock.holdCost * stock.holdQuantity;
+    const pnl = marketValue - costValue;
+    const pnlPercent = costValue > 0 ? (pnl / costValue * 100) : 0;
     
     // 安全设置元素内容的辅助函数
     const setText = (id, value) => {
@@ -297,22 +277,11 @@ function renderStockDetail() {
         if (el) el.textContent = value;
     };
     
-    const setHTML = (id, value) => {
-        const el = document.getElementById(id);
-        if (el) el.innerHTML = value;
-    };
-    
     // 基础信息
     setText('detailName', stock.name);
     setText('detailCode', stock.code);
     setText('detailStrategy', stock.strategy + '策略');
-    
-    // 港股显示双币种价格
-    if (isHKStock) {
-        setText('detailPrice', `${stock.price.toFixed(2)} HKD / ${currentPriceCNY.toFixed(2)} CNY`);
-    } else {
-        setText('detailPrice', stock.price.toFixed(2));
-    }
+    setText('detailPrice', currentPrice.toFixed(2));
     
     const detailPriceEl = document.getElementById('detailPrice');
     if (detailPriceEl) detailPriceEl.className = 'current-price ' + (isUp ? 'up' : 'down');
@@ -327,9 +296,9 @@ function renderStockDetail() {
     setText('detailLimit', formatMoney(stock.investLimit));
     setText('detailPosition', formatMoney(marketValue));
     
-    // 港股显示成本备注
+    // 港股显示备注
     if (isHKStock) {
-        setText('detailCost', `${(stock.holdCost || 0).toFixed(2)} (汇率 ${exchangeRate.toFixed(4)})`);
+        setText('detailCost', `${(stock.holdCost || 0).toFixed(2)} (人民币)`);
     } else {
         setText('detailCost', (stock.holdCost || 0).toFixed(2));
     }
@@ -343,7 +312,7 @@ function renderStockDetail() {
     // 盈亏比例
     const detailPnLPercentEl = document.getElementById('detailPnLPercent');
     if (detailPnLPercentEl) {
-        detailPnLEl.textContent = pnlPercent.toFixed(2) + '%';
+        detailPnLPercentEl.textContent = pnlPercent.toFixed(2) + '%';
         detailPnLPercentEl.className = 'card-value ' + (pnl >= 0 ? 'up' : 'down');
     }
     
