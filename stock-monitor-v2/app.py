@@ -3,6 +3,7 @@ import json
 import os
 from datetime import datetime
 from utils.stock_quote import get_stock_quotes, get_dynamic_axis_price
+from utils.exchange_rate import get_cny_hkd_rate, convert_hkd_to_cny
 
 app = Flask(__name__)
 
@@ -273,6 +274,9 @@ def get_quotes():
         
         quotes = get_stock_quotes(stocks)
         
+        # 获取当前汇率
+        exchange_rate = get_cny_hkd_rate() or 1.09
+        
         # 转换为前端格式
         result = {}
         for stock in stocks:
@@ -285,19 +289,44 @@ def get_quotes():
             
             quote = quotes.get(sina_code)
             if quote:
-                result[code] = {
-                    'price': quote['price'],
-                    'change': quote['change'],
-                    'change_percent': quote['change_percent'],
-                    'open': quote['open'],
-                    'high': quote['high'],
-                    'low': quote['low'],
-                    'prev_close': quote['prev_close'],
-                    'volume': quote['volume'],
-                    'name': quote['name']
-                }
+                price = quote['price']
+                
+                # 港股：返回港币价格 + 人民币转换价
+                if market == '港股':
+                    price_cny = convert_hkd_to_cny(price)
+                    result[code] = {
+                        'price': price,  # 港币价格（显示用）
+                        'price_cny': round(price_cny, 2),  # 人民币价格（计算盈亏用）
+                        'exchange_rate': round(exchange_rate, 4),  # 汇率
+                        'change': quote['change'],
+                        'change_percent': quote['change_percent'],
+                        'open': quote['open'],
+                        'high': quote['high'],
+                        'low': quote['low'],
+                        'prev_close': quote['prev_close'],
+                        'volume': quote['volume'],
+                        'name': quote['name'],
+                        'market': '港股'
+                    }
+                else:
+                    result[code] = {
+                        'price': price,
+                        'change': quote['change'],
+                        'change_percent': quote['change_percent'],
+                        'open': quote['open'],
+                        'high': quote['high'],
+                        'low': quote['low'],
+                        'prev_close': quote['prev_close'],
+                        'volume': quote['volume'],
+                        'name': quote['name'],
+                        'market': 'A股'
+                    }
         
-        return jsonify({'success': True, 'quotes': result})
+        return jsonify({
+            'success': True, 
+            'quotes': result,
+            'exchange_rate': round(exchange_rate, 4)
+        })
     except Exception as e:
         print(f"获取行情失败: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
