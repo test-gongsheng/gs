@@ -694,7 +694,7 @@ async function confirmImport() {
                     changePercent: 0,
                     holdQuantity: newStock.shares || newStock.holdQuantity || 0,
                     holdCost: newStock.costPrice || newStock.holdCost || 0,  // 人民币成本
-                    marketValue: newStock.marketValue || 0,
+                    importedMarketValue: newStock.marketValue || 0,  // 保存券商导入的市值（人民币）
                     triggerBuy: triggerBuy,
                     triggerSell: triggerSell,
                     strategy: newStock.strategy || '基础',

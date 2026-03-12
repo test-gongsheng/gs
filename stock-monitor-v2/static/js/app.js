@@ -88,23 +88,23 @@ function init() {
     appState.stocks = mockStocks;
     appState.hotSectors = mockHotSectors;
     appState.news = mockNews;
-    
+
     renderStockList();
     renderHotSectors();
     renderNews();
     updateTime();
     updateMarketStatus();
     updateAssetOverview();
-    
+
     // 默认选中第一个股票
     if (appState.stocks.length > 0) {
         selectStock(0);
     }
-    
+
     // 定时更新
     setInterval(updateTime, 1000);
     setInterval(simulatePriceUpdate, 5000);
-    
+
     // 绑定表单提交
     document.getElementById('addStockForm').addEventListener('submit', handleAddStock);
 }
@@ -129,17 +129,17 @@ function updateMarketStatus() {
     const hour = now.getHours();
     const minute = now.getMinutes();
     const timeValue = hour * 100 + minute;
-    
+
     // A股交易时间：9:30-11:30, 13:00-15:00
     // 港股交易时间：9:30-12:00, 13:00-16:00
-    const isTrading = (timeValue >= 930 && timeValue <= 1130) || 
+    const isTrading = (timeValue >= 930 && timeValue <= 1130) ||
                       (timeValue >= 1300 && timeValue <= 1500);
-    
+
     appState.marketStatus = isTrading ? 'open' : 'closed';
-    
+
     const dot = document.getElementById('marketStatusDot');
     const text = document.getElementById('marketStatusText');
-    
+
     if (isTrading) {
         dot.style.background = '#4caf50';
         text.textContent = '交易中';
@@ -153,45 +153,44 @@ function updateMarketStatus() {
 function updateAssetOverview() {
     let totalPosition = 0;
     let todayPnL = 0;
-    const exchangeRate = appState.exchangeRate || 1.09;
-    
+
     appState.stocks.forEach(stock => {
-        // 港股市值 = 港币价格 / 汇率 * 持仓数量
+        // 港股使用导入的市值，A股实时计算
         const isHKStock = stock.market === '港股';
-        const currentPriceCNY = isHKStock ? (stock.price / exchangeRate) : stock.price;
-        
-        const marketValue = currentPriceCNY * stock.holdQuantity;
+        const marketValue = isHKStock
+            ? (stock.importedMarketValue || 0)
+            : (stock.price * stock.holdQuantity);
         const costValue = stock.holdCost * stock.holdQuantity;
         totalPosition += marketValue;
         todayPnL += (marketValue - costValue) * (stock.changePercent / 100);
     });
-    
+
     const availableCash = appState.totalAssets - totalPosition;
     const pnlPercent = totalPosition > 0 ? (todayPnL / totalPosition * 100).toFixed(2) : '0.00';
     const positionRatio = appState.totalAssets > 0 ? (totalPosition / appState.totalAssets * 100).toFixed(1) : '0.0';
-    
+
     // 更新总资产
     const totalAssetsEl = document.getElementById('totalAssets');
     if (totalAssetsEl) totalAssetsEl.textContent = formatMoney(appState.totalAssets);
-    
+
     // 更新持仓市值和可用资金
     document.getElementById('totalPosition').textContent = formatMoney(totalPosition);
     document.getElementById('availableCash').textContent = formatMoney(availableCash);
-    
+
     // 更新当日盈亏
     const pnlValueEl = document.getElementById('todayPnLValue');
     const pnlPercentEl = document.getElementById('todayPnLPercent');
-    
+
     if (pnlValueEl) pnlValueEl.textContent = (todayPnL >= 0 ? '+' : '') + formatMoney(todayPnL);
     if (pnlPercentEl) {
         pnlPercentEl.textContent = (todayPnL >= 0 ? '+' : '') + pnlPercent + '%';
         pnlPercentEl.className = 'pnl-percent ' + (todayPnL >= 0 ? '' : 'down');
     }
-    
+
     // 更新仓位比例
     const positionRatioEl = document.getElementById('positionRatio');
     if (positionRatioEl) positionRatioEl.textContent = positionRatio + '%';
-    
+
     // 更新仓位圆环
     const positionRingEl = document.getElementById('positionRing');
     if (positionRingEl) {
@@ -203,20 +202,20 @@ function updateAssetOverview() {
 function renderStockList() {
     const listEl = document.getElementById('stockList');
     listEl.innerHTML = '';
-    const exchangeRate = appState.exchangeRate || 1.09;
-    
+
     appState.stocks.forEach((stock, index) => {
         const item = document.createElement('div');
         item.className = 'stock-item' + (index === 0 ? ' active' : '');
         item.onclick = () => selectStock(index);
-        
+
         const isUp = stock.change >= 0;
         const isHKStock = stock.market === '港股';
-        
-        // 港股市值 = 港币价格 / 汇率 * 持仓数量
-        const currentPriceCNY = isHKStock ? (stock.price / exchangeRate) : stock.price;
-        const marketValue = (currentPriceCNY * stock.holdQuantity / 10000).toFixed(1);
-        
+
+        // 港股市值使用券商导入的数据
+        const marketValue = isHKStock
+            ? ((stock.importedMarketValue || 0) / 10000).toFixed(1)
+            : ((stock.price * stock.holdQuantity) / 10000).toFixed(1);
+
         // 检查是否触发买卖
         let alertBadge = '';
         if (stock.price >= stock.triggerSell) {
@@ -224,7 +223,7 @@ function renderStockList() {
         } else if (stock.price <= stock.triggerBuy) {
             alertBadge = '<span class="stock-item-alert buy">买</span>';
         }
-        
+
         item.innerHTML = `
             <div class="stock-item-header">
                 <div>
@@ -241,7 +240,7 @@ function renderStockList() {
                 <span>持仓: ${marketValue}万</span>
             </div>
         `;
-        
+
         listEl.appendChild(item);
     });
 }
@@ -249,12 +248,12 @@ function renderStockList() {
 // 选择股票
 function selectStock(index) {
     appState.selectedStock = appState.stocks[index];
-    
+
     // 更新列表选中状态
     document.querySelectorAll('.stock-item').forEach((el, i) => {
         el.classList.toggle('active', i === index);
     });
-    
+
     renderStockDetail();
 }
 
@@ -262,89 +261,86 @@ function selectStock(index) {
 function renderStockDetail() {
     const stock = appState.selectedStock;
     if (!stock) return;
-    
+
     const isUp = stock.change >= 0;
     const isHKStock = stock.market === '港股';
-    const exchangeRate = stock.exchangeRate || appState.exchangeRate || 1.09;
-    
+
     // 港股：
     // - 显示实时港币价格 (stock.price)
-    // - 市值 = 港币价格 / 汇率 * 持仓数量
-    // - 成本 = 人民币成本 * 持仓数量
-    let currentPriceHKD, currentPriceCNY, marketValue, costValue, pnl, pnlPercent;
-    
+    // - 市值使用券商导入的数据 (stock.importedMarketValue)
+    // - 盈亏 = 导入市值 - 成本
+    let marketValue, costValue, pnl, pnlPercent;
+
     if (isHKStock) {
-        currentPriceHKD = stock.price;  // 港币（从API获取）
-        currentPriceCNY = currentPriceHKD / exchangeRate;  // 换算成人民币
-        marketValue = currentPriceCNY * stock.holdQuantity;  // 人民币市值
-        costValue = stock.holdCost * stock.holdQuantity;     // 人民币成本
+        // 使用券商导入的市值（人民币）
+        marketValue = stock.importedMarketValue || 0;
+        costValue = stock.holdCost * stock.holdQuantity; // 人民币成本
         pnl = marketValue - costValue;
         pnlPercent = costValue > 0 ? (pnl / costValue * 100) : 0;
     } else {
-        // A股：都是人民币
-        currentPriceCNY = stock.price;
+        // A股：都是人民币，实时计算
         marketValue = stock.price * stock.holdQuantity;
         costValue = stock.holdCost * stock.holdQuantity;
         pnl = marketValue - costValue;
         pnlPercent = costValue > 0 ? (pnl / costValue * 100) : 0;
     }
-    
+
     // 安全设置元素内容的辅助函数
     const setText = (id, value) => {
         const el = document.getElementById(id);
         if (el) el.textContent = value;
     };
-    
+
     // 基础信息
     setText('detailName', stock.name);
     setText('detailCode', stock.code);
     setText('detailStrategy', stock.strategy + '策略');
-    
+
     // 港股显示实时港币价格
     if (isHKStock) {
-        setText('detailPrice', `${currentPriceHKD.toFixed(2)} HKD`);
+        setText('detailPrice', `${stock.price.toFixed(2)} HKD`);
     } else {
         setText('detailPrice', stock.price.toFixed(2));
     }
-    
+
     const detailPriceEl = document.getElementById('detailPrice');
     if (detailPriceEl) detailPriceEl.className = 'current-price ' + (isUp ? 'up' : 'down');
-    
+
     const detailChangeEl = document.getElementById('detailChange');
     if (detailChangeEl) {
         detailChangeEl.textContent = `${isUp ? '+' : ''}${stock.change.toFixed(2)} (${isUp ? '+' : ''}${stock.changePercent.toFixed(2)}%)`;
         detailChangeEl.className = 'price-change ' + (isUp ? 'up' : 'down');
     }
-    
+
     // 策略卡片
     setText('detailLimit', formatMoney(stock.investLimit));
     setText('detailPosition', formatMoney(marketValue));
-    
+
     // 港股显示成本备注
     if (isHKStock) {
-        setText('detailCost', `${(stock.holdCost || 0).toFixed(2)} (汇率 ${exchangeRate.toFixed(4)})`);
+        setText('detailCost', `${(stock.holdCost || 0).toFixed(2)} (人民币)`);
     } else {
         setText('detailCost', (stock.holdCost || 0).toFixed(2));
     }
-    
+
     const detailPnLEl = document.getElementById('detailPnL');
     if (detailPnLEl) {
         detailPnLEl.textContent = `${pnl >= 0 ? '+' : ''}${formatMoney(pnl)} (${pnlPercent.toFixed(2)}%)`;
         detailPnLEl.style.color = pnl >= 0 ? 'var(--up-color)' : 'var(--down-color)';
     }
-    
+
     // 盈亏比例
     const detailPnLPercentEl = document.getElementById('detailPnLPercent');
     if (detailPnLPercentEl) {
         detailPnLPercentEl.textContent = pnlPercent.toFixed(2) + '%';
         detailPnLPercentEl.className = 'card-value ' + (pnl >= 0 ? 'up' : 'down');
     }
-    
+
     // 调试中轴价格
     console.log('中轴价格调试:', stock.code, 'pivotPrice=', stock.pivotPrice, 'type=', typeof stock.pivotPrice);
-    
+
     const pivotPriceValue = parseFloat(stock.pivotPrice) || 0;
-    
+
     // 策略卡片中的中轴价格
     const detailPivotEl = document.getElementById('detailPivot');
     console.log('detailPivot元素:', detailPivotEl);
@@ -354,27 +350,27 @@ function renderStockDetail() {
     } else {
         console.error('找不到detailPivot元素');
     }
-    
+
     // 中轴价格可视化区域的中轴价格
     const pivotCenterEl = document.getElementById('pivotCenter');
     if (pivotCenterEl) {
         pivotCenterEl.textContent = pivotPriceValue.toFixed(2);
         console.log('已设置可视化区域中轴价格为:', pivotPriceValue.toFixed(2));
     }
-    
+
     // 当前价格标签
     const currentPriceLabelEl = document.getElementById('currentPriceLabel');
     if (currentPriceLabelEl) {
         currentPriceLabelEl.textContent = stock.price.toFixed(2);
     }
-    
+
     setText('detailBase', (stock.baseRatio || 50) + '%');
     setText('detailFloat', (stock.floatRatio || 50) + '%');
-    
+
     // 触发价格
     setText('triggerBuy', (stock.triggerBuy || 0).toFixed(2));
     setText('triggerSell', (stock.triggerSell || 0).toFixed(2));
-    
+
     // 安全计算距离
     let distBuy = '0.0';
     let distSell = '0.0';
@@ -386,14 +382,14 @@ function renderStockDetail() {
     }
     setText('distanceBuy', `距触发 ${distBuy}%`);
     setText('distanceSell', `距触发 ${distSell}%`);
-    
+
     // 进度条
     const markerCurrentEl = document.getElementById('markerCurrent');
     if (markerCurrentEl && stock.triggerSell !== stock.triggerBuy) {
         const progress = ((stock.price - stock.triggerBuy) / (stock.triggerSell - stock.triggerBuy) * 100);
         markerCurrentEl.style.left = Math.max(0, Math.min(100, progress)) + '%';
     }
-    
+
     // 操作建议
     let suggestion = '';
     if (stock.price >= stock.triggerSell) {
@@ -408,7 +404,7 @@ function renderStockDetail() {
         suggestion = `📊 当前股价处于中轴附近，建议持有观望。等待股价达到 ${stock.triggerBuy.toFixed(2)}（买入）或 ${stock.triggerSell.toFixed(2)}（卖出）时触发操作。`;
     }
     setText('suggestionContent', suggestion);
-    
+
     // 渲染网格策略表格
     renderGridStrategy(stock);
 }
@@ -418,13 +414,13 @@ function renderGridStrategy(stock) {
     const tbody = document.getElementById('gridTableBody');
     const gridInfoEl = document.getElementById('gridStrategyInfo');
     if (!tbody) return;
-    
+
     const pivotPrice = parseFloat(stock.pivotPrice) || stock.holdCost || stock.price || 0;
     if (pivotPrice <= 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">暂无中轴价格数据</td></tr>';
         return;
     }
-    
+
     // 生成5档网格（-4%到+4%，每档2%）
     const gridLevels = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
     const gridData = gridLevels.map(level => {
@@ -432,11 +428,11 @@ function renderGridStrategy(stock) {
         const isBuy = level < 0;
         const isSell = level > 0;
         const isCenter = level === 0;
-        
+
         // 计算数量：每档交易浮动仓的20%
         const tradeAmount = stock.investLimit * (stock.floatRatio / 100) * 0.2;
         const shares = Math.floor(tradeAmount / triggerPrice);
-        
+
         // 判断状态：当前价格是否触发
         let status = '未触发';
         let statusClass = '';
@@ -450,7 +446,7 @@ function renderGridStrategy(stock) {
             status = '已触发';
             statusClass = 'triggered-sell';
         }
-        
+
         return {
             level: level > 0 ? `+${level}` : level,
             price: triggerPrice,
@@ -462,12 +458,12 @@ function renderGridStrategy(stock) {
             isCenter: isCenter
         };
     });
-    
+
     // 更新网格策略信息
     if (gridInfoEl) {
         gridInfoEl.textContent = `${gridData.length}档网格 · 中轴${pivotPrice.toFixed(2)} · 每档2%`;
     }
-    
+
     // 渲染表格
     tbody.innerHTML = gridData.map(row => `
         <tr class="${row.isCenter ? 'grid-center-row' : ''}">
@@ -484,7 +480,7 @@ function renderGridStrategy(stock) {
 function renderHotSectors() {
     const listEl = document.getElementById('hotSectors');
     listEl.innerHTML = '';
-    
+
     appState.hotSectors.forEach((sector, index) => {
         const item = document.createElement('div');
         item.className = 'sector-item';
@@ -503,7 +499,7 @@ function renderHotSectors() {
 function renderNews() {
     const listEl = document.getElementById('newsList');
     listEl.innerHTML = '';
-    
+
     appState.news.forEach(news => {
         const item = document.createElement('div');
         item.className = 'news-item';
@@ -539,7 +535,7 @@ function hideAnalysisModal() {
 // 处理添加股票
 function handleAddStock(e) {
     e.preventDefault();
-    
+
     const stock = {
         code: document.getElementById('stockCode').value,
         name: document.getElementById('stockName').value,
@@ -557,16 +553,16 @@ function handleAddStock(e) {
         triggerBuy: 0,
         triggerSell: 0
     };
-    
+
     // 计算中轴价格和触发价（简化版，实际应由AI计算）
     stock.pivotPrice = stock.holdCost || 100;
     stock.triggerBuy = stock.pivotPrice * 0.92;
     stock.triggerSell = stock.pivotPrice * 1.08;
-    
+
     appState.stocks.push(stock);
     renderStockList();
     hideAddStockModal();
-    
+
     // 重置表单
     e.target.reset();
 }
@@ -577,11 +573,11 @@ async function simulatePriceUpdate() {
     if (appState.marketStatus !== 'open') {
         return;
     }
-    
+
     if (appState.stocks.length === 0) {
         return;
     }
-    
+
     try {
         // 调用后端API获取真实行情
         const response = await fetch('/api/quotes', {
@@ -596,15 +592,15 @@ async function simulatePriceUpdate() {
                 }))
             })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success && data.quotes) {
             // 保存全局汇率
             if (data.exchange_rate) {
                 appState.exchangeRate = data.exchange_rate;
             }
-            
+
             // 更新股票价格和涨跌幅
             appState.stocks.forEach(stock => {
                 const quote = data.quotes[stock.code];
@@ -612,20 +608,20 @@ async function simulatePriceUpdate() {
                     stock.price = quote.price;
                     stock.change = quote.change;
                     stock.changePercent = quote.change_percent;
-                    
+
                     // 港股：保存人民币转换价格和汇率
                     if (quote.market === '港股') {
                         stock.priceCny = quote.price_cny;
                         stock.exchangeRate = quote.exchange_rate;
                     }
-                    
+
                     // 检查是否触发买卖提醒
                     if (stock.price >= stock.triggerSell || stock.price <= stock.triggerBuy) {
                         showTradeAlert(stock);
                     }
                 }
             });
-            
+
             renderStockList();
             if (appState.selectedStock) {
                 const selected = appState.stocks.find(s => s.code === appState.selectedStock.code);
@@ -650,36 +646,36 @@ function showTradeAlert(stock) {
     const today = new Date().toDateString();
     const lastAlertDate = localStorage.getItem(ALERT_DATE_KEY);
     let alertedStocks = [];
-    
+
     try {
         alertedStocks = JSON.parse(localStorage.getItem(ALERTED_STOCKS_KEY) || '[]');
     } catch (e) {
         alertedStocks = [];
     }
-    
+
     // 如果是新的一天，清空已提醒列表
     if (lastAlertDate !== today) {
         localStorage.setItem(ALERT_DATE_KEY, today);
         alertedStocks = [];
         localStorage.setItem(ALERTED_STOCKS_KEY, JSON.stringify(alertedStocks));
     }
-    
+
     // 如果今天已经提醒过这只股票，不再提醒
     if (alertedStocks.includes(stock.code)) {
         return;
     }
-    
+
     // 记录已提醒
     alertedStocks.push(stock.code);
     localStorage.setItem(ALERTED_STOCKS_KEY, JSON.stringify(alertedStocks));
-    
+
     const isSell = stock.price >= stock.triggerSell;
     const modal = document.getElementById('tradeAlertModal');
     const content = document.getElementById('tradeAlertContent');
-    
+
     const amount = stock.investLimit * (stock.floatRatio / 100) * 0.2;
     const shares = Math.floor(amount / stock.price);
-    
+
     content.innerHTML = `
         <div class="alert-stock">${stock.name} (${stock.code})</div>
         <div class="alert-price ${isSell ? 'up' : 'down'}">${stock.price.toFixed(2)}</div>
@@ -695,7 +691,7 @@ function showTradeAlert(stock) {
             </div>
         </div>
     `;
-    
+
     modal.classList.add('active');
 }
 
