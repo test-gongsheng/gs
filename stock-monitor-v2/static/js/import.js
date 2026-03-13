@@ -774,6 +774,9 @@ async function confirmImport() {
         const key = `import_data_${pendingImportData.timestamp}`;
         localStorage.setItem(key, JSON.stringify(stocks));
         
+        // 同时保存到 'import_data_last' 供页面刷新后自动读取
+        localStorage.setItem('import_data_last', JSON.stringify(appState.stocks));
+        
         // 清理
         clearFile();
         hideDataImportModal();

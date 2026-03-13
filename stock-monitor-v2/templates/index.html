@@ -102,7 +102,7 @@
         <!-- 左侧：股票列表 -->
         <aside class="sidebar-left">
             <div class="panel-header">
-                <h3><i class="fas fa-list-ul"></i> 自选股</h3>
+                <h3><i class="fas fa-list-ul"></i> 持仓股</h3>
                 <button class="btn-add" onclick="showAddStockModal()">
                     <i class="fas fa-plus"></i>
                 </button>
@@ -734,7 +734,7 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/import.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=2"></script>
+    <script src="{{ url_for('static', filename='js/import.js') }}?v=2"></script>
 </body>
 </html>

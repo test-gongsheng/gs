@@ -13,60 +13,8 @@ const appState = {
     marketStatus: 'closed'
 };
 
-// 模拟数据 - 实际开发时从后端API获取
-const mockStocks = [
-    {
-        code: '09988.HK',
-        name: '阿里巴巴-W',
-        market: '港股',
-        price: 110.50,
-        change: 5.2,
-        changePercent: 4.94,
-        investLimit: 1000000,
-        holdQuantity: 8000,
-        holdCost: 87.50,
-        strategy: '进阶',
-        pivotPrice: 95,
-        baseRatio: 60,
-        floatRatio: 40,
-        triggerBuy: 83.12,
-        triggerSell: 94.50
-    },
-    {
-        code: '000001.SZ',
-        name: '平安银行',
-        market: 'A股',
-        price: 12.35,
-        change: -0.15,
-        changePercent: -1.20,
-        investLimit: 500000,
-        holdQuantity: 20000,
-        holdCost: 11.80,
-        strategy: '基础',
-        pivotPrice: 12.00,
-        baseRatio: 50,
-        floatRatio: 50,
-        triggerBuy: 11.04,
-        triggerSell: 12.96
-    },
-    {
-        code: '00700.HK',
-        name: '腾讯控股',
-        market: '港股',
-        price: 385.20,
-        change: 8.40,
-        changePercent: 2.23,
-        investLimit: 1500000,
-        holdQuantity: 3000,
-        holdCost: 360.00,
-        strategy: '基础',
-        pivotPrice: 375.00,
-        baseRatio: 50,
-        floatRatio: 50,
-        triggerBuy: 345.00,
-        triggerSell: 405.00
-    }
-];
+// 模拟数据 - 初始为空，从localStorage读取或等待数据导入
+const mockStocks = [];
 
 const mockHotSectors = [
     { name: '半导体', change: 3.2 },
@@ -85,7 +33,25 @@ const mockNews = [
 
 // 初始化
 function init() {
-    appState.stocks = mockStocks;
+    // 尝试从 localStorage 读取上次导入的数据
+    const savedStocks = localStorage.getItem('import_data_last');
+    if (savedStocks) {
+        try {
+            const stocks = JSON.parse(savedStocks);
+            if (stocks && stocks.length > 0) {
+                appState.stocks = stocks;
+                console.log('已从 localStorage 恢复', stocks.length, '只股票');
+            } else {
+                appState.stocks = mockStocks;
+            }
+        } catch (e) {
+            console.error('读取本地数据失败:', e);
+            appState.stocks = mockStocks;
+        }
+    } else {
+        appState.stocks = mockStocks;
+    }
+    
     appState.hotSectors = mockHotSectors;
     appState.news = mockNews;
 
