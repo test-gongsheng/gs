@@ -39,6 +39,10 @@ def normalize_tencent_code(code: str, market: str = 'A股') -> str:
         return f"sz{code}"
 
 
+# 保持向后兼容的别名
+normalize_stock_code = normalize_tencent_code
+
+
 def parse_tencent_response(response_text: str) -> Dict:
     """
     解析腾讯行情返回数据
