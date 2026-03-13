@@ -160,10 +160,10 @@ function updateAssetOverview() {
         let marketValue, costValue;
         
         if (isHKStock) {
-            // 港股：实时计算港币市值，转换为人民币
+            // 港股：实时计算港币市值，转换为人民币；成本已是人民币
             const hkdValue = (stock.price || 0) * (stock.holdQuantity || 0);
             marketValue = hkdValue * exchangeRate;
-            costValue = (stock.holdCost || 0) * (stock.holdQuantity || 0) * exchangeRate;
+            costValue = (stock.holdCost || 0) * (stock.holdQuantity || 0); // holdCost 已是人民币
         } else {
             // A股：直接计算人民币市值
             marketValue = (stock.price || 0) * (stock.holdQuantity || 0);
@@ -291,14 +291,14 @@ function renderStockDetail() {
     let marketValue, costValue, pnl, pnlPercent, positionShares, positionValueHkd;
 
     if (isHKStock) {
-        // 港股以港币计算持仓市值
+        // 港股当前持仓 = 股数 × 港股实时价格（港币）× 汇率 = 人民币市值
         positionShares = stock.holdQuantity || 0;
         positionValueHkd = stock.price * positionShares; // 港币市值
         marketValue = positionValueHkd * exchangeRate;   // 转换为人民币显示
         
-        // 持仓成本是港币，需要转换为人民币计算盈亏
-        const holdCostHkd = stock.holdCost || 0;
-        costValue = holdCostHkd * positionShares * exchangeRate; // 人民币成本
+        // 持仓成本是导入的人民币成本，无需转换
+        const holdCostCny = stock.holdCost || 0;
+        costValue = holdCostCny * positionShares; // 人民币成本
         
         pnl = marketValue - costValue; // 人民币盈亏
         pnlPercent = costValue > 0 ? (pnl / costValue * 100) : 0;
