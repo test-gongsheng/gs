@@ -309,9 +309,9 @@ function renderStockDetail() {
     
     // 当前持仓：显示持仓数量和人民币市值
     if (isHKStock) {
-        // 港股显示：数量 + 人民币市值（港币市值 × 汇率）
+        // 港股显示：数量 + 人民币市值（港币市值 ÷ 汇率）
         const hkdValue = positionValueHkd || 0;
-        const cnyValue = hkdValue * exchangeRate; // 转换为人民币
+        const cnyValue = hkdValue / exchangeRate; // 转换为人民币（汇率是1人民币=X港币）
         const shares = positionShares || 0;
         setText('detailPosition', `${shares}股 / ${(cnyValue/10000).toFixed(2)}万`);
     } else {
@@ -349,12 +349,12 @@ function renderStockDetail() {
     // 如果是港股且中轴价格看起来像是人民币（比当前价格低很多），需要转换
     // 正常情况下 API 返回的中轴价格是基于港币K线计算的
     if (isHKStock && pivotPriceValue > 0 && stock.price > 0) {
-        // 检查中轴价格是否可能是人民币值（成本价通常是人民币导入的）
-        // 如果中轴价格接近持仓成本，可能是回退到了成本价，需要标注
-        const holdCostHkd = stock.holdCost || 0;
-        const holdCostCny = holdCostHkd * exchangeRate;
+        // 检查中轴价格是否可能是人民币值
+        // holdCost 是导入的人民币成本
+        const holdCostCny = stock.holdCost || 0;
+        const holdCostHkd = holdCostCny * exchangeRate; // 人民币成本换算成港币
         
-        // 如果 pivotPrice 接近人民币成本价，但偏离港币成本价，说明可能存错了
+        // 如果 pivotPrice 接近人民币成本价，但偏离港币成本价，说明 pivotPrice 可能是人民币值
         if (Math.abs(pivotPriceValue - holdCostCny) < 1 && Math.abs(pivotPriceValue - holdCostHkd) > 10) {
             // pivotPrice 可能是人民币值，转换为港币
             console.log('中轴价格疑似人民币值，转换为港币:', pivotPriceValue, '->', (pivotPriceValue / exchangeRate).toFixed(2));
