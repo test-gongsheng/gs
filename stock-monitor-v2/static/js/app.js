@@ -153,16 +153,25 @@ function updateMarketStatus() {
 function updateAssetOverview() {
     let totalPosition = 0;
     let todayPnL = 0;
+    const exchangeRate = appState.exchangeRate || 0.92;
 
     appState.stocks.forEach(stock => {
-        // 港股使用导入的市值，A股实时计算
         const isHKStock = stock.market === '港股';
-        const marketValue = isHKStock
-            ? (stock.importedMarketValue || 0)
-            : (stock.price * stock.holdQuantity);
-        const costValue = stock.holdCost * stock.holdQuantity;
+        let marketValue, costValue;
+        
+        if (isHKStock) {
+            // 港股：实时计算港币市值，转换为人民币
+            const hkdValue = (stock.price || 0) * (stock.holdQuantity || 0);
+            marketValue = hkdValue * exchangeRate;
+            costValue = (stock.holdCost || 0) * (stock.holdQuantity || 0) * exchangeRate;
+        } else {
+            // A股：直接计算人民币市值
+            marketValue = (stock.price || 0) * (stock.holdQuantity || 0);
+            costValue = (stock.holdCost || 0) * (stock.holdQuantity || 0);
+        }
+        
         totalPosition += marketValue;
-        todayPnL += (marketValue - costValue) * (stock.changePercent / 100);
+        todayPnL += (marketValue - costValue) * ((stock.changePercent || 0) / 100);
     });
 
     const availableCash = appState.totalAssets - totalPosition;
@@ -210,11 +219,18 @@ function renderStockList() {
 
         const isUp = stock.change >= 0;
         const isHKStock = stock.market === '港股';
+        const exchangeRate = appState.exchangeRate || 0.92;
 
-        // 港股市值使用券商导入的数据
-        const marketValue = isHKStock
-            ? ((stock.importedMarketValue || 0) / 10000).toFixed(1)
-            : ((stock.price * stock.holdQuantity) / 10000).toFixed(1);
+        // 港股市值实时计算（港币价格 × 持仓数量，转换为人民币显示）
+        let marketValue;
+        if (isHKStock) {
+            const hkdValue = (stock.price || 0) * (stock.holdQuantity || 0);
+            marketValue = hkdValue * exchangeRate; // 转换为人民币
+        } else {
+            marketValue = (stock.price || 0) * (stock.holdQuantity || 0);
+        }
+        
+        const marketValueWan = marketValue > 0 ? (marketValue / 10000).toFixed(1) : '0.0';
 
         // 检查是否触发买卖
         let alertBadge = '';
@@ -265,22 +281,32 @@ function renderStockDetail() {
     const isUp = stock.change >= 0;
     const isHKStock = stock.market === '港股';
 
+    // 获取汇率（用于港股港币/人民币转换）
+    const exchangeRate = stock.exchangeRate || appState.exchangeRate || 0.92;
+
     // 港股：
     // - 显示实时港币价格 (stock.price)
-    // - 市值使用券商导入的数据 (stock.importedMarketValue)
-    // - 盈亏 = 导入市值 - 成本
-    let marketValue, costValue, pnl, pnlPercent;
+    // - 市值实时计算：港币价格 × 持仓数量
+    // - 盈亏 = 港币市值 - 港币成本（按汇率转换为人民币显示盈亏）
+    let marketValue, costValue, pnl, pnlPercent, positionShares, positionValueHkd;
 
     if (isHKStock) {
-        // 使用券商导入的市值（人民币）
-        marketValue = stock.importedMarketValue || 0;
-        costValue = stock.holdCost * stock.holdQuantity; // 人民币成本
-        pnl = marketValue - costValue;
+        // 港股以港币计算持仓市值
+        positionShares = stock.holdQuantity || 0;
+        positionValueHkd = stock.price * positionShares; // 港币市值
+        marketValue = positionValueHkd * exchangeRate;   // 转换为人民币显示
+        
+        // 持仓成本是港币，需要转换为人民币计算盈亏
+        const holdCostHkd = stock.holdCost || 0;
+        costValue = holdCostHkd * positionShares * exchangeRate; // 人民币成本
+        
+        pnl = marketValue - costValue; // 人民币盈亏
         pnlPercent = costValue > 0 ? (pnl / costValue * 100) : 0;
     } else {
         // A股：都是人民币，实时计算
-        marketValue = stock.price * stock.holdQuantity;
-        costValue = stock.holdCost * stock.holdQuantity;
+        positionShares = stock.holdQuantity || 0;
+        marketValue = stock.price * positionShares;
+        costValue = stock.holdCost * positionShares;
         pnl = marketValue - costValue;
         pnlPercent = costValue > 0 ? (pnl / costValue * 100) : 0;
     }
@@ -314,11 +340,22 @@ function renderStockDetail() {
 
     // 策略卡片
     setText('detailLimit', formatMoney(stock.investLimit));
-    setText('detailPosition', formatMoney(marketValue));
-
-    // 港股显示成本备注
+    
+    // 当前持仓：显示持仓数量和市值
     if (isHKStock) {
-        setText('detailCost', `${(stock.holdCost || 0).toFixed(2)} (人民币)`);
+        // 港股显示：数量 + 港币市值
+        const hkdValue = positionValueHkd || 0;
+        const shares = positionShares || 0;
+        setText('detailPosition', `${shares}股 / ${(hkdValue/10000).toFixed(2)}万港币`);
+    } else {
+        // A股显示：数量 + 人民币市值
+        const shares = positionShares || 0;
+        setText('detailPosition', `${shares}股 / ${formatMoney(marketValue)}`);
+    }
+
+    // 港股显示成本备注（持仓成本是港币）
+    if (isHKStock) {
+        setText('detailCost', `${(stock.holdCost || 0).toFixed(2)} (港币)`);
     } else {
         setText('detailCost', (stock.holdCost || 0).toFixed(2));
     }
@@ -339,14 +376,35 @@ function renderStockDetail() {
     // 调试中轴价格
     console.log('中轴价格调试:', stock.code, 'pivotPrice=', stock.pivotPrice, 'type=', typeof stock.pivotPrice);
 
-    const pivotPriceValue = parseFloat(stock.pivotPrice) || 0;
+    // 中轴价格：港股显示港币中轴价格，A股显示人民币中轴价格
+    let pivotPriceValue = parseFloat(stock.pivotPrice) || 0;
+    
+    // 如果是港股且中轴价格看起来像是人民币（比当前价格低很多），需要转换
+    // 正常情况下 API 返回的中轴价格是基于港币K线计算的
+    if (isHKStock && pivotPriceValue > 0 && stock.price > 0) {
+        // 检查中轴价格是否可能是人民币值（成本价通常是人民币导入的）
+        // 如果中轴价格接近持仓成本，可能是回退到了成本价，需要标注
+        const holdCostHkd = stock.holdCost || 0;
+        const holdCostCny = holdCostHkd * exchangeRate;
+        
+        // 如果 pivotPrice 接近人民币成本价，但偏离港币成本价，说明可能存错了
+        if (Math.abs(pivotPriceValue - holdCostCny) < 1 && Math.abs(pivotPriceValue - holdCostHkd) > 10) {
+            // pivotPrice 可能是人民币值，转换为港币
+            console.log('中轴价格疑似人民币值，转换为港币:', pivotPriceValue, '->', (pivotPriceValue / exchangeRate).toFixed(2));
+            pivotPriceValue = pivotPriceValue / exchangeRate;
+        }
+    }
 
     // 策略卡片中的中轴价格
     const detailPivotEl = document.getElementById('detailPivot');
     console.log('detailPivot元素:', detailPivotEl);
     if (detailPivotEl) {
-        detailPivotEl.textContent = pivotPriceValue.toFixed(2);
-        console.log('已设置中轴价格为:', pivotPriceValue.toFixed(2));
+        if (isHKStock) {
+            detailPivotEl.textContent = pivotPriceValue.toFixed(2) + ' HKD';
+        } else {
+            detailPivotEl.textContent = pivotPriceValue.toFixed(2);
+        }
+        console.log('已设置中轴价格为:', pivotPriceValue.toFixed(2), isHKStock ? 'HKD' : 'CNY');
     } else {
         console.error('找不到detailPivot元素');
     }
@@ -367,9 +425,24 @@ function renderStockDetail() {
     setText('detailBase', (stock.baseRatio || 50) + '%');
     setText('detailFloat', (stock.floatRatio || 50) + '%');
 
-    // 触发价格
-    setText('triggerBuy', (stock.triggerBuy || 0).toFixed(2));
-    setText('triggerSell', (stock.triggerSell || 0).toFixed(2));
+    // 触发价格（基于中轴价格计算）
+    // 港股使用港币中轴价格计算触发价，然后显示触发价
+    let triggerBuy = stock.triggerBuy || (pivotPriceValue * 0.92);
+    let triggerSell = stock.triggerSell || (pivotPriceValue * 1.08);
+    
+    // 如果是港股且触发价看起来太小（可能是基于人民币计算的），需要调整
+    if (isHKStock && stock.holdCost > 0) {
+        const expectedTriggerSellHkd = pivotPriceValue * 1.08;
+        // 如果现有的 triggerSell 比期望的港币触发价小很多，可能是人民币值
+        if (triggerSell < expectedTriggerSellHkd * 0.5) {
+            // 重新基于港币中轴价格计算
+            triggerBuy = pivotPriceValue * 0.92;
+            triggerSell = pivotPriceValue * 1.08;
+        }
+    }
+    
+    setText('triggerBuy', triggerBuy.toFixed(2));
+    setText('triggerSell', triggerSell.toFixed(2));
 
     // 安全计算距离
     let distBuy = '0.0';
@@ -415,7 +488,23 @@ function renderGridStrategy(stock) {
     const gridInfoEl = document.getElementById('gridStrategyInfo');
     if (!tbody) return;
 
-    const pivotPrice = parseFloat(stock.pivotPrice) || stock.holdCost || stock.price || 0;
+    // 港股使用港币中轴价格，A股使用人民币中轴价格
+    const isHKStock = stock.market === '港股';
+    const exchangeRate = stock.exchangeRate || appState.exchangeRate || 0.92;
+    
+    let pivotPrice = parseFloat(stock.pivotPrice) || stock.holdCost || stock.price || 0;
+    
+    // 如果是港股，检查中轴价格是否需要货币转换
+    if (isHKStock && pivotPrice > 0 && stock.holdCost > 0) {
+        const holdCostHkd = stock.holdCost;
+        const holdCostCny = holdCostHkd * exchangeRate;
+        
+        // 如果 pivotPrice 接近人民币成本价，但偏离港币成本价，说明可能是人民币值
+        if (Math.abs(pivotPrice - holdCostCny) < 1 && Math.abs(pivotPrice - holdCostHkd) > 10) {
+            pivotPrice = pivotPrice / exchangeRate;
+        }
+    }
+    
     if (pivotPrice <= 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">暂无中轴价格数据</td></tr>';
         return;
