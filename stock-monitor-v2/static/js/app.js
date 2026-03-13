@@ -98,8 +98,9 @@ function updateMarketStatus() {
 
     // A股交易时间：9:30-11:30, 13:00-15:00
     // 港股交易时间：9:30-12:00, 13:00-16:00
+    // 同时支持A股和港股，取并集：9:30-11:30, 13:00-16:00
     const isTrading = (timeValue >= 930 && timeValue <= 1130) ||
-                      (timeValue >= 1300 && timeValue <= 1500);
+                      (timeValue >= 1300 && timeValue <= 1600);
 
     appState.marketStatus = isTrading ? 'open' : 'closed';
 
