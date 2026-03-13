@@ -650,6 +650,10 @@ async function confirmImport() {
         const oldStocks = [...appState.stocks];
         console.log('旧持仓数据:', oldStocks.map(s => ({ code: s.code, qty: s.holdQuantity })));
         
+        // 清除旧缓存，避免数据混乱
+        localStorage.removeItem('import_data_last');
+        console.log('已清除旧缓存');
+        
         let updated = 0;
         let added = 0;
         

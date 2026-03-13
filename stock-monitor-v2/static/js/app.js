@@ -69,7 +69,7 @@ function init() {
 
     // 定时更新
     setInterval(updateTime, 1000);
-    setInterval(simulatePriceUpdate, 5000);
+    setInterval(simulatePriceUpdate, 3000);
 
     // 绑定表单提交
     document.getElementById('addStockForm').addEventListener('submit', handleAddStock);
