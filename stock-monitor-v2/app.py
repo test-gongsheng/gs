@@ -3,7 +3,7 @@ import json
 import os
 from datetime import datetime
 from utils.stock_quote import get_stock_quotes, get_dynamic_axis_price
-from utils.exchange_rate import get_cny_hkd_rate, convert_hkd_to_cny
+from utils.exchange_rate import get_cny_hkd_rate, get_yesterday_cny_hkd_rate, convert_hkd_to_cny
 
 app = Flask(__name__)
 
@@ -274,8 +274,9 @@ def get_quotes():
         
         quotes = get_stock_quotes(stocks)
         
-        # 获取当前汇率
-        exchange_rate = get_cny_hkd_rate() or 1.09
+        # 获取当前汇率和昨日收盘汇率
+        current_rate = get_cny_hkd_rate() or 1.09
+        yesterday_rate = get_yesterday_cny_hkd_rate() or 1.1339
         
         # 转换为前端格式
         result = {}
@@ -283,21 +284,23 @@ def get_quotes():
             code = stock.get('code', '')
             market = stock.get('market', 'A股')
             
-            # 构造新浪代码key
+            # 构造腾讯代码key
             from utils.stock_quote import normalize_stock_code
-            sina_code = normalize_stock_code(code, market)
+            tencent_code = normalize_stock_code(code, market)
             
-            quote = quotes.get(sina_code)
+            quote = quotes.get(tencent_code)
             if quote:
                 price = quote['price']
                 
                 # 港股：返回港币价格 + 人民币转换价
                 if market == '港股':
-                    price_cny = convert_hkd_to_cny(price)
+                    # 使用昨日收盘汇率计算人民币价格（与交易软件保持一致）
+                    price_cny = price / yesterday_rate
                     result[code] = {
                         'price': price,  # 港币价格（显示用）
                         'price_cny': round(price_cny, 2),  # 人民币价格（计算盈亏用）
-                        'exchange_rate': round(exchange_rate, 4),  # 汇率
+                        'exchange_rate': round(yesterday_rate, 4),  # 昨日收盘汇率
+                        'current_exchange_rate': round(current_rate, 4),  # 当前实时汇率
                         'change': quote['change'],
                         'change_percent': quote['change_percent'],
                         'open': quote['open'],
@@ -325,7 +328,8 @@ def get_quotes():
         return jsonify({
             'success': True, 
             'quotes': result,
-            'exchange_rate': round(exchange_rate, 4)
+            'exchange_rate': round(yesterday_rate, 4),  # 昨日收盘汇率（用于计算市值）
+            'current_exchange_rate': round(current_rate, 4)  # 当前汇率
         })
     except Exception as e:
         print(f"获取行情失败: {e}")

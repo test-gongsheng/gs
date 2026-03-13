@@ -120,14 +120,15 @@ function updateMarketStatus() {
 function updateAssetOverview() {
     let totalPosition = 0;
     let todayPnL = 0;
-    const exchangeRate = appState.exchangeRate || 0.92;
 
     appState.stocks.forEach(stock => {
         const isHKStock = stock.market === '港股';
         let marketValue, costValue;
         
         if (isHKStock) {
-            // 港股：实时计算港币市值，转换为人民币（汇率是1人民币=X港币）
+            // 港股：使用昨日收盘汇率（导入时记录的固定汇率）
+            const exchangeRate = stock.exchangeRate || appState.exchangeRate || 1.1339;
+            // 实时计算港币市值，转换为人民币
             const hkdValue = (stock.price || 0) * (stock.holdQuantity || 0);
             marketValue = hkdValue / exchangeRate;
             costValue = (stock.holdCost || 0) * (stock.holdQuantity || 0); // holdCost 已是人民币
@@ -186,7 +187,8 @@ function renderStockList() {
 
         const isUp = stock.change >= 0;
         const isHKStock = stock.market === '港股';
-        const exchangeRate = appState.exchangeRate || 0.92;
+        // 港股使用昨日收盘汇率（导入时记录的固定汇率）
+        const exchangeRate = stock.exchangeRate || appState.exchangeRate || 1.1339;
 
         // 港股市值实时计算（港币价格 × 持仓数量 ÷ 汇率 = 人民币市值）
         let marketValue;
@@ -253,15 +255,17 @@ function renderStockDetail() {
 
     // 港股：
     // - 显示实时港币价格 (stock.price)
-    // - 市值实时计算：港币价格 × 持仓数量 ÷ 汇率 = 人民币市值
+    // - 市值实时计算：港币价格 × 持仓数量 ÷ 昨日收盘汇率 = 人民币市值
     // - 盈亏 = 人民币市值 - 人民币成本
     let marketValue, costValue, pnl, pnlPercent, positionShares, positionValueHkd;
 
     if (isHKStock) {
-        // 港股当前持仓 = 股数 × 港股实时价格（港币）÷ 汇率 = 人民币市值
+        // 港股使用昨日收盘汇率（导入时记录的固定汇率）
+        const yesterdayRate = stock.exchangeRate || exchangeRate || 1.1339;
+        // 港股当前持仓 = 股数 × 港股实时价格（港币）÷ 昨日收盘汇率 = 人民币市值
         positionShares = stock.holdQuantity || 0;
         positionValueHkd = stock.price * positionShares; // 港币市值
-        marketValue = positionValueHkd / exchangeRate;   // 转换为人民币（汇率是1人民币=X港币）
+        marketValue = positionValueHkd / yesterdayRate;   // 转换为人民币（汇率是1人民币=X港币）
         
         // 持仓成本是导入的人民币成本，无需转换
         const holdCostCny = stock.holdCost || 0;

@@ -673,23 +673,23 @@ async function confirmImport() {
             ]);
         };
         
-        // 先获取当前汇率
-        let currentExchangeRate = 0.92;
+        // 先获取昨日收盘汇率（用于保持一致性）
+        let yesterdayExchangeRate = 1.1339;
         try {
-            const quoteResponse = await fetchWithTimeout('/api/quotes', {
+            const rateResponse = await fetchWithTimeout('/api/quotes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     stocks: stocks.filter(s => s.market === '港股').slice(0, 1).map(s => ({ code: s.code, market: s.market }))
                 })
             }, 10000);
-            const quoteData = await quoteResponse.json();
-            if (quoteData.success && quoteData.exchange_rate) {
-                currentExchangeRate = quoteData.exchange_rate;
-                console.log('当前汇率:', currentExchangeRate);
+            const rateData = await rateResponse.json();
+            if (rateData.success && rateData.exchange_rate) {
+                yesterdayExchangeRate = rateData.exchange_rate;  // 昨日收盘汇率
+                console.log('昨日收盘汇率:', yesterdayExchangeRate);
             }
         } catch (e) {
-            console.warn('获取汇率失败，使用默认汇率:', currentExchangeRate);
+            console.warn('获取昨日汇率失败，使用默认汇率:', yesterdayExchangeRate);
         }
         
         // 获取动态中轴价格并创建股票数据
@@ -735,20 +735,21 @@ async function confirmImport() {
                 if (oldStock && isHKStock) {
                     const oldShares = oldStock.holdQuantity || 0;
                     const oldHoldCost = oldStock.holdCost || 0;
+                    const oldExchangeRate = oldStock.exchangeRate || yesterdayExchangeRate;
                     
                     if (newShares > oldShares) {
-                        // 买入：按当前汇率计算新的综合成本
+                        // 买入：按昨日收盘汇率计算新的综合成本
                         tradeType = '买入';
                         tradeShares = newShares - oldShares;
                         
-                        // 新买入部分的成本（人民币）= 买入股数 × 当前港币价格 ÷ 当前汇率
-                        const newBuyCostCny = tradeShares * (newStock.currentPrice || 0) / currentExchangeRate;
+                        // 新买入部分的成本（人民币）= 买入股数 × 当前港币价格 ÷ 昨日收盘汇率
+                        const newBuyCostCny = tradeShares * (newStock.currentPrice || 0) / yesterdayExchangeRate;
                         
                         // 综合成本 = (旧成本总额 + 新买入成本总额) / 总股数
                         const oldTotalCost = oldShares * oldHoldCost;
                         finalHoldCost = (oldTotalCost + newBuyCostCny) / newShares;
                         
-                        console.log(`${newStock.code} 买入 ${tradeShares}股，当前汇率${currentExchangeRate}，新成本${finalHoldCost.toFixed(2)}`);
+                        console.log(`${newStock.code} 买入 ${tradeShares}股，昨日汇率${yesterdayExchangeRate}，新成本${finalHoldCost.toFixed(2)}`);
                     } else if (newShares < oldShares) {
                         // 卖出：保持原有成本单价不变
                         tradeType = '卖出';
@@ -780,7 +781,7 @@ async function confirmImport() {
                     id: String(index + 1),
                     status: '监控中',
                     market: newStock.market || 'A股',
-                    exchangeRate: currentExchangeRate, // 记录导入时的汇率
+                    exchangeRate: yesterdayExchangeRate, // 使用昨日收盘汇率（固定）
                     tradeType: tradeType, // 买入/卖出/无
                     tradeShares: tradeShares
                 };
@@ -805,7 +806,7 @@ async function confirmImport() {
                     id: String(index + 1),
                     status: '监控中',
                     market: newStock.market || 'A股',
-                    exchangeRate: currentExchangeRate
+                    exchangeRate: yesterdayExchangeRate // 使用昨日收盘汇率
                 };
             }
         });
