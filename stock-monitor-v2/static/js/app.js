@@ -341,21 +341,22 @@ function renderStockDetail() {
     // 策略卡片
     setText('detailLimit', formatMoney(stock.investLimit));
     
-    // 当前持仓：显示持仓数量和市值
+    // 当前持仓：显示持仓数量和人民币市值
     if (isHKStock) {
-        // 港股显示：数量 + 港币市值
+        // 港股显示：数量 + 人民币市值（港币市值 × 汇率）
         const hkdValue = positionValueHkd || 0;
+        const cnyValue = hkdValue * exchangeRate; // 转换为人民币
         const shares = positionShares || 0;
-        setText('detailPosition', `${shares}股 / ${(hkdValue/10000).toFixed(2)}万港币`);
+        setText('detailPosition', `${shares}股 / ${(cnyValue/10000).toFixed(2)}万`);
     } else {
         // A股显示：数量 + 人民币市值
         const shares = positionShares || 0;
         setText('detailPosition', `${shares}股 / ${formatMoney(marketValue)}`);
     }
 
-    // 港股显示成本备注（持仓成本是港币）
+    // 港股持仓成本是导入的人民币成本
     if (isHKStock) {
-        setText('detailCost', `${(stock.holdCost || 0).toFixed(2)} (港币)`);
+        setText('detailCost', `${(stock.holdCost || 0).toFixed(2)} (人民币)`);
     } else {
         setText('detailCost', (stock.holdCost || 0).toFixed(2));
     }
