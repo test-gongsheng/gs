@@ -32,7 +32,7 @@ const mockNews = [
 ];
 
 // 初始化
-function init() {
+async function init() {
     // 尝试从 localStorage 读取上次导入的数据
     const savedStocks = localStorage.getItem('import_data_last');
     if (savedStocks) {
@@ -73,6 +73,80 @@ function init() {
 
     // 绑定表单提交
     document.getElementById('addStockForm').addEventListener('submit', handleAddStock);
+    
+    // 页面加载完成后，异步重新计算中轴价格（确保数据最新）
+    if (appState.stocks.length > 0) {
+        console.log('开始异步刷新中轴价格...');
+        await refreshAxisPrices();
+    }
+}
+
+/**
+ * 刷新所有股票的中轴价格
+ */
+async function refreshAxisPrices() {
+    if (appState.stocks.length === 0) return;
+    
+    console.log('正在重新计算中轴价格...');
+    let updatedCount = 0;
+    let failedCount = 0;
+    
+    const updatePromises = appState.stocks.map(async (stock) => {
+        try {
+            const response = await fetch('/api/axis-price', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    code: stock.code, 
+                    market: stock.market || 'A股', 
+                    days: 90 
+                })
+            });
+            
+            const axisData = await response.json();
+            
+            if (axisData.success && axisData.data) {
+                const oldPivot = stock.pivotPrice;
+                stock.pivotPrice = axisData.data.axis_price;
+                stock.triggerBuy = axisData.data.trigger_buy;
+                stock.triggerSell = axisData.data.trigger_sell;
+                
+                // 如果中轴价格有变化，记录日志
+                if (Math.abs(oldPivot - stock.pivotPrice) > 0.01) {
+                    console.log(`${stock.code} 中轴价格更新: ${oldPivot} -> ${stock.pivotPrice}`);
+                }
+                updatedCount++;
+                return true;
+            } else {
+                console.warn(`${stock.code} 获取中轴价格失败:`, axisData.error || '未知错误');
+                failedCount++;
+                return false;
+            }
+        } catch (error) {
+            console.warn(`${stock.code} 获取中轴价格异常:`, error.message);
+            failedCount++;
+            return false;
+        }
+    });
+    
+    // 等待所有更新完成
+    await Promise.all(updatePromises);
+    
+    console.log(`中轴价格刷新完成: ${updatedCount} 只成功, ${failedCount} 只失败`);
+    
+    // 更新localStorage中的数据
+    localStorage.setItem('import_data_last', JSON.stringify(appState.stocks));
+    
+    // 重新渲染页面
+    renderStockList();
+    if (appState.selectedStock) {
+        const selected = appState.stocks.find(s => s.code === appState.selectedStock.code);
+        if (selected) {
+            appState.selectedStock = selected;
+            renderStockDetail();
+        }
+    }
+    updateAssetOverview();
 }
 
 // 更新时间
@@ -823,3 +897,4 @@ window.hideAnalysisModal = hideAnalysisModal;
 window.renderStockList = renderStockList;
 window.updateAssetOverview = updateAssetOverview;
 window.selectStock = selectStock;
+window.refreshAxisPrices = refreshAxisPrices;
