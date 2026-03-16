@@ -692,39 +692,17 @@ async function confirmImport() {
             console.warn('获取昨日汇率失败，使用默认汇率:', yesterdayExchangeRate);
         }
         
-        // 获取动态中轴价格并创建股票数据（顺序执行，避免并发超时）
+        // 获取动态中轴价格并创建股票数据（导入时直接用成本价，导入后异步刷新）
         appState.stocks = [];
         for (let i = 0; i < stocks.length; i++) {
             const newStock = stocks[i];
             try {
                 console.log(`[导入] 处理 ${newStock.code} ${newStock.name}...`);
-                let pivotPrice, triggerBuy, triggerSell;
                 
-                // 所有股票都调用API获取动态中轴价格
-                const response = await fetchWithTimeout('/api/axis-price', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        code: newStock.code, 
-                        market: newStock.market || 'A股', 
-                        days: 90 
-                    })
-                }, 15000);
-                
-                const axisData = await response.json();
-                
-                if (axisData.success && axisData.data && axisData.data.axis_price) {
-                    pivotPrice = axisData.data.axis_price;
-                    triggerBuy = axisData.data.trigger_buy;
-                    triggerSell = axisData.data.trigger_sell;
-                    console.log(`[导入] ${newStock.code} 中轴: ${pivotPrice}, 触发: ${triggerBuy}-${triggerSell}`);
-                } else {
-                    // API失败时回退到成本价
-                    pivotPrice = newStock.costPrice || newStock.currentPrice || 0;
-                    triggerBuy = pivotPrice * 0.92;
-                    triggerSell = pivotPrice * 1.08;
-                    console.warn(`[导入] ${newStock.code} API失败，使用成本价: ${pivotPrice}`);
-                }
+                // 导入时直接使用成本价作为中轴价格（避免API超时导致导入慢）
+                const pivotPrice = newStock.costPrice || newStock.currentPrice || 0;
+                const triggerBuy = pivotPrice * 0.92;
+                const triggerSell = pivotPrice * 1.08;
                 
                 const isHKStock = newStock.market === '港股';
                 const newShares = newStock.shares || newStock.holdQuantity || 0;
@@ -790,7 +768,7 @@ async function confirmImport() {
                     tradeShares: tradeShares
                 });
             } catch (error) {
-                console.warn(`[导入] 获取 ${newStock.code} 中轴价格失败: ${error.message}，使用成本价`);
+                console.warn(`[导入] 处理 ${newStock.code} 失败: ${error.message}`);
                 const pivotPrice = newStock.costPrice || newStock.currentPrice || 0;
                 appState.stocks.push({
                     ...newStock,
@@ -845,7 +823,7 @@ async function confirmImport() {
         clearFile();
         hideDataImportModal();
         
-        showNotification(`导入完成！共 ${appState.stocks.length} 只股票`, 'success');
+        showNotification(`导入完成！共 ${appState.stocks.length} 只股票，正在刷新中轴价格...`, 'success');
         
         // 默认选中第一个
         if (appState.stocks.length > 0) {
@@ -854,6 +832,21 @@ async function confirmImport() {
         
         // 导入后立即获取实时行情（不受开市时间限制）
         await refreshStockQuotes();
+        
+        // 异步刷新所有股票的中轴价格（不阻塞导入流程）
+        setTimeout(() => {
+            console.log('[导入] 开始异步刷新中轴价格...');
+            if (typeof refreshAxisPrices === 'function') {
+                refreshAxisPrices().then(() => {
+                    showNotification('中轴价格刷新完成！', 'success');
+                }).catch(err => {
+                    console.error('[导入] 刷新中轴价格失败:', err);
+                    showNotification('部分中轴价格刷新失败，可手动修复', 'warning');
+                });
+            } else {
+                console.warn('[导入] refreshAxisPrices 函数未定义');
+            }
+        }, 1000);
         
     } catch (error) {
         console.error('导入失败:', error);
