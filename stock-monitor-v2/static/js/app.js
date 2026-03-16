@@ -4,15 +4,24 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = '2.1.4';
+const APP_VERSION = '2.1.5';
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
 if (lastVersion !== APP_VERSION) {
-    console.log(`版本更新: ${lastVersion} -> ${APP_VERSION}，清除缓存...`);
-    localStorage.setItem('app_version', APP_VERSION);
-    // 清除股票数据缓存，强制重新计算
+    console.log(`[版本更新] ${lastVersion || '无版本'} -> ${APP_VERSION}，清除所有缓存...`);
+    // 清除所有相关缓存
     localStorage.removeItem('import_data_last');
+    localStorage.removeItem('stock-monitor-cache');
+    // 清除所有导入历史
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('import_data_')) {
+            localStorage.removeItem(key);
+        }
+    }
+    localStorage.setItem('app_version', APP_VERSION);
+    console.log('[版本更新] 缓存清除完成');
 }
 
 // 全局状态
