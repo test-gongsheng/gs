@@ -90,24 +90,23 @@ async function init() {
  * 刷新所有股票的中轴价格
  */
 async function refreshAxisPrices() {
-    if (appState.stocks.length === 0) {
-        if (typeof showNotification === 'function') {
-            showNotification('没有持仓数据，请先导入', 'warning');
-        }
-        return;
-    }
+    console.log('[refreshAxisPrices] 开始执行，股票数量:', appState.stocks.length);
     
-    console.log('正在重新计算中轴价格...');
-    if (typeof showNotification === 'function') {
-        showNotification('正在重新计算中轴价格，请稍候...', 'info');
+    if (appState.stocks.length === 0) {
+        console.log('[refreshAxisPrices] 没有持仓数据，跳过');
+        return;
     }
     
     let updatedCount = 0;
     let failedCount = 0;
     let changedStocks = [];
     
-    const updatePromises = appState.stocks.map(async (stock) => {
+    // 逐个处理而不是用 Promise.all，避免某个失败影响其他
+    for (let i = 0; i < appState.stocks.length; i++) {
+        const stock = appState.stocks[i];
         try {
+            console.log(`[refreshAxisPrices] 处理 ${stock.code} ${stock.name}...`);
+            
             const response = await fetch('/api/axis-price', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -119,18 +118,20 @@ async function refreshAxisPrices() {
             });
             
             const axisData = await response.json();
+            console.log(`[refreshAxisPrices] ${stock.code} API返回:`, axisData);
             
-            if (axisData.success && axisData.data) {
+            if (axisData.success && axisData.data && axisData.data.axis_price) {
                 const oldPivot = parseFloat(stock.pivotPrice) || 0;
                 const newPivot = axisData.data.axis_price;
                 
+                // 直接修改 stock 对象
                 stock.pivotPrice = newPivot;
                 stock.triggerBuy = axisData.data.trigger_buy;
                 stock.triggerSell = axisData.data.trigger_sell;
                 
-                // 如果中轴价格有显著变化，记录下来
+                console.log(`[refreshAxisPrices] ${stock.code} 更新: ${oldPivot.toFixed(2)} -> ${newPivot.toFixed(2)}`);
+                
                 if (Math.abs(oldPivot - newPivot) > 0.1) {
-                    console.log(`${stock.code} 中轴价格更新: ${oldPivot.toFixed(2)} -> ${newPivot.toFixed(2)}`);
                     changedStocks.push({
                         code: stock.code,
                         name: stock.name,
@@ -139,28 +140,27 @@ async function refreshAxisPrices() {
                     });
                 }
                 updatedCount++;
-                return true;
             } else {
-                console.warn(`${stock.code} 获取中轴价格失败:`, axisData.error || '未知错误');
+                console.warn(`[refreshAxisPrices] ${stock.code} API返回失败:`, axisData.error || '无数据');
                 failedCount++;
-                return false;
             }
         } catch (error) {
-            console.warn(`${stock.code} 获取中轴价格异常:`, error.message);
+            console.error(`[refreshAxisPrices] ${stock.code} 异常:`, error.message);
             failedCount++;
-            return false;
         }
-    });
+    }
     
-    // 等待所有更新完成
-    await Promise.all(updatePromises);
+    console.log(`[refreshAxisPrices] 完成: ${updatedCount}只成功, ${failedCount}只失败, ${changedStocks.length}只变化`);
     
-    console.log(`中轴价格刷新完成: ${updatedCount} 只成功, ${failedCount} 只失败`);
+    // 保存到 localStorage
+    try {
+        localStorage.setItem('import_data_last', JSON.stringify(appState.stocks));
+        console.log('[refreshAxisPrices] 已保存到 localStorage');
+    } catch (e) {
+        console.error('[refreshAxisPrices] 保存到 localStorage 失败:', e);
+    }
     
-    // 更新localStorage中的数据
-    localStorage.setItem('import_data_last', JSON.stringify(appState.stocks));
-    
-    // 重新渲染页面
+    // 重新渲染
     renderStockList();
     if (appState.selectedStock) {
         const selected = appState.stocks.find(s => s.code === appState.selectedStock.code);
@@ -171,7 +171,7 @@ async function refreshAxisPrices() {
     }
     updateAssetOverview();
     
-    // 显示结果通知
+    // 显示通知（如果函数可用）
     if (typeof showNotification === 'function') {
         if (changedStocks.length > 0) {
             const changes = changedStocks.slice(0, 3).map(s => `${s.name}: ${s.oldPrice.toFixed(2)}→${s.newPrice.toFixed(2)}`).join(', ');
@@ -181,6 +181,8 @@ async function refreshAxisPrices() {
             showNotification(`中轴价格已是最新 (${updatedCount}只成功${failedCount > 0 ? ', ' + failedCount + '只失败' : ''})`, 'success');
         }
     }
+    
+    return { updatedCount, failedCount, changedStocks };
 }
 
 // 更新时间
@@ -459,22 +461,6 @@ function renderStockDetail() {
     // 中轴价格：港股显示港币中轴价格，A股显示人民币中轴价格
     let pivotPriceValue = parseFloat(stock.pivotPrice) || 0;
     
-    // 如果是港股且中轴价格看起来像是人民币（比当前价格低很多），需要转换
-    // 正常情况下 API 返回的中轴价格是基于港币K线计算的
-    if (isHKStock && pivotPriceValue > 0 && stock.price > 0) {
-        // 检查中轴价格是否可能是人民币值
-        // holdCost 是导入的人民币成本
-        const holdCostCny = stock.holdCost || 0;
-        const holdCostHkd = holdCostCny * exchangeRate; // 人民币成本换算成港币
-        
-        // 如果 pivotPrice 接近人民币成本价，但偏离港币成本价，说明 pivotPrice 可能是人民币值
-        if (Math.abs(pivotPriceValue - holdCostCny) < 1 && Math.abs(pivotPriceValue - holdCostHkd) > 10) {
-            // pivotPrice 可能是人民币值，转换为港币
-            console.log('中轴价格疑似人民币值，转换为港币:', pivotPriceValue, '->', (pivotPriceValue / exchangeRate).toFixed(2));
-            pivotPriceValue = pivotPriceValue / exchangeRate;
-        }
-    }
-
     // 策略卡片中的中轴价格
     const detailPivotEl = document.getElementById('detailPivot');
     console.log('detailPivot元素:', detailPivotEl);
