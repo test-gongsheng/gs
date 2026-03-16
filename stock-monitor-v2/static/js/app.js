@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = '2.1.5';
+const APP_VERSION = '2.1.6';
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -109,6 +109,7 @@ async function init() {
  */
 async function refreshAxisPrices() {
     console.log('[refreshAxisPrices] 开始执行，股票数量:', appState.stocks.length);
+    console.log('[refreshAxisPrices] 股票列表:', appState.stocks.map(s => s.code).join(', '));
     
     if (appState.stocks.length === 0) {
         console.log('[refreshAxisPrices] 没有持仓数据，跳过');
@@ -123,7 +124,7 @@ async function refreshAxisPrices() {
     for (let i = 0; i < appState.stocks.length; i++) {
         const stock = appState.stocks[i];
         try {
-            console.log(`[refreshAxisPrices] 处理 ${stock.code} ${stock.name}...`);
+            console.log(`[refreshAxisPrices] [${i+1}/${appState.stocks.length}] 处理 ${stock.code} ${stock.name} (市场: ${stock.market || 'A股'})...`);
             
             const response = await fetch('/api/axis-price', {
                 method: 'POST',
@@ -134,6 +135,12 @@ async function refreshAxisPrices() {
                     days: 90 
                 })
             });
+            
+            if (!response.ok) {
+                console.error(`[refreshAxisPrices] ${stock.code} HTTP错误: ${response.status}`);
+                failedCount++;
+                continue;
+            }
             
             const axisData = await response.json();
             console.log(`[refreshAxisPrices] ${stock.code} API返回:`, axisData);
