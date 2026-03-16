@@ -1,6 +1,10 @@
 /**
- * 股票投资监控系统 v2.0 - 前端逻辑
+ * 股票投资监控系统 v2.1 - 前端逻辑
+ * 版本: 2026-03-16 - 添加自动刷新中轴价格功能
  */
+
+// 版本号，用于强制刷新缓存
+const APP_VERSION = '2.1.0';
 
 // 全局状态
 const appState = {
@@ -10,7 +14,8 @@ const appState = {
     news: [],
     alerts: [],
     totalAssets: 8000000, // 800万
-    marketStatus: 'closed'
+    marketStatus: 'closed',
+    version: APP_VERSION
 };
 
 // 模拟数据 - 初始为空，从localStorage读取或等待数据导入
@@ -85,11 +90,21 @@ async function init() {
  * 刷新所有股票的中轴价格
  */
 async function refreshAxisPrices() {
-    if (appState.stocks.length === 0) return;
+    if (appState.stocks.length === 0) {
+        if (typeof showNotification === 'function') {
+            showNotification('没有持仓数据，请先导入', 'warning');
+        }
+        return;
+    }
     
     console.log('正在重新计算中轴价格...');
+    if (typeof showNotification === 'function') {
+        showNotification('正在重新计算中轴价格，请稍候...', 'info');
+    }
+    
     let updatedCount = 0;
     let failedCount = 0;
+    let changedStocks = [];
     
     const updatePromises = appState.stocks.map(async (stock) => {
         try {
@@ -106,14 +121,22 @@ async function refreshAxisPrices() {
             const axisData = await response.json();
             
             if (axisData.success && axisData.data) {
-                const oldPivot = stock.pivotPrice;
-                stock.pivotPrice = axisData.data.axis_price;
+                const oldPivot = parseFloat(stock.pivotPrice) || 0;
+                const newPivot = axisData.data.axis_price;
+                
+                stock.pivotPrice = newPivot;
                 stock.triggerBuy = axisData.data.trigger_buy;
                 stock.triggerSell = axisData.data.trigger_sell;
                 
-                // 如果中轴价格有变化，记录日志
-                if (Math.abs(oldPivot - stock.pivotPrice) > 0.01) {
-                    console.log(`${stock.code} 中轴价格更新: ${oldPivot} -> ${stock.pivotPrice}`);
+                // 如果中轴价格有显著变化，记录下来
+                if (Math.abs(oldPivot - newPivot) > 0.1) {
+                    console.log(`${stock.code} 中轴价格更新: ${oldPivot.toFixed(2)} -> ${newPivot.toFixed(2)}`);
+                    changedStocks.push({
+                        code: stock.code,
+                        name: stock.name,
+                        oldPrice: oldPivot,
+                        newPrice: newPivot
+                    });
                 }
                 updatedCount++;
                 return true;
@@ -147,6 +170,17 @@ async function refreshAxisPrices() {
         }
     }
     updateAssetOverview();
+    
+    // 显示结果通知
+    if (typeof showNotification === 'function') {
+        if (changedStocks.length > 0) {
+            const changes = changedStocks.slice(0, 3).map(s => `${s.name}: ${s.oldPrice.toFixed(2)}→${s.newPrice.toFixed(2)}`).join(', ');
+            const more = changedStocks.length > 3 ? ` 等${changedStocks.length}只` : '';
+            showNotification(`已更新${changedStocks.length}只股票中轴价格: ${changes}${more}`, 'success');
+        } else {
+            showNotification(`中轴价格已是最新 (${updatedCount}只成功${failedCount > 0 ? ', ' + failedCount + '只失败' : ''})`, 'success');
+        }
+    }
 }
 
 // 更新时间
