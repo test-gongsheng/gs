@@ -349,20 +349,27 @@ def get_axis_price():
         market = data.get('market', 'A股')
         days = data.get('days', 90)
         
+        print(f"[API] 获取中轴价格: {code}, 市场: {market}, 天数: {days}")
+        
         if not code:
             return jsonify({'success': False, 'error': '股票代码不能为空'}), 400
         
         axis_data = get_dynamic_axis_price(code, market, days)
         
         if not axis_data:
+            print(f"[API] 获取中轴价格失败: {code} 返回空数据")
             return jsonify({'success': False, 'error': '获取历史数据失败'}), 500
+        
+        print(f"[API] 获取中轴价格成功: {code} = {axis_data.get('axis_price')}")
         
         return jsonify({
             'success': True,
             'data': axis_data
         })
     except Exception as e:
-        print(f"获取中轴价格失败: {e}")
+        import traceback
+        print(f"[API] 获取中轴价格异常: {e}")
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':

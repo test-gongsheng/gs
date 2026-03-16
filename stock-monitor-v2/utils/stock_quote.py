@@ -171,7 +171,7 @@ def get_single_stock_quote(code: str, market: str = 'A股') -> Optional[Dict]:
     return result.get(tencent_code)
 
 
-def get_stock_kline(code: str, market: str = 'A股', days: int = 90) -> List[Dict]:
+def get_stock_kline(code: str, market: str = 'A股', days: int = 90, max_retries: int = 3) -> List[Dict]:
     """
     获取股票K线数据（使用腾讯财经接口）
     
@@ -179,6 +179,7 @@ def get_stock_kline(code: str, market: str = 'A股', days: int = 90) -> List[Dic
         code: 股票代码
         market: A股/港股
         days: 获取多少天的数据，默认90天（约3个月）
+        max_retries: 最大重试次数
         
     Returns:
         K线数据列表，每个元素包含 date, open, high, low, close, volume
@@ -186,41 +187,56 @@ def get_stock_kline(code: str, market: str = 'A股', days: int = 90) -> List[Dic
     tencent_code = normalize_tencent_code(code, market)
     
     # 腾讯财经K线API
-    # fq=0 不复权，fq=1 前复权
     url = f"http://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
     params = {
         'param': f"{tencent_code},day,,,{days},qfq"  # qfq 前复权
     }
     
-    try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-        response = requests.get(url, params=params, headers=headers, timeout=15)
-        data = response.json()
-        
-        # 解析K线数据
-        kline_key = f"{tencent_code}"
-        if 'data' in data and kline_key in data['data']:
-            kline_data = data['data'][kline_key].get('qfqday', []) or data['data'][kline_key].get('day', [])
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    }
+    
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(url, params=params, headers=headers, timeout=15)
+            data = response.json()
             
-            result = []
-            for item in kline_data:
-                # 格式: [日期, 开盘, 收盘, 最低, 最高, 成交量]
-                if len(item) >= 6:
-                    result.append({
-                        'date': item[0],
-                        'open': float(item[1]),
-                        'close': float(item[2]),
-                        'low': float(item[3]),
-                        'high': float(item[4]),
-                        'volume': int(float(item[5]))
-                    })
-            return result
-        return []
-    except Exception as e:
-        print(f"获取K线数据失败 {code}: {e}")
-        return []
+            # 解析K线数据
+            kline_key = f"{tencent_code}"
+            if 'data' in data and kline_key in data['data']:
+                kline_data = data['data'][kline_key].get('qfqday', []) or data['data'][kline_key].get('day', [])
+                
+                result = []
+                for item in kline_data:
+                    # 格式: [日期, 开盘, 收盘, 最低, 最高, 成交量]
+                    if len(item) >= 6:
+                        result.append({
+                            'date': item[0],
+                            'open': float(item[1]),
+                            'close': float(item[2]),
+                            'low': float(item[3]),
+                            'high': float(item[4]),
+                            'volume': int(float(item[5]))
+                        })
+                
+                if result:
+                    return result
+                elif attempt < max_retries - 1:
+                    print(f"[get_stock_kline] {code} 第{attempt+1}次尝试返回空数据，重试...")
+                    import time
+                    time.sleep(0.3 * (attempt + 1))
+            elif attempt < max_retries - 1:
+                print(f"[get_stock_kline] {code} 第{attempt+1}次尝试数据结构异常，重试...")
+                import time
+                time.sleep(0.3 * (attempt + 1))
+        except Exception as e:
+            print(f"[get_stock_kline] {code} 第{attempt+1}次尝试异常: {e}")
+            if attempt < max_retries - 1:
+                import time
+                time.sleep(0.5 * (attempt + 1))
+    
+    print(f"[get_stock_kline] {code} 重试{max_retries}次后仍失败")
+    return []
 
 
 def calculate_axis_price(kline_data: List[Dict]) -> Dict:
@@ -283,45 +299,67 @@ def calculate_axis_price(kline_data: List[Dict]) -> Dict:
     }
 
 
-def get_dynamic_axis_price(code: str, market: str = 'A股', days: int = 90) -> Dict:
+def get_dynamic_axis_price(code: str, market: str = 'A股', days: int = 90, max_retries: int = 3) -> Dict:
     """
     获取股票的动态中轴价格（基于历史K线）
     
     Returns:
         包含中轴价格和触发价位的字典
     """
-    kline = get_stock_kline(code, market, days)
+    for attempt in range(max_retries):
+        try:
+            kline = get_stock_kline(code, market, days)
+            
+            if not kline:
+                if attempt < max_retries - 1:
+                    print(f"[get_dynamic_axis_price] {code} 第{attempt+1}次尝试无数据，重试...")
+                    import time
+                    time.sleep(0.5 * (attempt + 1))  # 递增延迟
+                    continue
+                print(f"[get_dynamic_axis_price] {code} 重试{max_retries}次后仍无数据")
+                return {}
+            
+            axis_data = calculate_axis_price(kline)
+            
+            if not axis_data:
+                if attempt < max_retries - 1:
+                    print(f"[get_dynamic_axis_price] {code} 第{attempt+1}次尝试计算失败，重试...")
+                    import time
+                    time.sleep(0.5 * (attempt + 1))
+                    continue
+                print(f"[get_dynamic_axis_price] {code} 重试{max_retries}次后计算仍失败")
+                return {}
+            
+            axis_price = axis_data['axis_price']
+            
+            # 基于波动率动态调整触发阈值
+            std = axis_data['std']
+            avg = axis_data['avg_price']
+            volatility = (std / avg * 100) if avg > 0 else 5
+            
+            if volatility > 5:
+                trigger_pct = 0.10
+            elif volatility < 3:
+                trigger_pct = 0.06
+            else:
+                trigger_pct = 0.08
+            
+            return {
+                **axis_data,
+                'trigger_buy': round(axis_price * (1 - trigger_pct), 2),
+                'trigger_sell': round(axis_price * (1 + trigger_pct), 2),
+                'trigger_pct': round(trigger_pct * 100, 1),
+                'volatility': round(volatility, 2)
+            }
+        except Exception as e:
+            print(f"[get_dynamic_axis_price] {code} 第{attempt+1}次尝试异常: {e}")
+            if attempt < max_retries - 1:
+                import time
+                time.sleep(0.5 * (attempt + 1))
+            else:
+                raise
     
-    if not kline:
-        return {}
-    
-    axis_data = calculate_axis_price(kline)
-    
-    if not axis_data:
-        return {}
-    
-    axis_price = axis_data['axis_price']
-    
-    # 基于波动率动态调整触发阈值
-    # 如果波动率大(>5%)，阈值放宽到10%；波动率小(<3%)，阈值收紧到6%
-    std = axis_data['std']
-    avg = axis_data['avg_price']
-    volatility = (std / avg * 100) if avg > 0 else 5
-    
-    if volatility > 5:
-        trigger_pct = 0.10  # 10%
-    elif volatility < 3:
-        trigger_pct = 0.06  # 6%
-    else:
-        trigger_pct = 0.08  # 8%
-    
-    return {
-        **axis_data,
-        'trigger_buy': round(axis_price * (1 - trigger_pct), 2),
-        'trigger_sell': round(axis_price * (1 + trigger_pct), 2),
-        'trigger_pct': round(trigger_pct * 100, 1),
-        'volatility': round(volatility, 2)
-    }
+    return {}
 
 
 if __name__ == '__main__':
