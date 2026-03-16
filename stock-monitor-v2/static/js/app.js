@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = '2.1.9';
+const APP_VERSION = '2.1.10';
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -491,33 +491,25 @@ function renderStockDetail() {
         detailPnLPercentEl.className = 'card-value ' + (pnl >= 0 ? 'up' : 'down');
     }
 
-    // 调试中轴价格
-    console.log('[renderStockDetail] 中轴价格调试:', stock.code, 'pivotPrice=', stock.pivotPrice, 'type=', typeof stock.pivotPrice);
-
-    // 中轴价格：港股显示港币中轴价格，A股显示人民币中轴价格
-    let pivotPriceValue = parseFloat(stock.pivotPrice) || 0;
+    // 计算持仓比例 = 该股票市值 / 总资产
+    const totalAssets = appState.totalAssets || 8000000; // 默认800万
+    let positionRatio = 0;
+    if (totalAssets > 0) {
+        positionRatio = (marketValue / totalAssets) * 100;
+    }
     
-    console.log('[renderStockDetail] pivotPriceValue=', pivotPriceValue);
-    
-    // 策略卡片中的中轴价格
+    // 持仓比例卡片（原中轴价格位置）
     const detailPivotEl = document.getElementById('detailPivot');
-    console.log('detailPivot元素:', detailPivotEl);
     if (detailPivotEl) {
-        if (isHKStock) {
-            detailPivotEl.textContent = pivotPriceValue.toFixed(2) + ' HKD';
-        } else {
-            detailPivotEl.textContent = pivotPriceValue.toFixed(2);
-        }
-        console.log('已设置中轴价格为:', pivotPriceValue.toFixed(2), isHKStock ? 'HKD' : 'CNY');
-    } else {
-        console.error('找不到detailPivot元素');
+        detailPivotEl.textContent = positionRatio.toFixed(2) + '%';
+        console.log('[renderStockDetail] 持仓比例:', positionRatio.toFixed(2) + '%');
     }
 
     // 中轴价格可视化区域的中轴价格
+    let pivotPriceValue = parseFloat(stock.pivotPrice) || 0;
     const pivotCenterEl = document.getElementById('pivotCenter');
     if (pivotCenterEl) {
         pivotCenterEl.textContent = pivotPriceValue.toFixed(2);
-        console.log('已设置可视化区域中轴价格为:', pivotPriceValue.toFixed(2));
     }
 
     // 当前价格标签
