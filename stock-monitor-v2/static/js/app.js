@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = '2.1.8';
+const APP_VERSION = '2.1.9';
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -123,8 +123,9 @@ async function refreshAxisPrices() {
     // 逐个处理而不是用 Promise.all，避免某个失败影响其他
     for (let i = 0; i < appState.stocks.length; i++) {
         const stock = appState.stocks[i];
+        console.log(`[refreshAxisPrices] [${i+1}/${appState.stocks.length}] 开始处理 ${stock.code}...`);
         try {
-            console.log(`[refreshAxisPrices] [${i+1}/${appState.stocks.length}] 处理 ${stock.code} ${stock.name} (市场: ${stock.market || 'A股'})...`);
+            console.log(`[refreshAxisPrices] 调用API: ${stock.code}`);
             
             const response = await fetch('/api/axis-price', {
                 method: 'POST',
@@ -136,6 +137,8 @@ async function refreshAxisPrices() {
                 })
             });
             
+            console.log(`[refreshAxisPrices] ${stock.code} API响应状态: ${response.status}`);
+            
             if (!response.ok) {
                 console.error(`[refreshAxisPrices] ${stock.code} HTTP错误: ${response.status}`);
                 failedCount++;
@@ -143,18 +146,20 @@ async function refreshAxisPrices() {
             }
             
             const axisData = await response.json();
-            console.log(`[refreshAxisPrices] ${stock.code} API返回:`, axisData);
+            console.log(`[refreshAxisPrices] ${stock.code} API返回数据:`, axisData);
             
             if (axisData.success && axisData.data && axisData.data.axis_price) {
                 const oldPivot = parseFloat(stock.pivotPrice) || 0;
                 const newPivot = axisData.data.axis_price;
+                
+                console.log(`[refreshAxisPrices] ${stock.code} 准备更新: ${oldPivot} -> ${newPivot}`);
                 
                 // 直接修改 stock 对象
                 stock.pivotPrice = newPivot;
                 stock.triggerBuy = axisData.data.trigger_buy;
                 stock.triggerSell = axisData.data.trigger_sell;
                 
-                console.log(`[refreshAxisPrices] ${stock.code} 更新: ${oldPivot.toFixed(2)} -> ${newPivot.toFixed(2)}`);
+                console.log(`[refreshAxisPrices] ${stock.code} 更新完成: ${oldPivot.toFixed(2)} -> ${newPivot.toFixed(2)}`);
                 
                 if (Math.abs(oldPivot - newPivot) > 0.1) {
                     changedStocks.push({
@@ -171,8 +176,10 @@ async function refreshAxisPrices() {
             }
         } catch (error) {
             console.error(`[refreshAxisPrices] ${stock.code} 异常:`, error.message);
+            console.error(error);
             failedCount++;
         }
+        console.log(`[refreshAxisPrices] [${i+1}/${appState.stocks.length}] 处理 ${stock.code} 结束`);
     }
     
     console.log(`[refreshAxisPrices] 完成: ${updatedCount}只成功, ${failedCount}只失败, ${changedStocks.length}只变化`);
