@@ -906,6 +906,15 @@ function formatMoney(amount) {
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
+    // 检查是否需要强制刷新（URL参数带 ?refresh=1）
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('refresh') === '1') {
+        console.log('强制刷新模式：清除localStorage并重新加载');
+        localStorage.removeItem('import_data_last');
+        // 清除URL参数
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
     init();
     // 数据导入功能在import.js中初始化 - v2
     console.log('Checking initDataImport...', typeof initDataImport);
@@ -932,3 +941,18 @@ window.renderStockList = renderStockList;
 window.updateAssetOverview = updateAssetOverview;
 window.selectStock = selectStock;
 window.refreshAxisPrices = refreshAxisPrices;
+
+/**
+ * 强制重置 - 清除所有缓存并重新加载页面
+ */
+function forceReset() {
+    if (confirm('确定要清除所有缓存数据并重新加载页面吗？\n这将清除本地保存的持仓数据。')) {
+        console.log('强制重置：清除所有localStorage数据');
+        localStorage.clear();
+        showNotification('缓存已清除，正在重新加载...', 'success');
+        setTimeout(() => {
+            window.location.reload(true); // true 表示强制从服务器重新加载
+        }, 1000);
+    }
+}
+window.forceReset = forceReset;
