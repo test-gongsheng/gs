@@ -663,8 +663,8 @@ async function confirmImport() {
         // 显示加载提示
         showNotification('正在获取中轴价格和汇率，请稍候...', 'info');
         
-        // fetch 带超时
-        const fetchWithTimeout = (url, options, timeout = 10000) => {
+        // fetch 带超时（增加到15秒）
+        const fetchWithTimeout = (url, options, timeout = 15000) => {
             return Promise.race([
                 fetch(url, options),
                 new Promise((_, reject) => 
@@ -709,7 +709,7 @@ async function confirmImport() {
                         market: newStock.market || 'A股', 
                         days: 90 
                     })
-                }, 10000);
+                }, 15000);
                 
                 const axisData = await response.json();
                 
