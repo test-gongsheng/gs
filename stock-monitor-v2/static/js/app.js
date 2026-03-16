@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = '2.1.7';
+const APP_VERSION = '2.1.8';
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -185,12 +185,16 @@ async function refreshAxisPrices() {
         console.error('[refreshAxisPrices] 保存到 localStorage 失败:', e);
     }
     
-    // 重新渲染
+    // 重新渲染 - 确保使用最新的数据
     renderStockList();
+    
+    // 强制重新获取选中的股票对象（确保引用正确）
     if (appState.selectedStock) {
-        const selected = appState.stocks.find(s => s.code === appState.selectedStock.code);
-        if (selected) {
-            appState.selectedStock = selected;
+        const updatedStock = appState.stocks.find(s => s.code === appState.selectedStock.code);
+        if (updatedStock) {
+            // 完全替换 selectedStock 对象，确保所有字段都是最新的
+            appState.selectedStock = updatedStock;
+            console.log('[refreshAxisPrices] 已更新 selectedStock:', updatedStock.code, 'pivotPrice=', updatedStock.pivotPrice);
             renderStockDetail();
         }
     }
@@ -481,10 +485,12 @@ function renderStockDetail() {
     }
 
     // 调试中轴价格
-    console.log('中轴价格调试:', stock.code, 'pivotPrice=', stock.pivotPrice, 'type=', typeof stock.pivotPrice);
+    console.log('[renderStockDetail] 中轴价格调试:', stock.code, 'pivotPrice=', stock.pivotPrice, 'type=', typeof stock.pivotPrice);
 
     // 中轴价格：港股显示港币中轴价格，A股显示人民币中轴价格
     let pivotPriceValue = parseFloat(stock.pivotPrice) || 0;
+    
+    console.log('[renderStockDetail] pivotPriceValue=', pivotPriceValue);
     
     // 策略卡片中的中轴价格
     const detailPivotEl = document.getElementById('detailPivot');
