@@ -935,10 +935,61 @@ function forceReset() {
     if (confirm('确定要清除所有缓存数据并重新加载页面吗？\n这将清除本地保存的持仓数据。')) {
         console.log('强制重置：清除所有localStorage数据');
         localStorage.clear();
-        showNotification('缓存已清除，正在重新加载...', 'success');
+        alert('缓存已清除，请重新导入持仓数据');
         setTimeout(() => {
-            window.location.reload(true); // true 表示强制从服务器重新加载
-        }, 1000);
+            window.location.reload(true);
+        }, 500);
     }
 }
 window.forceReset = forceReset;
+
+/**
+ * 手动修复单只股票中轴价格（调试用）
+ */
+async function fixStockAxis(code) {
+    const stock = appState.stocks.find(s => s.code === code);
+    if (!stock) {
+        console.error(`找不到股票 ${code}`);
+        return;
+    }
+    
+    console.log(`[fixStockAxis] 手动修复 ${code} 中轴价格...`);
+    console.log(`[fixStockAxis] 当前值: ${stock.pivotPrice}`);
+    
+    try {
+        const response = await fetch('/api/axis-price', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                code: stock.code, 
+                market: stock.market || 'A股', 
+                days: 90 
+            })
+        });
+        
+        const axisData = await response.json();
+        console.log(`[fixStockAxis] API返回:`, axisData);
+        
+        if (axisData.success && axisData.data && axisData.data.axis_price) {
+            const oldPivot = stock.pivotPrice;
+            stock.pivotPrice = axisData.data.axis_price;
+            stock.triggerBuy = axisData.data.trigger_buy;
+            stock.triggerSell = axisData.data.trigger_sell;
+            
+            console.log(`[fixStockAxis] 修复成功: ${oldPivot} -> ${stock.pivotPrice}`);
+            
+            // 保存并刷新
+            localStorage.setItem('import_data_last', JSON.stringify(appState.stocks));
+            renderStockDetail();
+            
+            alert(`${stock.name}(${code}) 中轴价格已更新:\n${oldPivot} -> ${stock.pivotPrice}`);
+        } else {
+            console.error(`[fixStockAxis] API返回失败:`, axisData);
+            alert(`获取中轴价格失败: ${axisData.error || '未知错误'}`);
+        }
+    } catch (error) {
+        console.error(`[fixStockAxis] 异常:`, error);
+        alert(`修复失败: ${error.message}`);
+    }
+}
+window.fixStockAxis = fixStockAxis;
