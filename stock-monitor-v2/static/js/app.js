@@ -4,7 +4,16 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = '2.1.0';
+const APP_VERSION = '2.1.1';
+
+// 检查版本，如果不匹配则强制刷新
+const lastVersion = localStorage.getItem('app_version');
+if (lastVersion !== APP_VERSION) {
+    console.log(`版本更新: ${lastVersion} -> ${APP_VERSION}，清除缓存...`);
+    localStorage.setItem('app_version', APP_VERSION);
+    // 清除股票数据缓存，强制重新计算
+    localStorage.removeItem('import_data_last');
+}
 
 // 全局状态
 const appState = {
