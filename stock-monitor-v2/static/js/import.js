@@ -692,9 +692,12 @@ async function confirmImport() {
             console.warn('获取昨日汇率失败，使用默认汇率:', yesterdayExchangeRate);
         }
         
-        // 获取动态中轴价格并创建股票数据
-        const stockPromises = stocks.map(async (newStock, index) => {
+        // 获取动态中轴价格并创建股票数据（顺序执行，避免并发超时）
+        appState.stocks = [];
+        for (let i = 0; i < stocks.length; i++) {
+            const newStock = stocks[i];
             try {
+                console.log(`[导入] 处理 ${newStock.code} ${newStock.name}...`);
                 let pivotPrice, triggerBuy, triggerSell;
                 
                 // 所有股票都调用API获取动态中轴价格
@@ -710,16 +713,17 @@ async function confirmImport() {
                 
                 const axisData = await response.json();
                 
-                if (axisData.success) {
+                if (axisData.success && axisData.data && axisData.data.axis_price) {
                     pivotPrice = axisData.data.axis_price;
                     triggerBuy = axisData.data.trigger_buy;
                     triggerSell = axisData.data.trigger_sell;
-                    console.log(`${newStock.code} 动态中轴: ${pivotPrice}, 触发区间: ${triggerBuy} - ${triggerSell}`);
+                    console.log(`[导入] ${newStock.code} 中轴: ${pivotPrice}, 触发: ${triggerBuy}-${triggerSell}`);
                 } else {
                     // API失败时回退到成本价
                     pivotPrice = newStock.costPrice || newStock.currentPrice || 0;
                     triggerBuy = pivotPrice * 0.92;
                     triggerSell = pivotPrice * 1.08;
+                    console.warn(`[导入] ${newStock.code} API失败，使用成本价: ${pivotPrice}`);
                 }
                 
                 const isHKStock = newStock.market === '港股';
@@ -763,13 +767,13 @@ async function confirmImport() {
                     }
                 }
                 
-                return {
+                appState.stocks.push({
                     ...newStock,
                     price: newStock.currentPrice || newStock.price || 0,
                     change: 0,
                     changePercent: 0,
                     holdQuantity: newShares,
-                    holdCost: finalHoldCost,  // 重新计算后的人民币成本
+                    holdCost: finalHoldCost,
                     importedMarketValue: newStock.marketValue || 0,
                     triggerBuy: triggerBuy,
                     triggerSell: triggerSell,
@@ -778,17 +782,17 @@ async function confirmImport() {
                     pivotPrice: pivotPrice,
                     baseRatio: newStock.baseRatio || 50,
                     floatRatio: newStock.floatRatio || 50,
-                    id: String(index + 1),
+                    id: String(i + 1),
                     status: '监控中',
                     market: newStock.market || 'A股',
-                    exchangeRate: yesterdayExchangeRate, // 使用昨日收盘汇率（固定）
-                    tradeType: tradeType, // 买入/卖出/无
+                    exchangeRate: yesterdayExchangeRate,
+                    tradeType: tradeType,
                     tradeShares: tradeShares
-                };
+                });
             } catch (error) {
-                console.warn(`获取 ${newStock.code} 中轴价格失败: ${error.message}，使用成本价`);
+                console.warn(`[导入] 获取 ${newStock.code} 中轴价格失败: ${error.message}，使用成本价`);
                 const pivotPrice = newStock.costPrice || newStock.currentPrice || 0;
-                return {
+                appState.stocks.push({
                     ...newStock,
                     price: newStock.currentPrice || newStock.price || 0,
                     change: 0,
@@ -803,26 +807,16 @@ async function confirmImport() {
                     pivotPrice: pivotPrice,
                     baseRatio: newStock.baseRatio || 50,
                     floatRatio: newStock.floatRatio || 50,
-                    id: String(index + 1),
+                    id: String(i + 1),
                     status: '监控中',
                     market: newStock.market || 'A股',
-                    exchangeRate: yesterdayExchangeRate // 使用昨日收盘汇率
-                };
+                    exchangeRate: yesterdayExchangeRate
+                });
             }
-        });
-        
-        // 等待所有中轴价格获取完成（设置总超时）
-        try {
-            appState.stocks = await Promise.all(stockPromises);
-        } catch (error) {
-            console.error('部分股票获取中轴价格失败:', error);
-            // 如果有失败的，使用已完成的
-            const results = await Promise.allSettled(stockPromises);
-            appState.stocks = results
-                .filter(r => r.status === 'fulfilled')
-                .map(r => r.value);
         }
+        
         added = appState.stocks.length;
+        console.log(`[导入] 完成，共 ${added} 只股票`);
         
         // 重新渲染
         renderStockList();
