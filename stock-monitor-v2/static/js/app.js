@@ -368,7 +368,7 @@ function renderStockList() {
             </div>
             <div class="stock-item-info">
                 <span>${stock.change >= 0 ? '+' : ''}${stock.changePercent.toFixed(2)}%</span>
-                <span>持仓: ${marketValue}万</span>
+                <span>持仓: ${marketValueWan}万</span>
             </div>
         `;
 
