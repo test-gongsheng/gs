@@ -5,6 +5,7 @@ from datetime import datetime
 from utils.stock_quote import get_stock_quotes, get_dynamic_axis_price
 from utils.exchange_rate import get_cny_hkd_rate, get_yesterday_cny_hkd_rate, convert_hkd_to_cny
 from utils.sector_data import get_hot_sectors_data
+from utils.news_data import get_cls_news
 
 app = Flask(__name__)
 
@@ -163,6 +164,26 @@ def get_hot_sectors():
         return jsonify({
             'success': False,
             'sectors': data['hot_sectors'],
+            'error': str(e)
+        })
+
+
+@app.route('/api/news')
+def get_news():
+    """获取财联社实时新闻"""
+    try:
+        limit = request.args.get('limit', 20, type=int)
+        news = get_cls_news(limit)
+        return jsonify({
+            'success': True,
+            'news': news,
+            'update_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+    except Exception as e:
+        print(f"获取新闻失败: {e}")
+        return jsonify({
+            'success': False,
+            'news': [],
             'error': str(e)
         })
 

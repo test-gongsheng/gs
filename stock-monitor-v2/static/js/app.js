@@ -76,7 +76,7 @@ async function init() {
     }
     
     appState.hotSectors = mockHotSectors;
-    appState.news = mockNews;
+    appState.news = mockNews;  // 先显示模拟数据，然后异步加载真实数据
 
     renderStockList();
     renderHotSectors();
@@ -96,6 +96,9 @@ async function init() {
     
     // 定时刷新热点板块（每30秒）
     setInterval(loadHotSectors, 30000);
+    
+    // 定时刷新新闻（每60秒）
+    setInterval(loadNews, 60000);
 
     // 绑定表单提交
     document.getElementById('addStockForm').addEventListener('submit', handleAddStock);
@@ -103,6 +106,10 @@ async function init() {
     // 页面加载完成后，加载实时热点板块数据
     console.log('加载热点板块数据...');
     await loadHotSectors();
+    
+    // 页面加载完成后，加载实时新闻
+    console.log('加载财联社实时新闻...');
+    await loadNews();
     
     // 页面加载完成后，异步重新计算中轴价格（确保数据最新）
     if (appState.stocks.length > 0) {
@@ -807,21 +814,71 @@ async function loadHotSectors() {
     }
 }
 
-// 渲染新闻
+// 渲染新闻 - 财联社实时新闻
 function renderNews() {
     const listEl = document.getElementById('newsList');
+    if (!listEl) return;
+    
     listEl.innerHTML = '';
+
+    if (!appState.news || appState.news.length === 0) {
+        listEl.innerHTML = '<div class="news-empty">暂无新闻</div>';
+        return;
+    }
 
     appState.news.forEach(news => {
         const item = document.createElement('div');
         item.className = 'news-item';
+        
+        // 重要性标签样式
+        const importanceClass = news.importance === 2 ? 'important' : news.importance === 1 ? 'attention' : 'normal';
+        const importanceText = news.importance_label || (news.importance === 2 ? '重要' : news.importance === 1 ? '关注' : '一般');
+        
+        // 关联板块标签
+        let sectorsHtml = '';
+        if (news.related_sectors && news.related_sectors.length > 0) {
+            sectorsHtml = '<div class="news-sectors">';
+            news.related_sectors.forEach(sector => {
+                sectorsHtml += `<span class="news-sector-tag">${sector}</span>`;
+            });
+            sectorsHtml += '</div>';
+        }
+        
         item.innerHTML = `
-            <div class="news-time">${news.time}</div>
-            <div class="news-title">${news.title}</div>
-            <span class="news-tag ${news.tag}">${news.tag === 'important' ? '重要' : '一般'}</span>
+            <div class="news-header">
+                <div class="news-time">${news.time}</div>
+                <span class="news-tag ${importanceClass}">${importanceText}</span>
+            </div>
+            <div class="news-title" title="${news.content || news.title}">${news.title}</div>
+            ${sectorsHtml}
         `;
+        
         listEl.appendChild(item);
     });
+}
+
+// 加载财联社实时新闻
+async function loadNews() {
+    try {
+        console.log('加载财联社实时新闻...');
+        const response = await fetch('/api/news?limit=20');
+        const data = await response.json();
+        
+        if (data.success && data.news) {
+            appState.news = data.news;
+            renderNews();
+            console.log(`新闻加载完成: ${data.news.length}条`);
+        } else {
+            console.warn('新闻加载失败:', data.error);
+            // 使用备用模拟数据
+            appState.news = mockNews;
+            renderNews();
+        }
+    } catch (error) {
+        console.error('加载新闻出错:', error);
+        appState.news = mockNews;
+        renderNews();
+    }
 }
 
 // 显示添加股票弹窗
