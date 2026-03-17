@@ -264,6 +264,28 @@ def update_risk_control(data):
         'base_position_protected': True
     }
 
+@app.route('/api/exchange-rate')
+def get_exchange_rate():
+    """获取人民币兑港币汇率"""
+    try:
+        current_rate = get_cny_hkd_rate() or 1.09
+        yesterday_rate = get_yesterday_cny_hkd_rate() or 1.1339
+        
+        return jsonify({
+            'success': True,
+            'current_rate': round(current_rate, 4),  # 当前实时汇率
+            'yesterday_rate': round(yesterday_rate, 4),  # 昨日收盘汇率
+            'message': f'1 CNY = {yesterday_rate} HKD (昨日收盘)'
+        })
+    except Exception as e:
+        print(f"获取汇率失败: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'yesterday_rate': 1.1339  # 默认汇率
+        }), 500
+
+
 @app.route('/api/quotes', methods=['POST'])
 def get_quotes():
     """获取实时行情"""

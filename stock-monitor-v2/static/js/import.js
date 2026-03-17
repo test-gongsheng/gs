@@ -676,17 +676,16 @@ async function confirmImport() {
         // 先获取昨日收盘汇率（用于保持一致性）
         let yesterdayExchangeRate = 1.1339;
         try {
-            const rateResponse = await fetchWithTimeout('/api/quotes', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    stocks: stocks.filter(s => s.market === '港股').slice(0, 1).map(s => ({ code: s.code, market: s.market }))
-                })
+            const rateResponse = await fetchWithTimeout('/api/exchange-rate', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
             }, 10000);
             const rateData = await rateResponse.json();
-            if (rateData.success && rateData.exchange_rate) {
-                yesterdayExchangeRate = rateData.exchange_rate;  // 昨日收盘汇率
-                console.log('昨日收盘汇率:', yesterdayExchangeRate);
+            if (rateData.success && rateData.yesterday_rate) {
+                yesterdayExchangeRate = rateData.yesterday_rate;
+                console.log('昨日收盘汇率:', yesterdayExchangeRate, '(来自API)');
+            } else {
+                console.warn('API返回汇率数据异常，使用默认汇率:', yesterdayExchangeRate);
             }
         } catch (e) {
             console.warn('获取昨日汇率失败，使用默认汇率:', yesterdayExchangeRate);
