@@ -668,7 +668,7 @@ function renderGridStrategy(stock) {
     `).join('');
 }
 
-// 渲染热点板块 - 完整版
+// 渲染热点板块 - 真实实时数据版
 function renderHotSectors() {
     const listEl = document.getElementById('hotSectors');
     if (!listEl) return;
@@ -676,7 +676,7 @@ function renderHotSectors() {
     listEl.innerHTML = '';
 
     if (!appState.hotSectors || appState.hotSectors.length === 0) {
-        listEl.innerHTML = '<div class="sector-empty">暂无板块数据</div>';
+        listEl.innerHTML = '<div class="sector-empty">加载中...</div>';
         return;
     }
 
@@ -693,11 +693,14 @@ function renderHotSectors() {
         const mainInflow = moneyFlow.main_inflow || 0;
         const inflowClass = mainInflow >= 0 ? 'inflow' : 'outflow';
         const inflowSign = mainInflow >= 0 ? '+' : '';
+        const inflowText = Math.abs(mainInflow) >= 10000 ? 
+            `${inflowSign}${(mainInflow / 10000).toFixed(1)}亿` : 
+            `${inflowSign}${mainInflow.toFixed(0)}万`;
         
         // 情绪得分
         const sentiment = sector.sentiment || {};
         const sentimentClass = sentiment.sentiment_class || 'neutral';
-        const sentimentScore = sentiment.score || 50;
+        const sentimentScore = Math.round(sentiment.score || 50);
         
         // 技术信号
         const technical = sector.technical || {};
@@ -718,11 +721,10 @@ function renderHotSectors() {
         
         // 上涨家数占比
         const upRatio = sector.up_ratio || 0;
+        const totalStocks = sector.total_stocks || 0;
         
         // 排名
         const rank = sector.rank || (index + 1);
-        const rankChange = sector.rank_change || 0;
-        const rankIcon = rankChange > 0 ? '↑' : rankChange < 0 ? '↓' : '−';
         
         // 新闻标签
         const newsTags = sector.news_tags || [];
@@ -767,14 +769,14 @@ function renderHotSectors() {
             <div class="sector-stats">
                 <span class="sector-flow ${inflowClass}">
                     <i class="fas fa-${mainInflow >= 0 ? 'arrow-up' : 'arrow-down'}"></i>
-                    主力${inflowSign}${(mainInflow / 10000).toFixed(1)}亿
+                    主力${inflowText}
                 </span>
                 <span class="up-ratio">
                     <i class="fas fa-chart-bar"></i>
                     ${upRatio.toFixed(0)}%个股上涨
                 </span>
-                <span class="rank-change">
-                    排名${rankIcon}
+                <span class="stock-count">
+                    ${sector.up_count || 0}/${totalStocks}家涨
                 </span>
             </div>
             
