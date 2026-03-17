@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = '2.2.0';
+const APP_VERSION = '2.3.0';
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -31,6 +31,7 @@ const appState = {
     hotSectors: [],
     news: [],
     alerts: [],
+    sentiment: null,  // 市场情绪数据
     totalAssets: 8000000, // 800万
     marketStatus: 'closed',
     version: APP_VERSION
@@ -97,6 +98,9 @@ async function init() {
     // 定时刷新热点板块（每30秒）
     setInterval(loadHotSectors, 30000);
     
+    // 定时刷新市场情绪（每60秒）
+    setInterval(loadSentiment, 60000);
+    
     // 定时刷新新闻（每60秒）
     setInterval(loadNews, 60000);
 
@@ -106,6 +110,10 @@ async function init() {
     // 页面加载完成后，加载实时热点板块数据
     console.log('加载热点板块数据...');
     await loadHotSectors();
+    
+    // 页面加载完成后，加载市场情绪数据
+    console.log('加载市场情绪数据...');
+    await loadSentiment();
     
     // 页面加载完成后，加载实时新闻
     console.log('加载财联社实时新闻...');
@@ -1183,6 +1191,139 @@ function addAlertLog(message) {
     }
     const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
     logEl.innerHTML = `[${time}] ${message}`;
+}
+
+// 加载市场情绪数据
+async function loadSentiment() {
+    try {
+        console.log('加载市场情绪数据...');
+        const response = await fetch('/api/market/sentiment');
+        const data = await response.json();
+        
+        if (data.success) {
+            appState.sentiment = data;
+            renderSentiment();
+            console.log('市场情绪加载完成:', data.sentiment_index?.label);
+        } else {
+            console.warn('市场情绪加载失败:', data.error);
+        }
+    } catch (error) {
+        console.error('加载市场情绪出错:', error);
+    }
+}
+
+// 渲染市场情绪面板
+function renderSentiment() {
+    if (!appState.sentiment) return;
+    
+    const data = appState.sentiment;
+    const index = data.sentiment_index;
+    const margin = data.margin;
+    const northSouth = data.north_south;
+    const capitalFlow = data.capital_flow;
+    const breadth = data.breadth;
+    
+    // 更新更新时间
+    const updateTimeEl = document.getElementById('sentimentUpdateTime');
+    if (updateTimeEl) {
+        updateTimeEl.textContent = `更新: ${data.update_time?.split(' ')[1] || '--'}`;
+    }
+    
+    // 1. 渲染情绪指数仪表盘
+    const scoreEl = document.getElementById('sentimentScore');
+    const labelEl = document.getElementById('sentimentLabel');
+    const gaugeFillEl = document.getElementById('sentimentGaugeFill');
+    
+    if (scoreEl) scoreEl.textContent = index.score;
+    if (labelEl) {
+        labelEl.textContent = index.label;
+        labelEl.className = `gauge-label ${index.class}`;
+    }
+    
+    // 仪表盘弧形填充 (0-100映射到0-180度)
+    if (gaugeFillEl) {
+        const percentage = index.score / 100;
+        const endAngle = percentage * 180;
+        const rad = (endAngle * Math.PI) / 180;
+        const x = 100 - 80 * Math.cos(rad);
+        const y = 100 - 80 * Math.sin(rad);
+        const largeArc = endAngle > 90 ? 1 : 0;
+        gaugeFillEl.setAttribute('d', `M 20 100 A 80 80 0 ${largeArc} 1 ${x} ${y}`);
+        gaugeFillEl.setAttribute('class', `gauge-fill ${index.class}`);
+    }
+    
+    // 2. 渲染多空力量条
+    updateForceBar('north', northSouth.north_inflow, 100);
+    updateForceBar('margin', margin.margin_change, 200);
+    updateForceBar('mainForce', capitalFlow.main_inflow, 150);
+    
+    // 3. 渲染北向资金卡片
+    updateCard('north', northSouth.north_inflow, northSouth.north_sentiment);
+    document.getElementById('northInflow').textContent = `${northSouth.north_inflow >= 0 ? '+' : ''}${northSouth.north_inflow}亿`;
+    document.getElementById('northInflow').className = `metric-value ${northSouth.north_inflow >= 0 ? 'up' : 'down'}`;
+    document.getElementById('northCumulative').textContent = `${northSouth.north_cumulative}亿`;
+    
+    // 4. 渲染南向资金卡片
+    updateCard('south', northSouth.south_inflow, northSouth.south_sentiment);
+    document.getElementById('southInflow').textContent = `${northSouth.south_inflow >= 0 ? '+' : ''}${northSouth.south_inflow}亿`;
+    document.getElementById('southInflow').className = `metric-value ${northSouth.south_inflow >= 0 ? 'up' : 'down'}`;
+    document.getElementById('southSentiment').textContent = northSouth.south_sentiment;
+    document.getElementById('southSentiment').className = `metric-value ${northSouth.south_inflow >= 0 ? 'up' : 'down'}`;
+    
+    // 5. 渲染融资融券卡片
+    updateCard('margin', margin.margin_change, margin.sentiment);
+    document.getElementById('marginBalance').textContent = `${margin.total_margin_balance}亿`;
+    document.getElementById('marginChange').textContent = `${margin.margin_change >= 0 ? '+' : ''}${margin.margin_change}亿 (${margin.margin_change_pct}%)`;
+    document.getElementById('marginChange').className = `metric-value ${margin.margin_change >= 0 ? 'up' : 'down'}`;
+    
+    // 6. 渲染主力资金卡片
+    updateCard('mainForce', capitalFlow.main_inflow, capitalFlow.main_inflow >= 0 ? '看多' : '看空');
+    document.getElementById('superLargeFlow').textContent = `${capitalFlow.super_large >= 0 ? '+' : ''}${capitalFlow.super_large}亿`;
+    document.getElementById('superLargeFlow').className = `metric-value ${capitalFlow.super_large >= 0 ? 'up' : 'down'}`;
+    document.getElementById('largeFlow').textContent = `${capitalFlow.large >= 0 ? '+' : ''}${capitalFlow.large}亿`;
+    document.getElementById('largeFlow').className = `metric-value ${capitalFlow.large >= 0 ? 'up' : 'down'}`;
+    document.getElementById('mediumFlow').textContent = `${capitalFlow.medium >= 0 ? '+' : ''}${capitalFlow.medium}亿`;
+    document.getElementById('mediumFlow').className = `metric-value ${capitalFlow.medium >= 0 ? 'up' : 'down'}`;
+    document.getElementById('smallFlow').textContent = `${capitalFlow.small >= 0 ? '+' : ''}${capitalFlow.small}亿`;
+    document.getElementById('smallFlow').className = `metric-value ${capitalFlow.small >= 0 ? 'up' : 'down'}`;
+    
+    // 7. 渲染市场宽度
+    document.getElementById('upCount').textContent = breadth.up_count;
+    document.getElementById('downCount').textContent = breadth.down_count;
+    document.getElementById('ztCount').textContent = breadth.zt_count;
+    document.getElementById('dtCount').textContent = breadth.dt_count;
+    document.getElementById('newHigh').textContent = breadth.new_high;
+    document.getElementById('newLow').textContent = breadth.new_low;
+}
+
+// 更新多空力量条
+function updateForceBar(type, value, maxValue) {
+    const barEl = document.getElementById(`${type}Bar`);
+    const valueEl = document.getElementById(`${type}Value`);
+    
+    if (!barEl || !valueEl) return;
+    
+    // 计算百分比 (0-100)
+    const normalizedValue = Math.max(-maxValue, Math.min(maxValue, value));
+    const percentage = 50 + (normalizedValue / maxValue) * 50;
+    
+    barEl.style.width = `${Math.abs(percentage)}%`;
+    barEl.className = `bar-fill ${value >= 0 ? 'bull' : 'bear'}`;
+    valueEl.textContent = `${value >= 0 ? '+' : ''}${value}亿`;
+    valueEl.className = `bar-value ${value >= 0 ? 'up' : 'down'}`;
+}
+
+// 更新卡片状态
+function updateCard(type, value, sentiment) {
+    const cardEl = document.getElementById(`${type}Card`);
+    const trendEl = document.getElementById(`${type}Trend`);
+    
+    if (!cardEl || !trendEl) return;
+    
+    const isBull = value >= 0;
+    cardEl.className = `sentiment-card ${isBull ? 'bull' : 'bear'}`;
+    trendEl.textContent = sentiment;
+    trendEl.className = `trend-badge ${isBull ? 'up' : 'down'}`;
 }
 
 // 格式化金额

@@ -6,6 +6,7 @@ from utils.stock_quote import get_stock_quotes, get_dynamic_axis_price
 from utils.exchange_rate import get_cny_hkd_rate, get_yesterday_cny_hkd_rate, convert_hkd_to_cny
 from utils.sector_data import get_hot_sectors_data
 from utils.news_data import get_cls_structured_news
+from utils.market_sentiment import get_market_sentiment
 
 app = Flask(__name__)
 
@@ -210,6 +211,22 @@ def get_news():
             'calendar': [],
             'portfolio': [],
             'general': [],
+            'error': str(e)
+        })
+
+
+@app.route('/api/market/sentiment')
+def get_sentiment():
+    """获取市场情绪与多空数据"""
+    try:
+        result = get_market_sentiment()
+        return jsonify(result)
+    except Exception as e:
+        print(f"获取市场情绪失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
             'error': str(e)
         })
 

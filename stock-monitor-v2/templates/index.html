@@ -267,21 +267,181 @@
                     </div>
                 </div>
 
-                <!-- 价格走势图 -->
-                <div class="chart-section">
-                    <div class="chart-header">
-                        <span class="chart-title"><i class="fas fa-chart-area"></i> 价格走势</span>
-                        <div class="chart-periods">
-                            <button class="period-btn active" data-period="1D">分时</button>
-                            <button class="period-btn" data-period="5D">5日</button>
-                            <button class="period-btn" data-period="1M">日K</button>
-                            <button class="period-btn" data-period="1Y">周K</button>
+                <!-- 市场情绪与多空数据 -->
+                <div class="sentiment-section">
+                    <div class="section-header">
+                        <span class="section-title"><i class="fas fa-balance-scale"></i> 市场情绪与多空力量</span>
+                        <span class="section-subtitle" id="sentimentUpdateTime">更新中...</span>
+                    </div>
+                    
+                    <!-- 情绪指数仪表盘 -->
+                    <div class="sentiment-dashboard">
+                        <div class="sentiment-gauge">
+                            <div class="gauge-container">
+                                <svg class="gauge-svg" viewBox="0 0 200 120">
+                                    <path class="gauge-bg" d="M 20 100 A 80 80 0 0 1 180 100" />
+                                    <path class="gauge-fill" id="sentimentGaugeFill" d="M 20 100 A 80 80 0 0 1 20 100" />
+                                </svg>
+                                <div class="gauge-value">
+                                    <span class="gauge-score" id="sentimentScore">--</span>
+                                    <span class="gauge-label" id="sentimentLabel">--</span>
+                                </div>
+                            </div>
+                            <div class="gauge-legend">
+                                <span class="legend-item extreme-fear">极度恐惧</span>
+                                <span class="legend-item fear">恐惧</span>
+                                <span class="legend-item neutral">中性</span>
+                                <span class="legend-item greed">贪婪</span>
+                                <span class="legend-item extreme-greed">极度贪婪</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 多空力量对比 -->
+                        <div class="bull-bear-bars">
+                            <div class="force-bar">
+                                <span class="bar-label">北向资金</span>
+                                <div class="bar-container">
+                                    <div class="bar-fill bull" id="northBar" style="width: 50%"></div>
+                                </div>
+                                <span class="bar-value" id="northValue">--</span>
+                            </div>
+                            <div class="force-bar">
+                                <span class="bar-label">融资融券</span>
+                                <div class="bar-container">
+                                    <div class="bar-fill bull" id="marginBar" style="width: 50%"></div>
+                                </div>
+                                <span class="bar-value" id="marginValue">--</span>
+                            </div>
+                            <div class="force-bar">
+                                <span class="bar-label">主力资金</span>
+                                <div class="bar-container">
+                                    <div class="bar-fill bull" id="mainForceBar" style="width: 50%"></div>
+                                </div>
+                                <span class="bar-value" id="mainForceValue">--</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="chart-container" id="priceChart">
-                        <div class="chart-placeholder">
-                            <i class="fas fa-chart-line"></i>
-                            <p>价格走势图</p>
+                    
+                    <!-- 详细数据网格 -->
+                    <div class="sentiment-details">
+                        <!-- 北向资金 -->
+                        <div class="sentiment-card" id="northCard">
+                            <div class="card-header">
+                                <i class="fas fa-globe-asia"></i>
+                                <span>北向资金（外资）</span>
+                                <span class="trend-badge" id="northTrend">--</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="metric-row">
+                                    <span class="metric-label">当日净流入</span>
+                                    <span class="metric-value" id="northInflow">--</span>
+                                </div>
+                                <div class="metric-row">
+                                    <span class="metric-label">累计持仓</span>
+                                    <span class="metric-value" id="northCumulative">--</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 南向资金 -->
+                        <div class="sentiment-card" id="southCard">
+                            <div class="card-header">
+                                <i class="fas fa-arrow-right"></i>
+                                <span>南向资金（内资）</span>
+                                <span class="trend-badge" id="southTrend">--</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="metric-row">
+                                    <span class="metric-label">当日净流入</span>
+                                    <span class="metric-value" id="southInflow">--</span>
+                                </div>
+                                <div class="metric-row">
+                                    <span class="metric-label">港股态度</span>
+                                    <span class="metric-value" id="southSentiment">--</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 融资融券 -->
+                        <div class="sentiment-card" id="marginCard">
+                            <div class="card-header">
+                                <i class="fas fa-exchange-alt"></i>
+                                <span>融资融券</span>
+                                <span class="trend-badge" id="marginTrend">--</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="metric-row">
+                                    <span class="metric-label">融资余额</span>
+                                    <span class="metric-value" id="marginBalance">--</span>
+                                </div>
+                                <div class="metric-row">
+                                    <span class="metric-label">余额变化</span>
+                                    <span class="metric-value" id="marginChange">--</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 主力资金 -->
+                        <div class="sentiment-card" id="mainForceCard">
+                            <div class="card-header">
+                                <i class="fas fa-building"></i>
+                                <span>主力资金</span>
+                                <span class="trend-badge" id="mainForceTrend">--</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="metric-row">
+                                    <span class="metric-label">超大单</span>
+                                    <span class="metric-value" id="superLargeFlow">--</span>
+                                </div>
+                                <div class="metric-row">
+                                    <span class="metric-label">大单</span>
+                                    <span class="metric-value" id="largeFlow">--</span>
+                                </div>
+                                <div class="metric-row">
+                                    <span class="metric-label">中单</span>
+                                    <span class="metric-value" id="mediumFlow">--</span>
+                                </div>
+                                <div class="metric-row">
+                                    <span class="metric-label">小单</span>
+                                    <span class="metric-value" id="smallFlow">--</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 市场宽度 -->
+                        <div class="sentiment-card wide" id="breadthCard">
+                            <div class="card-header">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>市场宽度</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="breadth-stats">
+                                    <div class="breadth-item">
+                                        <span class="breadth-label">上涨家数</span>
+                                        <span class="breadth-value up" id="upCount">--</span>
+                                    </div>
+                                    <div class="breadth-item">
+                                        <span class="breadth-label">下跌家数</span>
+                                        <span class="breadth-value down" id="downCount">--</span>
+                                    </div>
+                                    <div class="breadth-item">
+                                        <span class="breadth-label">涨停</span>
+                                        <span class="breadth-value up" id="ztCount">--</span>
+                                    </div>
+                                    <div class="breadth-item">
+                                        <span class="breadth-label">跌停</span>
+                                        <span class="breadth-value down" id="dtCount">--</span>
+                                    </div>
+                                    <div class="breadth-item">
+                                        <span class="breadth-label">新高</span>
+                                        <span class="breadth-value" id="newHigh">--</span>
+                                    </div>
+                                    <div class="breadth-item">
+                                        <span class="breadth-label">新低</span>
+                                        <span class="breadth-value" id="newLow">--</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
