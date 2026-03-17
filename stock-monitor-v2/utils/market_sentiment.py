@@ -85,30 +85,32 @@ def get_north_south_capital() -> Dict:
     try:
         import akshare as ak
         
-        # 获取北向资金（沪股通+深股通）
-        north_df = ak.stock_hsgt_hist_em(symbol="北上")
+        # 获取北向资金
+        north_df = ak.stock_hsgt_hist_em(symbol="北向资金")
         north_latest = north_df.iloc[-1] if len(north_df) > 0 else None
-        north_prev = north_df.iloc[-2] if len(north_df) > 1 else None
         
-        # 获取南向资金（港股通）
-        south_df = ak.stock_hsgt_hist_em(symbol="南下")
+        # 获取南向资金
+        south_df = ak.stock_hsgt_hist_em(symbol="南向资金")
         south_latest = south_df.iloc[-1] if len(south_df) > 0 else None
         
         north_inflow = 0
         north_cumulative = 0
         if north_latest is not None:
-            north_inflow = float(north_latest.get('当日资金流入', 0))
-            north_cumulative = float(north_latest.get('历史资金累计', 0))
+            val = north_latest.get('当日成交净买额', 0)
+            north_inflow = float(val) if val == val else 0  # 检查 NaN
+            val2 = north_latest.get('历史累计净买额', 0)
+            north_cumulative = float(val2) * 10000 if val2 == val2 else 0  # 万亿元转亿元
         
         south_inflow = 0
         if south_latest is not None:
-            south_inflow = float(south_latest.get('当日资金流入', 0))
+            val = south_latest.get('当日成交净买额', 0)
+            south_inflow = float(val) if val == val else 0
         
         return {
             'success': True,
-            'north_inflow': round(north_inflow / 10000, 2),      # 亿元
-            'north_cumulative': round(north_cumulative / 10000, 2),  # 亿元
-            'south_inflow': round(south_inflow / 10000, 2),      # 亿元
+            'north_inflow': round(north_inflow, 2),      # 亿元
+            'north_cumulative': round(north_cumulative, 2),  # 亿元
+            'south_inflow': round(south_inflow, 2),      # 亿元
             'north_sentiment': '看多' if north_inflow > 0 else '看空',
             'south_sentiment': '看多' if south_inflow > 0 else '看空',
             'update_time': datetime.now().strftime('%Y-%m-%d %H:%M')

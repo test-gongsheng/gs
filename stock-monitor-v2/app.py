@@ -141,13 +141,7 @@ def update_axis_price(stock_id):
     
     return jsonify({'success': False, 'error': '股票不存在'}), 404
 
-@app.route('/api/market/sentiment')
-def get_market_sentiment():
-    """获取市场情绪"""
-    data = load_data()
-    return jsonify(data['market_sentiment'])
-
-@app.route('/api/market/hot-sectors')
+@app.route('/api/market/h-sectors')
 def get_hot_sectors():
     """获取热点板块（实时数据）"""
     try:
@@ -475,4 +469,4 @@ def get_axis_price():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=5000, use_reloader=False)
