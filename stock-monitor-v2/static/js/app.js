@@ -668,7 +668,7 @@ function renderGridStrategy(stock) {
     `).join('');
 }
 
-// 渲染热点板块
+// 渲染热点板块 - 完整版
 function renderHotSectors() {
     const listEl = document.getElementById('hotSectors');
     if (!listEl) return;
@@ -694,6 +694,47 @@ function renderHotSectors() {
         const inflowClass = mainInflow >= 0 ? 'inflow' : 'outflow';
         const inflowSign = mainInflow >= 0 ? '+' : '';
         
+        // 情绪得分
+        const sentiment = sector.sentiment || {};
+        const sentimentClass = sentiment.sentiment_class || 'neutral';
+        const sentimentScore = sentiment.score || 50;
+        
+        // 技术信号
+        const technical = sector.technical || {};
+        const signals = technical.signals || [];
+        let signalsHtml = '';
+        if (signals.length > 0) {
+            signalsHtml = '<div class="sector-signals">';
+            signals.slice(0, 2).forEach(sig => {
+                const sigClass = sig.type === 'buy' ? 'buy' : sig.type === 'sell' ? 'sell' : 'strong';
+                signalsHtml += `<span class="signal-tag ${sigClass}">${sig.text}</span>`;
+            });
+            signalsHtml += '</div>';
+        }
+        
+        // 涨停家数
+        const limitUp = sector.limit_up_count || 0;
+        const limitUpHtml = limitUp > 0 ? `<span class="limit-up-tag">${limitUp}股涨停</span>` : '';
+        
+        // 上涨家数占比
+        const upRatio = sector.up_ratio || 0;
+        
+        // 排名
+        const rank = sector.rank || (index + 1);
+        const rankChange = sector.rank_change || 0;
+        const rankIcon = rankChange > 0 ? '↑' : rankChange < 0 ? '↓' : '−';
+        
+        // 新闻标签
+        const newsTags = sector.news_tags || [];
+        let tagsHtml = '';
+        if (newsTags.length > 0) {
+            tagsHtml = '<div class="sector-tags">';
+            newsTags.slice(0, 2).forEach(tag => {
+                tagsHtml += `<span class="news-tag">${tag}</span>`;
+            });
+            tagsHtml += '</div>';
+        }
+        
         // 领涨股 TOP 3
         const topStocks = sector.top_stocks || [];
         let stocksHtml = '';
@@ -703,7 +744,7 @@ function renderHotSectors() {
                 const stockUp = stock.change_percent >= 0;
                 const stockClass = stockUp ? 'up' : 'down';
                 const stockSign = stockUp ? '+' : '';
-                stocksHtml += `<span class="sector-stock ${stockClass}">${stock.name} ${stockSign}${stock.change_percent.toFixed(2)}%</span>`;
+                stocksHtml += `<span class="sector-stock ${stockClass}">${stock.name} ${stockSign}${stock.change_percent.toFixed(1)}%</span>`;
             });
             stocksHtml += '</div>';
         }
@@ -711,20 +752,34 @@ function renderHotSectors() {
         item.innerHTML = `
             <div class="sector-header">
                 <div class="sector-info">
-                    <span class="sector-rank">${index + 1}</span>
-                    <span class="sector-name">${sector.name}</span>
+                    <span class="sector-rank">${rank}</span>
+                    <div class="sector-title">
+                        <span class="sector-name">${sector.name}</span>
+                        ${limitUpHtml}
+                    </div>
                 </div>
                 <div class="sector-change-group">
                     <span class="sector-change ${changeClass}">${changeSign}${sector.change.toFixed(2)}%</span>
+                    <span class="sentiment-badge ${sentimentClass}">${sentimentScore}</span>
                 </div>
             </div>
-            <div class="sector-details">
+            
+            <div class="sector-stats">
                 <span class="sector-flow ${inflowClass}">
                     <i class="fas fa-${mainInflow >= 0 ? 'arrow-up' : 'arrow-down'}"></i>
                     主力${inflowSign}${(mainInflow / 10000).toFixed(1)}亿
                 </span>
-                ${sector.desc ? `<span class="sector-desc">${sector.desc}</span>` : ''}
+                <span class="up-ratio">
+                    <i class="fas fa-chart-bar"></i>
+                    ${upRatio.toFixed(0)}%个股上涨
+                </span>
+                <span class="rank-change">
+                    排名${rankIcon}
+                </span>
             </div>
+            
+            ${signalsHtml}
+            ${tagsHtml}
             ${stocksHtml}
         `;
         
