@@ -491,11 +491,11 @@ function renderStockDetail() {
         detailPnLPercentEl.className = 'card-value ' + (pnl >= 0 ? 'up' : 'down');
     }
 
-    // 计算持仓比例 = 该股票市值 / 总资产
-    const totalAssets = appState.totalAssets || 8000000; // 默认800万
+    // 计算持仓比例 = 该股票市值 / 个股投资上限
+    const investLimit = stock.investLimit || 1;
     let positionRatio = 0;
-    if (totalAssets > 0) {
-        positionRatio = (marketValue / totalAssets) * 100;
+    if (investLimit > 0) {
+        positionRatio = (marketValue / investLimit) * 100;
     }
     
     // 持仓比例卡片（原中轴价格位置）
