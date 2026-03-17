@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 from utils.stock_quote import get_stock_quotes, get_dynamic_axis_price
 from utils.exchange_rate import get_cny_hkd_rate, get_yesterday_cny_hkd_rate, convert_hkd_to_cny
+from utils.sector_data import get_hot_sectors_data
 
 app = Flask(__name__)
 
@@ -146,9 +147,24 @@ def get_market_sentiment():
 
 @app.route('/api/market/hot-sectors')
 def get_hot_sectors():
-    """获取热点板块"""
-    data = load_data()
-    return jsonify(data['hot_sectors'])
+    """获取热点板块（实时数据）"""
+    try:
+        # 获取实时板块数据
+        sectors = get_hot_sectors_data()
+        return jsonify({
+            'success': True,
+            'sectors': sectors,
+            'update_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+    except Exception as e:
+        print(f"获取热点板块失败: {e}")
+        # 返回本地缓存的默认数据
+        data = load_data()
+        return jsonify({
+            'success': False,
+            'sectors': data['hot_sectors'],
+            'error': str(e)
+        })
 
 @app.route('/api/alerts')
 def get_alerts():

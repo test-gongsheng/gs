@@ -93,9 +93,16 @@ async function init() {
     // 定时更新
     setInterval(updateTime, 1000);
     setInterval(simulatePriceUpdate, 3000);
+    
+    // 定时刷新热点板块（每30秒）
+    setInterval(loadHotSectors, 30000);
 
     // 绑定表单提交
     document.getElementById('addStockForm').addEventListener('submit', handleAddStock);
+    
+    // 页面加载完成后，加载实时热点板块数据
+    console.log('加载热点板块数据...');
+    await loadHotSectors();
     
     // 页面加载完成后，异步重新计算中轴价格（确保数据最新）
     if (appState.stocks.length > 0) {
@@ -664,20 +671,83 @@ function renderGridStrategy(stock) {
 // 渲染热点板块
 function renderHotSectors() {
     const listEl = document.getElementById('hotSectors');
+    if (!listEl) return;
+    
     listEl.innerHTML = '';
+
+    if (!appState.hotSectors || appState.hotSectors.length === 0) {
+        listEl.innerHTML = '<div class="sector-empty">暂无板块数据</div>';
+        return;
+    }
 
     appState.hotSectors.forEach((sector, index) => {
         const item = document.createElement('div');
         item.className = 'sector-item';
+        
+        const isUp = sector.change >= 0;
+        const changeClass = isUp ? 'up' : 'down';
+        const changeSign = isUp ? '+' : '';
+        
+        // 资金流向
+        const moneyFlow = sector.money_flow || {};
+        const mainInflow = moneyFlow.main_inflow || 0;
+        const inflowClass = mainInflow >= 0 ? 'inflow' : 'outflow';
+        const inflowSign = mainInflow >= 0 ? '+' : '';
+        
+        // 领涨股 TOP 3
+        const topStocks = sector.top_stocks || [];
+        let stocksHtml = '';
+        if (topStocks.length > 0) {
+            stocksHtml = '<div class="sector-stocks">';
+            topStocks.forEach((stock, i) => {
+                const stockUp = stock.change_percent >= 0;
+                const stockClass = stockUp ? 'up' : 'down';
+                const stockSign = stockUp ? '+' : '';
+                stocksHtml += `<span class="sector-stock ${stockClass}">${stock.name} ${stockSign}${stock.change_percent.toFixed(2)}%</span>`;
+            });
+            stocksHtml += '</div>';
+        }
+        
         item.innerHTML = `
-            <div>
-                <span class="sector-rank">${index + 1}</span>
-                <span class="sector-name">${sector.name}</span>
+            <div class="sector-header">
+                <div class="sector-info">
+                    <span class="sector-rank">${index + 1}</span>
+                    <span class="sector-name">${sector.name}</span>
+                </div>
+                <div class="sector-change-group">
+                    <span class="sector-change ${changeClass}">${changeSign}${sector.change.toFixed(2)}%</span>
+                </div>
             </div>
-            <span class="sector-change up">+${sector.change}%</span>
+            <div class="sector-details">
+                <span class="sector-flow ${inflowClass}">
+                    <i class="fas fa-${mainInflow >= 0 ? 'arrow-up' : 'arrow-down'}"></i>
+                    主力${inflowSign}${(mainInflow / 10000).toFixed(1)}亿
+                </span>
+                ${sector.desc ? `<span class="sector-desc">${sector.desc}</span>` : ''}
+            </div>
+            ${stocksHtml}
         `;
+        
         listEl.appendChild(item);
     });
+}
+
+// 加载热点板块数据
+async function loadHotSectors() {
+    try {
+        const response = await fetch('/api/market/hot-sectors');
+        const data = await response.json();
+        
+        if (data.success && data.sectors) {
+            appState.hotSectors = data.sectors;
+            renderHotSectors();
+            console.log('[热点板块] 已更新', data.sectors.length, '个板块');
+        } else {
+            console.warn('[热点板块] 获取失败:', data.error);
+        }
+    } catch (e) {
+        console.error('[热点板块] 加载失败:', e);
+    }
 }
 
 // 渲染新闻
@@ -957,6 +1027,7 @@ window.renderStockList = renderStockList;
 window.updateAssetOverview = updateAssetOverview;
 window.selectStock = selectStock;
 window.refreshAxisPrices = refreshAxisPrices;
+window.loadHotSectors = loadHotSectors;
 
 /**
  * 强制重置 - 清除所有缓存并重新加载页面

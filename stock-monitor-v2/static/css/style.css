@@ -1107,11 +1107,10 @@ body {
 
 .sector-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
   padding: 12px;
   border-radius: var(--border-radius);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   background: var(--bg-tertiary);
   transition: all var(--transition-fast);
 }
@@ -1120,43 +1119,124 @@ body {
   background: var(--bg-hover);
 }
 
+.sector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
 .sector-info {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
+}
+
+.sector-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: var(--bg-active);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.sector-rank:first-child {
+  background: var(--accent-gold);
+  color: #fff;
 }
 
 .sector-name {
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
+  color: var(--text-primary);
 }
 
-.sector-leaders {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
+.sector-change-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .sector-change {
-  text-align: right;
-}
-
-.sector-change .value {
   font-weight: 700;
-  font-size: 1rem;
-  display: block;
+  font-size: 0.95rem;
 }
 
-.sector-change .value.up {
+.sector-change.up {
   color: var(--color-up);
 }
 
-.sector-change .value.down {
+.sector-change.down {
   color: var(--color-down);
 }
 
-.sector-change .count {
+.sector-details {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 30px;
+  margin-bottom: 6px;
+}
+
+.sector-flow {
+  font-size: 0.8rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sector-flow.inflow {
+  color: var(--color-up);
+}
+
+.sector-flow.outflow {
+  color: var(--color-down);
+}
+
+.sector-flow i {
+  font-size: 0.7rem;
+}
+
+.sector-desc {
   font-size: 0.75rem;
   color: var(--text-muted);
+}
+
+.sector-stocks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: 30px;
+}
+
+.sector-stock {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-active);
+}
+
+.sector-stock.up {
+  background: var(--color-up-bg);
+  color: var(--color-up);
+}
+
+.sector-stock.down {
+  background: var(--color-down-bg);
+  color: var(--color-down);
+}
+
+.sector-empty {
+  text-align: center;
+  padding: 20px;
+  color: var(--text-muted);
+  font-size: 0.875rem;
 }
 
 .news-item {
