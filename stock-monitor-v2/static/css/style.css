@@ -1360,8 +1360,136 @@ body {
   font-size: 0.875rem;
 }
 
+.news-section {
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 12px;
+}
+
+.news-section:last-child {
+  border-bottom: none;
+}
+
+.news-section-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+}
+
+/* 投资日历 */
+.news-calendar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.calendar-time {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent-gold);
+  min-width: 40px;
+}
+
+.calendar-content {
+  flex: 1;
+}
+
+.calendar-title {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.calendar-sectors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.calendar-sectors span {
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  background: var(--bg-active);
+  color: var(--text-muted);
+  border-radius: 3px;
+}
+
+.calendar-tag {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  background: var(--bg-active);
+  color: var(--text-muted);
+  border-radius: 4px;
+}
+
+.calendar-tag.important {
+  background: rgba(255, 77, 79, 0.2);
+  color: var(--color-up);
+}
+
+/* 热门题材网格 */
+.hot-themes-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 0 12px;
+  margin-bottom: 8px;
+}
+
+.theme-card {
+  padding: 10px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  text-align: center;
+  border-left: 3px solid transparent;
+}
+
+.theme-card.up {
+  border-left-color: var(--color-up);
+}
+
+.theme-card.down {
+  border-left-color: var(--color-down);
+}
+
+.theme-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.theme-heat {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.theme-change {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.theme-card.up .theme-change {
+  color: var(--color-up);
+}
+
+.theme-card.down .theme-change {
+  color: var(--color-down);
+}
+
+/* 新闻项 */
 .news-item {
-  padding: 12px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border-color);
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -1375,6 +1503,18 @@ body {
   background: var(--bg-hover);
 }
 
+.news-item.headline {
+  background: linear-gradient(90deg, rgba(255,77,79,0.05), transparent);
+}
+
+.news-item.portfolio {
+  background: linear-gradient(90deg, rgba(24,144,255,0.05), transparent);
+}
+
+.news-item.theme {
+  border-left: 3px solid var(--accent-gold);
+}
+
 .news-header {
   display: flex;
   align-items: center;
@@ -1383,14 +1523,14 @@ body {
 }
 
 .news-time {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-secondary);
   min-width: 36px;
 }
 
 .news-title {
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   line-height: 1.5;
   margin-bottom: 6px;
   display: -webkit-box;
@@ -1403,7 +1543,7 @@ body {
 .news-tag {
   padding: 2px 8px;
   border-radius: 4px;
-  font-size: 0.625rem;
+  font-size: 0.65rem;
   font-weight: 600;
 }
 
@@ -1429,7 +1569,7 @@ body {
   margin-top: 6px;
 }
 
-.news-sector-tag {
+.news-sectors .sector-tag {
   font-size: 0.65rem;
   padding: 1px 6px;
   background: var(--bg-active);

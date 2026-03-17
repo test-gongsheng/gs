@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = '2.1.11';
+const APP_VERSION = '2.2.0';
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -814,69 +814,161 @@ async function loadHotSectors() {
     }
 }
 
-// 渲染新闻 - 财联社实时新闻
+// 渲染新闻 - 结构化财联社新闻 (头条/题材/日历/持仓)
 function renderNews() {
     const listEl = document.getElementById('newsList');
     if (!listEl) return;
     
     listEl.innerHTML = '';
 
-    if (!appState.news || appState.news.length === 0) {
+    // 检查是否有结构化数据
+    if (!appState.news || typeof appState.news !== 'object') {
         listEl.innerHTML = '<div class="news-empty">暂无新闻</div>';
         return;
     }
 
-    appState.news.forEach(news => {
-        const item = document.createElement('div');
-        item.className = 'news-item';
+    const { headlines = [], themes = [], calendar = [], portfolio = [], general = [], hot_themes = [] } = appState.news;
+    
+    // 1. 渲染投资日历（今日重要事件）
+    if (calendar.length > 0) {
+        const calendarSection = document.createElement('div');
+        calendarSection.className = 'news-section';
+        calendarSection.innerHTML = '<div class="news-section-title">📅 投资日历</div>';
         
-        // 重要性标签样式
-        const importanceClass = news.importance === 2 ? 'important' : news.importance === 1 ? 'attention' : 'normal';
-        const importanceText = news.importance_label || (news.importance === 2 ? '重要' : news.importance === 1 ? '关注' : '一般');
+        calendar.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'news-calendar-item';
+            el.innerHTML = `
+                <div class="calendar-time">${item.time}</div>
+                <div class="calendar-content">
+                    <div class="calendar-title">${item.title}</div>
+                    ${item.related_sectors ? `<div class="calendar-sectors">${item.related_sectors.map(s => `<span>${s}</span>`).join('')}</div>` : ''}
+                </div>
+                <span class="calendar-tag ${item.importance >= 2 ? 'important' : ''}">${item.importance_label}</span>
+            `;
+            calendarSection.appendChild(el);
+        });
+        listEl.appendChild(calendarSection);
+    }
+
+    // 2. 渲染热门题材
+    if (hot_themes && hot_themes.length > 0) {
+        const themeSection = document.createElement('div');
+        themeSection.className = 'news-section';
+        themeSection.innerHTML = '<div class="news-section-title">🔥 热门题材</div>';
         
-        // 关联板块标签
-        let sectorsHtml = '';
-        if (news.related_sectors && news.related_sectors.length > 0) {
-            sectorsHtml = '<div class="news-sectors">';
-            news.related_sectors.forEach(sector => {
-                sectorsHtml += `<span class="news-sector-tag">${sector}</span>`;
-            });
-            sectorsHtml += '</div>';
-        }
+        const themeGrid = document.createElement('div');
+        themeGrid.className = 'hot-themes-grid';
         
-        item.innerHTML = `
-            <div class="news-header">
-                <div class="news-time">${news.time}</div>
-                <span class="news-tag ${importanceClass}">${importanceText}</span>
-            </div>
-            <div class="news-title" title="${news.content || news.title}">${news.title}</div>
-            ${sectorsHtml}
-        `;
+        hot_themes.slice(0, 4).forEach(theme => {
+            const isUp = theme.change >= 0;
+            const el = document.createElement('div');
+            el.className = `theme-card ${isUp ? 'up' : 'down'}`;
+            el.innerHTML = `
+                <div class="theme-name">${theme.name}</div>
+                <div class="theme-heat">热度 ${theme.heat}</div>
+                <div class="theme-change">${isUp ? '+' : ''}${theme.change}%</div>
+            `;
+            themeGrid.appendChild(el);
+        });
         
-        listEl.appendChild(item);
-    });
+        themeSection.appendChild(themeGrid);
+        listEl.appendChild(themeSection);
+    }
+
+    // 3. 渲染头条
+    if (headlines.length > 0) {
+        const headlineSection = document.createElement('div');
+        headlineSection.className = 'news-section';
+        headlineSection.innerHTML = '<div class="news-section-title">📰 头条</div>';
+        
+        headlines.forEach(news => {
+            const el = createNewsElement(news, 'headline');
+            headlineSection.appendChild(el);
+        });
+        listEl.appendChild(headlineSection);
+    }
+
+    // 4. 渲染持仓相关
+    if (portfolio.length > 0) {
+        const portfolioSection = document.createElement('div');
+        portfolioSection.className = 'news-section';
+        portfolioSection.innerHTML = '<div class="news-section-title">💼 持仓相关</div>';
+        
+        portfolio.forEach(news => {
+            const el = createNewsElement(news, 'portfolio');
+            portfolioSection.appendChild(el);
+        });
+        listEl.appendChild(portfolioSection);
+    }
+
+    // 5. 渲染题材推荐
+    if (themes.length > 0) {
+        const themeNewsSection = document.createElement('div');
+        themeNewsSection.className = 'news-section';
+        themeNewsSection.innerHTML = '<div class="news-section-title">💡 题材推荐</div>';
+        
+        themes.forEach(news => {
+            const el = createNewsElement(news, 'theme');
+            themeNewsSection.appendChild(el);
+        });
+        listEl.appendChild(themeNewsSection);
+    }
+
+    // 6. 渲染普通快讯（如果没有其他内容）
+    if (listEl.children.length === 0 && general.length > 0) {
+        general.forEach(news => {
+            const el = createNewsElement(news, 'normal');
+            listEl.appendChild(el);
+        });
+    }
 }
 
-// 加载财联社实时新闻
+// 创建新闻元素
+function createNewsElement(news, type) {
+    const item = document.createElement('div');
+    item.className = `news-item ${type}`;
+    
+    const importanceClass = news.importance >= 2 ? 'important' : news.importance === 1 ? 'attention' : 'normal';
+    
+    // 关联板块标签
+    let sectorsHtml = '';
+    if (news.related_sectors && news.related_sectors.length > 0) {
+        sectorsHtml = `<div class="news-sectors">${news.related_sectors.map(s => `<span class="sector-tag">${s}</span>`).join('')}</div>`;
+    }
+    
+    item.innerHTML = `
+        <div class="news-header">
+            <span class="news-time">${news.time || ''}</span>
+            <span class="news-tag ${importanceClass}">${news.importance_label || '一般'}</span>
+        </div>
+        <div class="news-title" title="${news.content || news.title}">${news.title}</div>
+        ${sectorsHtml}
+    `;
+    
+    return item;
+}
+
+// 加载结构化财联社新闻
 async function loadNews() {
     try {
-        console.log('加载财联社实时新闻...');
-        const response = await fetch('/api/news?limit=20');
+        console.log('加载结构化财联社新闻...');
+        const response = await fetch('/api/news');
         const data = await response.json();
         
-        if (data.success && data.news) {
-            appState.news = data.news;
+        if (data.success) {
+            appState.news = data;
             renderNews();
-            console.log(`新闻加载完成: ${data.news.length}条`);
+            console.log(`新闻加载完成: 头条${data.headlines?.length || 0}条, 题材${data.themes?.length || 0}条, 日历${data.calendar?.length || 0}条`);
         } else {
             console.warn('新闻加载失败:', data.error);
-            // 使用备用模拟数据
-            appState.news = mockNews;
+            // 使用模拟数据
+            appState.news = { headlines: [], themes: [], calendar: [], portfolio: [], general: mockNews };
             renderNews();
         }
     } catch (error) {
         console.error('加载新闻出错:', error);
-        appState.news = mockNews;
+        appState.news = { headlines: [], themes: [], calendar: [], portfolio: [], general: mockNews };
         renderNews();
     }
 }

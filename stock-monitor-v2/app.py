@@ -5,7 +5,7 @@ from datetime import datetime
 from utils.stock_quote import get_stock_quotes, get_dynamic_axis_price
 from utils.exchange_rate import get_cny_hkd_rate, get_yesterday_cny_hkd_rate, convert_hkd_to_cny
 from utils.sector_data import get_hot_sectors_data
-from utils.news_data import get_cls_news
+from utils.news_data import get_cls_structured_news
 
 app = Flask(__name__)
 
@@ -170,20 +170,46 @@ def get_hot_sectors():
 
 @app.route('/api/news')
 def get_news():
-    """获取财联社实时新闻"""
+    """获取结构化财联社新闻 (头条/题材/投资日历/持仓相关)"""
     try:
-        limit = request.args.get('limit', 20, type=int)
-        news = get_cls_news(limit)
-        return jsonify({
-            'success': True,
-            'news': news,
-            'update_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        })
+        # 从用户持仓中提取相关板块
+        data = load_data()
+        stocks = data.get('stocks', [])
+        
+        # 简单的板块映射（基于股票代码或名称）
+        portfolio_sectors = set()
+        for stock in stocks:
+            name = stock.get('name', '')
+            code = stock.get('code', '')
+            # 根据股票名称判断板块（简化版）
+            if any(k in name for k in ['芯', '半', '微', '电']):
+                portfolio_sectors.add('半导体')
+            if any(k in name for k in ['药', '医', '生物']):
+                portfolio_sectors.add('医药')
+            if any(k in name for k in ['金', '矿']):
+                portfolio_sectors.add('黄金')
+            if any(k in name for k in ['券', '银', '保']):
+                portfolio_sectors.add('券商')
+            if any(k in name for k in ['锂', '光', '风', '新能']):
+                portfolio_sectors.add('新能源')
+        
+        result = get_cls_structured_news(
+            limit=30,
+            portfolio_sectors=list(portfolio_sectors)
+        )
+        return jsonify(result)
     except Exception as e:
         print(f"获取新闻失败: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'success': False,
-            'news': [],
+            'headlines': [],
+            'themes': [],
+            'hot_themes': [],
+            'calendar': [],
+            'portfolio': [],
+            'general': [],
             'error': str(e)
         })
 
