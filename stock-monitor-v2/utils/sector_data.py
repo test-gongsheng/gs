@@ -363,4 +363,5 @@ if __name__ == '__main__':
         print(f"\n{s['rank']}. {s['name']} {s['change']:+.2f}%")
         print(f"   主力: {s['money_flow']['main_inflow']:+.0f}万 | 上涨: {s['up_ratio']:.0f}% | 涨停: {s['limit_up_count']}家")
         print(f"   情绪: {s['sentiment']['sentiment']} ({s['sentiment']['score']})")
-        print(f"   领涨: {', '.join([f\"{st['name']} {st['change_percent']:+.1f}%\" for st in s['top_stocks']])}")
+        top_stocks_str = ', '.join([f"{st['name']} {st['change_percent']:+.1f}%" for st in s['top_stocks']])
+        print(f"   领涨: {top_stocks_str}")
