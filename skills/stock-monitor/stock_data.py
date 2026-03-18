@@ -10,6 +10,13 @@ import re
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 
+# 可选：akshare 用于融资融券和港股沽空数据
+try:
+    import akshare as ak
+    AKSHARE_AVAILABLE = True
+except ImportError:
+    AKSHARE_AVAILABLE = False
+
 class StockDataFetcher:
     """股票数据获取器"""
     
@@ -634,40 +641,6 @@ class StockDataFetcher:
             'IGBT': 's_sz980017',
             'MCU芯片': 's_sz980017'
         }
-            
-            # 新消费
-            '新零售': 's_sz399280',
-            '跨境电商': 's_sz399280',
-            '免税概念': 's_sz399280',
-            '预制菜': 's_sz399396',
-            '宠物经济': 's_sz399396',
-            '养老概念': 's_sz399989',
-            
-            # 资源
-            '稀土永磁': 's_sh000819',
-            '黄金概念': 's_sh000819',
-            '锂矿': 's_sz399976',
-            
-            # 环保碳中和
-            '碳中和': 's_sz399358',
-            '碳交易': 's_sz399358',
-            '节能环保': 's_sz399358',
-            
-            # 国企改革
-            '国企改革': 's_sh000038',
-            '央企改革': 's_sh000038',
-            '乡村振兴': 's_sz399110',
-            
-            # 信息安全
-            '网络安全': 's_sz399935',
-            '信创': 's_sz399935',
-            '国产替代': 's_sz980017',
-            
-            # 市场风格
-            '科创板': 's_sh000683',
-            '北交所': 's_sz399006',
-            '次新股': 's_sz399006'
-        }
         
         results = []
         
@@ -705,6 +678,128 @@ class StockDataFetcher:
             return {'success': True, 'data': results}
         except Exception as e:
             return {'success': False, 'error': str(e)}
+    
+    def get_margin_trading_data(self) -> Dict:
+        """
+        获取A股融资融券数据 - 使用akshare
+        返回：融资余额、融券余额、当日融资买入额等
+        """
+        if not AKSHARE_AVAILABLE:
+            return {'success': False, 'error': 'akshare 未安装，请运行: pip install akshare'}
+        
+        try:
+            # 获取沪深两市融资融券数据
+            margin_sh = ak.macro_china_market_margin_sh()
+            margin_sz = ak.macro_china_market_margin_sz()
+            
+            # 取最新数据
+            latest_sh = margin_sh.iloc[-1] if len(margin_sh) > 0 else None
+            latest_sz = margin_sz.iloc[-1] if len(margin_sz) > 0 else None
+            
+            # 沪市数据字段：日期,融资买入额,融资余额,融券卖出量,融券余量,融券余额,融资融券余额
+            # 深市数据字段：日期,融资买入额,融资余额,融券卖出量,融券余量,融券余额,融资融券余额
+            
+            # 计算汇总数据
+            total_finance_balance = 0  # 融资余额
+            total_sec_balance = 0      # 融券余额
+            total_finance_buy = 0      # 当日融资买入额
+            
+            if latest_sh is not None:
+                total_finance_balance += float(latest_sh['融资余额'])
+                total_sec_balance += float(latest_sh['融券余额'])
+                total_finance_buy += float(latest_sh['融资买入额'])
+            
+            if latest_sz is not None:
+                total_finance_balance += float(latest_sz['融资余额'])
+                total_sec_balance += float(latest_sz['融券余额'])
+                total_finance_buy += float(latest_sz['融资买入额'])
+            
+            # 计算变化（与前一日对比）
+            finance_change = 0
+            sec_change = 0
+            if len(margin_sh) > 1:
+                prev_sh = margin_sh.iloc[-2]
+                finance_change = total_finance_balance - float(prev_sh['融资余额']) - float(latest_sz['融资余额'] if latest_sz is not None else 0)
+                sec_change = float(prev_sh['融券余额']) - float(latest_sh['融券余额'])
+            
+            # 两融余额比（市场情绪指标）
+            total_margin = total_finance_balance + total_sec_balance
+            margin_ratio = (total_finance_balance / total_sec_balance) if total_sec_balance > 0 else 0
+            
+            # 情绪判断
+            if finance_change > 5e9:  # 增加50亿以上
+                sentiment = '📈 看多'
+            elif finance_change > 0:
+                sentiment = '🙂 偏多'
+            elif finance_change > -5e9:
+                sentiment = '😐 偏空'
+            else:
+                sentiment = '📉 看空'
+            
+            return {
+                'success': True,
+                'data': {
+                    'finance_balance': round(total_finance_balance / 1e8, 2),  # 融资余额（亿）
+                    'finance_change': round(finance_change / 1e8, 2),          # 融资余额变化（亿）
+                    'sec_balance': round(total_sec_balance / 1e8, 2),          # 融券余额（亿）
+                    'sec_change': round(sec_change / 1e8, 2),                  # 融券余额变化（亿）
+                    'finance_buy': round(total_finance_buy / 1e8, 2),          # 当日融资买入额（亿）
+                    'total_margin': round(total_margin / 1e8, 2),              # 两融余额合计（亿）
+                    'margin_ratio': round(margin_ratio, 2),                    # 融资/融券比
+                    'sentiment': sentiment,
+                    'update_date': str(latest_sh['日期']) if latest_sh is not None else ''
+                }
+            }
+        except Exception as e:
+            return {'success': False, 'error': f'获取融资融券数据失败: {str(e)}'}
+    
+    def get_hk_short_selling_data(self) -> Dict:
+        """
+        获取港股沽空数据 - 使用akshare
+        返回：当日沽空金额、沽空比例、沽空股数等
+        """
+        if not AKSHARE_AVAILABLE:
+            return {'success': False, 'error': 'akshare 未安装，请运行: pip install akshare'}
+        
+        try:
+            # 获取港股沽空统计数据
+            short_data = ak.stock_hk_ggt_short_daily()
+            
+            if short_data is None or len(short_data) == 0:
+                return {'success': False, 'error': '暂无港股沽空数据'}
+            
+            # 取最新数据
+            latest = short_data.iloc[0]
+            
+            # 计算关键指标
+            short_amount = float(latest.get('沽空金额', 0))  # 当日沽空金额（港元）
+            total_amount = float(latest.get('成交金额', 0))  # 当日成交总金额
+            short_ratio = (short_amount / total_amount * 100) if total_amount > 0 else 0
+            short_volume = float(latest.get('沽空股数', 0))  # 沽空股数
+            
+            # 判断市场情绪
+            if short_ratio > 20:
+                sentiment = '⚠️ 高沽空，市场偏空'
+            elif short_ratio > 15:
+                sentiment = '📉 沽空压力较大'
+            elif short_ratio > 10:
+                sentiment = '➡️ 沽空比例正常'
+            else:
+                sentiment = '📈 沽空压力较小，偏多'
+            
+            return {
+                'success': True,
+                'data': {
+                    'short_amount': round(short_amount / 100000000, 2),  # 沽空金额（亿港元）
+                    'total_amount': round(total_amount / 100000000, 2),   # 成交总额（亿港元）
+                    'short_ratio': round(short_ratio, 2),                 # 沽空比例(%)
+                    'short_volume': round(short_volume / 10000, 2),       # 沽空股数（万股）
+                    'sentiment': sentiment,                               # 市场情绪判断
+                    'update_date': latest.get('日期', '')
+                }
+            }
+        except Exception as e:
+            return {'success': False, 'error': f'获取港股沽空数据失败: {str(e)}'}
 
 
 class TechnicalAnalyzer:
