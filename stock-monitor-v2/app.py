@@ -142,6 +142,7 @@ def update_axis_price(stock_id):
     return jsonify({'success': False, 'error': '股票不存在'}), 404
 
 @app.route('/api/market/h-sectors')
+@app.route('/api/market/hot-sectors')  # 别名，兼容前端
 def get_hot_sectors():
     """获取热点板块（实时数据）"""
     try:
