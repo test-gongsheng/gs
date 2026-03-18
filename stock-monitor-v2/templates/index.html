@@ -360,6 +360,29 @@
                                     <span class="metric-value" id="southSentiment">--</span>
                                 </div>
                             </div>
+                            <!-- 港股沽空数据 -->
+                            <div class="card-body hk-short-section" style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 8px; padding-top: 8px;">
+                                <div class="metric-row">
+                                    <span class="metric-label"><i class="fas fa-chart-bar" style="font-size: 10px;"></i> 港股沽空</span>
+                                    <span class="metric-value" id="hkShortAmount">--</span>
+                                </div>
+                                <div class="metric-row">
+                                    <span class="metric-label">沽空比例</span>
+                                    <span class="metric-value" id="hkShortRatio">--</span>
+                                </div>
+                                <div class="metric-row trend-row">
+                                    <span class="metric-label">1周变化</span>
+                                    <span class="metric-value" id="hkShortChange1W">--</span>
+                                </div>
+                                <div class="metric-row trend-row">
+                                    <span class="metric-label">1月变化</span>
+                                    <span class="metric-value" id="hkShortChange1M">--</span>
+                                </div>
+                                <div class="metric-row trend-row">
+                                    <span class="metric-label">3月变化</span>
+                                    <span class="metric-value" id="hkShortChange3M">--</span>
+                                </div>
+                            </div>
                         </div>
                         
                         <!-- 融资融券 -->
@@ -440,6 +463,44 @@
                                         <span class="breadth-label">新低</span>
                                         <span class="breadth-value" id="newLow">--</span>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 持仓港股沽空风险分析 -->
+                        <div class="sentiment-card wide" id="hkPortfolioRiskCard" style="display: none;">
+                            <div class="card-header">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span>持仓港股沽空风险</span>
+                                <span class="trend-badge" id="hkRiskTrend">--</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="metric-row">
+                                    <span class="metric-label">港股持仓</span>
+                                    <span class="metric-value" id="hkPositionCount">--</span>
+                                </div>
+                                <div class="metric-row">
+                                    <span class="metric-label">持仓市值</span>
+                                    <span class="metric-value" id="hkPositionValue">--</span>
+                                </div>
+                                <div class="metric-row">
+                                    <span class="metric-label">市场沽空率</span>
+                                    <span class="metric-value" id="hkMarketShortRatio">--</span>
+                                </div>
+                                <div class="metric-row">
+                                    <span class="metric-label">1周变化</span>
+                                    <span class="metric-value" id="hkShort1W">--</span>
+                                </div>
+                                <div class="metric-row">
+                                    <span class="metric-label">1月变化</span>
+                                    <span class="metric-value" id="hkShort1M">--</span>
+                                </div>
+                                <div class="metric-row">
+                                    <span class="metric-label">3月变化</span>
+                                    <span class="metric-value" id="hkShort3M">--</span>
+                                </div>
+                                <div class="risk-advice" id="hkRiskAdvice" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 11px; color: #aaa;">
+                                    --
                                 </div>
                             </div>
                         </div>

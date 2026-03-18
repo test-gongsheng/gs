@@ -1270,6 +1270,35 @@ function renderSentiment() {
     document.getElementById('southSentiment').textContent = northSouth.south_sentiment;
     document.getElementById('southSentiment').className = `metric-value ${northSouth.south_inflow >= 0 ? 'up' : 'down'}`;
     
+    // 渲染港股沽空数据
+    const hkShort = northSouth.hk_short_selling || {};
+    if (hkShort.success) {
+        document.getElementById('hkShortAmount').textContent = `${hkShort.short_amount}亿`;
+        document.getElementById('hkShortRatio').textContent = `${hkShort.short_ratio}%`;
+        document.getElementById('hkShortRatio').className = `metric-value ${hkShort.short_ratio > 15 ? 'down' : 'up'}`;
+        
+        // 变化趋势
+        const changes = hkShort.changes || {};
+        const change1w = changes['1w'] || {};
+        const change1m = changes['1m'] || {};
+        const change3m = changes['3m'] || {};
+        
+        const formatChange = (c) => {
+            if (!c || c.amount_change === undefined) return '--';
+            const sign = c.amount_change >= 0 ? '+' : '';
+            return `${sign}${c.amount_change}亿 (${c.amount_change_pct}%)`;
+        };
+        
+        document.getElementById('hkShortChange1W').textContent = formatChange(change1w);
+        document.getElementById('hkShortChange1W').className = `metric-value ${(change1w.amount_change || 0) >= 0 ? 'down' : 'up'}`;
+        
+        document.getElementById('hkShortChange1M').textContent = formatChange(change1m);
+        document.getElementById('hkShortChange1M').className = `metric-value ${(change1m.amount_change || 0) >= 0 ? 'down' : 'up'}`;
+        
+        document.getElementById('hkShortChange3M').textContent = formatChange(change3m);
+        document.getElementById('hkShortChange3M').className = `metric-value ${(change3m.amount_change || 0) >= 0 ? 'down' : 'up'}`;
+    }
+    
     // 5. 渲染融资融券卡片
     updateCard('margin', margin.margin_change, margin.sentiment);
     document.getElementById('marginBalance').textContent = `${margin.total_margin_balance}亿`;
@@ -1294,6 +1323,68 @@ function renderSentiment() {
     document.getElementById('dtCount').textContent = breadth.dt_count;
     document.getElementById('newHigh').textContent = breadth.new_high;
     document.getElementById('newLow').textContent = breadth.new_low;
+    
+    // 8. 加载持仓港股沽空风险分析
+    loadHKPortfolioRisk();
+}
+
+// 加载持仓港股沽空风险分析
+async function loadHKPortfolioRisk() {
+    try {
+        const response = await fetch('/api/portfolio/hk-short-analysis');
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        if (!data.success) return;
+        
+        const portfolio = data.portfolio;
+        const marketShort = data.market_short;
+        
+        // 只有在有港股持仓时才显示
+        if (portfolio.hk_stock_count === 0) {
+            document.getElementById('hkPortfolioRiskCard').style.display = 'none';
+            return;
+        }
+        
+        document.getElementById('hkPortfolioRiskCard').style.display = 'block';
+        
+        // 更新风险等级样式
+        const riskCard = document.getElementById('hkPortfolioRiskCard');
+        riskCard.className = `sentiment-card wide ${portfolio.risk_level === 'high' ? 'bear' : portfolio.risk_level === 'medium' ? 'neutral' : 'bull'}`;
+        
+        // 更新数据
+        document.getElementById('hkRiskTrend').textContent = marketShort.signal || '--';
+        document.getElementById('hkPositionCount').textContent = `${portfolio.hk_stock_count}只`;
+        document.getElementById('hkPositionValue').textContent = `¥${formatMoney(portfolio.hk_position_value)}`;
+        document.getElementById('hkMarketShortRatio').textContent = `${marketShort.short_ratio}%`;
+        document.getElementById('hkMarketShortRatio').className = `metric-value ${marketShort.short_ratio > 15 ? 'down' : 'up'}`;
+        
+        // 变化趋势
+        const changes = marketShort.changes || {};
+        const formatChange = (c) => {
+            if (!c || c.amount_change === undefined) return '--';
+            const sign = c.amount_change >= 0 ? '+' : '';
+            return `${sign}${c.amount_change}亿`;
+        };
+        
+        const change1w = changes['1w'] || {};
+        const change1m = changes['1m'] || {};
+        const change3m = changes['3m'] || {};
+        
+        document.getElementById('hkShort1W').textContent = formatChange(change1w);
+        document.getElementById('hkShort1W').className = `metric-value ${(change1w.amount_change || 0) >= 0 ? 'down' : 'up'}`;
+        
+        document.getElementById('hkShort1M').textContent = formatChange(change1m);
+        document.getElementById('hkShort1M').className = `metric-value ${(change1m.amount_change || 0) >= 0 ? 'down' : 'up'}`;
+        
+        document.getElementById('hkShort3M').textContent = formatChange(change3m);
+        document.getElementById('hkShort3M').className = `metric-value ${(change3m.amount_change || 0) >= 0 ? 'down' : 'up'}`;
+        
+        document.getElementById('hkRiskAdvice').textContent = portfolio.advice || '--';
+        
+    } catch (e) {
+        console.error('加载港股沽空风险分析失败:', e);
+    }
 }
 
 // 更新多空力量条

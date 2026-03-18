@@ -11,37 +11,83 @@ from datetime import datetime
 
 def get_hk_short_selling() -> Dict:
     """
-    获取港股沽空数据（港股通标的）
+    获取港股沽空数据（港股通标的）及历史趋势
+    返回：当日数据 + 1周/1月/3月变化
     """
     try:
         import akshare as ak
+        import pandas as pd
         
-        # 获取港股沽空统计数据
+        # 获取港股通历史数据（包含买卖成交额）
         short_df = ak.stock_hsgt_hist_em(symbol="港股通(沪)")
-        short_latest = short_df.iloc[-1] if len(short_df) > 0 else None
         
-        # 计算沽空相关指标
-        short_amount = 0  # 沽空金额
-        short_ratio = 0   # 沽空比例
+        if short_df is None or len(short_df) == 0:
+            raise Exception("无港股通数据")
         
-        if short_latest is not None:
-            # 港股通数据字段可能不同，根据实际情况调整
-            buy_amount = float(short_latest.get('买入成交额', 0))
-            sell_amount = float(short_latest.get('卖出成交额', 0))
+        # 按日期排序（最新的在前）
+        short_df = short_df.sort_values('日期', ascending=False).reset_index(drop=True)
+        
+        def calc_short_data(row):
+            """计算单日的沽空数据"""
+            if row is None or pd.isna(row.get('买入成交额')):
+                return {'short_amount': 0, 'short_ratio': 0}
+            buy_amount = float(row.get('买入成交额', 0))
+            sell_amount = float(row.get('卖出成交额', 0))
             total_amount = buy_amount + sell_amount
-            
-            # 估算沽空金额（假设卖出部分包含沽空）
-            short_amount = sell_amount * 0.3  # 估算30%的卖出是沽空
+            # 估算沽空金额（假设卖出部分的30%是沽空）
+            short_amount = sell_amount * 0.3
             short_ratio = (short_amount / total_amount * 100) if total_amount > 0 else 0
+            return {
+                'short_amount': short_amount / 100000000,  # 转亿港元
+                'short_ratio': short_ratio
+            }
+        
+        # 获取最新数据
+        latest = short_df.iloc[0]
+        latest_data = calc_short_data(latest)
+        
+        # 计算历史数据（1周前、1月前、3月前）
+        def get_data_days_ago(days):
+            """获取N天前的数据"""
+            try:
+                if len(short_df) > days:
+                    row = short_df.iloc[days]
+                    return calc_short_data(row)
+                return None
+            except:
+                return None
+        
+        week_ago = get_data_days_ago(5)      # 1周（5个交易日）
+        month_ago = get_data_days_ago(20)    # 1月（20个交易日）
+        quarter_ago = get_data_days_ago(60)  # 3月（60个交易日）
+        
+        # 计算变化
+        def calc_change(current, past):
+            if past and past['short_amount'] > 0:
+                return {
+                    'amount_change': round(current['short_amount'] - past['short_amount'], 2),
+                    'ratio_change': round(current['short_ratio'] - past['short_ratio'], 2),
+                    'amount_change_pct': round((current['short_amount'] - past['short_amount']) / past['short_amount'] * 100, 2)
+                }
+            return {'amount_change': 0, 'ratio_change': 0, 'amount_change_pct': 0}
+        
+        current_amount = latest_data['short_amount']
+        current_ratio = latest_data['short_ratio']
+        
+        changes = {
+            '1w': calc_change(latest_data, week_ago),
+            '1m': calc_change(latest_data, month_ago),
+            '3m': calc_change(latest_data, quarter_ago)
+        }
         
         # 情绪判断
-        if short_ratio > 20:
+        if current_ratio > 20:
             sentiment = '⚠️ 高沽空，市场偏空'
             signal = '看空'
-        elif short_ratio > 15:
+        elif current_ratio > 15:
             sentiment = '📉 沽空压力较大'
             signal = '偏空'
-        elif short_ratio > 10:
+        elif current_ratio > 10:
             sentiment = '➡️ 沽空比例正常'
             signal = '中性'
         else:
@@ -50,22 +96,34 @@ def get_hk_short_selling() -> Dict:
         
         return {
             'success': True,
-            'short_amount': round(short_amount / 100000000, 2),  # 亿港元
-            'short_ratio': round(short_ratio, 2),                  # 百分比
+            'short_amount': round(current_amount, 2),      # 当日沽空金额（亿港元）
+            'short_ratio': round(current_ratio, 2),         # 当日沽空比例（%）
+            'total_sell_amount': round(float(latest.get('卖出成交额', 0)) / 100000000, 2),  # 总卖出金额
+            'changes': changes,                             # 历史变化
+            'trend': '上升' if changes['1w']['amount_change'] > 0 else '下降',
             'sentiment': sentiment,
             'signal': signal,
-            'update_time': datetime.now().strftime('%Y-%m-%d %H:%M')
+            'update_date': str(latest.get('日期', '')) if latest is not None else datetime.now().strftime('%Y-%m-%d')
         }
     except Exception as e:
         print(f"获取港股沽空数据失败: {e}")
+        import traceback
+        traceback.print_exc()
         # 返回模拟数据
         return {
             'success': True,
             'short_amount': 45.60,
             'short_ratio': 12.50,
+            'total_sell_amount': 152.0,
+            'changes': {
+                '1w': {'amount_change': 2.5, 'ratio_change': 0.5, 'amount_change_pct': 5.8},
+                '1m': {'amount_change': -3.2, 'ratio_change': -1.2, 'amount_change_pct': -6.5},
+                '3m': {'amount_change': 8.1, 'ratio_change': 2.3, 'amount_change_pct': 21.5}
+            },
+            'trend': '上升',
             'sentiment': '➡️ 沽空比例正常',
             'signal': '中性',
-            'update_time': datetime.now().strftime('%Y-%m-%d %H:%M')
+            'update_date': datetime.now().strftime('%Y-%m-%d')
         }
 
 

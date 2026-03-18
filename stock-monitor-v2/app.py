@@ -316,6 +316,64 @@ def get_report_summary():
         'position_ratio': data['risk_control'].get('position_ratio', 0)
     })
 
+
+@app.route('/api/portfolio/hk-short-analysis')
+def get_portfolio_hk_short_analysis():
+    """
+    获取持仓港股的沽空风险分析
+    基于港股市场整体沽空水平，评估持仓风险
+    """
+    try:
+        from utils.market_sentiment import get_hk_short_selling
+        
+        # 获取港股市场整体沽空数据
+        market_short = get_hk_short_selling()
+        
+        # 获取持仓中的港股
+        data = load_data()
+        stocks = data.get('stocks', [])
+        hk_stocks = [s for s in stocks if s.get('market') == '港股']
+        
+        # 计算港股持仓总市值
+        hk_position_value = sum(s.get('market_value', 0) for s in hk_stocks)
+        
+        # 风险评估
+        short_ratio = market_short.get('short_ratio', 0)
+        if short_ratio > 20:
+            risk_level = 'high'
+            risk_desc = '港股沽空比例高，注意风险'
+        elif short_ratio > 15:
+            risk_level = 'medium'
+            risk_desc = '港股沽空压力较大，谨慎操作'
+        elif short_ratio > 10:
+            risk_level = 'low'
+            risk_desc = '港股沽空比例正常'
+        else:
+            risk_level = 'very_low'
+            risk_desc = '港股沽空压力小，环境较好'
+        
+        return jsonify({
+            'success': True,
+            'market_short': market_short,
+            'portfolio': {
+                'hk_stock_count': len(hk_stocks),
+                'hk_position_value': round(hk_position_value, 2),
+                'risk_level': risk_level,
+                'risk_desc': risk_desc,
+                'advice': '建议关注高沽空比例行业的个股风险' if short_ratio > 15 else '当前港股沽空环境正常'
+            },
+            'update_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+    except Exception as e:
+        print(f"获取港股沽空分析失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 def update_risk_control(data):
     """更新风险控制数据"""
     stocks = data['stocks']
