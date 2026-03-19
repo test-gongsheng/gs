@@ -621,126 +621,148 @@ function restoreFromHistory(index) {
 }
 
 /**
- * 确认导入
+ * 确认导入 - 新版：直接调用后端 API，不依赖前端 appState
  */
 async function confirmImport() {
     console.log('确认导入被调用', pendingImportData);
-    
+
     try {
         if (!pendingImportData || !pendingImportData.stocks.length) {
             showNotification('没有待导入的数据', 'warning');
             return;
         }
-        
-        // 检查 appState 是否可用（必须使用 window.appState 避免 TDZ 错误）
-        const appState = window.appState;
-        if (!appState) {
-            console.error('window.appState 未定义，app.js 可能未正确加载');
-            showNotification('应用状态未初始化，请刷新页面重试', 'error');
-            return;
-        }
-        
-        if (!Array.isArray(appState.stocks)) {
-            console.error('appState.stocks 不是数组', appState.stocks);
-            appState.stocks = [];
-        }
-        
-        const stocks = pendingImportData.stocks;
-        
-        // 保存旧数据用于比较股数变化
-        const oldStocks = [...appState.stocks];
-        console.log('旧持仓数据:', oldStocks.map(s => ({ code: s.code, qty: s.holdQuantity })));
-        
-        // 清除旧缓存，避免数据混乱
-        localStorage.removeItem('import_data_last');
-        console.log('已清除旧缓存');
-        
-        let updated = 0;
-        let added = 0;
-        
-        // 清空原有数据，以新导入的数据为准
-        appState.stocks = [];
-        
-        // 显示加载提示
-        showNotification('正在获取中轴价格和汇率，请稍候...', 'info');
-        
-        // fetch 带超时（增加到15秒）
-        const fetchWithTimeout = (url, options, timeout = 15000) => {
-            return Promise.race([
-                fetch(url, options),
-                new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('请求超时')), timeout)
-                )
-            ]);
-        };
-        
-        // 先获取昨日收盘汇率（用于保持一致性）
-        let yesterdayExchangeRate = 1.1339;
+
+        // 获取现有的持仓数据（用于对比变化）
+        let oldStocks = [];
         try {
-            const rateResponse = await fetchWithTimeout('/api/exchange-rate', {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' }
-            }, 10000);
-            const rateData = await rateResponse.json();
-            if (rateData.success && rateData.yesterday_rate) {
-                yesterdayExchangeRate = rateData.yesterday_rate;
-                console.log('昨日收盘汇率:', yesterdayExchangeRate, '(来自API)');
-            } else {
-                console.warn('API返回汇率数据异常，使用默认汇率:', yesterdayExchangeRate);
+            const response = await fetch('/api/stocks');
+            const data = await response.json();
+            if (Array.isArray(data)) {
+                oldStocks = data;
             }
         } catch (e) {
-            console.warn('获取昨日汇率失败，使用默认汇率:', yesterdayExchangeRate);
+            console.warn('获取现有持仓失败，将视为空持仓', e);
         }
-        
-        // 获取动态中轴价格并创建股票数据（导入时直接用成本价，导入后异步刷新）
-        appState.stocks = [];
-        for (let i = 0; i < stocks.length; i++) {
-            const newStock = stocks[i];
+
+        const stocks = pendingImportData.stocks;
+        console.log('旧持仓数据:', oldStocks.map(s => ({ code: s.code, shares: s.shares })));
+
+        // 清除旧缓存
+        localStorage.removeItem('import_data_last');
+
+        // 显示加载提示
+        showNotification('正在导入数据，请稍候...', 'info');
+
+        // 先删除所有现有股票
+        for (const stock of oldStocks) {
             try {
-                console.log(`[导入] 处理 ${newStock.code} ${newStock.name}...`);
-                
-                // 导入时直接使用成本价作为中轴价格（避免API超时导致导入慢）
-                const pivotPrice = newStock.costPrice || newStock.currentPrice || 0;
-                const triggerBuy = pivotPrice * 0.92;
-                const triggerSell = pivotPrice * 1.08;
-                
-                const isHKStock = newStock.market === '港股';
-                const newShares = newStock.shares || newStock.holdQuantity || 0;
-                const newCostPrice = newStock.costPrice || newStock.holdCost || 0;
-                
-                // 查找旧数据，判断股数变化
-                const oldStock = oldStocks.find(s => s.code === newStock.code);
-                let finalHoldCost = newCostPrice;
-                let tradeType = null;
-                let tradeShares = 0;
-                
-                if (oldStock && isHKStock) {
-                    const oldShares = oldStock.holdQuantity || 0;
-                    const oldHoldCost = oldStock.holdCost || 0;
-                    const oldExchangeRate = oldStock.exchangeRate || yesterdayExchangeRate;
-                    
-                    if (newShares > oldShares) {
-                        // 买入：按昨日收盘汇率计算新的综合成本
-                        tradeType = '买入';
-                        tradeShares = newShares - oldShares;
-                        
-                        // 新买入部分的成本（人民币）= 买入股数 × 当前港币价格 ÷ 昨日收盘汇率
-                        const newBuyCostCny = tradeShares * (newStock.currentPrice || 0) / yesterdayExchangeRate;
-                        
-                        // 综合成本 = (旧成本总额 + 新买入成本总额) / 总股数
-                        const oldTotalCost = oldShares * oldHoldCost;
-                        finalHoldCost = (oldTotalCost + newBuyCostCny) / newShares;
-                        
-                        console.log(`${newStock.code} 买入 ${tradeShares}股，昨日汇率${yesterdayExchangeRate}，新成本${finalHoldCost.toFixed(2)}`);
-                    } else if (newShares < oldShares) {
-                        // 卖出：保持原有成本单价不变
-                        tradeType = '卖出';
-                        tradeShares = oldShares - newShares;
-                        finalHoldCost = oldHoldCost; // 成本单价不变
-                        
-                        console.log(`${newStock.code} 卖出 ${tradeShares}股，成本单价保持${finalHoldCost.toFixed(2)}`);
-                    } else {
-                        // 股数不变，使用新的成本价（可能来自券商的综合计算）
+                await fetch(`/api/stocks/${stock.id}`, { method: 'DELETE' });
+            } catch (e) {
+                console.warn(`删除股票 ${stock.code} 失败`, e);
+            }
+        }
+
+        // 获取汇率
+        let exchangeRate = 1.1339;
+        try {
+            const rateResponse = await fetch('/api/exchange-rate');
+            const rateData = await rateResponse.json();
+            if (rateData.success && rateData.yesterday_rate) {
+                exchangeRate = rateData.yesterday_rate;
+            }
+        } catch (e) {
+            console.warn('获取汇率失败，使用默认值', e);
+        }
+
+        // 逐个添加新股票
+        let added = 0;
+        for (const newStock of stocks) {
+            try {
+                // 获取中轴价格
+                let axisPrice = newStock.avg_cost;
+                try {
+                    const axisResponse = await fetch('/api/axis-price', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            code: newStock.code,
+                            market: newStock.market,
+                            days: 90
+                        })
+                    });
+                    const axisData = await axisResponse.json();
+                    if (axisData.success && axisData.axis_price) {
+                        axisPrice = axisData.axis_price;
+                    }
+                } catch (e) {
+                    console.warn(`获取 ${newStock.code} 中轴价格失败，使用成本价`, e);
+                }
+
+                // 构建股票数据
+                const stockData = {
+                    code: newStock.code,
+                    name: newStock.name,
+                    market: newStock.market,
+                    avg_cost: newStock.avg_cost,
+                    shares: newStock.shares,
+                    current_price: newStock.current_price,
+                    axis_price: axisPrice,
+                    base_position_pct: 50,
+                    float_position_pct: 50,
+                    trigger_pct: 8,
+                    stop_loss: newStock.stop_loss || 0,
+                    priority: 'P2',
+                    strategy_mode: '基础策略',
+                    notes: ''
+                };
+
+                // 调用 API 添加股票
+                const addResponse = await fetch('/api/stocks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(stockData)
+                });
+
+                if (addResponse.ok) {
+                    added++;
+                }
+            } catch (e) {
+                console.error(`添加股票 ${newStock.code} 失败`, e);
+            }
+        }
+
+        // 添加到导入历史
+        addImportHistory({
+            date: new Date().toISOString(),
+            fileName: pendingImportData.fileName || '手动导入',
+            stockCount: added,
+            stocks: stocks.map(s => ({ code: s.code, name: s.name, shares: s.shares }))
+        });
+
+        // 清空待导入数据
+        pendingImportData = null;
+        hideDataImportModal();
+
+        showNotification(`导入完成！共 ${added} 只股票`, 'success');
+
+        // 延迟刷新页面
+        setTimeout(() => {
+            window.location.reload();
+        }, 1500);
+
+    } catch (error) {
+        console.error('导入失败:', error);
+        showNotification('导入失败: ' + error.message, 'error');
+    }
+}
+
+/**
+ * 立即刷新股票行情（不检查开市状态）
+ */
+async function refreshStockQuotes() {
+    // 获取 appState（必须使用 window.appState 避免 TDZ 错误）
+    const appState = window.appState;
+    if (!appState || !appState.stocks || appState.stocks.length === 0) return;
                         finalHoldCost = newCostPrice;
                     }
                 }
