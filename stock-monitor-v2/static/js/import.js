@@ -645,7 +645,7 @@ async function confirmImport() {
         }
 
         const stocks = pendingImportData.stocks;
-        console.log('旧持仓数据:', oldStocks.map(s => ({ code: s.code, shares: s.shares })));
+        console.log('旧持仓数据:', oldStocks.map(s => ({ code: s.code, shares: s.shares || s.holdQuantity || 0 })));
 
         // 清除旧缓存
         localStorage.removeItem('import_data_last');
@@ -703,14 +703,14 @@ async function confirmImport() {
                     code: newStock.code,
                     name: newStock.name,
                     market: newStock.market,
-                    avg_cost: newStock.avg_cost,
+                    avg_cost: newStock.costPrice,
                     shares: newStock.shares,
-                    current_price: newStock.current_price,
+                    current_price: newStock.currentPrice,
                     axis_price: axisPrice,
                     base_position_pct: 50,
                     float_position_pct: 50,
                     trigger_pct: 8,
-                    stop_loss: newStock.stop_loss || 0,
+                    stop_loss: 0,
                     priority: 'P2',
                     strategy_mode: '基础策略',
                     notes: ''
@@ -750,126 +750,6 @@ async function confirmImport() {
             window.location.reload();
         }, 1500);
 
-    } catch (error) {
-        console.error('导入失败:', error);
-        showNotification('导入失败: ' + error.message, 'error');
-    }
-}
-
-/**
- * 立即刷新股票行情（不检查开市状态）
- */
-async function refreshStockQuotes() {
-    // 获取 appState（必须使用 window.appState 避免 TDZ 错误）
-    const appState = window.appState;
-    if (!appState || !appState.stocks || appState.stocks.length === 0) return;
-                        finalHoldCost = newCostPrice;
-                    }
-                }
-                
-                appState.stocks.push({
-                    ...newStock,
-                    price: newStock.currentPrice || newStock.price || 0,
-                    change: 0,
-                    changePercent: 0,
-                    holdQuantity: newShares,
-                    holdCost: finalHoldCost,
-                    importedMarketValue: newStock.marketValue || 0,
-                    triggerBuy: triggerBuy,
-                    triggerSell: triggerSell,
-                    strategy: newStock.strategy || '基础',
-                    investLimit: newStock.investLimit || (isHKStock ? 1500000 : 500000),
-                    pivotPrice: pivotPrice,
-                    baseRatio: newStock.baseRatio || 50,
-                    floatRatio: newStock.floatRatio || 50,
-                    id: String(i + 1),
-                    status: '监控中',
-                    market: newStock.market || 'A股',
-                    exchangeRate: yesterdayExchangeRate,
-                    tradeType: tradeType,
-                    tradeShares: tradeShares
-                });
-            } catch (error) {
-                console.warn(`[导入] 处理 ${newStock.code} 失败: ${error.message}`);
-                const pivotPrice = newStock.costPrice || newStock.currentPrice || 0;
-                appState.stocks.push({
-                    ...newStock,
-                    price: newStock.currentPrice || newStock.price || 0,
-                    change: 0,
-                    changePercent: 0,
-                    holdQuantity: newStock.shares || newStock.holdQuantity || 0,
-                    holdCost: newStock.costPrice || newStock.holdCost || 0,
-                    marketValue: newStock.marketValue || 0,
-                    triggerBuy: pivotPrice * 0.92,
-                    triggerSell: pivotPrice * 1.08,
-                    strategy: newStock.strategy || '基础',
-                    investLimit: newStock.investLimit || (newStock.market === '港股' ? 1500000 : 500000),
-                    pivotPrice: pivotPrice,
-                    baseRatio: newStock.baseRatio || 50,
-                    floatRatio: newStock.floatRatio || 50,
-                    id: String(i + 1),
-                    status: '监控中',
-                    market: newStock.market || 'A股',
-                    exchangeRate: yesterdayExchangeRate
-                });
-            }
-        }
-        
-        added = appState.stocks.length;
-        console.log(`[导入] 完成，共 ${added} 只股票`);
-        
-        // 重新渲染
-        renderStockList();
-        updateAssetOverview();
-        
-        // 保存到历史记录
-        const stats = pendingImportData.stats;
-        const historyRecord = {
-            timestamp: pendingImportData.timestamp,
-            fileName: pendingImportData.fileName,
-            stockCount: stocks.length,
-            totalValue: stats.totalMarketValue,
-            stats: stats
-        };
-        
-        addImportHistory(historyRecord);
-        
-        // 保存完整数据到localStorage（用于恢复）
-        const key = `import_data_${pendingImportData.timestamp}`;
-        localStorage.setItem(key, JSON.stringify(stocks));
-        
-        // 同时保存到 'import_data_last' 供页面刷新后自动读取
-        localStorage.setItem('import_data_last', JSON.stringify(appState.stocks));
-        
-        // 清理
-        clearFile();
-        hideDataImportModal();
-        
-        showNotification(`导入完成！共 ${appState.stocks.length} 只股票，正在刷新中轴价格...`, 'success');
-        
-        // 默认选中第一个
-        if (appState.stocks.length > 0) {
-            selectStock(0);
-        }
-        
-        // 导入后立即获取实时行情（不受开市时间限制）
-        await refreshStockQuotes();
-        
-        // 异步刷新所有股票的中轴价格（不阻塞导入流程）
-        setTimeout(() => {
-            console.log('[导入] 开始异步刷新中轴价格...');
-            if (typeof refreshAxisPrices === 'function') {
-                refreshAxisPrices().then(() => {
-                    showNotification('中轴价格刷新完成！', 'success');
-                }).catch(err => {
-                    console.error('[导入] 刷新中轴价格失败:', err);
-                    showNotification('部分中轴价格刷新失败，可手动修复', 'warning');
-                });
-            } else {
-                console.warn('[导入] refreshAxisPrices 函数未定义');
-            }
-        }, 1000);
-        
     } catch (error) {
         console.error('导入失败:', error);
         showNotification('导入失败: ' + error.message, 'error');
