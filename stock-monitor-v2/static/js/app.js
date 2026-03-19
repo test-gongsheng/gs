@@ -37,6 +37,9 @@ const appState = {
     version: APP_VERSION
 };
 
+// 挂载到 window 对象，供其他脚本访问
+window.appState = appState;
+
 // 模拟数据 - 初始为空，从localStorage读取或等待数据导入
 const mockStocks = [];
 
