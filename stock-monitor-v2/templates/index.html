@@ -267,6 +267,47 @@
                     </div>
                 </div>
 
+                <!-- 港股沽空风险提示（仅港股显示）-->
+                <div class="hk-short-risk-warning" id="hkShortRiskWarning" style="display: none;">
+                    <div class="section-header">
+                        <span class="section-title"><i class="fas fa-exclamation-triangle"></i> 港股沽空风险提示</span>
+                        <span class="section-subtitle" id="hkShortUpdateTime">--</span>
+                    </div>
+                    <div class="hk-short-content">
+                        <div class="hk-short-metrics">
+                            <div class="hk-metric-item">
+                                <span class="hk-metric-label">市场沽空额</span>
+                                <span class="hk-metric-value" id="hkStockShortAmount">--</span>
+                            </div>
+                            <div class="hk-metric-item">
+                                <span class="hk-metric-label">沽空比例</span>
+                                <span class="hk-metric-value" id="hkStockShortRatio">--</span>
+                            </div>
+                            <div class="hk-metric-item">
+                                <span class="hk-metric-label">市场信号</span>
+                                <span class="hk-metric-value" id="hkStockSignal">--</span>
+                            </div>
+                        </div>
+                        <div class="hk-short-trends">
+                            <div class="hk-trend-item">
+                                <span class="hk-trend-label">1周变化</span>
+                                <span class="hk-trend-value" id="hkStockChange1W">--</span>
+                            </div>
+                            <div class="hk-trend-item">
+                                <span class="hk-trend-label">1月变化</span>
+                                <span class="hk-trend-value" id="hkStockChange1M">--</span>
+                            </div>
+                            <div class="hk-trend-item">
+                                <span class="hk-trend-label">3月变化</span>
+                                <span class="hk-trend-value" id="hkStockChange3M">--</span>
+                            </div>
+                        </div>
+                        <div class="hk-risk-advice" id="hkStockRiskAdvice">
+                            --
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 市场情绪与多空数据 -->
                 <div class="sentiment-section">
                     <div class="section-header">
@@ -281,6 +322,10 @@
                                 <svg class="gauge-svg" viewBox="0 0 200 120">
                                     <path class="gauge-bg" d="M 20 100 A 80 80 0 0 1 180 100" />
                                     <path class="gauge-fill" id="sentimentGaugeFill" d="M 20 100 A 80 80 0 0 1 20 100" />
+                                    <!-- 指针 -->
+                                    <line id="gaugeNeedle" x1="100" y1="100" x2="20" y2="100" stroke="#fff" stroke-width="3" stroke-linecap="round" />
+                                    <!-- 指针中心圆点 -->
+                                    <circle cx="100" cy="100" r="6" fill="#fff" />
                                 </svg>
                                 <div class="gauge-value">
                                     <span class="gauge-score" id="sentimentScore">--</span>

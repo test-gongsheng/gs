@@ -3220,3 +3220,133 @@ body {
 
 .breadth-value.up { color: var(--color-up); }
 .breadth-value.down { color: var(--color-down); }
+
+/* ========================================
+   港股沽空风险提示
+   ======================================== */
+
+.hk-short-risk-warning {
+  background: var(--bg-card);
+  border-radius: var(--border-radius-lg);
+  padding: 16px;
+  margin: 16px 0;
+  border: 1px solid var(--border-color);
+}
+
+.hk-short-risk-warning .section-header {
+  margin-bottom: 12px;
+}
+
+.hk-short-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hk-short-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.hk-metric-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+}
+
+.hk-metric-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.hk-metric-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.hk-metric-value.high-risk { color: #ff4757; }
+.hk-metric-value.medium-risk { color: #ffa502; }
+.hk-metric-value.low-risk { color: #2ed573; }
+.hk-metric-value.normal { color: var(--text-primary); }
+
+.hk-short-trends {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.hk-trend-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+  font-size: 0.85rem;
+}
+
+.hk-trend-label {
+  color: var(--text-secondary);
+}
+
+.hk-trend-value {
+  font-weight: 600;
+}
+
+.hk-trend-value.high-risk { color: #ff4757; }
+
+.hk-risk-advice {
+  padding: 12px;
+  border-radius: var(--border-radius);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.hk-risk-advice.high-risk {
+  background: rgba(255, 71, 87, 0.15);
+  color: #ff6b6b;
+  border: 1px solid rgba(255, 71, 87, 0.3);
+}
+
+.hk-risk-advice.medium-risk {
+  background: rgba(255, 165, 2, 0.15);
+  color: #ffa502;
+  border: 1px solid rgba(255, 165, 2, 0.3);
+}
+
+.hk-risk-advice.normal {
+  background: rgba(144, 164, 174, 0.15);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.hk-risk-advice.low-risk {
+  background: rgba(46, 213, 115, 0.15);
+  color: #2ed573;
+  border: 1px solid rgba(46, 213, 115, 0.3);
+}
+
+/* 仪表盘指针样式 */
+#gaugeNeedle {
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+  transition: all 0.5s ease;
+}
+
+/* 股票列表中的港股标识 */
+.stock-item-hk {
+  display: inline-block;
+  background: var(--accent-cyan);
+  color: var(--bg-primary);
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: 4px;
+  vertical-align: middle;
+}

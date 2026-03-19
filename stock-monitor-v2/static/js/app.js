@@ -292,18 +292,20 @@ function updateAssetOverview() {
     appState.stocks.forEach(stock => {
         const isHKStock = stock.market === '港股';
         let marketValue, costValue;
+        // 数据文件中字段可能是 shares 或 holdQuantity
+        const quantity = stock.holdQuantity || stock.shares || 0;
         
         if (isHKStock) {
             // 港股：使用昨日收盘汇率（导入时记录的固定汇率）
             const exchangeRate = stock.exchangeRate || appState.exchangeRate || 1.1339;
             // 实时计算港币市值，转换为人民币
-            const hkdValue = (stock.price || 0) * (stock.holdQuantity || 0);
+            const hkdValue = (stock.price || 0) * quantity;
             marketValue = hkdValue / exchangeRate;
-            costValue = (stock.holdCost || 0) * (stock.holdQuantity || 0); // holdCost 已是人民币
+            costValue = (stock.holdCost || 0) * quantity; // holdCost 已是人民币
         } else {
             // A股：直接计算人民币市值
-            marketValue = (stock.price || 0) * (stock.holdQuantity || 0);
-            costValue = (stock.holdCost || 0) * (stock.holdQuantity || 0);
+            marketValue = (stock.price || 0) * quantity;
+            costValue = (stock.holdCost || 0) * quantity;
         }
         
         totalPosition += marketValue;
@@ -359,12 +361,14 @@ function renderStockList() {
         const exchangeRate = stock.exchangeRate || appState.exchangeRate || 1.1339;
 
         // 港股市值实时计算（港币价格 × 持仓数量 ÷ 汇率 = 人民币市值）
+        // 注意：数据文件中字段可能是 shares 或 holdQuantity
+        const quantity = stock.holdQuantity || stock.shares || 0;
         let marketValue;
         if (isHKStock) {
-            const hkdValue = (stock.price || 0) * (stock.holdQuantity || 0);
+            const hkdValue = (stock.price || 0) * quantity;
             marketValue = hkdValue / exchangeRate; // 汇率是1人民币=X港币
         } else {
-            marketValue = (stock.price || 0) * (stock.holdQuantity || 0);
+            marketValue = (stock.price || 0) * quantity;
         }
         
         const marketValueWan = marketValue > 0 ? (marketValue / 10000).toFixed(1) : '0.0';
@@ -376,12 +380,16 @@ function renderStockList() {
         } else if (stock.price <= stock.triggerBuy) {
             alertBadge = '<span class="stock-item-alert buy">买</span>';
         }
+        
+        // 港股标识
+        const hkBadge = isHKStock ? '<span class="stock-item-hk">HK</span>' : '';
 
         item.innerHTML = `
             <div class="stock-item-header">
                 <div>
                     <span class="stock-item-name">${stock.name}</span>
                     <span class="stock-item-code">${stock.code}</span>
+                    ${hkBadge}
                     ${alertBadge}
                 </div>
                 <div class="stock-item-price ${isUp ? 'up' : 'down'}">
@@ -431,7 +439,8 @@ function renderStockDetail() {
         // 港股使用昨日收盘汇率（导入时记录的固定汇率）
         const yesterdayRate = stock.exchangeRate || exchangeRate || 1.1339;
         // 港股当前持仓 = 股数 × 港股实时价格（港币）÷ 昨日收盘汇率 = 人民币市值
-        positionShares = stock.holdQuantity || 0;
+        // 注意：数据文件中字段可能是 shares 或 holdQuantity
+        positionShares = stock.holdQuantity || stock.shares || 0;
         positionValueHkd = stock.price * positionShares; // 港币市值
         marketValue = positionValueHkd / yesterdayRate;   // 转换为人民币（汇率是1人民币=X港币）
         
@@ -443,7 +452,7 @@ function renderStockDetail() {
         pnlPercent = costValue > 0 ? (pnl / costValue * 100) : 0;
     } else {
         // A股：都是人民币，实时计算
-        positionShares = stock.holdQuantity || 0;
+        positionShares = stock.holdQuantity || stock.shares || 0;
         marketValue = stock.price * positionShares;
         costValue = stock.holdCost * positionShares;
         pnl = marketValue - costValue;
@@ -598,6 +607,19 @@ function renderStockDetail() {
 
     // 渲染网格策略表格
     renderGridStrategy(stock);
+    
+    // 港股：显示沽空风险提示
+    if (isHKStock) {
+        console.log('[renderStockDetail] 检测到港股:', stock.code, stock.name);
+        renderHKShortRiskWarning();
+    } else {
+        // 非港股隐藏沽空提示
+        const warningEl = document.getElementById('hkShortRiskWarning');
+        if (warningEl) {
+            warningEl.style.display = 'none';
+            console.log('[renderStockDetail] 非港股,隐藏沽空提示:', stock.code);
+        }
+    }
 }
 
 // 渲染网格策略表格
@@ -681,6 +703,99 @@ function renderGridStrategy(stock) {
             <td><span class="grid-status ${row.statusClass}">${row.status}</span></td>
         </tr>
     `).join('');
+}
+
+// 渲染港股沽空风险提示
+async function renderHKShortRiskWarning() {
+    const warningEl = document.getElementById('hkShortRiskWarning');
+    if (!warningEl) {
+        console.error('[renderHKShortRiskWarning] 未找到警告元素');
+        return;
+    }
+    
+    console.log('[renderHKShortRiskWarning] 开始渲染港股沽空提示');
+    
+    // 显示容器
+    warningEl.style.display = 'block';
+    console.log('[renderHKShortRiskWarning] 已显示容器');
+    
+    // 设置加载状态
+    document.getElementById('hkStockShortAmount').textContent = '加载中...';
+    document.getElementById('hkStockSignal').textContent = '--';
+    
+    try {
+        // 获取港股沽空数据（复用市场情绪中的数据或单独获取）
+        const response = await fetch('/api/market/sentiment');
+        const data = await response.json();
+        
+        if (data.success && data.north_south && data.north_south.hk_short_selling) {
+            const hkShort = data.north_south.hk_short_selling;
+            
+            // 更新数据
+            document.getElementById('hkStockShortAmount').textContent = `${hkShort.short_amount}亿`;
+            
+            const ratioEl = document.getElementById('hkStockShortRatio');
+            ratioEl.textContent = `${hkShort.short_ratio}%`;
+            ratioEl.className = `hk-metric-value ${hkShort.short_ratio > 15 ? 'high-risk' : hkShort.short_ratio > 10 ? 'medium-risk' : 'low-risk'}`;
+            
+            const signalEl = document.getElementById('hkStockSignal');
+            signalEl.textContent = hkShort.signal || '--';
+            signalEl.className = `hk-metric-value ${hkShort.short_ratio > 15 ? 'high-risk' : hkShort.short_ratio > 10 ? 'medium-risk' : 'low-risk'}`;
+            
+            // 变化趋势
+            const changes = hkShort.changes || {};
+            const formatChange = (c) => {
+                if (!c || c.amount_change === undefined) return '--';
+                const sign = c.amount_change >= 0 ? '+' : '';
+                return `${sign}${c.amount_change}亿`;
+            };
+            
+            const change1w = changes['1w'] || {};
+            const change1m = changes['1m'] || {};
+            const change3m = changes['3m'] || {};
+            
+            const change1wEl = document.getElementById('hkStockChange1W');
+            change1wEl.textContent = formatChange(change1w);
+            change1wEl.className = `hk-trend-value ${(change1w.amount_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`;
+            
+            const change1mEl = document.getElementById('hkStockChange1M');
+            change1mEl.textContent = formatChange(change1m);
+            change1mEl.className = `hk-trend-value ${(change1m.amount_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`;
+            
+            const change3mEl = document.getElementById('hkStockChange3M');
+            change3mEl.textContent = formatChange(change3m);
+            change3mEl.className = `hk-trend-value ${(change3m.amount_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`;
+            
+            // 风险提示
+            const adviceEl = document.getElementById('hkStockRiskAdvice');
+            if (hkShort.short_ratio > 20) {
+                adviceEl.textContent = '⚠️ 当前港股沽空比例极高，市场整体做空情绪浓厚，建议谨慎操作，考虑减仓避险。';
+                adviceEl.className = 'hk-risk-advice high-risk';
+            } else if (hkShort.short_ratio > 15) {
+                adviceEl.textContent = '📉 港股沽空压力较大，市场偏空，建议控制仓位，避免追高。';
+                adviceEl.className = 'hk-risk-advice medium-risk';
+            } else if (hkShort.short_ratio > 10) {
+                adviceEl.textContent = '➡️ 港股沽空比例处于正常水平，可按正常策略操作。';
+                adviceEl.className = 'hk-risk-advice normal';
+            } else {
+                adviceEl.textContent = '📈 港股沽空压力较小，市场环境较好，可积极布局。';
+                adviceEl.className = 'hk-risk-advice low-risk';
+            }
+            
+            // 更新时间
+            document.getElementById('hkShortUpdateTime').textContent = hkShort.update_date || '--';
+            
+            console.log('[renderHKShortRiskWarning] 渲染完成:', hkShort.short_amount + '亿', '比例:' + hkShort.short_ratio + '%');
+        } else {
+            document.getElementById('hkStockShortAmount').textContent = '获取失败';
+            document.getElementById('hkStockRiskAdvice').textContent = '数据获取失败，请稍后重试。';
+            console.warn('[renderHKShortRiskWarning] API返回无数据:', data);
+        }
+    } catch (e) {
+        console.error('[renderHKShortRiskWarning] 加载失败:', e);
+        document.getElementById('hkStockShortAmount').textContent = '错误';
+        document.getElementById('hkStockRiskAdvice').textContent = '数据加载异常。';
+    }
 }
 
 // 渲染热点板块 - 真实实时数据版
@@ -1233,6 +1348,7 @@ function renderSentiment() {
     const scoreEl = document.getElementById('sentimentScore');
     const labelEl = document.getElementById('sentimentLabel');
     const gaugeFillEl = document.getElementById('sentimentGaugeFill');
+    const gaugeNeedleEl = document.getElementById('gaugeNeedle');
     
     if (scoreEl) scoreEl.textContent = index.score;
     if (labelEl) {
@@ -1250,6 +1366,28 @@ function renderSentiment() {
         const largeArc = endAngle > 90 ? 1 : 0;
         gaugeFillEl.setAttribute('d', `M 20 100 A 80 80 0 ${largeArc} 1 ${x} ${y}`);
         gaugeFillEl.setAttribute('class', `gauge-fill ${index.class}`);
+    }
+    
+    // 仪表盘指针旋转 (0-100映射到0-180度，从左侧开始)
+    if (gaugeNeedleEl) {
+        const percentage = index.score / 100;
+        const angle = percentage * 180; // 0-180度
+        const rad = (angle * Math.PI) / 180;
+        // 计算指针终点位置 (半径70，留一些边距)
+        const needleLength = 70;
+        const x2 = 100 - needleLength * Math.cos(rad);
+        const y2 = 100 - needleLength * Math.sin(rad);
+        gaugeNeedleEl.setAttribute('x2', x2);
+        gaugeNeedleEl.setAttribute('y2', y2);
+        // 根据情绪等级设置指针颜色
+        const needleColors = {
+            'extreme-fear': '#ff4757',
+            'fear': '#ff6b6b',
+            'neutral': '#ffa502',
+            'greed': '#2ed573',
+            'extreme-greed': '#00d4aa'
+        };
+        gaugeNeedleEl.setAttribute('stroke', needleColors[index.class] || '#fff');
     }
     
     // 2. 渲染多空力量条
