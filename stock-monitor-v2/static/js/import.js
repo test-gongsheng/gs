@@ -632,26 +632,23 @@ async function confirmImport() {
             return;
         }
         
-        // 检查 appState 是否可用（优先使用 window.appState）
-        const globalAppState = window.appState || (typeof appState !== 'undefined' ? appState : null);
-        if (!globalAppState) {
-            console.error('appState 未定义');
+        // 检查 appState 是否可用（必须使用 window.appState 避免 TDZ 错误）
+        const appState = window.appState;
+        if (!appState) {
+            console.error('window.appState 未定义，app.js 可能未正确加载');
             showNotification('应用状态未初始化，请刷新页面重试', 'error');
             return;
         }
         
-        // 统一使用 appState 变量名
-        const appState = globalAppState;
-        
-        if (!Array.isArray(globalAppState.stocks)) {
-            console.error('appState.stocks 不是数组', globalAppState.stocks);
-            globalAppState.stocks = [];
+        if (!Array.isArray(appState.stocks)) {
+            console.error('appState.stocks 不是数组', appState.stocks);
+            appState.stocks = [];
         }
         
         const stocks = pendingImportData.stocks;
         
         // 保存旧数据用于比较股数变化
-        const oldStocks = [...globalAppState.stocks];
+        const oldStocks = [...appState.stocks];
         console.log('旧持仓数据:', oldStocks.map(s => ({ code: s.code, qty: s.holdQuantity })));
         
         // 清除旧缓存，避免数据混乱
@@ -662,7 +659,7 @@ async function confirmImport() {
         let added = 0;
         
         // 清空原有数据，以新导入的数据为准
-        globalAppState.stocks = [];
+        appState.stocks = [];
         
         // 显示加载提示
         showNotification('正在获取中轴价格和汇率，请稍候...', 'info');
@@ -861,9 +858,9 @@ async function confirmImport() {
  * 立即刷新股票行情（不检查开市状态）
  */
 async function refreshStockQuotes() {
-    // 获取 appState（兼容多种引用方式）
-    const appState = window.appState || (typeof globalAppState !== 'undefined' ? globalAppState : null);
-    if (!appState || appState.stocks.length === 0) return;
+    // 获取 appState（必须使用 window.appState 避免 TDZ 错误）
+    const appState = window.appState;
+    if (!appState || !appState.stocks || appState.stocks.length === 0) return;
     
     try {
         const response = await fetch('/api/quotes', {
