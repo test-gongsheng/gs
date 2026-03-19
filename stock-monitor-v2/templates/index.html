@@ -273,7 +273,34 @@
                         <span class="section-title"><i class="fas fa-exclamation-triangle"></i> 港股沽空风险提示</span>
                         <span class="section-subtitle" id="hkShortUpdateTime">--</span>
                     </div>
-                    <div class="hk-short-content">
+                    <!-- 个股沽空数据 -->
+                    <div class="hk-stock-short-section" style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+                        <div class="hk-section-title" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
+                            <i class="fas fa-chart-bar"></i> 个股昨日沽空数据
+                        </div>
+                        <div class="hk-short-metrics">
+                            <div class="hk-metric-item">
+                                <span class="hk-metric-label">沽空金额</span>
+                                <span class="hk-metric-value" id="hkIndividualShortAmount">--</span>
+                            </div>
+                            <div class="hk-metric-item">
+                                <span class="hk-metric-label">沽空比率</span>
+                                <span class="hk-metric-value" id="hkIndividualShortRatio">--</span>
+                            </div>
+                            <div class="hk-metric-item">
+                                <span class="hk-metric-label">数据来源</span>
+                                <span class="hk-metric-value" id="hkIndividualDataSource">--</span>
+                            </div>
+                        </div>
+                        <div class="hk-individual-advice" id="hkIndividualAdvice" style="margin-top: 12px; padding: 10px; background: var(--bg-tertiary); border-radius: var(--border-radius); font-size: 0.85rem;">
+                            --
+                        </div>
+                    </div>
+                    <!-- 市场整体沽空数据 -->
+                    <div class="hk-market-short-section">
+                        <div class="hk-section-title" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
+                            <i class="fas fa-globe-asia"></i> 港股市场整体沽空
+                        </div>
                         <div class="hk-short-metrics">
                             <div class="hk-metric-item">
                                 <span class="hk-metric-label">市场沽空额</span>

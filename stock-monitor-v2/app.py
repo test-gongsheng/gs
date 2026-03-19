@@ -324,7 +324,7 @@ def get_portfolio_hk_short_analysis():
     基于港股市场整体沽空水平，评估持仓风险
     """
     try:
-        from utils.market_sentiment import get_hk_short_selling
+        from utils.market_sentiment import get_hk_short_selling, get_hk_stock_short_selling
         
         # 获取港股市场整体沽空数据
         market_short = get_hk_short_selling()
@@ -336,6 +336,14 @@ def get_portfolio_hk_short_analysis():
         
         # 计算港股持仓总市值
         hk_position_value = sum(s.get('market_value', 0) for s in hk_stocks)
+        
+        # 获取每只港股的个股沽空数据
+        stock_short_data = {}
+        for stock in hk_stocks:
+            code = stock.get('code', '')
+            if code:
+                stock_short = get_hk_stock_short_selling(code)
+                stock_short_data[code] = stock_short
         
         # 风险评估
         short_ratio = market_short.get('short_ratio', 0)
@@ -355,6 +363,7 @@ def get_portfolio_hk_short_analysis():
         return jsonify({
             'success': True,
             'market_short': market_short,
+            'stock_short_data': stock_short_data,
             'portfolio': {
                 'hk_stock_count': len(hk_stocks),
                 'hk_position_value': round(hk_position_value, 2),
@@ -366,6 +375,29 @@ def get_portfolio_hk_short_analysis():
         })
     except Exception as e:
         print(f"获取港股沽空分析失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/hk-stock/<stock_code>/short-selling')
+def get_hk_stock_short(stock_code):
+    """
+    获取港股个股前一天的沽空数据
+    
+    Args:
+        stock_code: 港股代码，如 '00700'
+    """
+    try:
+        from utils.market_sentiment import get_hk_stock_short_selling
+        
+        result = get_hk_stock_short_selling(stock_code)
+        return jsonify(result)
+    except Exception as e:
+        print(f"获取港股{stock_code}沽空数据失败: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({

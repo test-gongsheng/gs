@@ -713,25 +713,36 @@ async function renderHKShortRiskWarning() {
         return;
     }
     
-    console.log('[renderHKShortRiskWarning] 开始渲染港股沽空提示');
+    const stock = appState.selectedStock;
+    if (!stock || stock.market !== '港股') {
+        console.warn('[renderHKShortRiskWarning] 当前不是港股，不显示');
+        warningEl.style.display = 'none';
+        return;
+    }
+    
+    console.log('[renderHKShortRiskWarning] 开始渲染港股沽空提示，股票:', stock.code, stock.name);
     
     // 显示容器
     warningEl.style.display = 'block';
-    console.log('[renderHKShortRiskWarning] 已显示容器');
     
     // 设置加载状态
     document.getElementById('hkStockShortAmount').textContent = '加载中...';
-    document.getElementById('hkStockSignal').textContent = '--';
+    document.getElementById('hkIndividualShortAmount').textContent = '加载中...';
     
     try {
-        // 获取港股沽空数据（复用市场情绪中的数据或单独获取）
-        const response = await fetch('/api/market/sentiment');
-        const data = await response.json();
+        // 并行获取市场数据和个股数据
+        const [marketResponse, stockResponse] = await Promise.all([
+            fetch('/api/market/sentiment'),
+            fetch(`/api/hk-stock/${stock.code}/short-selling`)
+        ]);
         
-        if (data.success && data.north_south && data.north_south.hk_short_selling) {
-            const hkShort = data.north_south.hk_short_selling;
+        const marketData = await marketResponse.json();
+        const stockData = await stockResponse.json();
+        
+        // 1. 渲染市场整体数据
+        if (marketData.success && marketData.north_south && marketData.north_south.hk_short_selling) {
+            const hkShort = marketData.north_south.hk_short_selling;
             
-            // 更新数据
             document.getElementById('hkStockShortAmount').textContent = `${hkShort.short_amount}亿`;
             
             const ratioEl = document.getElementById('hkStockShortRatio');
@@ -747,6 +758,95 @@ async function renderHKShortRiskWarning() {
             const formatChange = (c) => {
                 if (!c || c.amount_change === undefined) return '--';
                 const sign = c.amount_change >= 0 ? '+' : '';
+                return `${sign}${c.amount_change}亿`;
+            };
+            
+            const change1w = changes['1w'] || {};
+            const change1m = changes['1m'] || {};
+            const change3m = changes['3m'] || {};
+            
+            document.getElementById('hkStockChange1W').textContent = formatChange(change1w);
+            document.getElementById('hkStockChange1W').className = `hk-trend-value ${(change1w.amount_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`;
+            
+            document.getElementById('hkStockChange1M').textContent = formatChange(change1m);
+            document.getElementById('hkStockChange1M').className = `hk-trend-value ${(change1m.amount_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`;
+            
+            document.getElementById('hkStockChange3M').textContent = formatChange(change3m);
+            document.getElementById('hkStockChange3M').className = `hk-trend-value ${(change3m.amount_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`;
+            
+            // 市场整体风险提示
+            const adviceEl = document.getElementById('hkStockRiskAdvice');
+            if (hkShort.short_ratio > 20) {
+                adviceEl.textContent = '⚠️ 当前港股沽空比例极高，市场整体做空情绪浓厚，建议谨慎操作，考虑减仓避险。';
+                adviceEl.className = 'hk-risk-advice high-risk';
+            } else if (hkShort.short_ratio > 15) {
+                adviceEl.textContent = '📉 港股沽空压力较大，市场偏空，建议控制仓位，避免追高。';
+                adviceEl.className = 'hk-risk-advice medium-risk';
+            } else if (hkShort.short_ratio > 10) {
+                adviceEl.textContent = '➡️ 港股沽空比例处于正常水平，可按正常策略操作。';
+                adviceEl.className = 'hk-risk-advice normal';
+            } else {
+                adviceEl.textContent = '📈 港股沽空压力较小，市场环境较好，可积极布局。';
+                adviceEl.className = 'hk-risk-advice low-risk';
+            }
+            
+            document.getElementById('hkShortUpdateTime').textContent = hkShort.update_date || '--';
+        }
+        
+        // 2. 渲染个股沽空数据
+        if (stockData.success) {
+            const individual = stockData;
+            
+            document.getElementById('hkIndividualShortAmount').textContent = 
+                individual.short_amount !== null ? `${individual.short_amount}亿` : '--';
+            
+            const ratioEl = document.getElementById('hkIndividualShortRatio');
+            if (individual.short_ratio !== null) {
+                ratioEl.textContent = `${individual.short_ratio}%`;
+                ratioEl.className = `hk-metric-value ${individual.short_ratio > 25 ? 'high-risk' : individual.short_ratio > 15 ? 'medium-risk' : 'low-risk'}`;
+            } else {
+                ratioEl.textContent = '--';
+            }
+            
+            const sourceEl = document.getElementById('hkIndividualDataSource');
+            sourceEl.textContent = individual.estimated ? '估算数据' : '港交所';
+            sourceEl.className = `hk-metric-value ${individual.estimated ? 'medium-risk' : 'low-risk'}`;
+            
+            // 个股风险提示
+            const individualAdviceEl = document.getElementById('hkIndividualAdvice');
+            const stockName = stock.name || '';
+            if (individual.short_ratio !== null) {
+                if (individual.short_ratio > 30) {
+                    individualAdviceEl.innerHTML = `⚠️ <strong>${stockName}</strong> 昨日沽空比率达 <span style="color:#ff4757;font-weight:bold">${individual.short_ratio}%</span>，做空压力极大，建议密切关注并考虑减仓避险。`;
+                    individualAdviceEl.className = 'hk-individual-advice high-risk';
+                } else if (individual.short_ratio > 20) {
+                    individualAdviceEl.innerHTML = `📉 <strong>${stockName}</strong> 昨日沽空比率为 <span style="color:#ffa502;font-weight:bold">${individual.short_ratio}%</span>，沽空压力较大，建议谨慎操作。`;
+                    individualAdviceEl.className = 'hk-individual-advice medium-risk';
+                } else if (individual.short_ratio > 10) {
+                    individualAdviceEl.innerHTML = `➡️ <strong>${stockName}</strong> 昨日沽空比率为 <span style="color:#ffa502">${individual.short_ratio}%</span>，处于正常水平。`;
+                    individualAdviceEl.className = 'hk-individual-advice normal';
+                } else {
+                    individualAdviceEl.innerHTML = `📈 <strong>${stockName}</strong> 昨日沽空比率仅 <span style="color:#2ed573">${individual.short_ratio}%</span>，做空压力较小。`;
+                    individualAdviceEl.className = 'hk-individual-advice low-risk';
+                }
+            } else {
+                individualAdviceEl.textContent = '暂无个股沽空数据';
+            }
+        } else {
+            document.getElementById('hkIndividualShortAmount').textContent = '获取失败';
+            document.getElementById('hkIndividualAdvice').textContent = '个股沽空数据获取失败';
+        }
+        
+        console.log('[renderHKShortRiskWarning] 渲染完成');
+        
+    } catch (e) {
+        console.error('[renderHKShortRiskWarning] 加载失败:', e);
+        document.getElementById('hkStockShortAmount').textContent = '错误';
+        document.getElementById('hkIndividualShortAmount').textContent = '错误';
+        document.getElementById('hkStockRiskAdvice').textContent = '数据加载异常。';
+        document.getElementById('hkIndividualAdvice').textContent = '数据加载异常。';
+    }
+}
                 return `${sign}${c.amount_change}亿`;
             };
             
