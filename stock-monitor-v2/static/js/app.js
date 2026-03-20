@@ -60,23 +60,61 @@ const mockNews = [
 
 // 初始化
 async function init() {
-    // 尝试从 localStorage 读取上次导入的数据
-    const savedStocks = localStorage.getItem('import_data_last');
-    if (savedStocks) {
-        try {
-            const stocks = JSON.parse(savedStocks);
-            if (stocks && stocks.length > 0) {
-                appState.stocks = stocks;
-                console.log('已从 localStorage 恢复', stocks.length, '只股票');
-            } else {
+    // 首先尝试从后端 API 加载数据
+    let loadedFromBackend = false;
+    try {
+        const response = await fetch('/api/stocks');
+        const stocks = await response.json();
+        if (Array.isArray(stocks) && stocks.length > 0) {
+            // 转换后端数据格式为前端格式
+            appState.stocks = stocks.map(s => ({
+                id: s.id,
+                code: s.code,
+                name: s.name,
+                market: s.market || 'A股',
+                price: s.current_price || 0,
+                holdCost: s.avg_cost || 0,
+                holdQuantity: s.shares || 0,
+                pivotPrice: s.axis_price || 0,
+                triggerBuy: s.next_buy_price || 0,
+                triggerSell: s.next_sell_price || 0,
+                investLimit: s.market === '港股' ? 1500000 : 500000,
+                baseRatio: s.base_position_pct || 50,
+                floatRatio: s.float_position_pct || 50,
+                strategy: s.strategy_mode || '基础',
+                gridLevels: s.grid_levels || [],
+                change: 0,
+                changePercent: 0,
+                exchangeRate: s.exchange_rate || 1.1339
+            }));
+            loadedFromBackend = true;
+            console.log('已从后端 API 加载', appState.stocks.length, '只股票');
+            // 同时保存到 localStorage 作为备份
+            localStorage.setItem('import_data_last', JSON.stringify(appState.stocks));
+        }
+    } catch (e) {
+        console.error('从后端加载数据失败:', e);
+    }
+    
+    // 如果后端没有数据，尝试从 localStorage 读取
+    if (!loadedFromBackend) {
+        const savedStocks = localStorage.getItem('import_data_last');
+        if (savedStocks) {
+            try {
+                const stocks = JSON.parse(savedStocks);
+                if (stocks && stocks.length > 0) {
+                    appState.stocks = stocks;
+                    console.log('已从 localStorage 恢复', stocks.length, '只股票');
+                } else {
+                    appState.stocks = mockStocks;
+                }
+            } catch (e) {
+                console.error('读取本地数据失败:', e);
                 appState.stocks = mockStocks;
             }
-        } catch (e) {
-            console.error('读取本地数据失败:', e);
+        } else {
             appState.stocks = mockStocks;
         }
-    } else {
-        appState.stocks = mockStocks;
     }
     
     appState.hotSectors = mockHotSectors;
@@ -914,58 +952,6 @@ async function renderHKShortRiskWarning() {
         document.getElementById('hkIndividualAdvice').textContent = '数据加载异常。';
     }
 }
-                return `${sign}${c.amount_change}亿`;
-            };
-            
-            const change1w = changes['1w'] || {};
-            const change1m = changes['1m'] || {};
-            const change3m = changes['3m'] || {};
-            
-            const change1wEl = document.getElementById('hkStockChange1W');
-            change1wEl.textContent = formatChange(change1w);
-            change1wEl.className = `hk-trend-value ${(change1w.amount_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`;
-            
-            const change1mEl = document.getElementById('hkStockChange1M');
-            change1mEl.textContent = formatChange(change1m);
-            change1mEl.className = `hk-trend-value ${(change1m.amount_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`;
-            
-            const change3mEl = document.getElementById('hkStockChange3M');
-            change3mEl.textContent = formatChange(change3m);
-            change3mEl.className = `hk-trend-value ${(change3m.amount_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`;
-            
-            // 风险提示
-            const adviceEl = document.getElementById('hkStockRiskAdvice');
-            if (hkShort.short_ratio > 20) {
-                adviceEl.textContent = '⚠️ 当前港股沽空比例极高，市场整体做空情绪浓厚，建议谨慎操作，考虑减仓避险。';
-                adviceEl.className = 'hk-risk-advice high-risk';
-            } else if (hkShort.short_ratio > 15) {
-                adviceEl.textContent = '📉 港股沽空压力较大，市场偏空，建议控制仓位，避免追高。';
-                adviceEl.className = 'hk-risk-advice medium-risk';
-            } else if (hkShort.short_ratio > 10) {
-                adviceEl.textContent = '➡️ 港股沽空比例处于正常水平，可按正常策略操作。';
-                adviceEl.className = 'hk-risk-advice normal';
-            } else {
-                adviceEl.textContent = '📈 港股沽空压力较小，市场环境较好，可积极布局。';
-                adviceEl.className = 'hk-risk-advice low-risk';
-            }
-            
-            // 更新时间
-            document.getElementById('hkShortUpdateTime').textContent = hkShort.update_date || '--';
-            
-            console.log('[renderHKShortRiskWarning] 渲染完成:', hkShort.short_amount + '亿', '比例:' + hkShort.short_ratio + '%');
-        } else {
-            document.getElementById('hkStockShortAmount').textContent = '获取失败';
-            document.getElementById('hkStockRiskAdvice').textContent = '数据获取失败，请稍后重试。';
-            console.warn('[renderHKShortRiskWarning] API返回无数据:', data);
-        }
-    } catch (e) {
-        console.error('[renderHKShortRiskWarning] 加载失败:', e);
-        document.getElementById('hkStockShortAmount').textContent = '错误';
-        document.getElementById('hkStockRiskAdvice').textContent = '数据加载异常。';
-    }
-}
-
-// 渲染热点板块 - 真实实时数据版
 function renderHotSectors() {
     const listEl = document.getElementById('hotSectors');
     if (!listEl) return;
