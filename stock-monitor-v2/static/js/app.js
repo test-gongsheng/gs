@@ -1386,27 +1386,44 @@ async function simulatePriceUpdate() {
  */
 async function updateStockPricesOnce() {
     if (appState.stocks.length === 0) {
+        console.log('[updateStockPricesOnce] 没有股票数据，跳过');
         return;
     }
 
     try {
         console.log('[updateStockPricesOnce] 获取实时行情...');
+        console.log('[updateStockPricesOnce] 股票列表:', appState.stocks.map(s => s.code));
         
-        // 调用后端API获取真实行情
+        const requestBody = {
+            stocks: appState.stocks.map(s => ({
+                code: s.code,
+                market: s.market
+            }))
+        };
+        console.log('[updateStockPricesOnce] 请求体:', JSON.stringify(requestBody));
+        
+        // 调用后端API获取真实行情，添加超时
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+            console.log('[updateStockPricesOnce] 请求超时，中止');
+            controller.abort();
+        }, 10000); // 10秒超时
+        
+        console.log('[updateStockPricesOnce] 发起 fetch 请求...');
         const response = await fetch('/api/quotes', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                stocks: appState.stocks.map(s => ({
-                    code: s.code,
-                    market: s.market
-                }))
-            })
+            body: JSON.stringify(requestBody),
+            signal: controller.signal
         });
+        clearTimeout(timeoutId);
+        
+        console.log('[updateStockPricesOnce] fetch 完成，状态:', response.status);
 
         const data = await response.json();
+        console.log('[updateStockPricesOnce] 响应数据:', data);
 
         if (data.success && data.quotes) {
             // 保存全局汇率
@@ -1428,6 +1445,8 @@ async function updateStockPricesOnce() {
                         stock.priceCny = quote.price_cny;
                         stock.exchangeRate = quote.exchange_rate;
                     }
+                } else {
+                    console.log(`[updateStockPricesOnce] ${stock.code}: 无报价数据`);
                 }
             });
 
@@ -1443,9 +1462,14 @@ async function updateStockPricesOnce() {
             updateAssetOverview();
             
             console.log('[updateStockPricesOnce] 实时行情更新完成');
+        } else {
+            console.error('[updateStockPricesOnce] API返回失败:', data);
         }
     } catch (error) {
-        console.error('[updateStockPricesOnce] 获取行情失败:', error);
+        console.error('[updateStockPricesOnce] 获取行情失败:', error.name, error.message);
+        if (error.name === 'AbortError') {
+            console.error('[updateStockPricesOnce] 请求超时');
+        }
     }
 }
 
