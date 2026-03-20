@@ -160,6 +160,12 @@ async function init() {
     console.log('加载财联社实时新闻...');
     await loadNews();
     
+    // 页面加载完成后，立即获取一次实时行情（获取当天收盘价）
+    if (appState.stocks.length > 0) {
+        console.log('初始化完成，立即获取实时行情...');
+        await updateStockPricesOnce();
+    }
+    
     // 页面加载完成后，异步重新计算中轴价格（确保数据最新）
     if (appState.stocks.length > 0) {
         console.log('开始异步刷新中轴价格...');
@@ -1371,6 +1377,75 @@ async function simulatePriceUpdate() {
         }
     } catch (error) {
         console.error('获取行情失败:', error);
+    }
+}
+
+/**
+ * 初始化时获取一次实时行情（获取当天收盘价）
+ * 与 simulatePriceUpdate 不同，这个函数不检查市场状态，强制更新一次
+ */
+async function updateStockPricesOnce() {
+    if (appState.stocks.length === 0) {
+        return;
+    }
+
+    try {
+        console.log('[updateStockPricesOnce] 获取实时行情...');
+        
+        // 调用后端API获取真实行情
+        const response = await fetch('/api/quotes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                stocks: appState.stocks.map(s => ({
+                    code: s.code,
+                    market: s.market
+                }))
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.quotes) {
+            // 保存全局汇率
+            if (data.exchange_rate) {
+                appState.exchangeRate = data.exchange_rate;
+            }
+
+            // 更新股票价格和涨跌幅
+            appState.stocks.forEach(stock => {
+                const quote = data.quotes[stock.code];
+                if (quote) {
+                    console.log(`[updateStockPricesOnce] ${stock.code}: ${stock.price} -> ${quote.price}`);
+                    stock.price = quote.price;
+                    stock.change = quote.change;
+                    stock.changePercent = quote.change_percent;
+
+                    // 港股：保存人民币转换价格和汇率
+                    if (quote.market === '港股') {
+                        stock.priceCny = quote.price_cny;
+                        stock.exchangeRate = quote.exchange_rate;
+                    }
+                }
+            });
+
+            // 重新渲染
+            renderStockList();
+            if (appState.selectedStock) {
+                const selected = appState.stocks.find(s => s.code === appState.selectedStock.code);
+                if (selected) {
+                    appState.selectedStock = selected;
+                    renderStockDetail();
+                }
+            }
+            updateAssetOverview();
+            
+            console.log('[updateStockPricesOnce] 实时行情更新完成');
+        }
+    } catch (error) {
+        console.error('[updateStockPricesOnce] 获取行情失败:', error);
     }
 }
 
