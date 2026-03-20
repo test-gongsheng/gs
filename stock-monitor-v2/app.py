@@ -13,12 +13,43 @@ app = Flask(__name__)
 DATA_FILE = os.path.join(os.path.dirname(__file__), 'data', 'stocks.json')
 
 def load_data():
-    """加载股票数据"""
+    """加载股票数据，如果不存在则自动创建"""
+    # 自动创建 data 目录
+    data_dir = os.path.dirname(DATA_FILE)
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
+        print(f"[load_data] 创建目录: {data_dir}")
+    
+    # 如果文件不存在，创建初始数据文件
+    if not os.path.exists(DATA_FILE):
+        default_data = {
+            "portfolio": {
+                "total_capital": 8000000,
+                "a_stock_limit": 500000,
+                "a_stock_focus_limit": 1000000,
+                "hk_stock_limit": 1500000,
+                "strategy": "左侧交易+中轴价格仓位控制法+个性化网格策略"
+            },
+            "stocks": [],
+            "market_sentiment": {},
+            "hot_sectors": [],
+            "alerts": [],
+            "risk_control": {}
+        }
+        try:
+            with open(DATA_FILE, 'w', encoding='utf-8') as f:
+                json.dump(default_data, f, ensure_ascii=False, indent=2)
+            print(f"[load_data] 创建初始数据文件: {DATA_FILE}")
+            return default_data
+        except Exception as e:
+            print(f"[load_data] 创建初始数据文件失败: {e}")
+    
+    # 正常加载数据
     try:
         with open(DATA_FILE, 'r', encoding='utf-8') as f:
             return json.load(f)
     except Exception as e:
-        print(f"Error loading data: {e}")
+        print(f"[load_data] 加载数据失败: {e}")
         return {
             "portfolio": {
                 "total_capital": 8000000,
