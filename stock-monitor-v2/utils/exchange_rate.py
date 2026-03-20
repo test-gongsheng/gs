@@ -40,7 +40,7 @@ def get_cny_hkd_rate() -> Optional[float]:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Referer': 'http://finance.sina.com.cn'
         }
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(url, headers=headers, timeout=3)  # 缩短超时到3秒
         response.encoding = 'gb2312'
         
         # 解析USD/CNY和HKD/CNY
@@ -91,7 +91,7 @@ def get_yesterday_cny_hkd_rate() -> Optional[float]:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Referer': 'http://finance.sina.com.cn'
         }
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(url, headers=headers, timeout=3)  # 缩短超时到3秒
         response.encoding = 'gb2312'
         
         text = response.text
