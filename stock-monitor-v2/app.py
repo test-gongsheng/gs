@@ -41,7 +41,9 @@ def save_data(data):
             json.dump(data, f, ensure_ascii=False, indent=2)
         return True
     except Exception as e:
+        import traceback
         print(f"Error saving data: {e}")
+        traceback.print_exc()
         return False
 
 @app.route('/')
@@ -64,25 +66,36 @@ def get_stocks():
 @app.route('/api/stocks', methods=['POST'])
 def add_stock():
     """添加股票"""
-    data = load_data()
-    new_stock = request.json
-    
-    # 生成唯一ID
-    max_id = max([int(s['id']) for s in data['stocks']], default=0)
-    new_stock['id'] = str(max_id + 1)
-    new_stock['status'] = '监控中'
-    
-    # 计算市值
-    new_stock['market_value'] = new_stock.get('current_price', 0) * new_stock.get('shares', 0)
-    
-    data['stocks'].append(new_stock)
-    
-    # 更新风险控制数据
-    update_risk_control(data)
-    
-    if save_data(data):
-        return jsonify({'success': True, 'stock': new_stock})
-    return jsonify({'success': False, 'error': '保存失败'}), 500
+    try:
+        data = load_data()
+        new_stock = request.json
+        
+        print(f"[add_stock] 添加股票: {new_stock.get('code')} {new_stock.get('name')}")
+        
+        # 生成唯一ID
+        max_id = max([int(s['id']) for s in data['stocks']], default=0)
+        new_stock['id'] = str(max_id + 1)
+        new_stock['status'] = '监控中'
+        
+        # 计算市值
+        new_stock['market_value'] = new_stock.get('current_price', 0) * new_stock.get('shares', 0)
+        
+        data['stocks'].append(new_stock)
+        
+        # 更新风险控制数据
+        update_risk_control(data)
+        
+        if save_data(data):
+            print(f"[add_stock] 成功添加: {new_stock['code']}")
+            return jsonify({'success': True, 'stock': new_stock})
+        else:
+            print(f"[add_stock] 保存失败")
+            return jsonify({'success': False, 'error': '保存失败'}), 500
+    except Exception as e:
+        import traceback
+        print(f"[add_stock] 异常: {e}")
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/stocks/<stock_id>', methods=['PUT'])
 def update_stock(stock_id):
