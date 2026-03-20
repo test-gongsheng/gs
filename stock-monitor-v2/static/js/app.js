@@ -1405,22 +1405,34 @@ async function updateStockPricesOnce() {
         // 调用后端API获取真实行情，添加超时
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
-            console.log('[updateStockPricesOnce] 请求超时，中止');
+            console.log('[updateStockPricesOnce] 请求超时(5秒)，中止');
             controller.abort();
-        }, 10000); // 10秒超时
+        }, 5000); // 5秒超时
         
         console.log('[updateStockPricesOnce] 发起 fetch 请求...');
-        const response = await fetch('/api/quotes', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestBody),
-            signal: controller.signal
-        });
+        let response;
+        try {
+            response = await fetch('/api/quotes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody),
+                signal: controller.signal
+            });
+        } catch (fetchError) {
+            console.error('[updateStockPricesOnce] fetch 异常:', fetchError.name, fetchError.message);
+            clearTimeout(timeoutId);
+            throw fetchError;
+        }
         clearTimeout(timeoutId);
         
         console.log('[updateStockPricesOnce] fetch 完成，状态:', response.status);
+
+        if (!response.ok) {
+            console.error('[updateStockPricesOnce] HTTP 错误:', response.status, response.statusText);
+            return;
+        }
 
         const data = await response.json();
         console.log('[updateStockPricesOnce] 响应数据:', data);
@@ -1468,7 +1480,7 @@ async function updateStockPricesOnce() {
     } catch (error) {
         console.error('[updateStockPricesOnce] 获取行情失败:', error.name, error.message);
         if (error.name === 'AbortError') {
-            console.error('[updateStockPricesOnce] 请求超时');
+            console.error('[updateStockPricesOnce] 请求超时(5秒)');
         }
     }
 }
