@@ -683,7 +683,16 @@ async function confirmImport() {
                 // 获取中轴价格（使用 costPrice，因为 parseStockLine 返回的是 costPrice）
                 let axisPrice = newStock.costPrice;
                 console.log(`[confirmImport] ${newStock.code} 默认中轴价格: ${axisPrice}`);
+                
+                // 暂时跳过中轴价格API调用，避免网络超时卡住导入
+                // 直接使用成本价作为中轴价格
+                console.log(`[confirmImport] ${newStock.code} 跳过中轴API，使用成本价: ${axisPrice}`);
+                
+                /* 网络不稳定时跳过此步骤
                 try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3秒超时
+                    
                     const axisResponse = await fetch('/api/axis-price', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -691,8 +700,11 @@ async function confirmImport() {
                             code: newStock.code,
                             market: newStock.market,
                             days: 90
-                        })
+                        }),
+                        signal: controller.signal
                     });
+                    clearTimeout(timeoutId);
+                    
                     console.log(`[confirmImport] ${newStock.code} 中轴API响应:`, axisResponse.status);
                     const axisData = await axisResponse.json();
                     console.log(`[confirmImport] ${newStock.code} 中轴数据:`, axisData);
@@ -702,6 +714,7 @@ async function confirmImport() {
                 } catch (e) {
                     console.warn(`获取 ${newStock.code} 中轴价格失败，使用成本价`, e);
                 }
+                */
 
                 // 构建股票数据
                 const stockData = {
