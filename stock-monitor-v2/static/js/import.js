@@ -678,8 +678,8 @@ async function confirmImport() {
         let added = 0;
         for (const newStock of stocks) {
             try {
-                // 获取中轴价格
-                let axisPrice = newStock.avg_cost;
+                // 获取中轴价格（使用 costPrice，因为 parseStockLine 返回的是 costPrice）
+                let axisPrice = newStock.costPrice;
                 try {
                     const axisResponse = await fetch('/api/axis-price', {
                         method: 'POST',
