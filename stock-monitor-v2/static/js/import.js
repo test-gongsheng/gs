@@ -732,10 +732,18 @@ async function confirmImport() {
         }
 
         // 添加到导入历史
+        const totalValue = stocks.reduce((sum, s) => sum + (s.currentPrice * s.shares), 0);
         addImportHistory({
-            date: new Date().toISOString(),
+            timestamp: new Date().toISOString(),
             fileName: pendingImportData.fileName || '手动导入',
             stockCount: added,
+            totalValue: totalValue,
+            stats: {
+                totalMarketValue: totalValue,
+                totalCost: stocks.reduce((sum, s) => sum + (s.costPrice * s.shares), 0),
+                profitCount: stocks.filter(s => s.pnl >= 0).length,
+                lossCount: stocks.filter(s => s.pnl < 0).length
+            },
             stocks: stocks.map(s => ({ code: s.code, name: s.name, shares: s.shares }))
         });
 
