@@ -676,10 +676,13 @@ async function confirmImport() {
 
         // 逐个添加新股票
         let added = 0;
+        console.log(`[confirmImport] 开始导入 ${stocks.length} 只股票`);
         for (const newStock of stocks) {
+            console.log(`[confirmImport] 处理股票: ${newStock.code} ${newStock.name}`, newStock);
             try {
                 // 获取中轴价格（使用 costPrice，因为 parseStockLine 返回的是 costPrice）
                 let axisPrice = newStock.costPrice;
+                console.log(`[confirmImport] ${newStock.code} 默认中轴价格: ${axisPrice}`);
                 try {
                     const axisResponse = await fetch('/api/axis-price', {
                         method: 'POST',
@@ -690,7 +693,9 @@ async function confirmImport() {
                             days: 90
                         })
                     });
+                    console.log(`[confirmImport] ${newStock.code} 中轴API响应:`, axisResponse.status);
                     const axisData = await axisResponse.json();
+                    console.log(`[confirmImport] ${newStock.code} 中轴数据:`, axisData);
                     if (axisData.success && axisData.axis_price) {
                         axisPrice = axisData.axis_price;
                     }
@@ -715,21 +720,29 @@ async function confirmImport() {
                     strategy_mode: '基础策略',
                     notes: ''
                 };
+                console.log(`[confirmImport] ${newStock.code} 准备发送数据:`, stockData);
 
                 // 调用 API 添加股票
+                console.log(`[confirmImport] ${newStock.code} 发起POST请求...`);
                 const addResponse = await fetch('/api/stocks', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(stockData)
                 });
+                console.log(`[confirmImport] ${newStock.code} POST响应:`, addResponse.status);
 
                 if (addResponse.ok) {
                     added++;
+                    console.log(`[confirmImport] ${newStock.code} 添加成功`);
+                } else {
+                    const errorText = await addResponse.text();
+                    console.error(`[confirmImport] ${newStock.code} 添加失败:`, addResponse.status, errorText);
                 }
             } catch (e) {
-                console.error(`添加股票 ${newStock.code} 失败`, e);
+                console.error(`[confirmImport] 添加股票 ${newStock.code} 失败`, e);
             }
         }
+        console.log(`[confirmImport] 导入完成，成功: ${added}/${stocks.length}`);
 
         // 添加到导入历史
         const totalValue = stocks.reduce((sum, s) => sum + (s.currentPrice * s.shares), 0);
