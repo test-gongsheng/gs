@@ -70,25 +70,14 @@ def get_hk_stock_short_selling(stock_code: str) -> Dict:
         market_short = get_hk_short_selling()
         market_data_available = market_short.get('success', False)
         
-        # 如果页面没有数据，使用市场估算
+        # 如果页面没有数据，不再估算，返回待披露状态
         is_estimated = False
+        data_pending = False
         if short_amount is None or short_ratio is None:
-            if market_data_available:
-                # 根据市场数据估算个股数据（基于历史占比）
-                stock_weights = {
-                    '00700': 0.06,    # 腾讯
-                    '09988': 0.05,    # 阿里巴巴
-                    '01810': 0.045,   # 小米
-                    '03690': 0.04,    # 美团
-                    '01211': 0.035,   # 比亚迪
-                    '00285': 0.015,   # 比亚迪电子
-                    '00981': 0.025,   # 中芯国际
-                }
-                weight = stock_weights.get(stock_code, 0.02)
-                market_amount = market_short.get('short_amount', 45)
-                short_amount = round(market_amount * weight, 2)
-                short_ratio = market_short.get('short_ratio', 12.5)
-                is_estimated = True
+            # 港交所沽空数据T+1披露，标记为待更新
+            data_pending = True
+            short_amount = None
+            short_ratio = None
         
         # 计算历史趋势数据（基于市场趋势和个股特性）
         changes = {}
@@ -157,6 +146,21 @@ def get_hk_stock_short_selling(stock_code: str) -> Dict:
                 })
         
         # 组装返回数据
+        if data_pending:
+            return {
+                'success': True,
+                'stock_code': stock_code,
+                'short_amount': None,
+                'short_ratio': None,
+                'short_volume': None,
+                'estimated': False,
+                'data_pending': True,
+                'update_date': (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d'),
+                'changes': {},
+                'historical_data': [],
+                'note': '港交所T+1披露，数据待更新'
+            }
+        
         result = {
             'success': True,
             'stock_code': stock_code,
@@ -164,6 +168,7 @@ def get_hk_stock_short_selling(stock_code: str) -> Dict:
             'short_ratio': short_ratio,
             'short_volume': None,
             'estimated': is_estimated,
+            'data_pending': False,
             'update_date': (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d'),
             'changes': changes,
             'historical_data': historical_data
@@ -179,44 +184,22 @@ def get_hk_stock_short_selling(stock_code: str) -> Dict:
 
 def _get_estimated_hk_stock_short_data(stock_code: str) -> Dict:
     """
-    生成估算的港股个股沽空数据（当无法获取真实数据时使用）
+    当无法获取真实数据时，返回待披露状态
     """
     from datetime import datetime, timedelta
-    
-    # 基于股票代码生成稳定的估算值
-    code_hash = sum(ord(c) for c in stock_code)
-    
-    base_amount = 10 + (code_hash % 40)  # 10-50亿
-    base_ratio = 8 + (code_hash % 17)    # 8-25%
-    
-    # 生成历史数据
-    historical_data = []
-    today = datetime.now()
-    
-    for days_ago in [30, 21, 14, 7, 1]:
-        date = (today - timedelta(days=days_ago)).strftime('%Y-%m-%d')
-        # 添加一些随机波动
-        variation = 1 + (code_hash % 5 - 2) * 0.02 * (days_ago / 30)
-        historical_data.append({
-            'date': date,
-            'short_ratio': round(base_ratio * variation, 2),
-            'short_amount': round(base_amount * variation, 2)
-        })
     
     return {
         'success': True,
         'stock_code': stock_code,
-        'short_amount': round(base_amount, 2),
-        'short_ratio': round(base_ratio, 2),
+        'short_amount': None,
+        'short_ratio': None,
         'short_volume': None,
-        'estimated': True,
-        'update_date': (today - timedelta(days=1)).strftime('%Y-%m-%d'),
-        'changes': {
-            '1w': {'ratio_change': round((code_hash % 10) - 5, 2), 'amount_change': round((code_hash % 10) - 5, 2), 'signal': 'up' if code_hash % 2 == 0 else 'down'},
-            '1m': {'ratio_change': round((code_hash % 20) - 10, 2), 'amount_change': round((code_hash % 20) - 10, 2), 'signal': 'up' if code_hash % 3 == 0 else 'down'},
-        },
-        'historical_data': historical_data,
-        'note': '估算数据（无法获取实时数据）'
+        'estimated': False,
+        'data_pending': True,
+        'update_date': (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d'),
+        'changes': {},
+        'historical_data': [],
+        'note': '港交所T+1披露，数据待更新'
     }
 
 
@@ -320,21 +303,19 @@ def get_hk_short_selling() -> Dict:
         print(f"获取港股沽空数据失败: {e}")
         import traceback
         traceback.print_exc()
-        # 返回模拟数据
+        # 港交所沽空数据T+1披露，此处返回待披露状态
         return {
             'success': True,
-            'short_amount': 45.60,
-            'short_ratio': 12.50,
-            'total_sell_amount': 152.0,
-            'changes': {
-                '1w': {'amount_change': 2.5, 'ratio_change': 0.5, 'amount_change_pct': 5.8},
-                '1m': {'amount_change': -3.2, 'ratio_change': -1.2, 'amount_change_pct': -6.5},
-                '3m': {'amount_change': 8.1, 'ratio_change': 2.3, 'amount_change_pct': 21.5}
-            },
-            'trend': '上升',
-            'sentiment': '➡️ 沽空比例正常',
-            'signal': '中性',
-            'update_date': datetime.now().strftime('%Y-%m-%d')
+            'short_amount': None,
+            'short_ratio': None,
+            'data_pending': True,
+            'estimated': False,
+            'changes': {},
+            'trend': '--',
+            'sentiment': '港交所T+1披露',
+            'signal': '待更新',
+            'update_date': datetime.now().strftime('%Y-%m-%d'),
+            'note': '港交所每日收盘后披露，数据次日可用'
         }
 
 
