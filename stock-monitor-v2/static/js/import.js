@@ -1040,4 +1040,4 @@ window.clearManualData = clearManualData;
 window.downloadTemplate = downloadTemplate;
 window.restoreFromHistory = restoreFromHistory;
 window.showNotification = showNotification;
-window.refreshStockQuotes = refreshStockQuotes;
+window.refreshStockQuotes = refreshStockQuotesAfterImport;
