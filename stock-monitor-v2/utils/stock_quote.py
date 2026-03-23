@@ -167,7 +167,7 @@ def get_akshare_hk_spot() -> Dict[str, Dict]:
 def get_stock_quotes(stocks: List[Dict]) -> Dict[str, Dict]:
     """
     获取多只股票实时行情
-    优先使用akshare，失败时回退到腾讯API
+    使用腾讯API批量获取（更快更稳定）
     
     Args:
         stocks: 股票列表，每个元素包含 code 和 market
@@ -178,75 +178,70 @@ def get_stock_quotes(stocks: List[Dict]) -> Dict[str, Dict]:
     if not stocks:
         return {}
     
-    result = {}
+    # 转换为腾讯代码格式
+    tencent_codes = []
+    code_map = {}  # tencent_code -> (original_code, market)
     
-    # 分离A股和港股
-    a_stocks = [s for s in stocks if s.get('market') != '港股' and len(s.get('code', '')) != 5]
-    hk_stocks = [s for s in stocks if s.get('market') == '港股' or len(s.get('code', '')) == 5]
+    for stock in stocks:
+        code = stock.get('code', '')
+        market = stock.get('market', 'A股')
+        tencent_code = normalize_tencent_code(code, market)
+        tencent_codes.append(tencent_code)
+        code_map[tencent_code] = (code, market)
     
-    # 尝试使用akshare获取A股
-    if a_stocks and AKSHARE_AVAILABLE:
-        try:
-            a_spot = get_akshare_a_spot()
-            for stock in a_stocks:
-                code = stock.get('code', '')
-                tencent_code = normalize_tencent_code(code, 'A股')
-                if tencent_code in a_spot:
-                    result[tencent_code] = a_spot[tencent_code]
-                else:
-                    # 从备用源获取
-                    backup = get_quote_from_tencent(code, 'A股')
-                    if backup:
-                        result[tencent_code] = backup
-        except Exception as e:
-            print(f"[akshare] A股获取异常，使用备用源: {e}")
-            for stock in a_stocks:
-                code = stock.get('code', '')
-                tencent_code = normalize_tencent_code(code, 'A股')
-                backup = get_quote_from_tencent(code, 'A股')
-                if backup:
-                    result[tencent_code] = backup
-    elif a_stocks:
-        # akshare不可用，使用腾讯API
-        for stock in a_stocks:
-            code = stock.get('code', '')
-            tencent_code = normalize_tencent_code(code, 'A股')
-            backup = get_quote_from_tencent(code, 'A股')
-            if backup:
-                result[tencent_code] = backup
-    
-    # 尝试使用akshare获取港股
-    if hk_stocks and AKSHARE_AVAILABLE:
-        try:
-            hk_spot = get_akshare_hk_spot()
-            for stock in hk_stocks:
-                code = stock.get('code', '').zfill(5)
-                tencent_code = normalize_tencent_code(code, '港股')
-                if tencent_code in hk_spot:
-                    result[tencent_code] = hk_spot[tencent_code]
-                else:
-                    # 从备用源获取
-                    backup = get_quote_from_tencent(code, '港股')
-                    if backup:
-                        result[tencent_code] = backup
-        except Exception as e:
-            print(f"[akshare] 港股获取异常，使用备用源: {e}")
-            for stock in hk_stocks:
-                code = stock.get('code', '').zfill(5)
-                tencent_code = normalize_tencent_code(code, '港股')
-                backup = get_quote_from_tencent(code, '港股')
-                if backup:
-                    result[tencent_code] = backup
-    elif hk_stocks:
-        # akshare不可用，使用腾讯API
-        for stock in hk_stocks:
-            code = stock.get('code', '').zfill(5)
-            tencent_code = normalize_tencent_code(code, '港股')
-            backup = get_quote_from_tencent(code, '港股')
-            if backup:
-                result[tencent_code] = backup
-    
-    return result
+    # 批量从腾讯API获取
+    try:
+        codes_str = ','.join(tencent_codes)
+        url = f"http://qt.gtimg.cn/q={codes_str}"
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Referer': 'http://qt.gtimg.cn'
+        }
+        
+        response = requests.get(url, headers=headers, timeout=5)
+        response.encoding = 'gb2312'
+        
+        result = {}
+        for tencent_code in tencent_codes:
+            match = re.search(rf'v_{tencent_code}="([^"]*)"', response.text)
+            if not match:
+                continue
+            
+            parts = match.group(1).split('~')
+            if len(parts) < 10:
+                continue
+            
+            name = parts[1] if len(parts) > 1 else ''
+            price = float(parts[3]) if len(parts) > 3 and parts[3] else 0
+            prev_close = float(parts[4]) if len(parts) > 4 and parts[4] else 0
+            open_price = float(parts[5]) if len(parts) > 5 and parts[5] else 0
+            high = float(parts[33]) if len(parts) > 33 and parts[33] else 0
+            low = float(parts[34]) if len(parts) > 34 and parts[34] else 0
+            change = float(parts[31]) if len(parts) > 31 and parts[31] else (price - prev_close)
+            change_percent = float(parts[32]) if len(parts) > 32 and parts[32] else 0
+            volume = int(float(parts[36])) if len(parts) > 36 and parts[36] else 0
+            
+            original_code, market = code_map[tencent_code]
+            
+            result[tencent_code] = {
+                'name': name,
+                'price': price,
+                'open': open_price,
+                'high': high,
+                'low': low,
+                'prev_close': prev_close,
+                'change': change,
+                'change_percent': change_percent,
+                'volume': volume,
+                'market': market
+            }
+        
+        return result
+        
+    except Exception as e:
+        print(f"[腾讯API] 批量获取行情失败: {e}")
+        return {}
 
 
 def get_quote_from_tencent(code: str, market: str = 'A股') -> Optional[Dict]:
