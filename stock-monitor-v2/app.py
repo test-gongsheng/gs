@@ -499,7 +499,15 @@ def get_exchange_rate():
 def get_quotes():
     """获取实时行情"""
     try:
-        stocks = request.json.get('stocks', [])
+        # 支持两种格式：直接数组或 {"stocks": [...]}
+        json_data = request.json
+        if isinstance(json_data, list):
+            stocks = json_data
+        elif isinstance(json_data, dict):
+            stocks = json_data.get('stocks', [])
+        else:
+            return jsonify({'success': False, 'error': '无效的请求格式'}), 400
+        
         if not stocks:
             return jsonify({'success': False, 'error': '股票列表为空'}), 400
         

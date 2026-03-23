@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = '2.3.0';
+const APP_VERSION = '2.5.0';
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -309,7 +309,18 @@ function updateMarketStatus() {
     const now = new Date();
     const hour = now.getHours();
     const minute = now.getMinutes();
+    const day = now.getDay(); // 0=周日, 1=周一, ..., 6=周六
     const timeValue = hour * 100 + minute;
+
+    // 周末休市
+    if (day === 0 || day === 6) {
+        appState.marketStatus = 'closed';
+        const dot = document.getElementById('marketStatusDot');
+        const text = document.getElementById('marketStatusText');
+        if (dot) dot.style.background = '#f44336';
+        if (text) text.textContent = '周末休市';
+        return;
+    }
 
     // A股交易时间：9:30-11:30, 13:00-15:00
     // 港股交易时间：9:30-12:00, 13:00-16:00
@@ -322,12 +333,19 @@ function updateMarketStatus() {
     const dot = document.getElementById('marketStatusDot');
     const text = document.getElementById('marketStatusText');
 
+    if (!dot || !text) return;
+
     if (isTrading) {
         dot.style.background = '#4caf50';
         text.textContent = '交易中';
     } else {
         dot.style.background = '#f44336';
-        text.textContent = '休市中';
+        // 区分是午休还是已收盘
+        if (timeValue >= 1130 && timeValue < 1300) {
+            text.textContent = '午间休市';
+        } else {
+            text.textContent = '休市中';
+        }
     }
 }
 
