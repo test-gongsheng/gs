@@ -883,12 +883,13 @@ async function renderHKShortRiskWarning() {
                 } else if (hkShort.short_ratio > 10) {
                     adviceEl.textContent = '➡️ 港股沽空比例处于正常水平，可按正常策略操作。';
                     adviceEl.className = 'hk-risk-advice normal';
-            } else {
-                adviceEl.textContent = '📈 港股沽空压力较小，市场环境较好，可积极布局。';
-                adviceEl.className = 'hk-risk-advice low-risk';
-            }
+                } else {
+                    adviceEl.textContent = '📈 港股沽空压力较小，市场环境较好，可积极布局。';
+                    adviceEl.className = 'hk-risk-advice low-risk';
+                }
             
             document.getElementById('hkShortUpdateTime').textContent = hkShort.update_date || '--';
+            }
         }
         
         // 2. 渲染个股沽空数据
