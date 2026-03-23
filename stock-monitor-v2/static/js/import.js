@@ -781,6 +781,12 @@ async function confirmImport() {
 
         showNotification(`导入完成！共 ${added} 只股票`, 'success');
 
+        // 立即刷新实时行情（不等待页面刷新）
+        setTimeout(async () => {
+            console.log('[导入完成] 立即刷新实时行情...');
+            await refreshStockQuotesAfterImport();
+        }, 500);
+
         // 延迟刷新页面
         setTimeout(() => {
             window.location.reload();
@@ -793,9 +799,9 @@ async function confirmImport() {
 }
 
 /**
- * 立即刷新股票行情（不检查开市状态）
+ * 导入完成后立即刷新股票行情（不检查开市状态），并同步到后端
  */
-async function refreshStockQuotes() {
+async function refreshStockQuotesAfterImport() {
     // 获取 appState（必须使用 window.appState 避免 TDZ 错误）
     const appState = window.appState;
     if (!appState || !appState.stocks || appState.stocks.length === 0) return;
@@ -814,6 +820,7 @@ async function refreshStockQuotes() {
         if (data.success && data.quotes) {
             if (data.exchange_rate) appState.exchangeRate = data.exchange_rate;
             
+            // 更新前端价格
             appState.stocks.forEach(stock => {
                 const quote = data.quotes[stock.code];
                 if (quote) {
@@ -826,6 +833,19 @@ async function refreshStockQuotes() {
                     }
                 }
             });
+            
+            // 同步最新价格到后端数据库
+            for (const stock of appState.stocks) {
+                try {
+                    await fetch(`/api/stocks/${stock.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ current_price: stock.price })
+                    });
+                } catch (e) {
+                    console.warn(`同步 ${stock.code} 价格到后端失败`, e);
+                }
+            }
             
             renderStockList();
             if (appState.selectedStock) {
