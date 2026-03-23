@@ -202,9 +202,11 @@ function parseStockData(content, fileName) {
                 stock.pnlPercent = costValue > 0 ? (pnl / costValue * 100) : 0;
                 
                 // 计算中轴价格和触发价
-                stock.pivotPrice = stock.costPrice > 0 ? stock.costPrice : stock.currentPrice;
-                stock.triggerBuy = stock.pivotPrice * 0.92;
-                stock.triggerSell = stock.pivotPrice * 1.08;
+                // 注意：这里先不设置中轴价格，等导入后通过API动态获取
+                // 中轴价格应该基于历史K线计算，而不是持仓成本
+                stock.pivotPrice = 0;  // 标记为未计算，后续通过API获取
+                stock.triggerBuy = 0;
+                stock.triggerSell = 0;
                 stock.investLimit = stock.market === '港股' ? 1500000 : 500000;
                 stock.strategy = '基础';
                 stock.baseRatio = 50;

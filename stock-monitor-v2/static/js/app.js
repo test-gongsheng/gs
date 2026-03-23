@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = '2.5.0';
+const APP_VERSION = '2.5.1';
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -227,6 +227,24 @@ async function refreshAxisPrices() {
                 stock.pivotPrice = newPivot;
                 stock.triggerBuy = axisData.data.trigger_buy;
                 stock.triggerSell = axisData.data.trigger_sell;
+                
+                // 同步更新后端数据库
+                try {
+                    await fetch(`/api/stocks/${stock.id}/axis`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            axis_price: newPivot,
+                            base_position_pct: stock.baseRatio || 50,
+                            float_position_pct: stock.floatRatio || 50,
+                            trigger_pct: 8,
+                            grid_levels: stock.gridLevels || []
+                        })
+                    });
+                    console.log(`[refreshAxisPrices] ${stock.code} 已同步到后端数据库`);
+                } catch (saveErr) {
+                    console.warn(`[refreshAxisPrices] ${stock.code} 保存到后端失败:`, saveErr);
+                }
                 
                 console.log(`[refreshAxisPrices] ${stock.code} 更新完成: ${oldPivot.toFixed(2)} -> ${newPivot.toFixed(2)}`);
                 
