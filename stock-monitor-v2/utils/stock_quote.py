@@ -411,6 +411,40 @@ def get_tencent_kline(code: str, market: str = 'A股', days: int = 90, max_retri
     return []
 
 
+def calculate_simple_axis_price(current_price: float, high: float = None, low: float = None, prev_close: float = None) -> Dict:
+    """
+    基于实时行情估算中轴价格（当K线数据不可用时）
+    
+    Returns:
+        简化版中轴价格数据
+    """
+    if current_price <= 0:
+        return {}
+    
+    # 使用当前价、昨收、或高低价估算
+    prices = [current_price]
+    if prev_close and prev_close > 0:
+        prices.append(prev_close)
+    if high and high > 0:
+        prices.append(high)
+    if low and low > 0:
+        prices.append(low)
+    
+    axis_price = sum(prices) / len(prices) if prices else current_price
+    
+    return {
+        'axis_price': round(axis_price, 2),
+        'avg_price': round(current_price, 2),
+        'vwap': round(current_price, 2),
+        'median': round(axis_price, 2),
+        'max_price': round(high or current_price, 2),
+        'min_price': round(low or current_price, 2),
+        'std': 0,
+        'days': 1,
+        'estimated': True  # 标记为估算值
+    }
+
+
 def calculate_axis_price(kline_data: List[Dict]) -> Dict:
     """
     基于K线数据计算中轴价格
@@ -468,7 +502,7 @@ def calculate_axis_price(kline_data: List[Dict]) -> Dict:
 
 def get_dynamic_axis_price(code: str, market: str = 'A股', days: int = 90, max_retries: int = 3) -> Dict:
     """
-    获取股票的动态中轴价格（基于历史K线）
+    获取股票的动态中轴价格（基于历史K线，失败时使用实时行情估算）
     
     Returns:
         包含中轴价格和触发价位的字典
@@ -477,53 +511,63 @@ def get_dynamic_axis_price(code: str, market: str = 'A股', days: int = 90, max_
         try:
             kline = get_stock_kline(code, market, days)
             
-            if not kline:
-                if attempt < max_retries - 1:
-                    print(f"[get_dynamic_axis_price] {code} 第{attempt+1}次尝试无数据，重试...")
-                    import time
-                    time.sleep(0.5 * (attempt + 1))
-                    continue
-                print(f"[get_dynamic_axis_price] {code} 重试{max_retries}次后仍无数据")
-                return {}
+            if kline:
+                axis_data = calculate_axis_price(kline)
+                if axis_data:
+                    axis_price = axis_data['axis_price']
+                    std = axis_data['std']
+                    avg = axis_data['avg_price']
+                    volatility = (std / avg * 100) if avg > 0 else 5
+                    
+                    if volatility > 5:
+                        trigger_pct = 0.10
+                    elif volatility < 3:
+                        trigger_pct = 0.06
+                    else:
+                        trigger_pct = 0.08
+                    
+                    return {
+                        **axis_data,
+                        'trigger_buy': round(axis_price * (1 - trigger_pct), 2),
+                        'trigger_sell': round(axis_price * (1 + trigger_pct), 2),
+                        'trigger_pct': round(trigger_pct * 100, 1),
+                        'volatility': round(volatility, 2)
+                    }
             
-            axis_data = calculate_axis_price(kline)
-            
-            if not axis_data:
-                if attempt < max_retries - 1:
-                    import time
-                    time.sleep(0.5 * (attempt + 1))
-                    continue
-                return {}
-            
-            axis_price = axis_data['axis_price']
-            
-            # 基于波动率动态调整触发阈值
-            std = axis_data['std']
-            avg = axis_data['avg_price']
-            volatility = (std / avg * 100) if avg > 0 else 5
-            
-            if volatility > 5:
-                trigger_pct = 0.10
-            elif volatility < 3:
-                trigger_pct = 0.06
-            else:
-                trigger_pct = 0.08
-            
-            return {
-                **axis_data,
-                'trigger_buy': round(axis_price * (1 - trigger_pct), 2),
-                'trigger_sell': round(axis_price * (1 + trigger_pct), 2),
-                'trigger_pct': round(trigger_pct * 100, 1),
-                'volatility': round(volatility, 2)
-            }
+            # K线获取失败或为空，尝试使用实时行情估算
+            if attempt == max_retries - 1:
+                print(f"[get_dynamic_axis_price] {code} K线数据不可用，使用实时行情估算")
+                quote = get_single_stock_quote(code, market)
+                if quote:
+                    simple_axis = calculate_simple_axis_price(
+                        quote['price'], 
+                        quote.get('high'), 
+                        quote.get('low'), 
+                        quote.get('prev_close')
+                    )
+                    if simple_axis:
+                        axis_price = simple_axis['axis_price']
+                        return {
+                            **simple_axis,
+                            'trigger_buy': round(axis_price * 0.92, 2),
+                            'trigger_sell': round(axis_price * 1.08, 2),
+                            'trigger_pct': 8.0,
+                            'volatility': 5.0
+                        }
+                
+            if attempt < max_retries - 1:
+                print(f"[get_dynamic_axis_price] {code} 第{attempt+1}次尝试无数据，重试...")
+                import time
+                time.sleep(0.5 * (attempt + 1))
+                
         except Exception as e:
             print(f"[get_dynamic_axis_price] {code} 第{attempt+1}次尝试异常: {e}")
             if attempt < max_retries - 1:
                 import time
                 time.sleep(0.5 * (attempt + 1))
-            else:
-                raise
     
+    # 所有重试都失败
+    print(f"[get_dynamic_axis_price] {code} 重试{max_retries}次后仍失败，返回空")
     return {}
 
 
