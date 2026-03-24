@@ -12,23 +12,95 @@ from datetime import datetime
 def get_hk_stock_short_selling(stock_code: str) -> Dict:
     """
     获取港股个股沽空数据
-    港交所T+1披露，直接返回待披露状态（不再爬取第三方网站，避免超时阻塞）
+    从东方财富获取港交所官方T+1披露数据
     """
     from datetime import datetime, timedelta
     
-    return {
-        'success': True,
-        'stock_code': stock_code,
-        'short_amount': None,
-        'short_ratio': None,
-        'short_volume': None,
-        'estimated': False,
-        'data_pending': True,
-        'update_date': (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d'),
-        'changes': {},
-        'historical_data': [],
-        'note': '港交所T+1披露，数据待更新'
-    }
+    try:
+        # 标准化代码
+        stock_code = stock_code.zfill(5)
+        
+        # 获取昨天日期
+        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        
+        url = 'https://datacenter-web.eastmoney.com/api/data/v1/get'
+        params = {
+            'sortColumns': 'SHORT_SELLING_RATIO',
+            'sortTypes': '-1',
+            'pageSize': '500',
+            'pageNumber': '1',
+            'reportName': 'RPT_HK_SHORTSELLING',
+            'columns': 'ALL',
+            'filter': f"(TRADE_DATE='{yesterday}')"
+        }
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Referer': 'https://data.eastmoney.com/',
+        }
+        
+        resp = requests.get(url, params=params, headers=headers, timeout=10)
+        data = resp.json()
+        
+        if data.get('result') and data['result'].get('data'):
+            records = data['result']['data']
+            
+            # 查找特定股票
+            for r in records:
+                if r['SECURITY_CODE'] == stock_code:
+                    short_volume = int(r.get('SHORT_SELLING_SHARES', 0))  # 沽空股数
+                    short_amount = float(r.get('SHORT_SELLING_AMT', 0)) / 10000  # 万港元
+                    short_ratio = float(r.get('SHORT_SELLING_RATIO', 0))
+                    stock_name = r.get('SECURITY_NAME_ABBR', '')
+                    trade_date = r.get('TRADE_DATE', '')[:10]
+                    
+                    return {
+                        'success': True,
+                        'stock_code': stock_code,
+                        'stock_name': stock_name,
+                        'short_volume': short_volume,  # 股数（股）
+                        'short_volume_wan': round(short_volume / 10000, 2),  # 万股
+                        'short_amount': round(short_amount / 10000, 2),  # 亿港元
+                        'short_ratio': round(short_ratio, 2),
+                        'estimated': False,
+                        'data_pending': False,
+                        'source': '港交所',
+                        'update_date': trade_date,
+                        'note': '港交所官方T+1披露数据'
+                    }
+            
+            # 未找到该股票
+            return {
+                'success': True,
+                'stock_code': stock_code,
+                'short_volume': None,
+                'short_volume_wan': None,
+                'short_amount': None,
+                'short_ratio': None,
+                'estimated': False,
+                'data_pending': True,
+                'source': '港交所',
+                'update_date': yesterday,
+                'note': '该股票昨日无沽空数据或不在港股通范围'
+            }
+        else:
+            return {
+                'success': False,
+                'stock_code': stock_code,
+                'error': '无法获取沽空数据',
+                'estimated': True,
+                'data_pending': True
+            }
+            
+    except Exception as e:
+        print(f"获取港股{stock_code}沽空数据失败: {e}")
+        return {
+            'success': False,
+            'stock_code': stock_code,
+            'error': str(e),
+            'estimated': True,
+            'data_pending': True
+        }
 
 
 # 已禁用：爬取阿思达克网站会导致15秒超时，阻塞Flask服务
@@ -38,83 +110,80 @@ def get_hk_stock_short_selling(stock_code: str) -> Dict:
 
 def get_hk_short_selling() -> Dict:
     """
-    获取港股沽空数据（港股通标的）及历史趋势
+    获取港股市场整体沽空数据（港交所官方T+1披露）
     返回：当日数据 + 1周/1月/3月变化
     """
     try:
-        import akshare as ak
         import pandas as pd
+        from datetime import datetime, timedelta
         
-        # 获取港股通历史数据（包含买卖成交额）
-        short_df = ak.stock_hsgt_hist_em(symbol="港股通(沪)")
+        # 使用东方财富API获取港股沽空数据（全市场）
+        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
         
-        if short_df is None or len(short_df) == 0:
-            raise Exception("无港股通数据")
-        
-        # 按日期排序（最新的在前）
-        short_df = short_df.sort_values('日期', ascending=False).reset_index(drop=True)
-        
-        def calc_short_data(row):
-            """计算单日的沽空数据"""
-            if row is None or pd.isna(row.get('买入成交额')):
-                return {'short_amount': 0, 'short_ratio': 0}
-            buy_amount = float(row.get('买入成交额', 0))
-            sell_amount = float(row.get('卖出成交额', 0))
-            total_amount = buy_amount + sell_amount
-            # 估算沽空金额（假设卖出部分的30%是沽空）
-            short_amount = sell_amount * 0.3
-            short_ratio = (short_amount / total_amount * 100) if total_amount > 0 else 0
-            return {
-                'short_amount': short_amount / 100000000,  # 转亿港元
-                'short_ratio': short_ratio
-            }
-        
-        # 获取最新数据
-        latest = short_df.iloc[0]
-        latest_data = calc_short_data(latest)
-        
-        # 计算历史数据（1周前、1月前、3月前）
-        def get_data_days_ago(days):
-            """获取N天前的数据"""
-            try:
-                if len(short_df) > days:
-                    row = short_df.iloc[days]
-                    return calc_short_data(row)
-                return None
-            except:
-                return None
-        
-        week_ago = get_data_days_ago(5)      # 1周（5个交易日）
-        month_ago = get_data_days_ago(20)    # 1月（20个交易日）
-        quarter_ago = get_data_days_ago(60)  # 3月（60个交易日）
-        
-        # 计算变化
-        def calc_change(current, past):
-            if past and past['short_amount'] > 0:
-                return {
-                    'amount_change': round(current['short_amount'] - past['short_amount'], 2),
-                    'ratio_change': round(current['short_ratio'] - past['short_ratio'], 2),
-                    'amount_change_pct': round((current['short_amount'] - past['short_amount']) / past['short_amount'] * 100, 2)
-                }
-            return {'amount_change': 0, 'ratio_change': 0, 'amount_change_pct': 0}
-        
-        current_amount = latest_data['short_amount']
-        current_ratio = latest_data['short_ratio']
-        
-        changes = {
-            '1w': calc_change(latest_data, week_ago),
-            '1m': calc_change(latest_data, month_ago),
-            '3m': calc_change(latest_data, quarter_ago)
+        url = 'https://datacenter-web.eastmoney.com/api/data/v1/get'
+        params = {
+            'sortColumns': 'SHORT_SELLING_RATIO',
+            'sortTypes': '-1',
+            'pageSize': '5000',  # 获取全部数据
+            'pageNumber': '1',
+            'reportName': 'RPT_HK_SHORTSELLING',
+            'columns': 'ALL',
+            'filter': f"(TRADE_DATE='{yesterday}')"
         }
         
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Referer': 'https://data.eastmoney.com/',
+        }
+        
+        resp = requests.get(url, params=params, headers=headers, timeout=15)
+        data = resp.json()
+        
+        if not data.get('result') or not data['result'].get('data'):
+            raise Exception("无沽空数据")
+        
+        records = data['result']['data']
+        df = pd.DataFrame(records)
+        
+        # 计算市场 totals
+        total_short_volume = df['SHORT_SELLING_SHARES'].sum()  # 总沽空股数
+        total_short_amount = df['SHORT_SELLING_AMT'].sum()     # 总沽空金额（港元）
+        total_deal_amount = df['DEAL_AMT'].sum()               # 总成交金额（港元）
+        
+        # 计算市场平均沽空比例（按金额计算）
+        market_short_ratio = (total_short_amount / total_deal_amount * 100) if total_deal_amount > 0 else 0
+        
+        # 获取历史数据计算趋势
+        changes = {
+            '1w': {'volume_change': 0, 'ratio_change': 0},
+            '1m': {'volume_change': 0, 'ratio_change': 0},
+            '3m': {'volume_change': 0, 'ratio_change': 0}
+        }
+        
+        # 尝试获取历史数据
+        try:
+            for days, key in [(5, '1w'), (20, '1m'), (60, '3m')]:
+                past_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+                params['filter'] = f"(TRADE_DATE='{past_date}')"
+                resp_past = requests.get(url, params=params, headers=headers, timeout=10)
+                data_past = resp_past.json()
+                
+                if data_past.get('result') and data_past['result'].get('data'):
+                    past_records = data_past['result']['data']
+                    past_df = pd.DataFrame(past_records)
+                    past_short_volume = past_df['SHORT_SELLING_SHARES'].sum()
+                    changes[key]['volume_change'] = round((total_short_volume - past_short_volume) / 10000, 2)
+        except Exception as e:
+            print(f"计算历史变化失败: {e}")
+        
         # 情绪判断
-        if current_ratio > 20:
+        if market_short_ratio > 20:
             sentiment = '⚠️ 高沽空，市场偏空'
             signal = '看空'
-        elif current_ratio > 15:
+        elif market_short_ratio > 15:
             sentiment = '📉 沽空压力较大'
             signal = '偏空'
-        elif current_ratio > 10:
+        elif market_short_ratio > 10:
             sentiment = '➡️ 沽空比例正常'
             signal = '中性'
         else:
@@ -123,22 +192,30 @@ def get_hk_short_selling() -> Dict:
         
         return {
             'success': True,
-            'short_amount': round(current_amount, 2),      # 当日沽空金额（亿港元）
-            'short_ratio': round(current_ratio, 2),         # 当日沽空比例（%）
-            'total_sell_amount': round(float(latest.get('卖出成交额', 0)) / 100000000, 2),  # 总卖出金额
-            'changes': changes,                             # 历史变化
-            'trend': '上升' if changes['1w']['amount_change'] > 0 else '下降',
+            'short_volume': int(total_short_volume),                    # 总沽空股数（股）
+            'short_volume_wan': round(total_short_volume / 10000, 2),   # 总沽空股数（万股）
+            'short_amount': round(total_short_amount / 100000000, 2),   # 总沽空金额（亿港元）
+            'total_deal_amount': round(total_deal_amount / 100000000, 2), # 总成交金额（亿港元）
+            'short_ratio': round(market_short_ratio, 2),                # 沽空比例（%）
+            'changes': changes,                                         # 历史变化
+            'trend': '上升' if changes['1w']['volume_change'] > 0 else '下降',
             'sentiment': sentiment,
             'signal': signal,
-            'update_date': str(latest.get('日期', '')) if latest is not None else datetime.now().strftime('%Y-%m-%d')
+            'stock_count': len(df),                                     # 有沽空的股票数量
+            'update_date': yesterday,
+            'source': '港交所官方披露',
+            'note': f'港交所T+1披露，{yesterday}数据'
         }
+        
     except Exception as e:
         print(f"获取港股沽空数据失败: {e}")
         import traceback
         traceback.print_exc()
-        # 港交所沽空数据T+1披露，此处返回待披露状态
+        # 返回待披露状态
         return {
             'success': True,
+            'short_volume': None,
+            'short_volume_wan': None,
             'short_amount': None,
             'short_ratio': None,
             'data_pending': True,

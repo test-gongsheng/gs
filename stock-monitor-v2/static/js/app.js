@@ -839,9 +839,9 @@ async function renderHKShortRiskWarning() {
                 adviceEl.textContent = '⏰ 港交所沽空数据T+1披露，收盘后次日更新。可通过富途/雪球查看实时估算。';
                 adviceEl.className = 'hk-risk-advice normal';
                 document.getElementById('hkShortUpdateTime').textContent = hkShort.update_date || '--';
-            } else if (hkShort.short_amount !== null && hkShort.short_ratio !== null) {
-                // 正常显示数据
-                document.getElementById('hkStockShortAmount').textContent = `${hkShort.short_amount}亿`;
+            } else if (hkShort.short_volume_wan !== null && hkShort.short_ratio !== null) {
+                // 正常显示数据 - 显示沽空股数（万股）
+                document.getElementById('hkStockShortAmount').textContent = `${hkShort.short_volume_wan}万股`;
                 
                 const ratioEl = document.getElementById('hkStockShortRatio');
                 ratioEl.textContent = `${hkShort.short_ratio}%`;
@@ -854,9 +854,9 @@ async function renderHKShortRiskWarning() {
                 // 变化趋势
                 const changes = hkShort.changes || {};
                 const formatChange = (c) => {
-                    if (!c || c.amount_change === undefined) return '--';
-                    const sign = c.amount_change >= 0 ? '+' : '';
-                    return `${sign}${c.amount_change}亿`;
+                    if (!c || c.volume_change === undefined) return '--';
+                    const sign = c.volume_change >= 0 ? '+' : '';
+                    return `${sign}${c.volume_change}万股`;
                 };
                 
                 const change1w = changes['1w'] || {};
@@ -864,13 +864,13 @@ async function renderHKShortRiskWarning() {
                 const change3m = changes['3m'] || {};
                 
                 document.getElementById('hkStockChange1W').textContent = formatChange(change1w);
-                document.getElementById('hkStockChange1W').className = `hk-trend-value ${(change1w.amount_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`;
+                document.getElementById('hkStockChange1W').className = `hk-trend-value ${(change1w.volume_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`;
                 
                 document.getElementById('hkStockChange1M').textContent = formatChange(change1m);
-                document.getElementById('hkStockChange1M').className = `hk-trend-value ${(change1m.amount_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`;
+                document.getElementById('hkStockChange1M').className = `hk-trend-value ${(change1m.volume_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`;
                 
                 document.getElementById('hkStockChange3M').textContent = formatChange(change3m);
-                document.getElementById('hkStockChange3M').className = `hk-trend-value ${(change3m.amount_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`;
+                document.getElementById('hkStockChange3M').className = `hk-trend-value ${(change3m.volume_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`;
                 
                 // 市场整体风险提示
                 const adviceEl = document.getElementById('hkStockRiskAdvice');
@@ -897,7 +897,7 @@ async function renderHKShortRiskWarning() {
             const individual = stockData;
             
             document.getElementById('hkIndividualShortAmount').textContent = 
-                individual.short_amount !== null ? `${individual.short_amount}亿` : '--';
+                individual.short_volume_wan !== null ? `${individual.short_volume_wan}万股` : '--';
             
             const ratioEl = document.getElementById('hkIndividualShortRatio');
             if (individual.short_ratio !== null) {
@@ -1736,7 +1736,7 @@ function renderSentiment() {
     // 渲染港股沽空数据
     const hkShort = northSouth.hk_short_selling || {};
     if (hkShort.success) {
-        document.getElementById('hkShortAmount').textContent = `${hkShort.short_amount}亿`;
+        document.getElementById('hkShortAmount').textContent = `${hkShort.short_volume_wan}万股`;
         document.getElementById('hkShortRatio').textContent = `${hkShort.short_ratio}%`;
         document.getElementById('hkShortRatio').className = `metric-value ${hkShort.short_ratio > 15 ? 'down' : 'up'}`;
         
@@ -1747,19 +1747,19 @@ function renderSentiment() {
         const change3m = changes['3m'] || {};
         
         const formatChange = (c) => {
-            if (!c || c.amount_change === undefined) return '--';
-            const sign = c.amount_change >= 0 ? '+' : '';
-            return `${sign}${c.amount_change}亿 (${c.amount_change_pct}%)`;
+            if (!c || c.volume_change === undefined) return '--';
+            const sign = c.volume_change >= 0 ? '+' : '';
+            return `${sign}${c.volume_change}万股`;
         };
         
         document.getElementById('hkShortChange1W').textContent = formatChange(change1w);
-        document.getElementById('hkShortChange1W').className = `metric-value ${(change1w.amount_change || 0) >= 0 ? 'down' : 'up'}`;
+        document.getElementById('hkShortChange1W').className = `metric-value ${(change1w.volume_change || 0) >= 0 ? 'down' : 'up'}`;
         
         document.getElementById('hkShortChange1M').textContent = formatChange(change1m);
-        document.getElementById('hkShortChange1M').className = `metric-value ${(change1m.amount_change || 0) >= 0 ? 'down' : 'up'}`;
+        document.getElementById('hkShortChange1M').className = `metric-value ${(change1m.volume_change || 0) >= 0 ? 'down' : 'up'}`;
         
         document.getElementById('hkShortChange3M').textContent = formatChange(change3m);
-        document.getElementById('hkShortChange3M').className = `metric-value ${(change3m.amount_change || 0) >= 0 ? 'down' : 'up'}`;
+        document.getElementById('hkShortChange3M').className = `metric-value ${(change3m.volume_change || 0) >= 0 ? 'down' : 'up'}`;
     }
     
     // 5. 渲染融资融券卡片
