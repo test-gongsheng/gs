@@ -196,6 +196,10 @@ async function refreshAxisPrices() {
         try {
             console.log(`[refreshAxisPrices] 调用API: ${stock.code}`);
             
+            // 使用 AbortController 设置8秒超时
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            
             const response = await fetch('/api/axis-price', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -203,8 +207,10 @@ async function refreshAxisPrices() {
                     code: stock.code, 
                     market: stock.market || 'A股', 
                     days: 90 
-                })
+                }),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
             
             console.log(`[refreshAxisPrices] ${stock.code} API响应状态: ${response.status}`);
             
@@ -262,8 +268,11 @@ async function refreshAxisPrices() {
                 failedCount++;
             }
         } catch (error) {
-            console.error(`[refreshAxisPrices] ${stock.code} 异常:`, error.message);
-            console.error(error);
+            if (error.name === 'AbortError') {
+                console.warn(`[refreshAxisPrices] ${stock.code} 请求超时(8秒)`);
+            } else {
+                console.error(`[refreshAxisPrices] ${stock.code} 异常:`, error.message);
+            }
             failedCount++;
         }
         console.log(`[refreshAxisPrices] [${i+1}/${appState.stocks.length}] 处理 ${stock.code} 结束`);
