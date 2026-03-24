@@ -687,7 +687,7 @@ async function confirmImport() {
                 
                 try {
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
+                    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒超时
                     
                     const axisResponse = await fetch('/api/axis-price', {
                         method: 'POST',
