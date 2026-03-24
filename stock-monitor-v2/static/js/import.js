@@ -682,18 +682,12 @@ async function confirmImport() {
         for (const newStock of stocks) {
             console.log(`[confirmImport] 处理股票: ${newStock.code} ${newStock.name}`, newStock);
             try {
-                // 获取中轴价格（使用 costPrice，因为 parseStockLine 返回的是 costPrice）
-                let axisPrice = newStock.costPrice;
-                console.log(`[confirmImport] ${newStock.code} 默认中轴价格: ${axisPrice}`);
+                // 获取中轴价格 - 优先使用API计算，失败时使用成本价
+                let axisPrice = newStock.costPrice; // 默认值
                 
-                // 暂时跳过中轴价格API调用，避免网络超时卡住导入
-                // 直接使用成本价作为中轴价格
-                console.log(`[confirmImport] ${newStock.code} 跳过中轴API，使用成本价: ${axisPrice}`);
-                
-                /* 网络不稳定时跳过此步骤
                 try {
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3秒超时
+                    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
                     
                     const axisResponse = await fetch('/api/axis-price', {
                         method: 'POST',
@@ -707,16 +701,16 @@ async function confirmImport() {
                     });
                     clearTimeout(timeoutId);
                     
-                    console.log(`[confirmImport] ${newStock.code} 中轴API响应:`, axisResponse.status);
-                    const axisData = await axisResponse.json();
-                    console.log(`[confirmImport] ${newStock.code} 中轴数据:`, axisData);
-                    if (axisData.success && axisData.axis_price) {
-                        axisPrice = axisData.axis_price;
+                    if (axisResponse.ok) {
+                        const axisData = await axisResponse.json();
+                        if (axisData.success && axisData.data && axisData.data.axis_price) {
+                            axisPrice = axisData.data.axis_price;
+                            console.log(`[confirmImport] ${newStock.code} API中轴价格: ${axisPrice}`);
+                        }
                     }
                 } catch (e) {
-                    console.warn(`获取 ${newStock.code} 中轴价格失败，使用成本价`, e);
+                    console.warn(`[confirmImport] ${newStock.code} 获取中轴价格失败，使用成本价: ${axisPrice}`, e);
                 }
-                */
 
                 // 构建股票数据
                 const stockData = {
