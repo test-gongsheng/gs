@@ -175,9 +175,22 @@ async function init() {
 
 /**
  * 刷新所有股票的中轴价格
+ * @param {boolean} forceRefresh - 是否强制刷新（清除缓存）
  */
-async function refreshAxisPrices() {
-    console.log('[refreshAxisPrices] 开始执行，股票数量:', appState.stocks.length);
+async function refreshAxisPrices(forceRefresh = false) {
+    console.log('[refreshAxisPrices] 开始执行，股票数量:', appState.stocks.length, '强制刷新:', forceRefresh);
+    
+    // 如果强制刷新，先清除后端缓存
+    if (forceRefresh) {
+        console.log('[refreshAxisPrices] 清除后端缓存...');
+        try {
+            await fetch('/api/axis-price/cache/clear', { method: 'POST' });
+            console.log('[refreshAxisPrices] 缓存已清除');
+        } catch (e) {
+            console.warn('[refreshAxisPrices] 清除缓存失败:', e);
+        }
+    }
+    
     console.log('[refreshAxisPrices] 股票列表:', appState.stocks.map(s => s.code).join(', '));
     
     if (appState.stocks.length === 0) {

@@ -1,7 +1,8 @@
 from flask import Flask, render_template, jsonify, request
 import json
 import os
-from datetime import datetime
+import time
+from datetime import datetime, timedelta
 from utils.stock_quote import get_stock_quotes, get_dynamic_axis_price
 from utils.exchange_rate import get_cny_hkd_rate, get_yesterday_cny_hkd_rate, convert_hkd_to_cny
 from utils.sector_data import get_hot_sectors_data
@@ -11,6 +12,37 @@ from utils.market_sentiment import get_market_sentiment
 app = Flask(__name__)
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), 'data', 'stocks.json')
+
+# 中轴价格缓存: { 'code:market': {'data': {...}, 'timestamp': ...} }
+axis_price_cache = {}
+CACHE_TTL = 1800  # 缓存30分钟
+
+def get_cached_axis_price(code, market, days=90):
+    """从缓存获取中轴价格，如果不存在或过期则重新计算"""
+    cache_key = f"{code}:{market}"
+    now = time.time()
+    
+    # 检查缓存
+    if cache_key in axis_price_cache:
+        cached = axis_price_cache[cache_key]
+        age = now - cached['timestamp']
+        if age < CACHE_TTL:
+            print(f"[CACHE HIT] {code} 缓存{age:.0f}秒前更新")
+            return cached['data']
+        else:
+            print(f"[CACHE EXPIRED] {code} 缓存已过期{age-CACHE_TTL:.0f}秒")
+    
+    # 缓存未命中或过期，重新计算
+    print(f"[CACHE MISS] {code} 重新计算中轴价格...")
+    axis_data = get_dynamic_axis_price(code, market, days)
+    
+    if axis_data:
+        axis_price_cache[cache_key] = {
+            'data': axis_data,
+            'timestamp': now
+        }
+    
+    return axis_data
 
 def load_data():
     """加载股票数据，如果不存在则自动创建"""
@@ -578,7 +610,7 @@ def get_quotes():
 @app.route('/api/axis-price', methods=['POST'])
 def get_axis_price():
     """
-    获取动态中轴价格（基于3个月历史数据）
+    获取动态中轴价格（优先从缓存读取，30分钟刷新一次）
     
     请求体: {"code": "000559", "market": "A股", "days": 90}
     """
@@ -593,7 +625,8 @@ def get_axis_price():
         if not code:
             return jsonify({'success': False, 'error': '股票代码不能为空'}), 400
         
-        axis_data = get_dynamic_axis_price(code, market, days)
+        # 优先从缓存获取
+        axis_data = get_cached_axis_price(code, market, days)
         
         if not axis_data:
             print(f"[API] 获取中轴价格失败: {code} 返回空数据")
@@ -611,5 +644,47 @@ def get_axis_price():
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+
+@app.route('/api/axis-price/cache/clear', methods=['POST'])
+def clear_axis_cache():
+    """清除中轴价格缓存（用于手动刷新）"""
+    global axis_price_cache
+    axis_price_cache = {}
+    print("[CACHE] 中轴价格缓存已清除")
+    return jsonify({'success': True, 'message': '缓存已清除'})
+
+
+def preload_axis_cache():
+    """启动时预加载所有持仓股票的中轴价格到缓存"""
+    import threading
+    
+    def load_in_background():
+        print("[CACHE] 启动后台线程预加载中轴价格缓存...")
+        try:
+            data = load_data()
+            stocks = data.get('stocks', [])
+            print(f"[CACHE] 发现 {len(stocks)} 只持仓股票")
+            
+            for i, stock in enumerate(stocks):
+                code = stock.get('code', '')
+                market = stock.get('market', 'A股')
+                if code:
+                    try:
+                        get_cached_axis_price(code, market, 90)
+                        print(f"[CACHE] [{i+1}/{len(stocks)}] 预加载完成: {code}")
+                    except Exception as e:
+                        print(f"[CACHE] [{i+1}/{len(stocks)}] 预加载失败: {code} - {e}")
+            
+            print(f"[CACHE] 预加载完成，缓存条目: {len(axis_price_cache)}")
+        except Exception as e:
+            print(f"[CACHE] 预加载失败: {e}")
+    
+    # 在后台线程中执行，不阻塞启动
+    thread = threading.Thread(target=load_in_background, daemon=True)
+    thread.start()
+
+
 if __name__ == '__main__':
+    # 启动时预加载缓存
+    preload_axis_cache()
     app.run(debug=False, host='0.0.0.0', port=5000, use_reloader=False)
