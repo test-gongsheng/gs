@@ -775,10 +775,10 @@ async function confirmImport() {
             }
         }, 500);
 
-        // 延迟刷新页面
+        // 延迟刷新页面（等待中轴价格计算完成）
         setTimeout(() => {
             window.location.reload();
-        }, 1500);
+        }, 5000);
 
     } catch (error) {
         console.error('导入失败:', error);
