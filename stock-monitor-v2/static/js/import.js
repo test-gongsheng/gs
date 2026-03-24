@@ -755,6 +755,19 @@ async function confirmImport() {
             console.log('[导入完成] 立即刷新实时行情...');
             await refreshStockQuotesAfterImport();
             
+            // 重新加载股票列表（确保包含刚导入的数据）
+            console.log('[导入完成] 重新加载股票列表...');
+            try {
+                const response = await fetch('/api/stocks');
+                const stocks = await response.json();
+                if (Array.isArray(stocks) && window.appState) {
+                    window.appState.stocks = stocks;
+                    console.log('[导入完成] 股票列表已更新:', stocks.length, '只');
+                }
+            } catch (e) {
+                console.warn('[导入完成] 重新加载股票列表失败:', e);
+            }
+            
             // 刷新中轴价格（导入时跳过了中轴计算）
             console.log('[导入完成] 开始刷新中轴价格...');
             if (typeof refreshAxisPrices === 'function') {
