@@ -750,7 +750,7 @@ async function confirmImport() {
 
         showNotification(`导入完成！共 ${added} 只股票`, 'success');
 
-        // 立即刷新实时行情和中轴价格（不等待页面刷新）
+        // 立即刷新实时行情和中轴价格
         setTimeout(async () => {
             console.log('[导入完成] 立即刷新实时行情...');
             await refreshStockQuotesAfterImport();
@@ -768,17 +768,17 @@ async function confirmImport() {
                 console.warn('[导入完成] 重新加载股票列表失败:', e);
             }
             
-            // 刷新中轴价格（导入时跳过了中轴计算）
+            // 刷新中轴价格（导入时跳过了中轴计算）- 强制刷新确保最新
             console.log('[导入完成] 开始刷新中轴价格...');
             if (typeof refreshAxisPrices === 'function') {
-                await refreshAxisPrices();
+                await refreshAxisPrices(true); // 强制刷新，清除缓存
+                console.log('[导入完成] 中轴价格刷新完成，准备刷新页面');
             }
-        }, 500);
-
-        // 延迟刷新页面（等待中轴价格计算完成）
-        setTimeout(() => {
+            
+            // 中轴价格刷新完成后才刷新页面
+            console.log('[导入完成] 刷新页面...');
             window.location.reload();
-        }, 5000);
+        }, 500);
 
     } catch (error) {
         console.error('导入失败:', error);

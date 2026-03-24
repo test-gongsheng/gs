@@ -202,10 +202,10 @@ async function refreshAxisPrices(forceRefresh = false) {
     let failedCount = 0;
     let changedStocks = [];
     
-    // 逐个处理而不是用 Promise.all，避免某个失败影响其他
-    for (let i = 0; i < appState.stocks.length; i++) {
-        const stock = appState.stocks[i];
-        console.log(`[refreshAxisPrices] [${i+1}/${appState.stocks.length}] 开始处理 ${stock.code}...`);
+    // 并行处理所有股票，大幅提升速度（有缓存时 < 1秒完成）
+    console.log(`[refreshAxisPrices] 开始并行处理 ${appState.stocks.length} 只股票...`);
+    
+    const promises = appState.stocks.map(async (stock) => {
         try {
             console.log(`[refreshAxisPrices] 调用API: ${stock.code}`);
             
@@ -225,60 +225,47 @@ async function refreshAxisPrices(forceRefresh = false) {
             });
             clearTimeout(timeoutId);
             
-            console.log(`[refreshAxisPrices] ${stock.code} API响应状态: ${response.status}`);
-            
             if (!response.ok) {
                 console.error(`[refreshAxisPrices] ${stock.code} HTTP错误: ${response.status}`);
-                failedCount++;
-                continue;
+                return { stock, success: false };
             }
             
             const axisData = await response.json();
-            console.log(`[refreshAxisPrices] ${stock.code} API返回数据:`, axisData);
             
             if (axisData.success && axisData.data && axisData.data.axis_price) {
                 const oldPivot = parseFloat(stock.pivotPrice) || 0;
                 const newPivot = axisData.data.axis_price;
-                
-                console.log(`[refreshAxisPrices] ${stock.code} 准备更新: ${oldPivot} -> ${newPivot}`);
                 
                 // 直接修改 stock 对象
                 stock.pivotPrice = newPivot;
                 stock.triggerBuy = axisData.data.trigger_buy;
                 stock.triggerSell = axisData.data.trigger_sell;
                 
-                // 同步更新后端数据库
-                try {
-                    await fetch(`/api/stocks/${stock.id}/axis`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            axis_price: newPivot,
-                            base_position_pct: stock.baseRatio || 50,
-                            float_position_pct: stock.floatRatio || 50,
-                            trigger_pct: 8,
-                            grid_levels: stock.gridLevels || []
-                        })
-                    });
-                    console.log(`[refreshAxisPrices] ${stock.code} 已同步到后端数据库`);
-                } catch (saveErr) {
-                    console.warn(`[refreshAxisPrices] ${stock.code} 保存到后端失败:`, saveErr);
-                }
+                // 同步更新后端数据库（不等待）
+                fetch(`/api/stocks/${stock.id}/axis`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        axis_price: newPivot,
+                        base_position_pct: stock.baseRatio || 50,
+                        float_position_pct: stock.floatRatio || 50,
+                        trigger_pct: 8,
+                        grid_levels: stock.gridLevels || []
+                    })
+                }).catch(e => console.warn(`[refreshAxisPrices] ${stock.code} 保存到后端失败:`, e));
                 
-                console.log(`[refreshAxisPrices] ${stock.code} 更新完成: ${oldPivot.toFixed(2)} -> ${newPivot.toFixed(2)}`);
+                console.log(`[refreshAxisPrices] ${stock.code} 更新: ${oldPivot.toFixed(2)} -> ${newPivot.toFixed(2)}`);
                 
-                if (Math.abs(oldPivot - newPivot) > 0.1) {
-                    changedStocks.push({
-                        code: stock.code,
-                        name: stock.name,
-                        oldPrice: oldPivot,
-                        newPrice: newPivot
-                    });
-                }
-                updatedCount++;
+                return { 
+                    stock, 
+                    success: true, 
+                    changed: Math.abs(oldPivot - newPivot) > 0.1,
+                    oldPrice: oldPivot,
+                    newPrice: newPivot
+                };
             } else {
                 console.warn(`[refreshAxisPrices] ${stock.code} API返回失败:`, axisData.error || '无数据');
-                failedCount++;
+                return { stock, success: false };
             }
         } catch (error) {
             if (error.name === 'AbortError') {
@@ -286,10 +273,29 @@ async function refreshAxisPrices(forceRefresh = false) {
             } else {
                 console.error(`[refreshAxisPrices] ${stock.code} 异常:`, error.message);
             }
+            return { stock, success: false };
+        }
+    });
+    
+    // 等待所有请求完成
+    const results = await Promise.all(promises);
+    
+    // 统计结果
+    results.forEach(result => {
+        if (result.success) {
+            updatedCount++;
+            if (result.changed) {
+                changedStocks.push({
+                    code: result.stock.code,
+                    name: result.stock.name,
+                    oldPrice: result.oldPrice,
+                    newPrice: result.newPrice
+                });
+            }
+        } else {
             failedCount++;
         }
-        console.log(`[refreshAxisPrices] [${i+1}/${appState.stocks.length}] 处理 ${stock.code} 结束`);
-    }
+    });
     
     console.log(`[refreshAxisPrices] 完成: ${updatedCount}只成功, ${failedCount}只失败, ${changedStocks.length}只变化`);
     
