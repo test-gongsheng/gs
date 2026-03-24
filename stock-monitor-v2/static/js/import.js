@@ -771,7 +771,24 @@ async function confirmImport() {
             // 刷新中轴价格（导入时跳过了中轴计算）- 强制刷新确保最新
             console.log('[导入完成] 开始刷新中轴价格...');
             if (typeof refreshAxisPrices === 'function') {
-                await refreshAxisPrices(true); // 强制刷新，清除缓存
+                // 先让后端预热缓存（串行，避免压垮）
+                console.log('[导入完成] 预热后端缓存...');
+                for (const stock of window.appState.stocks.slice(0, 3)) {
+                    try {
+                        await fetch('/api/axis-price', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ code: stock.code, market: stock.market || 'A股', days: 90 })
+                        });
+                        console.log(`[导入完成] 预热完成: ${stock.code}`);
+                    } catch (e) {
+                        console.warn(`[导入完成] 预热失败: ${stock.code}`, e);
+                    }
+                }
+                
+                // 然后并行刷新所有
+                console.log('[导入完成] 并行刷新所有中轴价格...');
+                await refreshAxisPrices(true);
                 console.log('[导入完成] 中轴价格刷新完成，准备刷新页面');
             }
             

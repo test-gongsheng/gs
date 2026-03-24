@@ -504,11 +504,11 @@ function renderStockList() {
                     ${alertBadge}
                 </div>
                 <div class="stock-item-price ${isUp ? 'up' : 'down'}">
-                    ${isHKStock ? stock.price.toFixed(2) + ' HKD' : stock.price.toFixed(2)}
+                    ${isHKStock ? (stock.price || 0).toFixed(2) + ' HKD' : (stock.price || 0).toFixed(2)}
                 </div>
             </div>
             <div class="stock-item-info">
-                <span>${stock.change >= 0 ? '+' : ''}${stock.changePercent.toFixed(2)}%</span>
+                <span>${stock.change >= 0 ? '+' : ''}${(stock.changePercent || 0).toFixed(2)}%</span>
                 <span>持仓: ${marketValueWan}万</span>
             </div>
         `;
