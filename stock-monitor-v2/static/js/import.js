@@ -682,35 +682,10 @@ async function confirmImport() {
         for (const newStock of stocks) {
             console.log(`[confirmImport] 处理股票: ${newStock.code} ${newStock.name}`, newStock);
             try {
-                // 获取中轴价格 - 优先使用API计算，失败时使用成本价
-                let axisPrice = newStock.costPrice; // 默认值
-                
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒超时
-                    
-                    const axisResponse = await fetch('/api/axis-price', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            code: newStock.code,
-                            market: newStock.market,
-                            days: 90
-                        }),
-                        signal: controller.signal
-                    });
-                    clearTimeout(timeoutId);
-                    
-                    if (axisResponse.ok) {
-                        const axisData = await axisResponse.json();
-                        if (axisData.success && axisData.data && axisData.data.axis_price) {
-                            axisPrice = axisData.data.axis_price;
-                            console.log(`[confirmImport] ${newStock.code} API中轴价格: ${axisPrice}`);
-                        }
-                    }
-                } catch (e) {
-                    console.warn(`[confirmImport] ${newStock.code} 获取中轴价格失败，使用成本价: ${axisPrice}`, e);
-                }
+                // 获取中轴价格 - 导入时跳过，导入完成后统一刷新
+                // 原因：中轴价格API可能需要较长时间，避免阻塞导入流程
+                let axisPrice = 0; // 设为0，表示未计算，后续统一刷新
+                console.log(`[confirmImport] ${newStock.code} 中轴价格设为0，导入完成后统一刷新`);
 
                 // 构建股票数据
                 const stockData = {
@@ -775,10 +750,16 @@ async function confirmImport() {
 
         showNotification(`导入完成！共 ${added} 只股票`, 'success');
 
-        // 立即刷新实时行情（不等待页面刷新）
+        // 立即刷新实时行情和中轴价格（不等待页面刷新）
         setTimeout(async () => {
             console.log('[导入完成] 立即刷新实时行情...');
             await refreshStockQuotesAfterImport();
+            
+            // 刷新中轴价格（导入时跳过了中轴计算）
+            console.log('[导入完成] 开始刷新中轴价格...');
+            if (typeof refreshAxisPrices === 'function') {
+                await refreshAxisPrices();
+            }
         }, 500);
 
         // 延迟刷新页面
