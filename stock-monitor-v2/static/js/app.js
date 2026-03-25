@@ -980,9 +980,11 @@ function renderHKShortDataInternal(marketData, stockData) {
             setText('hkIndividualShortAmount', '待披露');
             setText('hkIndividualShortRatio', 'T+1');
             setText('hkIndividualSignal', '港交所');
+            setText('hkIndividualChange3D', '--');
             setText('hkIndividualChange1W', '--');
+            setText('hkIndividualChange2W', '--');
             setText('hkIndividualChange1M', '--');
-            setText('hkIndividualChange3M', '--');
+            setText('hkIndividualTrend', '--');
             
             const adviceEl = document.getElementById('hkIndividualRiskAdvice');
             if (adviceEl) {
@@ -997,10 +999,20 @@ function renderHKShortDataInternal(marketData, stockData) {
             setText('hkIndividualShortRatio', `${individualShort.short_ratio}%`);
             setClass('hkIndividualShortRatio', `hk-metric-value ${individualShort.short_ratio > 15 ? 'high-risk' : individualShort.short_ratio > 10 ? 'medium-risk' : 'low-risk'}`);
             
-            setText('hkIndividualSignal', individualShort.signal || '--');
-            setClass('hkIndividualSignal', `hk-metric-value ${individualShort.short_ratio > 15 ? 'high-risk' : individualShort.short_ratio > 10 ? 'medium-risk' : 'low-risk'}`);
+            // 显示信号（偏多/中性/偏空）
+            const signalText = individualShort.signal || '--';
+            setText('hkIndividualSignal', signalText);
             
-            // 个股变化趋势
+            // 根据风险等级设置信号颜色
+            const tradeSignals = individualShort.trade_signals || {};
+            const riskLevel = tradeSignals.risk_level || 'normal';
+            let signalClass = 'neutral';
+            if (riskLevel === 'low') signalClass = 'up';
+            else if (riskLevel === 'critical' || riskLevel === 'high') signalClass = 'down';
+            else signalClass = individualShort.short_ratio > 15 ? 'down' : 'up';
+            setClass('hkIndividualSignal', `hk-metric-value ${signalClass}`);
+            
+            // 个股变化趋势 - 新周期：3天、1周、2周、1月
             const changes = individualShort.changes || {};
             const formatChange = (c) => {
                 if (!c || c.volume_change === undefined) return '--';
@@ -1008,35 +1020,68 @@ function renderHKShortDataInternal(marketData, stockData) {
                 return `${sign}${c.volume_change}万股`;
             };
             
+            const change3d = changes['3d'] || {};
             const change1w = changes['1w'] || {};
+            const change2w = changes['2w'] || {};
             const change1m = changes['1m'] || {};
-            const change3m = changes['3m'] || {};
             
+            // 3天变化
+            setText('hkIndividualChange3D', formatChange(change3d));
+            setClass('hkIndividualChange3D', `hk-trend-value ${(change3d.volume_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`);
+            
+            // 1周变化
             setText('hkIndividualChange1W', formatChange(change1w));
             setClass('hkIndividualChange1W', `hk-trend-value ${(change1w.volume_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`);
             
+            // 2周变化
+            setText('hkIndividualChange2W', formatChange(change2w));
+            setClass('hkIndividualChange2W', `hk-trend-value ${(change2w.volume_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`);
+            
+            // 1月变化
             setText('hkIndividualChange1M', formatChange(change1m));
             setClass('hkIndividualChange1M', `hk-trend-value ${(change1m.volume_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`);
             
-            setText('hkIndividualChange3M', formatChange(change3m));
-            setClass('hkIndividualChange3M', `hk-trend-value ${(change3m.volume_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`);
+            // 趋势方向
+            const trendDirection = individualShort.trend_direction || '数据不足';
+            setText('hkIndividualTrend', trendDirection);
             
-            // 个股风险提示
+            // 个股风险提示 - 结合交易信号
             const adviceEl = document.getElementById('hkIndividualRiskAdvice');
             if (adviceEl) {
-                if (individualShort.short_ratio > 20) {
-                    adviceEl.textContent = '⚠️ 该股票沽空比例极高，做空压力巨大，建议高度警惕，考虑减仓或止损。';
-                    adviceEl.className = 'hk-risk-advice high-risk';
+                let adviceText = '';
+                let adviceClass = 'normal';
+                
+                if (tradeSignals.sell_enhanced) {
+                    // 强烈卖出信号
+                    adviceText = '⚠️ 沽空比例极高且空头在加仓，做空压力大，建议减仓或止损避险。';
+                    adviceClass = 'high-risk';
+                } else if (tradeSignals.buy_enhanced) {
+                    // 强烈买入信号
+                    adviceText = '✅ 沽空压力小且空头在撤退，可关注买入机会（配合中轴价格策略）。';
+                    adviceClass = 'low-risk';
+                } else if (individualShort.short_ratio > 20) {
+                    adviceText = '📉 该股票沽空比例极高，做空压力巨大，建议高度警惕。';
+                    adviceClass = 'high-risk';
                 } else if (individualShort.short_ratio > 15) {
-                    adviceEl.textContent = '📉 该股票沽空压力较大，存在做空风险，建议控制仓位。';
-                    adviceEl.className = 'hk-risk-advice medium-risk';
+                    adviceText = '⚠️ 该股票沽空压力较大，存在做空风险，建议控制仓位。';
+                    adviceClass = 'medium-risk';
                 } else if (individualShort.short_ratio > 10) {
-                    adviceEl.textContent = '⚖️ 该股票沽空比例适中，需关注市场情绪变化。';
-                    adviceEl.className = 'hk-risk-advice normal';
+                    adviceText = '⚖️ 该股票沽空比例适中，需关注市场情绪变化。';
+                    adviceClass = 'normal';
                 } else {
-                    adviceEl.textContent = '✅ 该股票沽空比例较低，做空压力较小。';
-                    adviceEl.className = 'hk-risk-advice low-risk';
+                    adviceText = '✅ 该股票沽空比例较低，做空压力较小。';
+                    adviceClass = 'low-risk';
                 }
+                
+                // 添加趋势信息
+                if (trendDirection.includes('空头撤退')) {
+                    adviceText += ' [空头撤退]';
+                } else if (trendDirection.includes('空头聚集')) {
+                    adviceText += ' [空头聚集]';
+                }
+                
+                adviceEl.textContent = adviceText;
+                adviceEl.className = `hk-risk-advice ${adviceClass}`;
             }
             
             setText('hkIndividualUpdateTime', individualShort.update_date || '--');

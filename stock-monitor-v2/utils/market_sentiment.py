@@ -65,11 +65,12 @@ def get_hk_stock_short_selling(stock_code: str) -> Dict:
                 stock_name = target_stock.get('SECURITY_NAME_ABBR', '')
                 trade_date = target_stock.get('TRADE_DATE', '')[:10]
                 
-                # 计算历史变化趋势（1周、1月、3月）
+                # 计算历史变化趋势（3天、1周、2周、1月）
                 changes = {
-                    '1w': {'volume_change': None, 'ratio_change': None},
-                    '1m': {'volume_change': None, 'ratio_change': None},
-                    '3m': {'volume_change': None, 'ratio_change': None}
+                    '3d': {'volume_change': None, 'ratio_change': None, 'signal': 'neutral'},
+                    '1w': {'volume_change': None, 'ratio_change': None, 'signal': 'neutral'},
+                    '2w': {'volume_change': None, 'ratio_change': None, 'signal': 'neutral'},
+                    '1m': {'volume_change': None, 'ratio_change': None, 'signal': 'neutral'}
                 }
                 
                 def get_stock_data_for_date(target_date, max_days_back=5):
@@ -106,23 +107,89 @@ def get_hk_stock_short_selling(stock_code: str) -> Dict:
                     
                     return None
                 
+                def calculate_signal(volume_change, ratio_change):
+                    """计算趋势信号"""
+                    if volume_change is None or ratio_change is None:
+                        return 'neutral'
+                    # 空头大幅增仓 -> 看空信号
+                    if volume_change > 50 or ratio_change > 5:
+                        return 'bearish'
+                    # 空头大幅减少 -> 看多信号
+                    elif volume_change < -20 or ratio_change < -3:
+                        return 'bullish'
+                    else:
+                        return 'neutral'
+                
                 try:
                     # 获取历史数据用于计算变化（向前追溯最多5天找有效数据）
                     target_dates = {
+                        '3d': (datetime.now() - timedelta(days=4)).strftime('%Y-%m-%d'),
                         '1w': (datetime.now() - timedelta(days=8)).strftime('%Y-%m-%d'),
-                        '1m': (datetime.now() - timedelta(days=31)).strftime('%Y-%m-%d'),
-                        '3m': (datetime.now() - timedelta(days=93)).strftime('%Y-%m-%d')
+                        '2w': (datetime.now() - timedelta(days=15)).strftime('%Y-%m-%d'),
+                        '1m': (datetime.now() - timedelta(days=31)).strftime('%Y-%m-%d')
                     }
                     
                     for key, target_date in target_dates.items():
                         past_data = get_stock_data_for_date(target_date, max_days_back=5)
                         
                         if past_data:
-                            changes[key]['volume_change'] = round((short_volume - past_data['volume']) / 10000, 2)
-                            changes[key]['ratio_change'] = round(short_ratio - past_data['ratio'], 2)
-                            changes[key]['reference_date'] = past_data['date']  # 记录实际使用的日期
+                            vol_change = round((short_volume - past_data['volume']) / 10000, 2)
+                            ratio_chg = round(short_ratio - past_data['ratio'], 2)
+                            
+                            changes[key]['volume_change'] = vol_change
+                            changes[key]['ratio_change'] = ratio_chg
+                            changes[key]['reference_date'] = past_data['date']
+                            changes[key]['signal'] = calculate_signal(vol_change, ratio_chg)
                 except Exception as e:
                     print(f"计算个股历史变化失败: {e}")
+                
+                # 综合判断：买入/卖出信号增强
+                # 基于沽空数据的交易建议
+                trade_signals = {
+                    'buy_enhanced': False,  # 增强买入信号（沽空低+减少）
+                    'sell_enhanced': False, # 增强卖出信号（沽空高+增加）
+                    'risk_level': 'normal'  # 风险等级：low/normal/high/critical
+                }
+                
+                # 计算综合趋势
+                recent_signals = [changes[k]['signal'] for k in ['3d', '1w'] if changes[k]['signal']]
+                
+                # 买入增强条件：沽空比例<15% 且 近期趋势看空信号减少（空头撤退）
+                if short_ratio < 15:
+                    if 'bullish' in recent_signals or short_ratio < 10:
+                        trade_signals['buy_enhanced'] = True
+                        trade_signals['risk_level'] = 'low'
+                
+                # 卖出增强条件：沽空比例>20% 且 近期增加
+                if short_ratio > 20:
+                    if 'bearish' in recent_signals or short_ratio > 25:
+                        trade_signals['sell_enhanced'] = True
+                        trade_signals['risk_level'] = 'critical'
+                    else:
+                        trade_signals['risk_level'] = 'high'
+                elif short_ratio > 15:
+                    trade_signals['risk_level'] = 'elevated'
+                
+                # 趋势方向总结
+                if len(recent_signals) >= 2:
+                    bullish_count = recent_signals.count('bullish')
+                    bearish_count = recent_signals.count('bearish')
+                    if bullish_count > bearish_count:
+                        trend_direction = '下降通道（空头撤退）'
+                    elif bearish_count > bullish_count:
+                        trend_direction = '上升通道（空头聚集）'
+                    else:
+                        trend_direction = '震荡整理'
+                else:
+                    trend_direction = '数据不足'
+                
+                # 交易信号判断
+                if short_ratio < 10:
+                    signal = '偏多'
+                elif short_ratio > 20:
+                    signal = '偏空'
+                else:
+                    signal = '中性'
                 
                 return {
                     'success': True,
@@ -132,7 +199,10 @@ def get_hk_stock_short_selling(stock_code: str) -> Dict:
                     'short_volume_wan': round(short_volume / 10000, 2),  # 万股
                     'short_amount': round(short_amount / 10000, 2),  # 亿港元
                     'short_ratio': round(short_ratio, 2),
+                    'signal': signal,  # 多空信号
+                    'trend_direction': trend_direction,  # 趋势方向
                     'changes': changes,  # 历史变化趋势
+                    'trade_signals': trade_signals,  # 交易建议
                     'estimated': False,
                     'data_pending': False,
                     'source': '港交所',
@@ -148,7 +218,10 @@ def get_hk_stock_short_selling(stock_code: str) -> Dict:
                 'short_volume_wan': None,
                 'short_amount': None,
                 'short_ratio': None,
+                'signal': None,
+                'trend_direction': None,
                 'changes': {},
+                'trade_signals': {},
                 'estimated': False,
                 'data_pending': True,
                 'source': '港交所',
