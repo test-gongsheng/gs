@@ -703,4 +703,4 @@ def preload_axis_cache():
 if __name__ == '__main__':
     # 启动时预加载缓存
     preload_axis_cache()
-    app.run(debug=False, host='0.0.0.0', port=5000, use_reloader=False)
+    app.run(debug=False, host='0.0.0.0', port=8888, use_reloader=False)
