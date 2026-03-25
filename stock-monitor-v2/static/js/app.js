@@ -530,66 +530,72 @@ function selectStock(index) {
 }
 
 // 渲染股票详情
+// 渲染股票详情
 function renderStockDetail() {
     const stock = appState.selectedStock;
     if (!stock) return;
 
-    const isUp = stock.change >= 0;
-    const isHKStock = stock.market === '港股';
+    // 给所有数值字段加默认值，防止后端数据缺失导致报错
+    const safeStock = {
+        price: stock.price ?? 0,
+        change: stock.change ?? 0,
+        changePercent: stock.changePercent ?? 0,
+        holdCost: stock.holdCost ?? 0,
+        holdQuantity: stock.holdQuantity || stock.shares || 0,
+        investLimit: stock.investLimit ?? 0,
+        strategy: stock.strategy || '买入持有',
+        pivotPrice: stock.pivotPrice ?? 0,
+        triggerBuy: stock.triggerBuy ?? 0,
+        triggerSell: stock.triggerSell ?? 0,
+        floatRatio: stock.floatRatio ?? 0,
+        baseRatio: stock.baseRatio ?? 50,
+        name: stock.name || '--',
+        code: stock.code || '--',
+        market: stock.market || 'A股',
+        exchangeRate: stock.exchangeRate ?? 0.92,
+        ...stock
+    };
 
-    // 获取汇率（用于港股港币/人民币转换）
-    const exchangeRate = stock.exchangeRate || appState.exchangeRate || 0.92;
+    const isUp = safeStock.change >= 0;
+    const isHKStock = safeStock.market === '港股';
 
-    // 港股：
-    // - 显示实时港币价格 (stock.price)
-    // - 市值实时计算：港币价格 × 持仓数量 ÷ 昨日收盘汇率 = 人民币市值
-    // - 盈亏 = 人民币市值 - 人民币成本
-    let marketValue, costValue, pnl, pnlPercent, positionShares, positionValueHkd;
+    // 获取汇率
+    const exchangeRate = safeStock.exchangeRate || appState.exchangeRate || 0.92;
+
+    // 港股/A股市值计算
+    let marketValue = 0, costValue = 0, pnl = 0, pnlPercent = 0, positionShares = 0, positionValueHkd = 0;
 
     if (isHKStock) {
-        // 港股使用昨日收盘汇率（导入时记录的固定汇率）
-        const yesterdayRate = stock.exchangeRate || exchangeRate || 1.1339;
-        // 港股当前持仓 = 股数 × 港股实时价格（港币）÷ 昨日收盘汇率 = 人民币市值
-        // 注意：数据文件中字段可能是 shares 或 holdQuantity
-        positionShares = stock.holdQuantity || stock.shares || 0;
-        const priceHk = stock.price ?? 0;
-        positionValueHkd = priceHk * positionShares; // 港币市值
-        marketValue = positionValueHkd / yesterdayRate;   // 转换为人民币（汇率是1人民币=X港币）
-        
-        // 持仓成本是导入的人民币成本，无需转换
-        const holdCostCny = stock.holdCost || 0;
-        costValue = holdCostCny * positionShares; // 人民币成本
-        
-        pnl = marketValue - costValue; // 人民币盈亏
+        const yesterdayRate = safeStock.exchangeRate || exchangeRate || 1.1339;
+        positionShares = safeStock.holdQuantity;
+        positionValueHkd = safeStock.price * positionShares;
+        marketValue = positionValueHkd / yesterdayRate;
+        costValue = safeStock.holdCost * positionShares;
+        pnl = marketValue - costValue;
         pnlPercent = costValue > 0 ? (pnl / costValue * 100) : 0;
     } else {
-        // A股：都是人民币，实时计算
-        positionShares = stock.holdQuantity || stock.shares || 0;
-        const priceA = stock.price ?? 0;
-        const holdCostA = stock.holdCost ?? 0;
-        marketValue = priceA * positionShares;
-        costValue = holdCostA * positionShares;
+        positionShares = safeStock.holdQuantity;
+        marketValue = safeStock.price * positionShares;
+        costValue = safeStock.holdCost * positionShares;
         pnl = marketValue - costValue;
         pnlPercent = costValue > 0 ? (pnl / costValue * 100) : 0;
     }
 
-    // 安全设置元素内容的辅助函数
     const setText = (id, value) => {
         const el = document.getElementById(id);
         if (el) el.textContent = value;
     };
 
     // 基础信息
-    setText('detailName', stock.name);
-    setText('detailCode', stock.code);
-    setText('detailStrategy', (stock.strategy || '买入持有') + '策略');
+    setText('detailName', safeStock.name);
+    setText('detailCode', safeStock.code);
+    setText('detailStrategy', safeStock.strategy + '策略');
 
-    // 港股显示实时港币价格
-    const price = stock.price ?? 0;
+    // 价格
     if (isHKStock) {
-        setText('detailPrice', `${price.toFixed(2)} HKD`);
+        setText('detailPrice', `${safeStock.price.toFixed(2)} HKD`);
     } else {
-        setText('detailPrice', price.toFixed(2));
+        setText('detailPrice', safeStock.price.toFixed(2));
     }
 
     const detailPriceEl = document.getElementById('detailPrice');
@@ -597,33 +603,26 @@ function renderStockDetail() {
 
     const detailChangeEl = document.getElementById('detailChange');
     if (detailChangeEl) {
-        const change = stock.change ?? 0;
-        const changePercent = stock.changePercent ?? 0;
-        detailChangeEl.textContent = `${isUp ? '+' : ''}${change.toFixed(2)} (${isUp ? '+' : ''}${changePercent.toFixed(2)}%)`;
+        detailChangeEl.textContent = `${isUp ? '+' : ''}${safeStock.change.toFixed(2)} (${isUp ? '+' : ''}${safeStock.changePercent.toFixed(2)}%)`;
         detailChangeEl.className = 'price-change ' + (isUp ? 'up' : 'down');
     }
 
     // 策略卡片
-    setText('detailLimit', formatMoney(stock.investLimit ?? 0));
+    setText('detailLimit', formatMoney(safeStock.investLimit));
     
-    // 当前持仓：显示持仓数量和人民币市值
+    // 当前持仓
     if (isHKStock) {
-        // 港股显示：数量 + 人民币市值（港币市值 ÷ 汇率）
-        const hkdValue = positionValueHkd || 0;
-        const cnyValue = hkdValue / exchangeRate; // 转换为人民币（汇率是1人民币=X港币）
-        const shares = positionShares || 0;
-        setText('detailPosition', `${shares}股 / ${(cnyValue/10000).toFixed(2)}万`);
+        const cnyValue = positionValueHkd / exchangeRate;
+        setText('detailPosition', `${positionShares}股 / ${(cnyValue/10000).toFixed(2)}万`);
     } else {
-        // A股显示：数量 + 人民币市值
-        const shares = positionShares || 0;
-        setText('detailPosition', `${shares}股 / ${formatMoney(marketValue)}`);
+        setText('detailPosition', `${positionShares}股 / ${formatMoney(marketValue)}`);
     }
 
-    // 港股持仓成本是导入的人民币成本
+    // 持仓成本
     if (isHKStock) {
-        setText('detailCost', `${(stock.holdCost || 0).toFixed(2)} (人民币)`);
+        setText('detailCost', `${safeStock.holdCost.toFixed(2)} (人民币)`);
     } else {
-        setText('detailCost', (stock.holdCost || 0).toFixed(2));
+        setText('detailCost', safeStock.holdCost.toFixed(2));
     }
 
     const detailPnLEl = document.getElementById('detailPnL');
@@ -632,54 +631,46 @@ function renderStockDetail() {
         detailPnLEl.style.color = pnl >= 0 ? 'var(--up-color)' : 'var(--down-color)';
     }
 
-    // 盈亏比例
     const detailPnLPercentEl = document.getElementById('detailPnLPercent');
     if (detailPnLPercentEl) {
         detailPnLPercentEl.textContent = pnlPercent.toFixed(2) + '%';
         detailPnLPercentEl.className = 'card-value ' + (pnl >= 0 ? 'up' : 'down');
     }
 
-    // 计算持仓比例 = 该股票市值 / 个股投资上限
-    const investLimit = stock.investLimit || 1;
+    // 持仓比例 = 市值 / 投资上限
+    const investLimit = safeStock.investLimit || 1;
     let positionRatio = 0;
     if (investLimit > 0) {
         positionRatio = (marketValue / investLimit) * 100;
     }
     
-    // 持仓比例卡片（原中轴价格位置）
     const detailPivotEl = document.getElementById('detailPivot');
     if (detailPivotEl) {
         detailPivotEl.textContent = positionRatio.toFixed(2) + '%';
-        console.log('[renderStockDetail] 持仓比例:', positionRatio.toFixed(2) + '%');
     }
 
-    // 中轴价格可视化区域的中轴价格
-    let pivotPriceValue = parseFloat(stock.pivotPrice) || 0;
+    // 中轴价格
+    let pivotPriceValue = parseFloat(safeStock.pivotPrice) || 0;
     const pivotCenterEl = document.getElementById('pivotCenter');
     if (pivotCenterEl) {
         pivotCenterEl.textContent = pivotPriceValue.toFixed(2);
     }
 
-    // 当前价格标签
     const currentPriceLabelEl = document.getElementById('currentPriceLabel');
     if (currentPriceLabelEl) {
-        currentPriceLabelEl.textContent = stock.price.toFixed(2);
+        currentPriceLabelEl.textContent = safeStock.price.toFixed(2);
     }
 
-    setText('detailBase', (stock.baseRatio || 50) + '%');
-    setText('detailFloat', (stock.floatRatio || 50) + '%');
+    setText('detailBase', safeStock.baseRatio + '%');
+    setText('detailFloat', safeStock.floatRatio + '%');
 
-    // 触发价格（基于中轴价格计算）
-    // 港股使用港币中轴价格计算触发价，然后显示触发价
-    let triggerBuy = stock.triggerBuy || (pivotPriceValue * 0.92);
-    let triggerSell = stock.triggerSell || (pivotPriceValue * 1.08);
+    // 触发价格
+    let triggerBuy = safeStock.triggerBuy || (pivotPriceValue * 0.92);
+    let triggerSell = safeStock.triggerSell || (pivotPriceValue * 1.08);
     
-    // 如果是港股且触发价看起来太小（可能是基于人民币计算的），需要调整
-    if (isHKStock && stock.holdCost > 0) {
+    if (isHKStock && safeStock.holdCost > 0) {
         const expectedTriggerSellHkd = pivotPriceValue * 1.08;
-        // 如果现有的 triggerSell 比期望的港币触发价小很多，可能是人民币值
         if (triggerSell < expectedTriggerSellHkd * 0.5) {
-            // 重新基于港币中轴价格计算
             triggerBuy = pivotPriceValue * 0.92;
             triggerSell = pivotPriceValue * 1.08;
         }
@@ -691,34 +682,34 @@ function renderStockDetail() {
     // 安全计算距离
     let distBuy = '0.0';
     let distSell = '0.0';
-    if (stock.triggerBuy > 0) {
-        distBuy = ((stock.price - stock.triggerBuy) / stock.triggerBuy * 100).toFixed(1);
+    if (triggerBuy > 0) {
+        distBuy = ((safeStock.price - triggerBuy) / triggerBuy * 100).toFixed(1);
     }
-    if (stock.price > 0) {
-        distSell = ((stock.triggerSell - stock.price) / stock.price * 100).toFixed(1);
+    if (safeStock.price > 0) {
+        distSell = ((triggerSell - safeStock.price) / safeStock.price * 100).toFixed(1);
     }
     setText('distanceBuy', `距触发 ${distBuy}%`);
     setText('distanceSell', `距触发 ${distSell}%`);
 
     // 进度条
     const markerCurrentEl = document.getElementById('markerCurrent');
-    if (markerCurrentEl && stock.triggerSell !== stock.triggerBuy) {
-        const progress = ((stock.price - stock.triggerBuy) / (stock.triggerSell - stock.triggerBuy) * 100);
+    if (markerCurrentEl && triggerSell !== triggerBuy) {
+        const progress = ((safeStock.price - triggerBuy) / (triggerSell - triggerBuy) * 100);
         markerCurrentEl.style.left = Math.max(0, Math.min(100, progress)) + '%';
     }
 
     // 操作建议
     let suggestion = '';
-    if (stock.price >= stock.triggerSell) {
-        const sellAmount = stock.investLimit * (stock.floatRatio / 100) * 0.2;
-        const sellShares = Math.floor(sellAmount / stock.price);
+    if (safeStock.price >= triggerSell) {
+        const sellAmount = safeStock.investLimit * (safeStock.floatRatio / 100) * 0.2;
+        const sellShares = safeStock.price > 0 ? Math.floor(sellAmount / safeStock.price) : 0;
         suggestion = `⚡ 触发卖出信号！建议减持浮动仓20%，约卖出 ${sellShares} 股，金额约 ${(sellAmount/10000).toFixed(1)} 万元。`;
-    } else if (stock.price <= stock.triggerBuy) {
-        const buyAmount = stock.investLimit * (stock.floatRatio / 100) * 0.2;
-        const buyShares = Math.floor(buyAmount / stock.price);
+    } else if (safeStock.price <= triggerBuy) {
+        const buyAmount = safeStock.investLimit * (safeStock.floatRatio / 100) * 0.2;
+        const buyShares = safeStock.price > 0 ? Math.floor(buyAmount / safeStock.price) : 0;
         suggestion = `⚡ 触发买入信号！建议增持浮动仓20%，约买入 ${buyShares} 股，金额约 ${(buyAmount/10000).toFixed(1)} 万元。`;
     } else {
-        suggestion = `📊 当前股价处于中轴附近，建议持有观望。等待股价达到 ${stock.triggerBuy.toFixed(2)}（买入）或 ${stock.triggerSell.toFixed(2)}（卖出）时触发操作。`;
+        suggestion = `📊 当前股价处于中轴附近，建议持有观望。等待股价达到 ${triggerBuy.toFixed(2)}（买入）或 ${triggerSell.toFixed(2)}（卖出）时触发操作。`;
     }
     setText('suggestionContent', suggestion);
 
@@ -727,19 +718,28 @@ function renderStockDetail() {
     
     // 港股：显示沽空风险提示
     if (isHKStock) {
-        console.log('[renderStockDetail] 检测到港股:', stock.code, stock.name);
-        renderHKShortRiskWarning();
-    } else {
-        // 非港股隐藏沽空提示
-        const warningEl = document.getElementById('hkShortRiskWarning');
-        if (warningEl) {
-            warningEl.style.display = 'none';
-            console.log('[renderStockDetail] 非港股,隐藏沽空提示:', stock.code);
+        const shortRiskEl = document.getElementById('shortRiskWarning');
+        if (shortRiskEl) {
+            shortRiskEl.style.display = 'block';
+            const shortRatio = appState.marketSentiment?.hkShortRatio;
+            if (shortRatio && shortRatio.data_pending) {
+                shortRiskEl.innerHTML = `<div class="warning-box">
+                    <div class="warning-title">⚠️ 港股沽空数据</div>
+                    <div class="warning-desc">港交所T+1披露，${shortRatio.next_update}更新</div>
+                </div>`;
+            } else if (shortRatio && shortRatio.value !== undefined) {
+                const isHigh = shortRatio.value > 15;
+                shortRiskEl.innerHTML = `<div class="warning-box ${isHigh ? 'high-risk' : ''}">
+                    <div class="warning-title">${isHigh ? '⚠️' : 'ℹ️'} 沽空比例 ${shortRatio.value}%</div>
+                    <div class="warning-desc">${isHigh ? '沽空率偏高，注意波动风险' : '沽空率正常'}</div>
+                </div>`;
+            }
         }
+    } else {
+        const shortRiskEl = document.getElementById('shortRiskWarning');
+        if (shortRiskEl) shortRiskEl.style.display = 'none';
     }
 }
-
-// 渲染网格策略表格
 function renderGridStrategy(stock) {
     const tbody = document.getElementById('gridTableBody');
     const gridInfoEl = document.getElementById('gridStrategyInfo');
