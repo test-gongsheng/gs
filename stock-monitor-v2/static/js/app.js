@@ -582,10 +582,11 @@ function renderStockDetail() {
     setText('detailStrategy', stock.strategy + '策略');
 
     // 港股显示实时港币价格
+    const price = stock.price ?? 0;
     if (isHKStock) {
-        setText('detailPrice', `${stock.price.toFixed(2)} HKD`);
+        setText('detailPrice', `${price.toFixed(2)} HKD`);
     } else {
-        setText('detailPrice', stock.price.toFixed(2));
+        setText('detailPrice', price.toFixed(2));
     }
 
     const detailPriceEl = document.getElementById('detailPrice');
@@ -593,7 +594,9 @@ function renderStockDetail() {
 
     const detailChangeEl = document.getElementById('detailChange');
     if (detailChangeEl) {
-        detailChangeEl.textContent = `${isUp ? '+' : ''}${stock.change.toFixed(2)} (${isUp ? '+' : ''}${stock.changePercent.toFixed(2)}%)`;
+        const change = stock.change ?? 0;
+        const changePercent = stock.changePercent ?? 0;
+        detailChangeEl.textContent = `${isUp ? '+' : ''}${change.toFixed(2)} (${isUp ? '+' : ''}${changePercent.toFixed(2)}%)`;
         detailChangeEl.className = 'price-change ' + (isUp ? 'up' : 'down');
     }
 
