@@ -52,28 +52,76 @@ def get_hk_stock_short_selling(stock_code: str) -> Dict:
             records = data['result']['data']
             
             # 查找特定股票
+            target_stock = None
             for r in records:
                 if r['SECURITY_CODE'] == stock_code:
-                    short_volume = int(r.get('SHORT_SELLING_SHARES', 0))  # 沽空股数
-                    short_amount = float(r.get('SHORT_SELLING_AMT', 0)) / 10000  # 万港元
-                    short_ratio = float(r.get('SHORT_SELLING_RATIO', 0))
-                    stock_name = r.get('SECURITY_NAME_ABBR', '')
-                    trade_date = r.get('TRADE_DATE', '')[:10]
-                    
-                    return {
-                        'success': True,
-                        'stock_code': stock_code,
-                        'stock_name': stock_name,
-                        'short_volume': short_volume,  # 股数（股）
-                        'short_volume_wan': round(short_volume / 10000, 2),  # 万股
-                        'short_amount': round(short_amount / 10000, 2),  # 亿港元
-                        'short_ratio': round(short_ratio, 2),
-                        'estimated': False,
-                        'data_pending': False,
-                        'source': '港交所',
-                        'update_date': trade_date,
-                        'note': '港交所官方T+1披露数据'
+                    target_stock = r
+                    break
+            
+            if target_stock:
+                short_volume = int(target_stock.get('SHORT_SELLING_SHARES', 0))  # 沽空股数
+                short_amount = float(target_stock.get('SHORT_SELLING_AMT', 0)) / 10000  # 万港元
+                short_ratio = float(target_stock.get('SHORT_SELLING_RATIO', 0))
+                stock_name = target_stock.get('SECURITY_NAME_ABBR', '')
+                trade_date = target_stock.get('TRADE_DATE', '')[:10]
+                
+                # 计算历史变化趋势（1周、1月、3月）
+                changes = {
+                    '1w': {'volume_change': None, 'ratio_change': None},
+                    '1m': {'volume_change': None, 'ratio_change': None},
+                    '3m': {'volume_change': None, 'ratio_change': None}
+                }
+                
+                try:
+                    # 获取历史数据用于计算变化
+                    past_dates = {
+                        '1w': (datetime.now() - timedelta(days=8)).strftime('%Y-%m-%d'),
+                        '1m': (datetime.now() - timedelta(days=31)).strftime('%Y-%m-%d'),
+                        '3m': (datetime.now() - timedelta(days=93)).strftime('%Y-%m-%d')
                     }
+                    
+                    for key, past_date in past_dates.items():
+                        past_params = {
+                            'sortColumns': 'SHORT_SELLING_RATIO',
+                            'sortTypes': '-1',
+                            'pageSize': '500',
+                            'pageNumber': '1',
+                            'reportName': 'RPT_HK_SHORTSELLING',
+                            'columns': 'ALL',
+                            'filter': f"(TRADE_DATE='{past_date}')"
+                        }
+                        
+                        past_resp = requests.get(url, params=past_params, headers=headers, timeout=10)
+                        past_data = past_resp.json()
+                        
+                        if past_data.get('result') and past_data['result'].get('data'):
+                            past_records = past_data['result']['data']
+                            for pr in past_records:
+                                if pr['SECURITY_CODE'] == stock_code:
+                                    past_volume = int(pr.get('SHORT_SELLING_SHARES', 0))
+                                    past_ratio = float(pr.get('SHORT_SELLING_RATIO', 0))
+                                    
+                                    changes[key]['volume_change'] = round((short_volume - past_volume) / 10000, 2)
+                                    changes[key]['ratio_change'] = round(short_ratio - past_ratio, 2)
+                                    break
+                except Exception as e:
+                    print(f"计算个股历史变化失败: {e}")
+                
+                return {
+                    'success': True,
+                    'stock_code': stock_code,
+                    'stock_name': stock_name,
+                    'short_volume': short_volume,  # 股数（股）
+                    'short_volume_wan': round(short_volume / 10000, 2),  # 万股
+                    'short_amount': round(short_amount / 10000, 2),  # 亿港元
+                    'short_ratio': round(short_ratio, 2),
+                    'changes': changes,  # 历史变化趋势
+                    'estimated': False,
+                    'data_pending': False,
+                    'source': '港交所',
+                    'update_date': trade_date,
+                    'note': '港交所官方T+1披露数据'
+                }
             
             # 未找到该股票
             return {
@@ -83,6 +131,7 @@ def get_hk_stock_short_selling(stock_code: str) -> Dict:
                 'short_volume_wan': None,
                 'short_amount': None,
                 'short_ratio': None,
+                'changes': {},
                 'estimated': False,
                 'data_pending': True,
                 'source': '港交所',
@@ -94,6 +143,7 @@ def get_hk_stock_short_selling(stock_code: str) -> Dict:
                 'success': False,
                 'stock_code': stock_code,
                 'error': '无法获取沽空数据',
+                'changes': {},
                 'estimated': True,
                 'data_pending': True
             }
@@ -104,6 +154,7 @@ def get_hk_stock_short_selling(stock_code: str) -> Dict:
             'success': False,
             'stock_code': stock_code,
             'error': str(e),
+            'changes': {},
             'estimated': True,
             'data_pending': True
         }
