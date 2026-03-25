@@ -27,6 +27,12 @@ _cache = {
     'last_update': None
 }
 
+# 创建 Session 复用连接，提高性能
+_session = requests.Session()
+_session.headers.update({
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+})
+
 
 def normalize_tencent_code(code: str, market: str = 'A股') -> str:
     """
@@ -194,12 +200,7 @@ def get_stock_quotes(stocks: List[Dict]) -> Dict[str, Dict]:
         codes_str = ','.join(tencent_codes)
         url = f"http://qt.gtimg.cn/q={codes_str}"
         
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Referer': 'http://qt.gtimg.cn'
-        }
-        
-        response = requests.get(url, headers=headers, timeout=15)
+        response = _session.get(url, timeout=15)
         response.encoding = 'gb2312'
         
         result = {}
@@ -250,12 +251,7 @@ def get_quote_from_tencent(code: str, market: str = 'A股') -> Optional[Dict]:
         tencent_code = normalize_tencent_code(code, market)
         url = f"http://qt.gtimg.cn/q={tencent_code}"
         
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Referer': 'http://qt.gtimg.cn'
-        }
-        
-        response = requests.get(url, headers=headers, timeout=20)
+        response = _session.get(url, timeout=20)
         response.encoding = 'gb2312'
         
         # 解析腾讯返回
@@ -372,11 +368,9 @@ def get_tencent_kline(code: str, market: str = 'A股', days: int = 90, max_retri
     url = f"http://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
     params = {'param': f"{tencent_code},day,,,{days},qfq"}
     
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-    
     for attempt in range(max_retries):
         try:
-            response = requests.get(url, params=params, headers=headers, timeout=15)
+            response = _session.get(url, params=params, timeout=15)
             data = response.json()
             
             kline_key = f"{tencent_code}"

@@ -7,6 +7,12 @@ import requests
 from typing import Optional
 from datetime import datetime, timedelta
 
+# 创建 Session 复用连接
+_session = requests.Session()
+_session.headers.update({
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+})
+
 # 缓存汇率数据
 _exchange_cache = {
     'rate': None,
@@ -36,11 +42,7 @@ def get_cny_hkd_rate() -> Optional[float]:
     try:
         # 新浪财经汇率API
         url = "https://hq.sinajs.cn/list=fx_susdcnh,fx_shkdcnh"
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Referer': 'http://finance.sina.com.cn'
-        }
-        response = requests.get(url, headers=headers, timeout=3)  # 缩短超时到3秒
+        response = _session.get(url, timeout=5)
         response.encoding = 'gb2312'
         
         # 解析USD/CNY和HKD/CNY
@@ -87,11 +89,7 @@ def get_yesterday_cny_hkd_rate() -> Optional[float]:
     try:
         # 使用新浪汇率数据中的昨日收盘价
         url = "https://hq.sinajs.cn/list=fx_shkdcnh"
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Referer': 'http://finance.sina.com.cn'
-        }
-        response = requests.get(url, headers=headers, timeout=3)  # 缩短超时到3秒
+        response = _session.get(url, timeout=5)
         response.encoding = 'gb2312'
         
         text = response.text
