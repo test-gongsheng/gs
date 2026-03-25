@@ -834,7 +834,7 @@ async function renderHKShortRiskWarning() {
     // 如果有缓存且在有效期内，直接使用缓存数据
     if (cached && (now - cached.timestamp) < _hkShortCacheTTL) {
         console.log('[renderHKShortRiskWarning] 使用缓存数据，股票:', stock.code);
-        _renderHKShortData(cached.data.marketData, cached.data.stockData);
+        renderHKShortDataInternal(cached.data.marketData, cached.data.stockData);
         return;
     }
     
