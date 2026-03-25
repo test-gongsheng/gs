@@ -530,7 +530,6 @@ function selectStock(index) {
 }
 
 // 渲染股票详情
-// 渲染股票详情
 function renderStockDetail() {
     const stock = appState.selectedStock;
     if (!stock) return;
@@ -716,28 +715,12 @@ function renderStockDetail() {
     // 渲染网格策略表格
     renderGridStrategy(stock);
     
-    // 港股：显示沽空风险提示
+    // 港股：显示沽空风险提示（调用完整渲染函数）
     if (isHKStock) {
-        const shortRiskEl = document.getElementById('shortRiskWarning');
-        if (shortRiskEl) {
-            shortRiskEl.style.display = 'block';
-            const shortRatio = appState.marketSentiment?.hkShortRatio;
-            if (shortRatio && shortRatio.data_pending) {
-                shortRiskEl.innerHTML = `<div class="warning-box">
-                    <div class="warning-title">⚠️ 港股沽空数据</div>
-                    <div class="warning-desc">港交所T+1披露，${shortRatio.next_update}更新</div>
-                </div>`;
-            } else if (shortRatio && shortRatio.value !== undefined) {
-                const isHigh = shortRatio.value > 15;
-                shortRiskEl.innerHTML = `<div class="warning-box ${isHigh ? 'high-risk' : ''}">
-                    <div class="warning-title">${isHigh ? '⚠️' : 'ℹ️'} 沽空比例 ${shortRatio.value}%</div>
-                    <div class="warning-desc">${isHigh ? '沽空率偏高，注意波动风险' : '沽空率正常'}</div>
-                </div>`;
-            }
-        }
+        renderHKShortRiskWarning();
     } else {
-        const shortRiskEl = document.getElementById('shortRiskWarning');
-        if (shortRiskEl) shortRiskEl.style.display = 'none';
+        const warningEl = document.getElementById('hkShortRiskWarning');
+        if (warningEl) warningEl.style.display = 'none';
     }
 }
 function renderGridStrategy(stock) {
