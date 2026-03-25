@@ -209,9 +209,9 @@ async function refreshAxisPrices(forceRefresh = false) {
         try {
             console.log(`[refreshAxisPrices] 调用API: ${stock.code}`);
             
-            // 使用 AbortController 设置8秒超时
+            // 使用 AbortController 设置5秒超时
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 25000);
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
             
             const response = await fetch('/api/axis-price', {
                 method: 'POST',
@@ -1500,9 +1500,9 @@ async function updateStockPricesOnce() {
         // 调用后端API获取真实行情，添加超时
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
-            console.log('[updateStockPricesOnce] 请求超时(25秒)，中止');
+            console.log('[updateStockPricesOnce] 请求超时(8秒)，中止');
             controller.abort();
-        }, 25000); // 25秒超时
+        }, 8000); // 8秒超时
         
         console.log('[updateStockPricesOnce] 发起 fetch 请求...');
         let response;

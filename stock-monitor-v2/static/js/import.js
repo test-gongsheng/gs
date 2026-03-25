@@ -750,52 +750,11 @@ async function confirmImport() {
 
         showNotification(`导入完成！共 ${added} 只股票`, 'success');
 
-        // 立即刷新实时行情和中轴价格
-        setTimeout(async () => {
-            console.log('[导入完成] 立即刷新实时行情...');
-            await refreshStockQuotesAfterImport();
-            
-            // 重新加载股票列表（确保包含刚导入的数据）
-            console.log('[导入完成] 重新加载股票列表...');
-            try {
-                const response = await fetch('/api/stocks');
-                const stocks = await response.json();
-                if (Array.isArray(stocks) && window.appState) {
-                    window.appState.stocks = stocks;
-                    console.log('[导入完成] 股票列表已更新:', stocks.length, '只');
-                }
-            } catch (e) {
-                console.warn('[导入完成] 重新加载股票列表失败:', e);
-            }
-            
-            // 刷新中轴价格（导入时跳过了中轴计算）- 强制刷新确保最新
-            console.log('[导入完成] 开始刷新中轴价格...');
-            if (typeof refreshAxisPrices === 'function') {
-                // 先让后端预热缓存（串行，避免压垮）
-                console.log('[导入完成] 预热后端缓存...');
-                for (const stock of window.appState.stocks.slice(0, 3)) {
-                    try {
-                        await fetch('/api/axis-price', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ code: stock.code, market: stock.market || 'A股', days: 90 })
-                        });
-                        console.log(`[导入完成] 预热完成: ${stock.code}`);
-                    } catch (e) {
-                        console.warn(`[导入完成] 预热失败: ${stock.code}`, e);
-                    }
-                }
-                
-                // 然后并行刷新所有
-                console.log('[导入完成] 并行刷新所有中轴价格...');
-                await refreshAxisPrices(true);
-                console.log('[导入完成] 中轴价格刷新完成，准备刷新页面');
-            }
-            
-            // 中轴价格刷新完成后才刷新页面
+        // 导入完成，立即刷新页面（行情将在后台异步刷新）
+        setTimeout(() => {
             console.log('[导入完成] 刷新页面...');
             window.location.reload();
-        }, 500);
+        }, 1000);
 
     } catch (error) {
         console.error('导入失败:', error);
@@ -804,12 +763,18 @@ async function confirmImport() {
 }
 
 /**
- * 导入完成后立即刷新股票行情（不检查开市状态），并同步到后端
+ * 导入完成后刷新股票行情（带超时控制，失败时使用导入价格）
+ * 注意：此函数现在由页面加载后自动调用，不在导入时阻塞
  */
 async function refreshStockQuotesAfterImport() {
-    // 获取 appState（必须使用 window.appState 避免 TDZ 错误）
     const appState = window.appState;
     if (!appState || !appState.stocks || appState.stocks.length === 0) return;
+    
+    console.log('[refreshStockQuotesAfterImport] 开始后台刷新行情...');
+    
+    // 使用 AbortController 设置 8 秒超时
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
     
     try {
         const response = await fetch('/api/quotes', {
@@ -817,8 +782,10 @@ async function refreshStockQuotesAfterImport() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 stocks: appState.stocks.map(s => ({ code: s.code, market: s.market }))
-            })
+            }),
+            signal: controller.signal
         });
+        clearTimeout(timeoutId);
         
         const data = await response.json();
         
@@ -839,32 +806,23 @@ async function refreshStockQuotesAfterImport() {
                 }
             });
             
-            // 同步最新价格到后端数据库
-            for (const stock of appState.stocks) {
-                try {
-                    await fetch(`/api/stocks/${stock.id}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ current_price: stock.price })
-                    });
-                } catch (e) {
-                    console.warn(`同步 ${stock.code} 价格到后端失败`, e);
-                }
-            }
+            // 同步到后端（不等待）
+            appState.stocks.forEach(stock => {
+                fetch(`/api/stocks/${stock.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ current_price: stock.price })
+                }).catch(() => {});
+            });
             
             renderStockList();
-            if (appState.selectedStock) {
-                const selected = appState.stocks.find(s => s.code === appState.selectedStock.code);
-                if (selected) {
-                    appState.selectedStock = selected;
-                    renderStockDetail();
-                }
-            }
+            if (appState.selectedStock) renderStockDetail();
             updateAssetOverview();
-            showNotification('已更新实时行情', 'success');
+            console.log('[refreshStockQuotesAfterImport] 行情刷新成功');
         }
     } catch (error) {
-        console.error('获取实时行情失败:', error);
+        console.warn('[refreshStockQuotesAfterImport] 获取行情失败，使用导入价格:', error.name || error.message);
+        // 失败时不阻塞，使用导入时保存的价格
     }
 }
 

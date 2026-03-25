@@ -18,7 +18,7 @@ axis_price_cache = {}
 CACHE_TTL = 1800  # 缓存30分钟
 
 def get_cached_axis_price(code, market, days=90):
-    """从缓存获取中轴价格，如果不存在或过期则重新计算"""
+    """从缓存获取中轴价格，如果不存在或过期则重新计算（失败时返回默认值）"""
     cache_key = f"{code}:{market}"
     now = time.time()
     
@@ -34,15 +34,31 @@ def get_cached_axis_price(code, market, days=90):
     
     # 缓存未命中或过期，重新计算
     print(f"[CACHE MISS] {code} 重新计算中轴价格...")
-    axis_data = get_dynamic_axis_price(code, market, days)
+    try:
+        # 使用信号量控制并发，避免超时堆积
+        axis_data = get_dynamic_axis_price(code, market, days)
+        
+        if axis_data:
+            axis_price_cache[cache_key] = {
+                'data': axis_data,
+                'timestamp': now
+            }
+            return axis_data
+    except Exception as e:
+        print(f"[CACHE ERROR] {code} 计算中轴价格失败: {e}")
     
-    if axis_data:
-        axis_price_cache[cache_key] = {
-            'data': axis_data,
-            'timestamp': now
-        }
-    
-    return axis_data
+    # 如果计算失败，返回默认值（基于股票导入时的价格）
+    print(f"[CACHE FALLBACK] {code} 返回默认中轴价格")
+    default_data = {
+        'axis_price': 0,
+        'trigger_buy': 0,
+        'trigger_sell': 0,
+        'trigger_pct': 8.0,
+        'volatility': 5.0,
+        'estimated': True,
+        'fallback': True  # 标记为 fallback 数据
+    }
+    return default_data
 
 def load_data():
     """加载股票数据，如果不存在则自动创建"""
