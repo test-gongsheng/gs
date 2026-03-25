@@ -552,7 +552,8 @@ function renderStockDetail() {
         // 港股当前持仓 = 股数 × 港股实时价格（港币）÷ 昨日收盘汇率 = 人民币市值
         // 注意：数据文件中字段可能是 shares 或 holdQuantity
         positionShares = stock.holdQuantity || stock.shares || 0;
-        positionValueHkd = stock.price * positionShares; // 港币市值
+        const priceHk = stock.price ?? 0;
+        positionValueHkd = priceHk * positionShares; // 港币市值
         marketValue = positionValueHkd / yesterdayRate;   // 转换为人民币（汇率是1人民币=X港币）
         
         // 持仓成本是导入的人民币成本，无需转换
@@ -564,8 +565,10 @@ function renderStockDetail() {
     } else {
         // A股：都是人民币，实时计算
         positionShares = stock.holdQuantity || stock.shares || 0;
-        marketValue = stock.price * positionShares;
-        costValue = stock.holdCost * positionShares;
+        const priceA = stock.price ?? 0;
+        const holdCostA = stock.holdCost ?? 0;
+        marketValue = priceA * positionShares;
+        costValue = holdCostA * positionShares;
         pnl = marketValue - costValue;
         pnlPercent = costValue > 0 ? (pnl / costValue * 100) : 0;
     }
@@ -579,7 +582,7 @@ function renderStockDetail() {
     // 基础信息
     setText('detailName', stock.name);
     setText('detailCode', stock.code);
-    setText('detailStrategy', stock.strategy + '策略');
+    setText('detailStrategy', (stock.strategy || '买入持有') + '策略');
 
     // 港股显示实时港币价格
     const price = stock.price ?? 0;
@@ -601,7 +604,7 @@ function renderStockDetail() {
     }
 
     // 策略卡片
-    setText('detailLimit', formatMoney(stock.investLimit));
+    setText('detailLimit', formatMoney(stock.investLimit ?? 0));
     
     // 当前持仓：显示持仓数量和人民币市值
     if (isHKStock) {
@@ -1913,12 +1916,13 @@ function updateCard(type, value, sentiment) {
 
 // 格式化金额
 function formatMoney(amount) {
-    if (amount >= 100000000) {
-        return (amount / 100000000).toFixed(2) + '亿';
-    } else if (amount >= 10000) {
-        return (amount / 10000).toFixed(1) + '万';
+    const val = Number(amount) || 0;
+    if (val >= 100000000) {
+        return (val / 100000000).toFixed(2) + '亿';
+    } else if (val >= 10000) {
+        return (val / 10000).toFixed(1) + '万';
     } else {
-        return amount.toFixed(2);
+        return val.toFixed(2);
     }
 }
 
