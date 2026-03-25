@@ -278,7 +278,7 @@
                         <div class="hk-section-title" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
                             <i class="fas fa-chart-bar"></i> 个股昨日沽空数据
                         </div>
-                        <div class="hk-short-metrics">
+                        <div class="hk-short-metrics" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                             <div class="hk-metric-item">
                                 <span class="hk-metric-label">沽空股数</span>
                                 <span class="hk-metric-value" id="hkIndividualShortAmount">--</span>
@@ -286,10 +286,6 @@
                             <div class="hk-metric-item">
                                 <span class="hk-metric-label">沽空比率</span>
                                 <span class="hk-metric-value" id="hkIndividualShortRatio">--</span>
-                            </div>
-                            <div class="hk-metric-item">
-                                <span class="hk-metric-label">数据来源</span>
-                                <span class="hk-metric-value" id="hkIndividualDataSource">--</span>
                             </div>
                         </div>
                         <!-- 个股沽空趋势 -->
@@ -315,40 +311,40 @@
                             --
                         </div>
                     </div>
-                    <!-- 市场整体沽空数据 -->
+                    <!-- 恒生科技指数整体沽空数据 -->
                     <div class="hk-market-short-section">
                         <div class="hk-section-title" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
-                            <i class="fas fa-globe-asia"></i> 港股市场整体沽空
+                            <i class="fas fa-globe-asia"></i> 港股恒生科技指数整体沽空
                         </div>
-                        <div class="hk-short-metrics">
+                        <div class="hk-short-metrics" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                             <div class="hk-metric-item">
-                                <span class="hk-metric-label">市场沽空股数</span>
+                                <span class="hk-metric-label">指数沽空股数</span>
                                 <span class="hk-metric-value" id="hkStockShortAmount">--</span>
                             </div>
                             <div class="hk-metric-item">
-                                <span class="hk-metric-label">沽空比例</span>
+                                <span class="hk-metric-label">指数沽空比率</span>
                                 <span class="hk-metric-value" id="hkStockShortRatio">--</span>
                             </div>
-                            <div class="hk-metric-item">
-                                <span class="hk-metric-label">市场信号</span>
-                                <span class="hk-metric-value" id="hkStockSignal">--</span>
+                        </div>
+                        <div class="hk-short-trends" style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+                            <div class="hk-trend-mini" style="flex: 1; min-width: 70px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--border-radius); text-align: center;">
+                                <div style="font-size: 0.7rem; color: var(--text-secondary);">3天变化</div>
+                                <div id="hkStockChange3D" style="font-size: 0.95rem; font-weight: 600; margin-top: 4px;">--</div>
+                            </div>
+                            <div class="hk-trend-mini" style="flex: 1; min-width: 70px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--border-radius); text-align: center;">
+                                <div style="font-size: 0.7rem; color: var(--text-secondary);">1周变化</div>
+                                <div id="hkStockChange1W" style="font-size: 0.95rem; font-weight: 600; margin-top: 4px;">--</div>
+                            </div>
+                            <div class="hk-trend-mini" style="flex: 1; min-width: 70px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--border-radius); text-align: center;">
+                                <div style="font-size: 0.7rem; color: var(--text-secondary);">2周变化</div>
+                                <div id="hkStockChange2W" style="font-size: 0.95rem; font-weight: 600; margin-top: 4px;">--</div>
+                            </div>
+                            <div class="hk-trend-mini" style="flex: 1; min-width: 70px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--border-radius); text-align: center;">
+                                <div style="font-size: 0.7rem; color: var(--text-secondary);">1月变化</div>
+                                <div id="hkStockChange1M" style="font-size: 0.95rem; font-weight: 600; margin-top: 4px;">--</div>
                             </div>
                         </div>
-                        <div class="hk-short-trends">
-                            <div class="hk-trend-item">
-                                <span class="hk-trend-label">1周变化</span>
-                                <span class="hk-trend-value" id="hkStockChange1W">--</span>
-                            </div>
-                            <div class="hk-trend-item">
-                                <span class="hk-trend-label">1月变化</span>
-                                <span class="hk-trend-value" id="hkStockChange1M">--</span>
-                            </div>
-                            <div class="hk-trend-item">
-                                <span class="hk-trend-label">3月变化</span>
-                                <span class="hk-trend-value" id="hkStockChange3M">--</span>
-                            </div>
-                        </div>
-                        <div class="hk-risk-advice" id="hkStockRiskAdvice">
+                        <div class="hk-risk-advice" id="hkStockRiskAdvice" style="margin-top: 12px;">
                             --
                         </div>
                     </div>

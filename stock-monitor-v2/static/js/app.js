@@ -895,7 +895,7 @@ function renderHKShortDataInternal(marketData, stockData) {
         if (el) el.className = className;
     };
     
-    // 1. 渲染市场整体数据
+    // 1. 渲染恒生科技指数整体数据
     if (marketData.success && marketData.north_south && marketData.north_south.hk_short_selling) {
         const hkShort = marketData.north_south.hk_short_selling;
         
@@ -903,10 +903,10 @@ function renderHKShortDataInternal(marketData, stockData) {
         if (hkShort.data_pending) {
             setText('hkStockShortAmount', '待披露');
             setText('hkStockShortRatio', 'T+1');
-            setText('hkStockSignal', '港交所');
+            setText('hkStockChange3D', '--');
             setText('hkStockChange1W', '--');
+            setText('hkStockChange2W', '--');
             setText('hkStockChange1M', '--');
-            setText('hkStockChange3M', '--');
             
             const adviceEl = document.getElementById('hkStockRiskAdvice');
             if (adviceEl) {
@@ -921,10 +921,7 @@ function renderHKShortDataInternal(marketData, stockData) {
             setText('hkStockShortRatio', `${hkShort.short_ratio}%`);
             setClass('hkStockShortRatio', `hk-metric-value ${hkShort.short_ratio > 15 ? 'high-risk' : hkShort.short_ratio > 10 ? 'medium-risk' : 'low-risk'}`);
             
-            setText('hkStockSignal', hkShort.signal || '--');
-            setClass('hkStockSignal', `hk-metric-value ${hkShort.short_ratio > 15 ? 'high-risk' : hkShort.short_ratio > 10 ? 'medium-risk' : 'low-risk'}`);
-            
-            // 变化趋势
+            // 变化趋势 - 3天、1周、2周、1月
             const changes = hkShort.changes || {};
             const formatChange = (c) => {
                 if (!c || c.volume_change === undefined) return '--';
@@ -932,35 +929,60 @@ function renderHKShortDataInternal(marketData, stockData) {
                 return `${sign}${c.volume_change}万股`;
             };
             
+            const change3d = changes['3d'] || {};
             const change1w = changes['1w'] || {};
+            const change2w = changes['2w'] || {};
             const change1m = changes['1m'] || {};
-            const change3m = changes['3m'] || {};
+            
+            setText('hkStockChange3D', formatChange(change3d));
+            setClass('hkStockChange3D', `hk-trend-value ${(change3d.volume_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`);
             
             setText('hkStockChange1W', formatChange(change1w));
             setClass('hkStockChange1W', `hk-trend-value ${(change1w.volume_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`);
             
+            setText('hkStockChange2W', formatChange(change2w));
+            setClass('hkStockChange2W', `hk-trend-value ${(change2w.volume_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`);
+            
             setText('hkStockChange1M', formatChange(change1m));
             setClass('hkStockChange1M', `hk-trend-value ${(change1m.volume_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`);
             
-            setText('hkStockChange3M', formatChange(change3m));
-            setClass('hkStockChange3M', `hk-trend-value ${(change3m.volume_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`);
-            
-            // 市场整体风险提示
+            // 恒生科技指数风险提示 - 结合交易信号
+            const tradeSignals = hkShort.trade_signals || {};
             const adviceEl = document.getElementById('hkStockRiskAdvice');
             if (adviceEl) {
-                if (hkShort.short_ratio > 20) {
-                    adviceEl.textContent = '⚠️ 当前港股沽空比例极高，市场整体做空情绪浓厚，建议谨慎操作，考虑减仓避险。';
-                    adviceEl.className = 'hk-risk-advice high-risk';
+                let adviceText = '';
+                let adviceClass = 'normal';
+                
+                if (tradeSignals.sell_enhanced) {
+                    adviceText = '⚠️ 恒生科技指数沽空比例极高且空头在加仓，科技股整体做空压力大，建议减仓避险。';
+                    adviceClass = 'high-risk';
+                } else if (tradeSignals.buy_enhanced) {
+                    adviceText = '✅ 恒生科技指数沽空压力小且空头在撤退，科技股整体环境较好。';
+                    adviceClass = 'low-risk';
+                } else if (hkShort.short_ratio > 20) {
+                    adviceText = '📉 恒生科技指数沽空比例极高，科技股整体做空情绪浓厚，建议谨慎操作。';
+                    adviceClass = 'high-risk';
                 } else if (hkShort.short_ratio > 15) {
-                    adviceEl.textContent = '📉 港股沽空压力较大，市场偏空，建议控制仓位，避免追高。';
-                    adviceEl.className = 'hk-risk-advice medium-risk';
+                    adviceText = '⚠️ 恒生科技指数沽空压力较大，科技股偏空，建议控制仓位。';
+                    adviceClass = 'medium-risk';
                 } else if (hkShort.short_ratio > 10) {
-                    adviceEl.textContent = '⚖️ 港股沽空比例适中，市场存在分歧，建议关注个股基本面。';
-                    adviceEl.className = 'hk-risk-advice normal';
+                    adviceText = '⚖️ 恒生科技指数沽空比例适中，科技股存在分歧，建议关注个股基本面。';
+                    adviceClass = 'normal';
                 } else {
-                    adviceEl.textContent = '✅ 当前港股沽空比例较低，市场情绪相对乐观。';
-                    adviceEl.className = 'hk-risk-advice low-risk';
+                    adviceText = '✅ 恒生科技指数沽空比例较低，科技股整体环境较好。';
+                    adviceClass = 'low-risk';
                 }
+                
+                // 添加趋势方向
+                const trendDirection = hkShort.trend_direction || '';
+                if (trendDirection.includes('空头撤退')) {
+                    adviceText += ' [空头撤退]';
+                } else if (trendDirection.includes('空头聚集')) {
+                    adviceText += ' [空头聚集]';
+                }
+                
+                adviceEl.textContent = adviceText;
+                adviceEl.className = `hk-risk-advice ${adviceClass}`;
             }
             
             setText('hkShortUpdateTime', hkShort.update_date || '--');

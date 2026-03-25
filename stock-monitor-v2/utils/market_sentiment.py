@@ -14,6 +14,14 @@ _session.headers.update({
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 })
 
+# 恒生科技指数成分股（30只）
+HSTECH_COMPONENTS = [
+    '00700', '09988', '03690', '01810', '09618', '09999', '09888', '01024',
+    '02015', '09868', '02020', '09626', '03692', '02382', '09861', '06060',
+    '06690', '09698', '01211', '02018', '09633', '09839', '06698', '00175',
+    '09626', '09868', '06098', '01797', '06186', '01299'
+]
+
 
 def get_hk_stock_short_selling(stock_code: str) -> Dict:
     """
@@ -257,21 +265,21 @@ def get_hk_stock_short_selling(stock_code: str) -> Dict:
 
 def get_hk_short_selling() -> Dict:
     """
-    获取港股市场整体沽空数据（港交所官方T+1披露）
-    返回：当日数据 + 1周/1月/3月变化
+    获取港股恒生科技指数成分股的整体沽空数据
+    返回：指数整体数据 + 3天/1周/2周/1月变化（与个股维度一致）
     """
     try:
         import pandas as pd
         from datetime import datetime, timedelta
         
-        # 使用东方财富API获取港股沽空数据（全市场）
+        # 获取昨天日期
         yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
         
         url = 'https://datacenter-web.eastmoney.com/api/data/v1/get'
         params = {
             'sortColumns': 'SHORT_SELLING_RATIO',
             'sortTypes': '-1',
-            'pageSize': '5000',  # 获取全部数据
+            'pageSize': '5000',
             'pageNumber': '1',
             'reportName': 'RPT_HK_SHORTSELLING',
             'columns': 'ALL',
@@ -283,96 +291,192 @@ def get_hk_short_selling() -> Dict:
             'Referer': 'https://data.eastmoney.com/',
         }
         
-        resp = requests.get(url, params=params, headers=headers, timeout=15)
+        resp = _session.get(url, params=params, headers=headers, timeout=15)
         data = resp.json()
         
         if not data.get('result') or not data['result'].get('data'):
             raise Exception("无沽空数据")
         
-        records = data['result']['data']
-        df = pd.DataFrame(records)
+        df = pd.DataFrame(data['result']['data'])
         
-        # 计算市场 totals
-        total_short_volume = df['SHORT_SELLING_SHARES'].sum()  # 总沽空股数
-        total_short_amount = df['SHORT_SELLING_AMT'].sum()     # 总沽空金额（港元）
-        total_deal_amount = df['DEAL_AMT'].sum()               # 总成交金额（港元）
+        # 筛选恒生科技指数成分股
+        hstech_df = df[df['SECURITY_CODE'].isin(HSTECH_COMPONENTS)].copy()
         
-        # 计算市场平均沽空比例（按金额计算）
-        market_short_ratio = (total_short_amount / total_deal_amount * 100) if total_deal_amount > 0 else 0
+        if len(hstech_df) == 0:
+            raise Exception("无恒生科技指数成分股沽空数据")
         
-        # 获取历史数据计算趋势
+        # 计算指数整体数据（成分股加权平均）
+        total_short_volume = hstech_df['SHORT_SELLING_SHARES'].sum()
+        total_short_amount = hstech_df['SHORT_SELLING_AMT'].sum()
+        total_deal_amount = hstech_df['DEAL_AMT'].sum()
+        
+        # 指数整体沽空比例（按成交金额加权）
+        if total_deal_amount > 0:
+            market_short_ratio = (total_short_amount / total_deal_amount) * 100
+        else:
+            market_short_ratio = hstech_df['SHORT_SELLING_RATIO'].mean()
+        
+        # 计算历史变化趋势（3天、1周、2周、1月）
         changes = {
-            '1w': {'volume_change': 0, 'ratio_change': 0},
-            '1m': {'volume_change': 0, 'ratio_change': 0},
-            '3m': {'volume_change': 0, 'ratio_change': 0}
+            '3d': {'volume_change': None, 'ratio_change': None, 'signal': 'neutral'},
+            '1w': {'volume_change': None, 'ratio_change': None, 'signal': 'neutral'},
+            '2w': {'volume_change': None, 'ratio_change': None, 'signal': 'neutral'},
+            '1m': {'volume_change': None, 'ratio_change': None, 'signal': 'neutral'}
         }
         
-        # 尝试获取历史数据
-        try:
-            for days, key in [(5, '1w'), (20, '1m'), (60, '3m')]:
-                past_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
-                params['filter'] = f"(TRADE_DATE='{past_date}')"
-                resp_past = requests.get(url, params=params, headers=headers, timeout=10)
-                data_past = resp_past.json()
+        def get_hstech_data_for_date(target_date, max_days_back=5):
+            """获取指定日期的恒生科技指数整体数据"""
+            for i in range(max_days_back + 1):
+                check_date = (datetime.strptime(target_date, '%Y-%m-%d') - timedelta(days=i)).strftime('%Y-%m-%d')
                 
-                if data_past.get('result') and data_past['result'].get('data'):
-                    past_records = data_past['result']['data']
-                    past_df = pd.DataFrame(past_records)
-                    past_short_volume = past_df['SHORT_SELLING_SHARES'].sum()
-                    changes[key]['volume_change'] = round((total_short_volume - past_short_volume) / 10000, 2)
-        except Exception as e:
-            print(f"计算历史变化失败: {e}")
+                check_params = {
+                    'sortColumns': 'SHORT_SELLING_RATIO',
+                    'sortTypes': '-1',
+                    'pageSize': '5000',
+                    'pageNumber': '1',
+                    'reportName': 'RPT_HK_SHORTSELLING',
+                    'columns': 'ALL',
+                    'filter': f"(TRADE_DATE='{check_date}')"
+                }
+                
+                try:
+                    check_resp = _session.get(url, params=check_params, headers=headers, timeout=10)
+                    check_data = check_resp.json()
+                    
+                    if check_data.get('result') and check_data['result'].get('data'):
+                        check_df = pd.DataFrame(check_data['result']['data'])
+                        check_hstech = check_df[check_df['SECURITY_CODE'].isin(HSTECH_COMPONENTS)]
+                        
+                        if len(check_hstech) > 0:
+                            past_short_volume = check_hstech['SHORT_SELLING_SHARES'].sum()
+                            past_short_amount = check_hstech['SHORT_SELLING_AMT'].sum()
+                            past_deal_amount = check_hstech['DEAL_AMT'].sum()
+                            
+                            if past_deal_amount > 0:
+                                past_ratio = (past_short_amount / past_deal_amount) * 100
+                            else:
+                                past_ratio = check_hstech['SHORT_SELLING_RATIO'].mean()
+                            
+                            return {
+                                'date': check_date,
+                                'short_volume': int(past_short_volume),
+                                'short_ratio': float(past_ratio)
+                            }
+                except Exception:
+                    continue
+            
+            return None
         
-        # 情绪判断
+        def calculate_signal(volume_change, ratio_change):
+            """计算趋势信号"""
+            if volume_change is None or ratio_change is None:
+                return 'neutral'
+            if volume_change > 50 or ratio_change > 5:
+                return 'bearish'
+            elif volume_change < -20 or ratio_change < -3:
+                return 'bullish'
+            else:
+                return 'neutral'
+        
+        # 获取历史数据
+        target_dates = {
+            '3d': (datetime.now() - timedelta(days=4)).strftime('%Y-%m-%d'),
+            '1w': (datetime.now() - timedelta(days=8)).strftime('%Y-%m-%d'),
+            '2w': (datetime.now() - timedelta(days=15)).strftime('%Y-%m-%d'),
+            '1m': (datetime.now() - timedelta(days=31)).strftime('%Y-%m-%d')
+        }
+        
+        for key, target_date in target_dates.items():
+            past_data = get_hstech_data_for_date(target_date, max_days_back=5)
+            
+            if past_data:
+                vol_change = round((total_short_volume - past_data['short_volume']) / 10000, 2)
+                ratio_chg = round(market_short_ratio - past_data['short_ratio'], 2)
+                
+                changes[key]['volume_change'] = vol_change
+                changes[key]['ratio_change'] = ratio_chg
+                changes[key]['reference_date'] = past_data['date']
+                changes[key]['signal'] = calculate_signal(vol_change, ratio_chg)
+        
+        # 交易信号判断
+        trade_signals = {
+            'buy_enhanced': False,
+            'sell_enhanced': False,
+            'risk_level': 'normal'
+        }
+        
+        recent_signals = [changes[k]['signal'] for k in ['3d', '1w'] if changes[k]['signal']]
+        
+        if market_short_ratio < 15:
+            if 'bullish' in recent_signals or market_short_ratio < 10:
+                trade_signals['buy_enhanced'] = True
+                trade_signals['risk_level'] = 'low'
+        
         if market_short_ratio > 20:
-            sentiment = '⚠️ 高沽空，市场偏空'
-            signal = '看空'
+            if 'bearish' in recent_signals or market_short_ratio > 25:
+                trade_signals['sell_enhanced'] = True
+                trade_signals['risk_level'] = 'critical'
+            else:
+                trade_signals['risk_level'] = 'high'
         elif market_short_ratio > 15:
-            sentiment = '📉 沽空压力较大'
-            signal = '偏空'
-        elif market_short_ratio > 10:
-            sentiment = '➡️ 沽空比例正常'
-            signal = '中性'
+            trade_signals['risk_level'] = 'elevated'
+        
+        # 趋势方向
+        if len(recent_signals) >= 2:
+            bullish_count = recent_signals.count('bullish')
+            bearish_count = recent_signals.count('bearish')
+            if bullish_count > bearish_count:
+                trend_direction = '下降通道（空头撤退）'
+            elif bearish_count > bullish_count:
+                trend_direction = '上升通道（空头聚集）'
+            else:
+                trend_direction = '震荡整理'
         else:
-            sentiment = '📈 沽空压力较小，偏多'
+            trend_direction = '数据不足'
+        
+        # 信号
+        if market_short_ratio < 10:
             signal = '偏多'
+        elif market_short_ratio > 20:
+            signal = '偏空'
+        else:
+            signal = '中性'
         
         return {
             'success': True,
-            'short_volume': int(total_short_volume),                    # 总沽空股数（股）
-            'short_volume_wan': round(total_short_volume / 10000, 2),   # 总沽空股数（万股）
-            'short_amount': round(total_short_amount / 100000000, 2),   # 总沽空金额（亿港元）
-            'total_deal_amount': round(total_deal_amount / 100000000, 2), # 总成交金额（亿港元）
-            'short_ratio': round(market_short_ratio, 2),                # 沽空比例（%）
-            'changes': changes,                                         # 历史变化
-            'trend': '上升' if changes['1w']['volume_change'] > 0 else '下降',
-            'sentiment': sentiment,
+            'short_volume': int(total_short_volume),
+            'short_volume_wan': round(total_short_volume / 10000, 2),
+            'short_amount': round(total_short_amount / 100000000, 2),
+            'total_deal_amount': round(total_deal_amount / 100000000, 2),
+            'short_ratio': round(market_short_ratio, 2),
             'signal': signal,
-            'stock_count': len(df),                                     # 有沽空的股票数量
+            'trend_direction': trend_direction,
+            'changes': changes,
+            'trade_signals': trade_signals,
+            'stock_count': len(hstech_df),
             'update_date': yesterday,
-            'source': '港交所官方披露',
-            'note': f'港交所T+1披露，{yesterday}数据'
+            'source': '恒生科技指数成分股',
+            'note': f'恒生科技指数{len(hstech_df)}只成分股加权平均，{yesterday}数据'
         }
         
     except Exception as e:
-        print(f"获取港股沽空数据失败: {e}")
+        print(f"获取恒生科技指数沽空数据失败: {e}")
         import traceback
         traceback.print_exc()
-        # 返回待披露状态
         return {
             'success': True,
             'short_volume': None,
             'short_volume_wan': None,
             'short_amount': None,
             'short_ratio': None,
+            'signal': None,
+            'trend_direction': None,
             'data_pending': True,
             'estimated': False,
             'changes': {},
-            'trend': '--',
-            'sentiment': '港交所T+1披露',
-            'signal': '待更新',
+            'trade_signals': {},
             'update_date': datetime.now().strftime('%Y-%m-%d'),
-            'note': '港交所每日收盘后披露，数据次日可用'
+            'note': '数据获取失败'
         }
 
 
