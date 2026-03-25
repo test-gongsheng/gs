@@ -199,7 +199,7 @@ def get_stock_quotes(stocks: List[Dict]) -> Dict[str, Dict]:
             'Referer': 'http://qt.gtimg.cn'
         }
         
-        response = requests.get(url, headers=headers, timeout=5)
+        response = requests.get(url, headers=headers, timeout=15)
         response.encoding = 'gb2312'
         
         result = {}
@@ -255,7 +255,7 @@ def get_quote_from_tencent(code: str, market: str = 'A股') -> Optional[Dict]:
             'Referer': 'http://qt.gtimg.cn'
         }
         
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(url, headers=headers, timeout=20)
         response.encoding = 'gb2312'
         
         # 解析腾讯返回
@@ -302,7 +302,7 @@ def get_single_stock_quote(code: str, market: str = 'A股') -> Optional[Dict]:
     return result.get(tencent_code)
 
 
-def get_stock_kline(code: str, market: str = 'A股', days: int = 90, max_retries: int = 3) -> List[Dict]:
+def get_stock_kline(code: str, market: str = 'A股', days: int = 90, max_retries: int = 1) -> List[Dict]:
     """
     获取股票K线数据（使用akshare）
     
@@ -365,7 +365,7 @@ def get_stock_kline(code: str, market: str = 'A股', days: int = 90, max_retries
     return []
 
 
-def get_tencent_kline(code: str, market: str = 'A股', days: int = 90, max_retries: int = 3) -> List[Dict]:
+def get_tencent_kline(code: str, market: str = 'A股', days: int = 90, max_retries: int = 1) -> List[Dict]:
     """从腾讯获取K线数据（备用）"""
     tencent_code = normalize_tencent_code(code, market)
     
@@ -500,7 +500,7 @@ def calculate_axis_price(kline_data: List[Dict]) -> Dict:
     }
 
 
-def get_dynamic_axis_price(code: str, market: str = 'A股', days: int = 90, max_retries: int = 3) -> Dict:
+def get_dynamic_axis_price(code: str, market: str = 'A股', days: int = 90, max_retries: int = 1) -> Dict:
     """
     获取股票的动态中轴价格（基于历史K线，失败时使用实时行情估算）
     
