@@ -72,38 +72,55 @@ def get_hk_stock_short_selling(stock_code: str) -> Dict:
                     '3m': {'volume_change': None, 'ratio_change': None}
                 }
                 
-                try:
-                    # 获取历史数据用于计算变化
-                    past_dates = {
-                        '1w': (datetime.now() - timedelta(days=8)).strftime('%Y-%m-%d'),
-                        '1m': (datetime.now() - timedelta(days=31)).strftime('%Y-%m-%d'),
-                        '3m': (datetime.now() - timedelta(days=93)).strftime('%Y-%m-%d')
-                    }
-                    
-                    for key, past_date in past_dates.items():
-                        past_params = {
+                def get_stock_data_for_date(target_date, max_days_back=5):
+                    """
+                    获取指定日期或之前的数据（向前追溯最多max_days_back天）
+                    """
+                    for i in range(max_days_back + 1):
+                        check_date = (datetime.strptime(target_date, '%Y-%m-%d') - timedelta(days=i)).strftime('%Y-%m-%d')
+                        
+                        check_params = {
                             'sortColumns': 'SHORT_SELLING_RATIO',
                             'sortTypes': '-1',
                             'pageSize': '500',
                             'pageNumber': '1',
                             'reportName': 'RPT_HK_SHORTSELLING',
                             'columns': 'ALL',
-                            'filter': f"(TRADE_DATE='{past_date}')"
+                            'filter': f"(TRADE_DATE='{check_date}')"
                         }
                         
-                        past_resp = requests.get(url, params=past_params, headers=headers, timeout=10)
-                        past_data = past_resp.json()
+                        try:
+                            check_resp = requests.get(url, params=check_params, headers=headers, timeout=10)
+                            check_data = check_resp.json()
+                            
+                            if check_data.get('result') and check_data['result'].get('data'):
+                                for r in check_data['result']['data']:
+                                    if r['SECURITY_CODE'] == stock_code:
+                                        return {
+                                            'date': check_date,
+                                            'volume': int(r.get('SHORT_SELLING_SHARES', 0)),
+                                            'ratio': float(r.get('SHORT_SELLING_RATIO', 0))
+                                        }
+                        except Exception:
+                            continue
+                    
+                    return None
+                
+                try:
+                    # 获取历史数据用于计算变化（向前追溯最多5天找有效数据）
+                    target_dates = {
+                        '1w': (datetime.now() - timedelta(days=8)).strftime('%Y-%m-%d'),
+                        '1m': (datetime.now() - timedelta(days=31)).strftime('%Y-%m-%d'),
+                        '3m': (datetime.now() - timedelta(days=93)).strftime('%Y-%m-%d')
+                    }
+                    
+                    for key, target_date in target_dates.items():
+                        past_data = get_stock_data_for_date(target_date, max_days_back=5)
                         
-                        if past_data.get('result') and past_data['result'].get('data'):
-                            past_records = past_data['result']['data']
-                            for pr in past_records:
-                                if pr['SECURITY_CODE'] == stock_code:
-                                    past_volume = int(pr.get('SHORT_SELLING_SHARES', 0))
-                                    past_ratio = float(pr.get('SHORT_SELLING_RATIO', 0))
-                                    
-                                    changes[key]['volume_change'] = round((short_volume - past_volume) / 10000, 2)
-                                    changes[key]['ratio_change'] = round(short_ratio - past_ratio, 2)
-                                    break
+                        if past_data:
+                            changes[key]['volume_change'] = round((short_volume - past_data['volume']) / 10000, 2)
+                            changes[key]['ratio_change'] = round(short_ratio - past_data['ratio'], 2)
+                            changes[key]['reference_date'] = past_data['date']  # 记录实际使用的日期
                 except Exception as e:
                     print(f"计算个股历史变化失败: {e}")
                 
