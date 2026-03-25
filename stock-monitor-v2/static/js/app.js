@@ -1930,26 +1930,30 @@ async function loadHKPortfolioRisk() {
         document.getElementById('hkMarketShortRatio').textContent = `${marketShort.short_ratio}%`;
         document.getElementById('hkMarketShortRatio').className = `metric-value ${marketShort.short_ratio > 15 ? 'down' : 'up'}`;
         
-        // 变化趋势
+        // 变化趋势 - 使用与个股一致的维度：3天、1周、2周、1月
         const changes = marketShort.changes || {};
         const formatChange = (c) => {
-            if (!c || c.amount_change === undefined) return '--';
-            const sign = c.amount_change >= 0 ? '+' : '';
-            return `${sign}${c.amount_change}亿`;
+            if (!c || c.volume_change === undefined || c.volume_change === null) return '--';
+            const sign = c.volume_change >= 0 ? '+' : '';
+            return `${sign}${c.volume_change}万股`;
         };
         
+        const change3d = changes['3d'] || {};
         const change1w = changes['1w'] || {};
+        const change2w = changes['2w'] || {};
         const change1m = changes['1m'] || {};
-        const change3m = changes['3m'] || {};
         
-        document.getElementById('hkShort1W').textContent = formatChange(change1w);
-        document.getElementById('hkShort1W').className = `metric-value ${(change1w.amount_change || 0) >= 0 ? 'down' : 'up'}`;
+        document.getElementById('hkShort1W').textContent = formatChange(change3d);
+        document.getElementById('hkShort1W').className = `metric-value ${(change3d.volume_change || 0) >= 0 ? 'down' : 'up'}`;
         
-        document.getElementById('hkShort1M').textContent = formatChange(change1m);
-        document.getElementById('hkShort1M').className = `metric-value ${(change1m.amount_change || 0) >= 0 ? 'down' : 'up'}`;
+        document.getElementById('hkShort1M').textContent = formatChange(change1w);
+        document.getElementById('hkShort1M').className = `metric-value ${(change1w.volume_change || 0) >= 0 ? 'down' : 'up'}`;
         
-        document.getElementById('hkShort3M').textContent = formatChange(change3m);
-        document.getElementById('hkShort3M').className = `metric-value ${(change3m.amount_change || 0) >= 0 ? 'down' : 'up'}`;
+        document.getElementById('hkShort2W').textContent = formatChange(change2w);
+        document.getElementById('hkShort2W').className = `metric-value ${(change2w.volume_change || 0) >= 0 ? 'down' : 'up'}`;
+        
+        document.getElementById('hkShort1Mo').textContent = formatChange(change1m);
+        document.getElementById('hkShort1Mo').className = `metric-value ${(change1m.volume_change || 0) >= 0 ? 'down' : 'up'}`;
         
         document.getElementById('hkRiskAdvice').textContent = portfolio.advice || '--';
         
