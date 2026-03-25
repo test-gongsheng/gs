@@ -1756,14 +1756,30 @@ function renderSentiment() {
     
     // 3. 渲染北向资金卡片
     updateCard('north', northSouth.north_inflow, northSouth.north_sentiment);
-    document.getElementById('northInflow').textContent = `${northSouth.north_inflow >= 0 ? '+' : ''}${northSouth.north_inflow}亿`;
-    document.getElementById('northInflow').className = `metric-value ${northSouth.north_inflow >= 0 ? 'up' : 'down'}`;
+    const northInflowEl = document.getElementById('northInflow');
+    if (northInflowEl) {
+        if (northSouth.north_inflow === 0 && northSouth.north_sentiment === '待接入') {
+            northInflowEl.textContent = '待接入';
+            northInflowEl.className = 'metric-value neutral';
+        } else {
+            northInflowEl.textContent = `${northSouth.north_inflow >= 0 ? '+' : ''}${northSouth.north_inflow}亿`;
+            northInflowEl.className = `metric-value ${northSouth.north_inflow >= 0 ? 'up' : 'down'}`;
+        }
+    }
     document.getElementById('northCumulative').textContent = `${northSouth.north_cumulative}亿`;
     
     // 4. 渲染南向资金卡片
     updateCard('south', northSouth.south_inflow, northSouth.south_sentiment);
-    document.getElementById('southInflow').textContent = `${northSouth.south_inflow >= 0 ? '+' : ''}${northSouth.south_inflow}亿`;
-    document.getElementById('southInflow').className = `metric-value ${northSouth.south_inflow >= 0 ? 'up' : 'down'}`;
+    const southInflowEl = document.getElementById('southInflow');
+    if (southInflowEl) {
+        if (northSouth.south_inflow === 0 && northSouth.south_sentiment === '待接入') {
+            southInflowEl.textContent = '待接入';
+            southInflowEl.className = 'metric-value neutral';
+        } else {
+            southInflowEl.textContent = `${northSouth.south_inflow >= 0 ? '+' : ''}${northSouth.south_inflow}亿`;
+            southInflowEl.className = `metric-value ${northSouth.south_inflow >= 0 ? 'up' : 'down'}`;
+        }
+    }
     document.getElementById('southSentiment').textContent = northSouth.south_sentiment;
     document.getElementById('southSentiment').className = `metric-value ${northSouth.south_inflow >= 0 ? 'up' : 'down'}`;
     
