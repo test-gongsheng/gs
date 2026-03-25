@@ -1746,7 +1746,11 @@ async function loadSentiment() {
 
 // 渲染市场情绪面板
 function renderSentiment() {
-    if (!appState.sentiment) return;
+    console.log('[DEBUG] renderSentiment 开始执行, appState.sentiment:', appState.sentiment);
+    if (!appState.sentiment) {
+        console.log('[DEBUG] appState.sentiment 为空, 返回');
+        return;
+    }
     
     const data = appState.sentiment;
     const index = data.sentiment_index;
@@ -1896,7 +1900,9 @@ function renderSentiment() {
     document.getElementById('newLow').textContent = breadth.new_low;
     
     // 8. 加载持仓港股沽空风险分析
+    console.log('[DEBUG] 准备调用 loadHKPortfolioRisk');
     loadHKPortfolioRisk();
+    console.log('[DEBUG] loadHKPortfolioRisk 调用完成');
 }
 
 // 加载持仓港股沽空风险分析
