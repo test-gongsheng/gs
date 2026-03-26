@@ -1076,7 +1076,7 @@ function renderHKShortDataInternal(marketData, stockData) {
             setText('hkIndividualChange1M', '--');
             setText('hkIndividualTrend', '--');
             
-            const adviceEl = document.getElementById('hkIndividualRiskAdvice');
+            const adviceEl = document.getElementById('hkIndividualAdvice');
             if (adviceEl) {
                 adviceEl.textContent = '⏰ 港交所个股沽空数据T+1披露，可通过专业终端查看实时估算。';
                 adviceEl.className = 'hk-risk-advice normal';
@@ -1139,7 +1139,7 @@ function renderHKShortDataInternal(marketData, stockData) {
             setText('hkIndividualTrend', trendDirection);
             
             // 个股风险提示 - 结合交易信号
-            const adviceEl = document.getElementById('hkIndividualRiskAdvice');
+            const adviceEl = document.getElementById('hkIndividualAdvice');
             if (adviceEl) {
                 let adviceText = '';
                 let adviceClass = 'normal';
