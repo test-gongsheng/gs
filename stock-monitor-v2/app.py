@@ -178,6 +178,68 @@ def add_stock():
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/stocks/batch', methods=['POST'])
+def batch_add_stocks():
+    """批量添加股票（避免并发冲突）"""
+    try:
+        data = load_data()
+        stocks_to_add = request.json.get('stocks', [])
+        
+        if not stocks_to_add:
+            return jsonify({'success': False, 'error': '股票列表为空'}), 400
+        
+        print(f"[batch_add_stocks] 批量添加 {len(stocks_to_add)} 只股票")
+        
+        added_stocks = []
+        for new_stock in stocks_to_add:
+            import time
+            import random
+            
+            stock_id = f"{int(time.time())}{random.randint(100, 999)}"
+            new_stock['id'] = stock_id
+            new_stock['status'] = '监控中'
+            new_stock['market_value'] = new_stock.get('current_price', 0) * new_stock.get('shares', 0)
+            
+            data['stocks'].append(new_stock)
+            added_stocks.append(new_stock)
+            print(f"[batch_add_stocks] 添加: {new_stock.get('code')} -> ID {stock_id}")
+        
+        # 更新风险控制
+        update_risk_control(data)
+        
+        if save_data(data):
+            print(f"[batch_add_stocks] 成功添加 {len(added_stocks)} 只股票")
+            return jsonify({'success': True, 'stocks': added_stocks, 'count': len(added_stocks)})
+        else:
+            return jsonify({'success': False, 'error': '保存失败'}), 500
+            
+    except Exception as e:
+        import traceback
+        print(f"[batch_add_stocks] 异常: {e}")
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/stocks/clear', methods=['POST'])
+def clear_all_stocks():
+    """清空所有股票"""
+    try:
+        data = load_data()
+        deleted_count = len(data['stocks'])
+        data['stocks'] = []
+        update_risk_control(data)
+        
+        if save_data(data):
+            print(f"[clear_all_stocks] 已清空 {deleted_count} 只股票")
+            return jsonify({'success': True, 'deleted_count': deleted_count})
+        return jsonify({'success': False, 'error': '保存失败'}), 500
+    except Exception as e:
+        import traceback
+        print(f"[clear_all_stocks] 异常: {e}")
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/api/stocks/<stock_id>', methods=['PUT'])
 def update_stock(stock_id):
     """更新股票信息"""

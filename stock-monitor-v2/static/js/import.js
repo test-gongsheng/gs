@@ -655,13 +655,13 @@ async function confirmImport() {
         // 显示加载提示
         showNotification('正在导入数据，请稍候...', 'info');
 
-        // 先删除所有现有股票
-        for (const stock of oldStocks) {
-            try {
-                await fetch(`/api/stocks/${stock.id}`, { method: 'DELETE' });
-            } catch (e) {
-                console.warn(`删除股票 ${stock.code} 失败`, e);
-            }
+        // 先清空所有现有股票
+        console.log('[confirmImport] 清空现有持仓...');
+        try {
+            await fetch('/api/stocks/clear', { method: 'POST' });
+            console.log('[confirmImport] 清空完成');
+        } catch (e) {
+            console.warn('[confirmImport] 清空失败，继续导入', e);
         }
 
         // 获取汇率
@@ -676,57 +676,44 @@ async function confirmImport() {
             console.warn('获取汇率失败，使用默认值', e);
         }
 
-        // 逐个添加新股票
+        // 构建批量导入数据
+        const stocksToAdd = stocks.map(newStock => ({
+            code: newStock.code,
+            name: newStock.name,
+            market: newStock.market,
+            avg_cost: newStock.costPrice,
+            shares: newStock.shares,
+            current_price: newStock.currentPrice,
+            axis_price: 0,  // 导入完成后统一刷新
+            base_position_pct: 50,
+            float_position_pct: 50,
+            trigger_pct: 8,
+            stop_loss: 0,
+            priority: 'P2',
+            strategy_mode: '基础策略',
+            notes: ''
+        }));
+
+        console.log(`[confirmImport] 批量导入 ${stocksToAdd.length} 只股票`);
+        
+        // 调用批量导入 API
+        const batchResponse = await fetch('/api/stocks/batch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ stocks: stocksToAdd })
+        });
+
         let added = 0;
-        console.log(`[confirmImport] 开始导入 ${stocks.length} 只股票`);
-        for (const newStock of stocks) {
-            console.log(`[confirmImport] 处理股票: ${newStock.code} ${newStock.name}`, newStock);
-            try {
-                // 获取中轴价格 - 导入时跳过，导入完成后统一刷新
-                // 原因：中轴价格API可能需要较长时间，避免阻塞导入流程
-                let axisPrice = 0; // 设为0，表示未计算，后续统一刷新
-                console.log(`[confirmImport] ${newStock.code} 中轴价格设为0，导入完成后统一刷新`);
-
-                // 构建股票数据
-                const stockData = {
-                    code: newStock.code,
-                    name: newStock.name,
-                    market: newStock.market,
-                    avg_cost: newStock.costPrice,
-                    shares: newStock.shares,
-                    current_price: newStock.currentPrice,
-                    axis_price: axisPrice,
-                    base_position_pct: 50,
-                    float_position_pct: 50,
-                    trigger_pct: 8,
-                    stop_loss: 0,
-                    priority: 'P2',
-                    strategy_mode: '基础策略',
-                    notes: ''
-                };
-                console.log(`[confirmImport] ${newStock.code} 准备发送数据:`, stockData);
-
-                // 调用 API 添加股票
-                console.log(`[confirmImport] ${newStock.code} 发起POST请求...`);
-                const addResponse = await fetch('/api/stocks', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(stockData)
-                });
-                console.log(`[confirmImport] ${newStock.code} POST响应:`, addResponse.status);
-
-                if (addResponse.ok) {
-                    added++;
-                    console.log(`[confirmImport] ${newStock.code} 添加成功`);
-                } else {
-                    const errorText = await addResponse.text();
-                    console.error(`[confirmImport] ${newStock.code} 添加失败:`, addResponse.status, errorText);
-                }
-            } catch (e) {
-                console.error(`[confirmImport] 添加股票 ${newStock.code} 失败`, e);
+        if (batchResponse.ok) {
+            const result = await batchResponse.json();
+            if (result.success) {
+                added = result.count;
+                console.log(`[confirmImport] 批量导入成功: ${added} 只`);
             }
+        } else {
+            const errorText = await batchResponse.text();
+            console.error('[confirmImport] 批量导入失败:', batchResponse.status, errorText);
         }
-        console.log(`[confirmImport] 导入完成，成功: ${added}/${stocks.length}`);
 
         // 添加到导入历史
         const totalValue = stocks.reduce((sum, s) => sum + (s.currentPrice * s.shares), 0);
