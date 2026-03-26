@@ -697,6 +697,7 @@ async function confirmImport() {
         console.log(`[confirmImport] 批量导入 ${stocksToAdd.length} 只股票`);
         
         // 调用批量导入 API
+        console.log('[confirmImport] 发送批量导入请求...', stocksToAdd.length, '只股票');
         const batchResponse = await fetch('/api/stocks/batch', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -704,11 +705,19 @@ async function confirmImport() {
         });
 
         let added = 0;
+        console.log('[confirmImport] 批量导入响应状态:', batchResponse.status);
         if (batchResponse.ok) {
             const result = await batchResponse.json();
+            console.log('[confirmImport] 批量导入响应:', result);
             if (result.success) {
                 added = result.count;
                 console.log(`[confirmImport] 批量导入成功: ${added} 只`);
+                // 立即验证后端数据
+                const verifyResp = await fetch('/api/stocks');
+                const verifyData = await verifyResp.json();
+                console.log('[confirmImport] 验证后端数据:', verifyData.length, '只股票');
+            } else {
+                console.error('[confirmImport] 批量导入失败:', result.error);
             }
         } else {
             const errorText = await batchResponse.text();
