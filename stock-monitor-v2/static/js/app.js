@@ -1121,6 +1121,9 @@ function renderHKShortDataInternal(marketData, stockData) {
             setText('hkIndividualChange1M', formatChange(change1m));
             setClass('hkIndividualChange1M', `hk-trend-value ${(change1m.volume_change || 0) >= 0 ? 'high-risk' : 'low-risk'}`);
             
+            // 渲染趋势迷你图
+            renderTrendChart('hkIndividualTrendChart', [change3d, change1w, change2w, change1m]);
+            
             // 趋势方向
             const trendDirection = individualShort.trend_direction || '数据不足';
             setText('hkIndividualTrend', trendDirection);
@@ -1167,6 +1170,38 @@ function renderHKShortDataInternal(marketData, stockData) {
             setText('hkIndividualUpdateTime', individualShort.update_date || '--');
         }
     }
+}
+
+/**
+ * 渲染趋势迷你柱状图
+ * @param {string} elementId - 容器元素ID
+ * @param {Array} changes - 变化数据数组 [{volume_change, ratio_change}, ...]
+ */
+function renderTrendChart(elementId, changes) {
+    const container = document.getElementById(elementId);
+    if (!container) return;
+    
+    // 提取变化值
+    const values = changes.map(c => c?.volume_change || 0);
+    const maxVal = Math.max(...values.map(Math.abs), 1); // 避免除以0
+    
+    // 生成柱状图HTML
+    const bars = values.map((val, idx) => {
+        const height = Math.min(Math.abs(val) / maxVal * 100, 100);
+        const color = val >= 0 ? 'var(--danger-color, #f44336)' : 'var(--success-color, #4caf50)';
+        const labels = ['3天', '1周', '2周', '1月'];
+        return `
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                <div style="width: 100%; height: 40px; display: flex; align-items: flex-end; justify-content: center;">
+                    <div style="width: 60%; height: ${height}%; background: ${color}; border-radius: 2px 2px 0 0; opacity: 0.8;"></div>
+                </div>
+                <div style="font-size: 0.65rem; color: var(--text-muted);">${labels[idx]}</div>
+                <div style="font-size: 0.7rem; font-weight: 600; color: ${color};">${val >= 0 ? '+' : ''}${val.toFixed(1)}万</div>
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = bars;
 }
 
 function renderHotSectors() {
