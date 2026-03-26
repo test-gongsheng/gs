@@ -59,9 +59,19 @@ const mockNews = [
 ];
 
 // 初始化
+// 初始化标记，防止重复初始化
+let isInitialized = false;
+
 async function init() {
-    // 首先尝试从后端 API 加载数据
-    let loadedFromBackend = false;
+    if (isInitialized) {
+        console.log('[init] 已经初始化过，跳过');
+        return;
+    }
+    isInitialized = true;
+    
+    // 清空现有数据，避免重复
+    appState.stocks = [];
+    console.log('[init] 开始初始化，已清空股票列表');
     try {
         const response = await fetch('/api/stocks');
         const stocks = await response.json();
