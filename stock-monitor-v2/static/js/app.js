@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "2.6.9";
+const APP_VERSION = "2.7.0";
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -477,8 +477,8 @@ function updateAssetOverview() {
         
         if (isHKStock) {
             // 港股：优先使用已转换的人民币价格(priceCny)
-            // 如果汇率未获取到，使用 1.136 (1港币=0.88人民币)
-            const exchangeRate = stock.exchangeRate || appState.exchangeRate || 1.136;
+            // 官方中间价：1港币≈0.9229人民币 => 1人民币≈1.0836港币
+            const exchangeRate = stock.exchangeRate || appState.exchangeRate || 1.0836;
             if (stock.priceCny) {
                 marketValue = stock.priceCny * quantity;
             } else {
@@ -548,8 +548,8 @@ function renderStockList() {
 
         const isUp = stock.change >= 0;
         const isHKStock = stock.market === '港股';
-        // 港股使用实时汇率（1港币=0.88人民币 => 1人民币=1.136港币）
-        const exchangeRate = stock.exchangeRate || appState.exchangeRate || 1.136;
+        // 港股使用官方中间价汇率（1港币≈0.9229人民币 => 1人民币≈1.0836港币）
+        const exchangeRate = stock.exchangeRate || appState.exchangeRate || 1.0836;
 
         // 港股市值实时计算（港币价格 × 持仓数量 ÷ 汇率 = 人民币市值）
         // 注意：数据文件中字段可能是 shares 或 holdQuantity

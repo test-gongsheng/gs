@@ -200,10 +200,10 @@ def batch_add_stocks():
             new_stock['status'] = '监控中'
             new_stock['market_value'] = new_stock.get('current_price', 0) * new_stock.get('shares', 0)
             
-            # 港股添加汇率字段（使用实时汇率 1港币=0.88人民币 => 1人民币=1.136港币）
+            # 港股添加汇率字段（使用实时汇率）
             if new_stock.get('market') == '港股':
                 from utils.exchange_rate import get_cny_hkd_rate
-                new_stock['exchange_rate'] = get_cny_hkd_rate() or 1.136
+                new_stock['exchange_rate'] = get_cny_hkd_rate() or 1.0836
             
             data['stocks'].append(new_stock)
             added_stocks.append(new_stock)
@@ -631,9 +631,9 @@ def get_quotes():
         quotes = get_stock_quotes(stocks)
         
         # 获取当前汇率和昨日收盘汇率
-        # 1港币=0.88人民币 => 1人民币=1.136港币
-        current_rate = get_cny_hkd_rate() or 1.136
-        yesterday_rate = get_yesterday_cny_hkd_rate() or 1.136
+        # 官方中间价：1港币 ≈ 0.9229人民币 => 1人民币 ≈ 1.0836港币
+        current_rate = get_cny_hkd_rate() or 1.0836
+        yesterday_rate = get_yesterday_cny_hkd_rate() or 1.0836
         
         # 转换为前端格式
         result = {}

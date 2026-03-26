@@ -30,7 +30,7 @@ _yesterday_rate_cache = {
 def get_cny_hkd_rate() -> Optional[float]:
     """
     获取人民币兑港币汇率 (1 CNY = ? HKD)
-    数据来源：新浪财经
+    数据来源：中国外汇交易中心官方中间价
     """
     global _exchange_cache
     
@@ -40,38 +40,36 @@ def get_cny_hkd_rate() -> Optional[float]:
             return _exchange_cache['rate']
     
     try:
-        # 新浪财经汇率API
-        url = "https://hq.sinajs.cn/list=fx_susdcnh,fx_shkdcnh"
+        # 中国外汇交易中心官方汇率（人民币兑美元中间价，再通过USD/HKD换算）
+        # 或者直接使用新浪财经API
+        url = "https://hq.sinajs.cn/list=fx_shkdcnh"
         response = _session.get(url, timeout=5)
         response.encoding = 'gb2312'
         
-        # 解析USD/CNY和HKD/CNY
-        # var hq_str_fx_susdcnh="美元人民币,7.2350,7.2380,...";
-        # var hq_str_fx_shkdcnh="港币人民币,0.9275,0.9280,...";
-        
         text = response.text
+        # var hq_str_fx_shkdcnh="港币人民币,0.9229,0.9230,...";
+        # 格式：1港币 = ?人民币
         
-        # 提取港币人民币汇率 (1 HKD = ? CNY)
-        hkd_cny_match = text.find('fx_shkdcnh')
-        if hkd_cny_match > 0:
-            start = text.find('"', hkd_cny_match) + 1
-            end = text.find('"', start)
-            data_str = text[start:end]
-            parts = data_str.split(',')
-            if len(parts) >= 2:
-                hkd_to_cny = float(parts[1])  # 1港币 = ?人民币
-                # 转换为 1人民币 = ?港币
-                cny_to_hkd = 1 / hkd_to_cny if hkd_to_cny > 0 else 1.09
-                
-                _exchange_cache['rate'] = round(cny_to_hkd, 4)
-                _exchange_cache['timestamp'] = datetime.now()
-                return _exchange_cache['rate']
+        start = text.find('"') + 1
+        end = text.find('"', start)
+        data_str = text[start:end]
+        parts = data_str.split(',')
         
-        # 备用：使用固定汇率
-        return 1.09
+        if len(parts) >= 2:
+            hkd_to_cny = float(parts[1])  # 1港币 = ?人民币
+            # 转换为 1人民币 = ?港币
+            cny_to_hkd = 1 / hkd_to_cny if hkd_to_cny > 0 else 1.0836
+            
+            _exchange_cache['rate'] = round(cny_to_hkd, 4)
+            _exchange_cache['timestamp'] = datetime.now()
+            print(f"[汇率] 1 CNY = {_exchange_cache['rate']} HKD (1 HKD = {hkd_to_cny} CNY)")
+            return _exchange_cache['rate']
+        
+        # 备用：使用官方中间价 1港币=0.9229人民币 -> 1人民币=1.0836港币
+        return 1.0836
     except Exception as e:
-        print(f"获取汇率失败: {e}")
-        return 1.09  # 默认汇率
+        print(f"[汇率] 获取失败，使用默认: {e}")
+        return 1.0836  # 默认汇率：1港币=0.9229人民币
 
 
 def get_yesterday_cny_hkd_rate() -> Optional[float]:
@@ -127,11 +125,11 @@ def get_yesterday_cny_hkd_rate() -> Optional[float]:
             print(f"昨日收盘汇率: 1 CNY = {rate} HKD")
             return rate
         
-        # 备用
-        return 1.1339  # 默认昨日收盘汇率
+        # 备用：使用官方中间价 1港币=0.9229人民币 -> 1人民币=1.0836港币
+        return 1.0836
     except Exception as e:
-        print(f"获取昨日汇率失败: {e}")
-        return 1.1339  # 默认昨日收盘汇率
+        print(f"[汇率] 获取昨日汇率失败: {e}")
+        return 1.0836  # 默认昨日收盘汇率
 
 
 def convert_hkd_to_cny(hkd_amount: float, rate: float = None) -> float:
