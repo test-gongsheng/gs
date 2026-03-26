@@ -241,18 +241,8 @@ async function refreshAxisPrices(forceRefresh = false) {
                 stock.triggerBuy = axisData.data.trigger_buy;
                 stock.triggerSell = axisData.data.trigger_sell;
                 
-                // 同步更新后端数据库（不等待）
-                fetch(`/api/stocks/${stock.id}/axis`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        axis_price: newPivot,
-                        base_position_pct: stock.baseRatio || 50,
-                        float_position_pct: stock.floatRatio || 50,
-                        trigger_pct: 8,
-                        grid_levels: stock.gridLevels || []
-                    })
-                }).catch(e => console.warn(`[refreshAxisPrices] ${stock.code} 保存到后端失败:`, e));
+                // 同步更新后端数据库（不等待），自动处理股票不存在的情况
+                syncAxisPriceToBackend(stock, newPivot);
                 
                 console.log(`[refreshAxisPrices] ${stock.code} 更新: ${oldPivot.toFixed(2)} -> ${newPivot.toFixed(2)}`);
                 
@@ -334,6 +324,74 @@ async function refreshAxisPrices(forceRefresh = false) {
     }
     
     return { updatedCount, failedCount, changedStocks };
+}
+
+/**
+ * 同步中轴价格到后端，自动处理股票不存在的情况（404自动创建）
+ * @param {Object} stock - 股票对象
+ * @param {number} newPivot - 新的中轴价格
+ */
+async function syncAxisPriceToBackend(stock, newPivot) {
+    try {
+        // 先尝试更新中轴价格
+        const response = await fetch(`/api/stocks/${stock.id}/axis`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                axis_price: newPivot,
+                base_position_pct: stock.baseRatio || 50,
+                float_position_pct: stock.floatRatio || 50,
+                trigger_pct: 8,
+                grid_levels: stock.gridLevels || []
+            })
+        });
+        
+        if (response.ok) {
+            console.log(`[syncAxisPriceToBackend] ${stock.code} 更新成功`);
+            return;
+        }
+        
+        // 404 表示股票不存在，需要创建
+        if (response.status === 404) {
+            console.log(`[syncAxisPriceToBackend] ${stock.code} 不存在，自动创建...`);
+            
+            const createResponse = await fetch('/api/stocks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    code: stock.code,
+                    name: stock.name,
+                    market: stock.market || 'A股',
+                    avg_cost: stock.holdCost || 0,
+                    shares: stock.holdQuantity || 0,
+                    current_price: stock.price || 0,
+                    axis_price: newPivot,
+                    base_position_pct: stock.baseRatio || 50,
+                    float_position_pct: stock.floatRatio || 50,
+                    trigger_pct: 8,
+                    grid_levels: stock.gridLevels || [],
+                    next_buy_price: stock.triggerBuy || 0,
+                    next_sell_price: stock.triggerSell || 0,
+                    strategy_mode: stock.strategy || '基础'
+                })
+            });
+            
+            if (createResponse.ok) {
+                const result = await createResponse.json();
+                if (result.success && result.stock) {
+                    // 更新前端股票ID为后端返回的新ID
+                    stock.id = result.stock.id;
+                    console.log(`[syncAxisPriceToBackend] ${stock.code} 创建成功，新ID: ${stock.id}`);
+                }
+            } else {
+                console.error(`[syncAxisPriceToBackend] ${stock.code} 创建失败:`, createResponse.status);
+            }
+        } else {
+            console.warn(`[syncAxisPriceToBackend] ${stock.code} 更新失败:`, response.status);
+        }
+    } catch (e) {
+        console.warn(`[syncAxisPriceToBackend] ${stock.code} 异常:`, e.message);
+    }
 }
 
 // 更新时间
