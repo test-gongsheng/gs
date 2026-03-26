@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "2.6.4";
+const APP_VERSION = "2.6.5";
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -475,11 +475,14 @@ function updateAssetOverview() {
         const quantity = stock.holdQuantity || stock.shares || 0;
         
         if (isHKStock) {
-            // 港股：优先使用已转换的人民币价格，否则用港币价格/汇率
+            // 港股：优先使用已转换的人民币价格(priceCny)
             const exchangeRate = stock.exchangeRate || appState.exchangeRate || 1.1339;
-            // 如果有 priceCny（人民币价格），直接用；否则用港币价格/汇率
-            const cnyPrice = stock.priceCny || ((stock.price || 0) / exchangeRate);
-            marketValue = cnyPrice * quantity;
+            if (stock.priceCny) {
+                marketValue = stock.priceCny * quantity;
+            } else {
+                const cnyPrice = (stock.price || 0) / exchangeRate;
+                marketValue = cnyPrice * quantity;
+            }
         } else {
             // A股：直接计算人民币市值
             marketValue = (stock.price || 0) * quantity;
@@ -550,8 +553,13 @@ function renderStockList() {
         const quantity = stock.holdQuantity || stock.shares || 0;
         let marketValue;
         if (isHKStock) {
-            const hkdValue = (stock.price || 0) * quantity;
-            marketValue = hkdValue / exchangeRate; // 汇率是1人民币=X港币
+            // 优先使用 priceCny（人民币价格），避免汇率转换误差
+            if (stock.priceCny) {
+                marketValue = stock.priceCny * quantity;
+            } else {
+                const hkdValue = (stock.price || 0) * quantity;
+                marketValue = hkdValue / exchangeRate;
+            }
         } else {
             marketValue = (stock.price || 0) * quantity;
         }
