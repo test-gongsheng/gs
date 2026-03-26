@@ -475,11 +475,11 @@ function updateAssetOverview() {
         const quantity = stock.holdQuantity || stock.shares || 0;
         
         if (isHKStock) {
-            // 港股：使用昨日收盘汇率（导入时记录的固定汇率）
+            // 港股：优先使用已转换的人民币价格，否则用港币价格/汇率
             const exchangeRate = stock.exchangeRate || appState.exchangeRate || 1.1339;
-            // 实时计算港币市值，转换为人民币
-            const hkdValue = (stock.price || 0) * quantity;
-            marketValue = hkdValue / exchangeRate;
+            // 如果有 priceCny（人民币价格），直接用；否则用港币价格/汇率
+            const cnyPrice = stock.priceCny || ((stock.price || 0) / exchangeRate);
+            marketValue = cnyPrice * quantity;
         } else {
             // A股：直接计算人民币市值
             marketValue = (stock.price || 0) * quantity;
