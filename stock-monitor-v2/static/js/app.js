@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = '2.5.1';
+const APP_VERSION = '2.6.0';
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -470,7 +470,7 @@ function updateAssetOverview() {
 
     appState.stocks.forEach(stock => {
         const isHKStock = stock.market === '港股';
-        let marketValue, costValue;
+        let marketValue;
         // 数据文件中字段可能是 shares 或 holdQuantity
         const quantity = stock.holdQuantity || stock.shares || 0;
         
@@ -480,15 +480,21 @@ function updateAssetOverview() {
             // 实时计算港币市值，转换为人民币
             const hkdValue = (stock.price || 0) * quantity;
             marketValue = hkdValue / exchangeRate;
-            costValue = (stock.holdCost || 0) * quantity; // holdCost 已是人民币
         } else {
             // A股：直接计算人民币市值
             marketValue = (stock.price || 0) * quantity;
-            costValue = (stock.holdCost || 0) * quantity;
         }
         
         totalPosition += marketValue;
-        todayPnL += (marketValue - costValue) * ((stock.changePercent || 0) / 100);
+        
+        // 当日盈亏 = 持仓数量 × 涨跌额（已转换为人民币）
+        // 港股涨跌额是港币，需要转换
+        let changeAmount = stock.change || 0;
+        if (isHKStock && changeAmount !== 0) {
+            const exchangeRate = stock.exchangeRate || appState.exchangeRate || 1.1339;
+            changeAmount = changeAmount / exchangeRate; // 港币转人民币
+        }
+        todayPnL += changeAmount * quantity;
     });
 
     const availableCash = appState.totalAssets - totalPosition;
