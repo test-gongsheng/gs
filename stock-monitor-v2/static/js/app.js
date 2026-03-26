@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "2.6.7";
+const APP_VERSION = "2.6.8";
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -477,10 +477,12 @@ function updateAssetOverview() {
         
         if (isHKStock) {
             // 港股：优先使用已转换的人民币价格(priceCny)
-            const exchangeRate = stock.exchangeRate || appState.exchangeRate || 1.1339;
+            // 如果汇率未获取到，使用 price / 1.09 作为估算
+            const exchangeRate = stock.exchangeRate || appState.exchangeRate || 1.09;
             if (stock.priceCny) {
                 marketValue = stock.priceCny * quantity;
             } else {
+                // 没有 priceCny 时，用港币价格 / 汇率
                 const cnyPrice = (stock.price || 0) / exchangeRate;
                 marketValue = cnyPrice * quantity;
             }
@@ -546,8 +548,8 @@ function renderStockList() {
 
         const isUp = stock.change >= 0;
         const isHKStock = stock.market === '港股';
-        // 港股使用昨日收盘汇率（导入时记录的固定汇率）
-        const exchangeRate = stock.exchangeRate || appState.exchangeRate || 1.1339;
+        // 港股使用实时汇率（默认1.09）
+        const exchangeRate = stock.exchangeRate || appState.exchangeRate || 1.09;
 
         // 港股市值实时计算（港币价格 × 持仓数量 ÷ 汇率 = 人民币市值）
         // 注意：数据文件中字段可能是 shares 或 holdQuantity
