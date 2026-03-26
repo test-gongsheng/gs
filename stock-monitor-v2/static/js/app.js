@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "2.6.6";
+const APP_VERSION = "2.6.7";
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -382,7 +382,8 @@ async function syncAxisPriceToBackend(stock, newPivot) {
                     grid_levels: stock.gridLevels || [],
                     next_buy_price: stock.triggerBuy || 0,
                     next_sell_price: stock.triggerSell || 0,
-                    strategy_mode: stock.strategy || '基础'
+                    strategy_mode: stock.strategy || '基础',
+                    exchange_rate: stock.exchangeRate  // 传递汇率字段
                 })
             });
             
