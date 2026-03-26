@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = '2.6.2';
+const APP_VERSION = "2.6.3";
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
