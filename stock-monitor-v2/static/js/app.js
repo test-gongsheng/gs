@@ -94,8 +94,8 @@ async function init() {
                 strategy: s.strategy_mode || '基础',
                 gridLevels: s.grid_levels || [],
                 change: 0,
-                changePercent: 0,
-                exchangeRate: s.exchange_rate || 1.1339
+                changePercent: 0
+                // exchangeRate 在获取行情时从API更新，不在初始化时设置
             }));
             loadedFromBackend = true;
             console.log('已从后端 API 加载', appState.stocks.length, '只股票');
