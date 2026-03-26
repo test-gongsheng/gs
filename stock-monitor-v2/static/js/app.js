@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "2.6.3";
+const APP_VERSION = "2.6.4";
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -135,7 +135,7 @@ async function init() {
     renderNews();
     updateTime();
     updateMarketStatus();
-    updateAssetOverview();
+    // updateAssetOverview(); // 移到获取行情后调用
 
     // 默认选中第一个股票
     if (appState.stocks.length > 0) {
