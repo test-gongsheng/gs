@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "2.6.5";
+const APP_VERSION = "2.6.6";
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -94,8 +94,8 @@ async function init() {
                 strategy: s.strategy_mode || '基础',
                 gridLevels: s.grid_levels || [],
                 change: 0,
-                changePercent: 0
-                // exchangeRate 在获取行情时从API更新，不在初始化时设置
+                changePercent: 0,
+                exchangeRate: s.exchange_rate  // 从后端获取汇率
             }));
             loadedFromBackend = true;
             console.log('已从后端 API 加载', appState.stocks.length, '只股票');
