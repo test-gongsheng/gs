@@ -200,10 +200,10 @@ def batch_add_stocks():
             new_stock['status'] = '监控中'
             new_stock['market_value'] = new_stock.get('current_price', 0) * new_stock.get('shares', 0)
             
-            # 港股添加汇率字段
+            # 港股添加汇率字段（使用实时汇率）
             if new_stock.get('market') == '港股':
-                from utils.exchange_rate import get_yesterday_cny_hkd_rate
-                new_stock['exchange_rate'] = get_yesterday_cny_hkd_rate() or 1.1339
+                from utils.exchange_rate import get_cny_hkd_rate
+                new_stock['exchange_rate'] = get_cny_hkd_rate() or 1.09
             
             data['stocks'].append(new_stock)
             added_stocks.append(new_stock)
@@ -648,15 +648,15 @@ def get_quotes():
             if quote:
                 price = quote['price']
                 
-                # 港股：返回港币价格 + 人民币转换价
+                # 港股：返回港币价格 + 人民币转换价（使用实时汇率计算市值）
                 if market == '港股':
-                    # 使用昨日收盘汇率计算人民币价格（与交易软件保持一致）
-                    price_cny = price / yesterday_rate
+                    # 使用实时汇率计算人民币价格
+                    price_cny = price / current_rate
                     result[code] = {
                         'price': price,  # 港币价格（显示用）
                         'price_cny': round(price_cny, 2),  # 人民币价格（计算盈亏用）
-                        'exchange_rate': round(yesterday_rate, 4),  # 昨日收盘汇率
-                        'current_exchange_rate': round(current_rate, 4),  # 当前实时汇率
+                        'exchange_rate': round(current_rate, 4),  # 当前实时汇率
+                        'reference_rate': round(yesterday_rate, 4),  # 昨日收盘汇率（参考）
                         'change': quote['change'],
                         'change_percent': quote['change_percent'],
                         'open': quote['open'],
@@ -684,8 +684,8 @@ def get_quotes():
         return jsonify({
             'success': True, 
             'quotes': result,
-            'exchange_rate': round(yesterday_rate, 4),  # 昨日收盘汇率（用于计算市值）
-            'current_exchange_rate': round(current_rate, 4)  # 当前汇率
+            'exchange_rate': round(current_rate, 4),  # 当前实时汇率（用于计算市值）
+            'reference_rate': round(yesterday_rate, 4)  # 昨日收盘汇率（参考）
         })
     except Exception as e:
         print(f"获取行情失败: {e}")
