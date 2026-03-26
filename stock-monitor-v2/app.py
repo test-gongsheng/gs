@@ -200,6 +200,11 @@ def batch_add_stocks():
             new_stock['status'] = '监控中'
             new_stock['market_value'] = new_stock.get('current_price', 0) * new_stock.get('shares', 0)
             
+            # 港股添加汇率字段
+            if new_stock.get('market') == '港股':
+                from utils.exchange_rate import get_yesterday_cny_hkd_rate
+                new_stock['exchange_rate'] = get_yesterday_cny_hkd_rate() or 1.1339
+            
             data['stocks'].append(new_stock)
             added_stocks.append(new_stock)
             print(f"[batch_add_stocks] 添加: {new_stock.get('code')} -> ID {stock_id}")
