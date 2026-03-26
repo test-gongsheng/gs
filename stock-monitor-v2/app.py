@@ -151,9 +151,11 @@ def add_stock():
         
         print(f"[add_stock] 添加股票: {new_stock.get('code')} {new_stock.get('name')}")
         
-        # 生成唯一ID
-        max_id = max([int(s['id']) for s in data['stocks']], default=0)
-        new_stock['id'] = str(max_id + 1)
+        # 生成唯一ID（使用时间戳+随机数，避免并发冲突）
+        import time
+        import random
+        new_stock['id'] = f"{int(time.time())}{random.randint(100, 999)}"
+        print(f"[add_stock] 生成ID: {new_stock['id']}")
         new_stock['status'] = '监控中'
         
         # 计算市值
