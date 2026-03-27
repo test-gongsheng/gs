@@ -61,9 +61,10 @@ async function init() {
         return;
     }
     isInitialized = true;
-    
+
     // 清空现有数据，避免重复
     appState.stocks = [];
+    let loadedFromBackend = false;
     console.log('[init] 开始初始化，已清空股票列表');
     try {
         const response = await fetch('/api/stocks');
