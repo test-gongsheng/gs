@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股票投资监控系统 v2.0</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=50">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=55">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/ib-analysis.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -122,12 +122,12 @@
                 <span class="col-change">涨跌</span>
                 <span class="col-pnl">盈亏</span>
             </div>
-            <div class="stock-list" id="stockList" style="overflow-y: auto;">
+            <div class="stock-list" id="stockList">
                 <!-- 动态生成 -->
             </div>
 
             <!-- 国际投行观点分析 -->
-            <div class="ib-analysis-section" style="padding: 16px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%); border: 2px solid #3b82f6; border-radius: 8px; margin-top: 8px; flex-shrink: 0;">
+            <div class="ib-analysis-section" style="padding: 16px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%); border: 2px solid #3b82f6; border-radius: 8px; margin-top: 12px;">
                 <div class="ib-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
                         <i class="fas fa-globe"></i> 国际投行观点
@@ -1154,8 +1154,9 @@
     function renderIBAnalysis(data) {
         if (!data) return;
         
-        // 更新时间
-        document.getElementById('ibUpdateTime').textContent = data.update_time || '--';
+        // 更新时间和报告日期
+        const reportDate = data.update_time || '--';
+        document.getElementById('ibUpdateTime').textContent = reportDate;
         
         const macro = data.macro_summary || {};
         const holdings = data.holdings_map || [];
@@ -1166,23 +1167,26 @@
         const weakHoldings = holdings.filter(h => h.alignment === 'weak');
         const neutralHoldings = holdings.filter(h => h.alignment === 'neutral');
         
-        // 取前5个展示
-        const displayHoldings = [...strongHoldings, ...moderateHoldings, ...neutralHoldings, ...weakHoldings].slice(0, 5);
+        // 显示所有持仓股
+        const displayHoldings = holdings;
         
         let html = `
-            <div class="ib-summary">
+            <div class="ib-summary" style="margin-bottom: 8px;">
                 <div class="ib-consensus">
                     <div class="ib-consensus-icon ${getConsensusClass(macro.consensus)}"></div>
                     <span class="ib-consensus-text">外资共识: ${macro.consensus || '未知'}</span>
+                </div>
+                <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 4px; text-align: right;">
+                    <i class="far fa-clock"></i> 报告日期: ${reportDate}
                 </div>
             </div>
         `;
         
         // 指数目标
         if (macro.key_targets && macro.key_targets.length > 0) {
-            html += '<div class="ib-targets">';
+            html += `<div class="ib-targets" style="margin-bottom: 8px;">`;
             macro.key_targets.forEach(target => {
-                const targetTooltip = target.source ? `数据来源: ${target.source}` : '';
+                const targetTooltip = target.source ? `数据来源: ${target.source}<br>报告日期: ${reportDate}` : `报告日期: ${reportDate}`;
                 html += `
                     <div class="ib-target-item" 
                          onmouseenter="showIBTooltip(this, '${target.index} 目标', '${targetTooltip}')"
@@ -1197,26 +1201,25 @@
         
         // 投资主线
         if (macro.main_themes && macro.main_themes.length > 0) {
-            const themesToShow = macro.main_themes.slice(0, 10); // 显示前10条
+            const themesToShow = macro.main_themes.slice(0, 10);
             html += `
-                <div class="ib-themes" style="margin: 10px 0; padding: 8px; background: rgba(59,130,246,0.08); border-radius: 6px; max-height: 200px; overflow-y: auto;">
+                <div class="ib-themes" style="margin: 8px 0; padding: 8px; background: rgba(59,130,246,0.08); border-radius: 6px;">
                     <div style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">
-                        <i class="fas fa-chart-line"></i> 投资主线 (${macro.main_themes.length}条)
+                        <i class="fas fa-chart-line"></i> 投资主线 (${macro.main_themes.length}条) <span style="font-size: 0.6rem; opacity: 0.7;">[${reportDate}]</span>
                     </div>
             `;
             themesToShow.forEach((theme, idx) => {
-                // 提取机构名称作为tooltip
-                const institutions = theme.match(/（(.+?)）/) || theme.match(/\((.+?)\)/);
-                const tooltipText = institutions ? `共识机构: ${institutions[1]}` : '点击查看详情';
+                const tooltipText = `${theme}<br><br><span style="color: var(--accent-gold);">报告日期: ${reportDate}</span>`;
                 
                 html += `
                     <div class="ib-theme-item" 
-                         style="font-size: 0.75rem; color: var(--text-primary); padding: 4px 0; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
-                         onmouseenter="showIBTooltip(this, '投资主线 ${idx + 1}', '${theme.replace(/'/g, "\\'")}')"
+                         style="font-size: 0.75rem; color: var(--text-primary); padding: 3px 0; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.03);"
+                         onmouseenter="showIBTooltip(this, '投资主线 ${idx + 1}', '${tooltipText.replace(/'/g, "\\'")}')"
                          onmouseleave="hideIBTooltip()"
                          onclick="showIBDetailModal()">
                         <span style="color: var(--accent-blue); margin-right: 4px;">${idx + 1}.</span>
-                        ${theme.substring(0, 18)}${theme.length > 18 ? '...' : ''}
+                        ${theme.substring(0, 16)}${theme.length > 16 ? '...' : ''}
+                        <span style="font-size: 0.6rem; color: var(--text-secondary); margin-left: 4px;">[${reportDate}]</span>
                     </div>
                 `;
             });
@@ -1226,11 +1229,14 @@
             html += '</div>';
         }
         
-        // 持仓映射
+        // 持仓映射 - 显示所有持仓股
         if (displayHoldings.length > 0) {
             html += `
-                <div class="ib-holdings">
-                    <div class="ib-holdings-title">持仓契合度 (${strongHoldings.length}强/${moderateHoldings.length}中/${weakHoldings.length}弱)</div>
+                <div class="ib-holdings" style="margin-top: 8px;">
+                    <div class="ib-holdings-title" style="font-size: 0.75rem; margin-bottom: 6px;">
+                        持仓契合度 (${strongHoldings.length}强/${moderateHoldings.length}中/${neutralHoldings.length}平/${weakHoldings.length}弱) 
+                        <span style="font-size: 0.6rem; color: var(--text-secondary);">[${reportDate}]</span>
+                    </div>
             `;
             
             displayHoldings.forEach(holding => {
@@ -1241,19 +1247,21 @@
                     'weak': '存在分歧'
                 }[holding.alignment] || '中性';
                 
-                // 构建悬停提示内容
-                const tooltipContent = holding.ib_views ? holding.ib_views.join('<br>• ') : '暂无详细观点';
+                // 构建悬停提示内容，包含报告日期
+                const viewsWithDate = holding.ib_views ? holding.ib_views.map(v => `${v} [${reportDate}]`).join('<br>• ') : '暂无详细观点';
+                const tooltipContent = `${viewsWithDate}<br><br><span style="color: var(--accent-gold);">报告日期: ${reportDate}</span>`;
                 
                 html += `
                     <div class="ib-holding-item" onclick="showIBStockDetail('${holding.code}')" 
                          onmouseenter="showIBTooltip(this, '${holding.name}', '${tooltipContent.replace(/'/g, "\\'")}')"
-                         onmouseleave="hideIBTooltip()">
+                         onmouseleave="hideIBTooltip()"
+                         style="padding: 4px 6px; margin-bottom: 2px;">
                         <div class="ib-holding-alignment ${holding.alignment}"></div>
-                        <div class="ib-holding-info">
-                            <div class="ib-holding-name">${holding.name}</div>
-                            <div class="ib-holding-code">${holding.code}</div>
+                        <div class="ib-holding-info" style="flex: 1.5;">
+                            <div class="ib-holding-name" style="font-size: 0.8rem;">${holding.name}</div>
+                            <div class="ib-holding-code" style="font-size: 0.65rem;">${holding.code}</div>
                         </div>
-                        <span class="ib-holding-tag ${holding.alignment}">${alignmentText}</span>
+                        <span class="ib-holding-tag ${holding.alignment}" style="font-size: 0.7rem;">${alignmentText}</span>
                     </div>
                 `;
             });
@@ -1264,12 +1272,14 @@
         // 风险提示
         if (macro.warnings && macro.warnings.length > 0) {
             html += `
-                <div class="ib-warnings">
-                    <div class="ib-warning-title"><i class="fas fa-exclamation-triangle"></i> 风险提示</div>
+                <div class="ib-warnings" style="margin-top: 8px; padding: 8px; background: rgba(245, 34, 45, 0.08); border-radius: 6px;">
+                    <div class="ib-warning-title" style="font-size: 0.75rem; margin-bottom: 6px;">
+                        <i class="fas fa-exclamation-triangle"></i> 风险提示 <span style="font-size: 0.6rem; color: var(--text-secondary);">[${reportDate}]</span>
+                    </div>
                     <div class="ib-warning-list">
             `;
-            macro.warnings.slice(0, 2).forEach(warning => {
-                html += `<div class="ib-warning-item">${warning}</div>`;
+            macro.warnings.slice(0, 3).forEach(warning => {
+                html += `<div class="ib-warning-item" style="font-size: 0.7rem; padding: 3px 0;">${warning} <span style="color: var(--text-secondary); font-size: 0.6rem;">[${reportDate}]</span></div>`;
             });
             html += '</div></div>';
         }
