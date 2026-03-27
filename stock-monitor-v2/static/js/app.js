@@ -1408,25 +1408,69 @@ function renderNews() {
         listEl.appendChild(sentimentSection);
     }
     
-    // 1. 渲染投资日历（今日重要事件）
+    // 1. 渲染投资日历（财联社风格 - 未来一周）
     if (calendar.length > 0) {
         const calendarSection = document.createElement('div');
-        calendarSection.className = 'news-section';
-        calendarSection.innerHTML = '<div class="news-section-title">📅 投资日历</div>';
+        calendarSection.className = 'news-section calendar-section';
         
-        calendar.forEach(item => {
-            const el = document.createElement('div');
-            el.className = 'news-calendar-item';
-            el.innerHTML = `
-                <div class="calendar-time">${item.time}</div>
-                <div class="calendar-content">
-                    <div class="calendar-title">${item.title}</div>
-                    ${item.related_sectors ? `<div class="calendar-sectors">${item.related_sectors.map(s => `<span>${s}</span>`).join('')}</div>` : ''}
-                </div>
-                <span class="calendar-tag ${item.importance >= 2 ? 'important' : ''}">${item.importance_label}</span>
-            `;
-            calendarSection.appendChild(el);
+        // 统计今天和未来的事件数
+        const todayCount = calendar.filter(c => c.is_today).length;
+        const futureCount = calendar.filter(c => !c.is_today).length;
+        const badgeHtml = futureCount > 0 ? `<span style="color: var(--accent-blue); font-size: 0.85rem;">未来${futureCount}项</span>` : '';
+        
+        calendarSection.innerHTML = `
+            <div class="news-section-title">
+                📅 投资日历 ${badgeHtml}
+                <span style="float: right; font-size: 0.75rem; color: var(--text-muted); cursor: pointer;" onclick="showCalendarDetail()">查看全部 →</span>
+            </div>
+        `;
+        
+        // 财联社风格时间轴
+        const timelineEl = document.createElement('div');
+        timelineEl.className = 'calendar-timeline';
+        
+        // 按日期分组
+        const groupedByDate = {};
+        calendar.slice(0, 8).forEach(item => {  // 最多显示8条
+            const dateKey = item.date;
+            if (!groupedByDate[dateKey]) {
+                groupedByDate[dateKey] = {
+                    date: item.date,
+                    weekday: item.weekday,
+                    is_today: item.is_today,
+                    events: []
+                };
+            }
+            groupedByDate[dateKey].events.push(item);
         });
+        
+        Object.values(groupedByDate).forEach(day => {
+            const dayEl = document.createElement('div');
+            dayEl.className = `calendar-day ${day.is_today ? 'today' : ''}`;
+            
+            const todayBadge = day.is_today ? '<span class="today-badge">今天</span>' : '';
+            
+            dayEl.innerHTML = `
+                <div class="calendar-day-header">
+                    <span class="calendar-date">${day.date}</span>
+                    <span class="calendar-weekday">${day.weekday}</span>
+                    ${todayBadge}
+                </div>
+                <div class="calendar-events">
+                    ${day.events.map(event => `
+                        <div class="calendar-event-item ${event.importance >= 2 ? 'important' : ''}" onclick="showEventDetail('${encodeURIComponent(event.title)}')">
+                            <span class="event-time">${event.time || '--:--'}</span>
+                            <span class="event-title">${event.title}</span>
+                            ${event.is_portfolio_related ? '<span class="portfolio-badge">持仓</span>' : ''}
+                            <span class="event-importance ${event.importance >= 3 ? 'major' : event.importance >= 2 ? 'important' : 'normal'}">${event.importance_label}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            timelineEl.appendChild(dayEl);
+        });
+        
+        calendarSection.appendChild(timelineEl);
         listEl.appendChild(calendarSection);
     }
 
@@ -1607,6 +1651,81 @@ function showNewsDetailModal() {
 
 function hideNewsDetailModal() {
     document.getElementById('newsDetailModal').classList.remove('active');
+}
+
+// ========== 投资日历详情 ==========
+function showCalendarDetail() {
+    // 在新弹窗中显示完整的投资日历
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.id = 'calendarDetailModal';
+    modal.innerHTML = `
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3><i class="fas fa-calendar-alt"></i> 投资日历（未来一周）</h3>
+                <button class="btn-close" onclick="document.getElementById('calendarDetailModal').remove()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="calendar-detail-timeline" id="calendarDetailTimeline">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    // 渲染完整日历
+    renderCalendarDetail();
+}
+
+function renderCalendarDetail() {
+    const timelineEl = document.getElementById('calendarDetailTimeline');
+    if (!timelineEl || !appState.news || !appState.news.calendar) {
+        timelineEl.innerHTML = '<div class="news-empty">暂无数据</div>';
+        return;
+    }
+    
+    const calendar = appState.news.calendar;
+    
+    // 按日期分组
+    const groupedByDate = {};
+    calendar.forEach(item => {
+        const dateKey = item.date;
+        if (!groupedByDate[dateKey]) {
+            groupedByDate[dateKey] = {
+                date: item.date,
+                weekday: item.weekday,
+                is_today: item.is_today,
+                events: []
+            };
+        }
+        groupedByDate[dateKey].events.push(item);
+    });
+    
+    timelineEl.innerHTML = Object.values(groupedByDate).map(day => `
+        <div class="calendar-day ${day.is_today ? 'today' : ''}">
+            <div class="calendar-day-header">
+                <span class="calendar-date">${day.date}</span>
+                <span class="calendar-weekday">${day.weekday}</span>
+                ${day.is_today ? '<span class="today-badge">今天</span>' : ''}
+            </div>
+            <div class="calendar-events">
+                ${day.events.map(event => `
+                    <div class="calendar-event-item ${event.importance >= 2 ? 'important' : ''}" onclick="showEventDetail('${encodeURIComponent(event.title)}')">
+                        <span class="event-time">${event.time || '--:--'}</span>
+                        <span class="event-title">${event.title}</span>
+                        ${event.is_portfolio_related ? '<span class="portfolio-badge">持仓</span>' : ''}
+                        <span class="event-importance ${event.importance >= 3 ? 'major' : event.importance >= 2 ? 'important' : 'normal'}">${event.importance_label}</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+function showEventDetail(titleEncoded) {
+    const title = decodeURIComponent(titleEncoded);
+    alert(`事件详情：\n\n${title}\n\n（后续可接入详细解读）`);
 }
 
 function filterNews(type) {

@@ -3593,3 +3593,151 @@ body {
   font-size: 0.75rem;
   color: var(--text-secondary);
 }
+
+/* ========================================
+   投资日历 - 财联社风格时间轴
+   ======================================== */
+
+.calendar-section {
+  margin-bottom: 16px;
+}
+
+.calendar-timeline {
+  position: relative;
+  padding-left: 16px;
+}
+
+.calendar-timeline::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--accent-blue), var(--accent-cyan));
+  border-radius: 2px;
+}
+
+.calendar-day {
+  position: relative;
+  margin-bottom: 16px;
+  padding-left: 20px;
+}
+
+.calendar-day::before {
+  content: '';
+  position: absolute;
+  left: -14px;
+  top: 6px;
+  width: 10px;
+  height: 10px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--accent-blue);
+  border-radius: 50%;
+}
+
+.calendar-day.today::before {
+  background: var(--accent-blue);
+  box-shadow: 0 0 8px var(--accent-blue);
+}
+
+.calendar-day-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.calendar-date {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.calendar-weekday {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.today-badge {
+  padding: 2px 8px;
+  background: var(--accent-blue);
+  color: #fff;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  margin-left: 4px;
+}
+
+.calendar-events {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.calendar-event-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-left: 3px solid transparent;
+}
+
+.calendar-event-item:hover {
+  background: var(--bg-hover);
+  transform: translateX(4px);
+}
+
+.calendar-event-item.important {
+  border-left-color: var(--accent-gold);
+  background: rgba(250, 173, 20, 0.05);
+}
+
+.event-time {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  min-width: 45px;
+  font-family: monospace;
+}
+
+.event-title {
+  flex: 1;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-badge {
+  padding: 2px 6px;
+  background: rgba(114, 46, 209, 0.2);
+  color: var(--accent-purple);
+  font-size: 0.7rem;
+  border-radius: 4px;
+}
+
+.event-importance {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.event-importance.major {
+  background: rgba(255, 77, 79, 0.15);
+  color: #ff6b6b;
+}
+
+.event-importance.important {
+  background: rgba(250, 173, 20, 0.15);
+  color: #ffc107;
+}
+
+.event-importance.normal {
+  background: rgba(108, 117, 125, 0.15);
+  color: var(--text-muted);
+}

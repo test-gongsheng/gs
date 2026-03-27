@@ -182,138 +182,99 @@ SECTOR_KEYWORDS = {
     '军工': ['军工', '国防', '武器装备', '航空航天', '航母'],
 }
 
-# 投资日历 - 从财联社新闻中提取重大事件
-# 重大事件关键词
-CALENDAR_EVENT_KEYWORDS = [
-    # 央行/货币政策
-    '利率决议', '美联储加息', '美联储降息', '央行降准', '央行降息', 'LPR', 
-    # 经济数据
-    'GDP', 'CPI', 'PPI', 'PMI', '非农就业', '失业率', '工业增加值',
-    # 政策会议
-    '国常会', '政治局会议', '中央经济工作会议', '两会', '政府工作报告',
-    # 国际事件
-    'G20', 'APEC', '中美贸易', '关税', '制裁',
-    # 公司重大事件
-    '财报', '年报', '季报', '业绩预告', '分红', '派息', '除权除息',
-]
-
-def extract_calendar_events_from_news(news_list: List[Dict], portfolio_sectors: List[str]) -> List[Dict]:
+# 投资日历 - 财联社风格，包含未来一周事件
+def get_investment_calendar(portfolio_sectors: List[str] = None) -> List[Dict]:
     """
-    从财联社新闻中提取投资日历事件
-    只返回与持仓板块相关或重大事件
+    获取投资日历（财联社风格）
+    包含未来一周（7天）的重大财经事件
+    优先显示持仓相关板块和重大事件（美联储、央行等）
     """
     calendar = []
+    today = datetime.now()
     
-    # 重大事件基础关键词
-    major_keywords = ['美联储', '央行', '利率决议', 'GDP', 'CPI', 'PPI', '非农就业', 
-                      '国常会', '政治局', '两会', '关税', '制裁', '贸易战']
-    
-    for news in news_list:
-        title = news.get('title', '')
-        content = news.get('content', '')
-        text = f"{title} {content}"
+    try:
+        import akshare as ak
         
-        # 检查是否是重大事件
-        is_major = any(kw in text for kw in major_keywords)
-        
-        # 检查是否与持仓板块相关
-        related_sectors = []
-        for sector, keywords in SECTOR_KEYWORDS.items():
-            if any(kw in text for kw in keywords):
-                related_sectors.append(sector)
-        
-        is_portfolio_related = any(s in portfolio_sectors for s in related_sectors)
-        
-        # 只保留：重大事件 或 与持仓相关的
-        if not (is_major or is_portfolio_related):
-            continue
-        
-        # 判断重要性
-        importance = 1
-        if any(kw in text for kw in ['美联储', '央行', '利率决议', '政治局', '国常会', '关税', '制裁']):
-            importance = 3
-        elif any(kw in text for kw in ['GDP', 'CPI', 'PPI', '非农就业', '两会']):
-            importance = 2
-        
-        # 提取时间（新闻中的时间或当前时间）
-        time_str = news.get('time', '')
-        
-        calendar.append({
-            'time': time_str,
-            'title': title,
-            'importance': importance,
-            'importance_label': {3: '重磅', 2: '重要', 1: '关注'}.get(importance, '一般'),
-            'related_sectors': related_sectors if related_sectors else ['宏观'],
-            'type': 'calendar',
-            'source': '财联社',
-            'is_major': is_major
-        })
-    
-    # 按重要性排序
-    calendar.sort(key=lambda x: x['importance'], reverse=True)
-    
-    return calendar[:10]  # 最多返回10条
-
-def get_investment_calendar(news_list: List[Dict] = None, portfolio_sectors: List[str] = None) -> List[Dict]:
-    """
-    获取投资日历
-    优先从财联社新闻中提取，同时尝试新浪财经作为补充
-    """
-    calendar = []
-    
-    # 1. 从财联社新闻中提取事件
-    if news_list and portfolio_sectors:
-        calendar = extract_calendar_events_from_news(news_list, portfolio_sectors)
-    
-    # 2. 如果财联社提取的事件太少，尝试新浪财经补充
-    if len(calendar) < 3:
-        try:
-            import akshare as ak
-            df = ak.stock_jsy_event(date=datetime.now().strftime("%Y%m%d"))
+        # 获取未来7天的事件
+        for i in range(7):
+            date = today + timedelta(days=i)
+            date_str = date.strftime("%Y%m%d")
+            date_display = date.strftime("%m-%d")
+            weekday = date.strftime("%a")
             
-            for _, row in df.iterrows():
-                event = row.get('事件', '')
+            try:
+                df = ak.stock_jsy_event(date=date_str)
                 
-                # 只保留重大事件或与持仓相关的
-                is_major = any(kw in event for kw in ['美联储', '央行', '利率决议', 'GDP', 'CPI', '非农'])
-                
-                if not is_major:
-                    continue
-                
-                # 判断重要性
-                importance = 1
-                sectors = ['宏观']
-                if any(k in event for k in ['美联储', '央行', '利率决议', '非农就业']):
-                    importance = 3
-                    sectors = ['黄金', '券商', '宏观']
-                elif any(k in event for k in ['GDP', 'CPI', 'PPI']):
-                    importance = 2
-                    sectors = ['宏观', '周期']
-                
-                # 检查是否已存在（去重）
-                if not any(c['title'] == event for c in calendar):
-                    calendar.append({
-                        'time': str(row.get('时间', ''))[:5],
+                for _, row in df.iterrows():
+                    event = row.get('事件', '')
+                    if not event:
+                        continue
+                    
+                    time_str = str(row.get('时间', ''))[:5] if '时间' in row else ''
+                    
+                    # 判断重要性
+                    importance = 1
+                    sectors = ['宏观']
+                    
+                    # 重大事件关键词
+                    if any(k in event for k in ['美联储', '央行', '利率决议']):
+                        importance = 3
+                        sectors = ['黄金', '券商', '宏观']
+                    elif any(k in event for k in ['非农就业', '非农', 'GDP', 'CPI', 'PPI']):
+                        importance = 3
+                        sectors = ['黄金', '宏观']
+                    elif any(k in event for k in ['国常会', '政治局', '两会']):
+                        importance = 2
+                        sectors = ['宏观']
+                    elif any(k in event for k in ['LPR', 'MLF', '降准', '降息']):
+                        importance = 2
+                        sectors = ['银行', '地产', '宏观']
+                    
+                    # 检查是否与持仓板块相关
+                    is_portfolio_related = False
+                    if portfolio_sectors:
+                        for sector in portfolio_sectors:
+                            if sector in event or any(kw in event for kw in SECTOR_KEYWORDS.get(sector, [])):
+                                is_portfolio_related = True
+                                sectors = [sector] + sectors
+                                break
+                    
+                    # 只保留：重大事件 或 持仓相关
+                    if importance < 2 and not is_portfolio_related:
+                        continue
+                    
+                    # 构建事件项
+                    event_item = {
+                        'date': date_display,
+                        'weekday': weekday,
+                        'time': time_str,
                         'title': event,
                         'importance': importance,
                         'importance_label': {3: '重磅', 2: '重要', 1: '一般'}.get(importance, '一般'),
-                        'related_sectors': sectors,
+                        'related_sectors': list(set(sectors))[:3],  # 最多3个板块
                         'type': 'calendar',
-                        'source': '新浪财经'
-                    })
-        except Exception as e:
-            print(f"[投资日历] 新浪财经补充获取失败: {e}")
+                        'is_today': i == 0,
+                        'is_portfolio_related': is_portfolio_related
+                    }
+                    
+                    calendar.append(event_item)
+                    
+            except Exception as e:
+                print(f"[投资日历] 获取 {date_str} 事件失败: {e}")
+                continue
+        
+    except Exception as e:
+        print(f"[投资日历] 获取失败: {e}")
     
-    # 去重并排序
-    seen = set()
-    unique_calendar = []
-    for item in calendar:
-        key = item['title'][:30]  # 取前30字作为去重key
-        if key not in seen:
-            seen.add(key)
-            unique_calendar.append(item)
+    # 排序：今天优先，然后按重要性，然后按日期
+    calendar.sort(key=lambda x: (
+        0 if x['is_today'] else 1,  # 今天优先
+        -x['importance'],           # 重要性高的优先
+        x['date'],                  # 日期近的优先
+        x['time'] if x['time'] else '99:99'
+    ))
     
-    return sorted(unique_calendar, key=lambda x: x['importance'], reverse=True)[:10]
+    return calendar[:15]  # 最多返回15条
 
 def classify_news(text: str) -> Tuple[str, int, List[str]]:
     """分类新闻，返回: (分类, 重要性, 关联板块列表)"""
@@ -464,9 +425,8 @@ def get_cls_structured_news(limit: int = 30, portfolio_sectors: List[str] = None
         else:
             market_sentiment = {'index': 50, 'label': '未分析', 'distribution': {'positive': 0, 'neutral': 0, 'negative': 0}}
         
-        # 从财联社新闻中提取投资日历（基于持仓板块过滤）
-        all_news_for_calendar = headlines + themes + portfolio_related + general
-        calendar = get_investment_calendar(all_news_for_calendar, portfolio_sectors)
+        # 获取投资日历（财联社风格，未来一周）
+        calendar = get_investment_calendar(portfolio_sectors)
         
         hot_themes = get_hot_themes()
         
