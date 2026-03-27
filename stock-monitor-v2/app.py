@@ -931,6 +931,65 @@ def get_ib_analysis():
 
 
 
+
+
+# ========== 持仓分析报告 API ==========
+
+PORTFOLIO_ANALYSIS_FILE = os.path.join(os.path.dirname(__file__), 'reports', 'portfolio_analysis_latest.json')
+
+# 持仓分析数据缓存
+_portfolio_analysis_cache = {
+    'data': None,
+    'timestamp': 0
+}
+PORTFOLIO_CACHE_TTL = 3600  # 缓存1小时
+
+def load_portfolio_analysis():
+    """加载持仓分析报告"""
+    try:
+        if not os.path.exists(PORTFOLIO_ANALYSIS_FILE):
+            return None
+        
+        with open(PORTFOLIO_ANALYSIS_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"加载持仓分析报告失败: {e}")
+        return None
+
+@app.route('/api/portfolio-analysis')
+def get_portfolio_analysis():
+    """获取持仓分析报告"""
+    try:
+        now = time.time()
+        
+        # 检查缓存
+        if _portfolio_analysis_cache['data'] and (now - _portfolio_analysis_cache['timestamp']) < PORTFOLIO_CACHE_TTL:
+            return jsonify({
+                'success': True,
+                'data': _portfolio_analysis_cache['data'],
+                'cached': True
+            })
+        
+        # 重新加载
+        data = load_portfolio_analysis()
+        if data:
+            _portfolio_analysis_cache['data'] = data
+            _portfolio_analysis_cache['timestamp'] = now
+            return jsonify({
+                'success': True,
+                'data': data,
+                'cached': False
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': '分析报告不存在'
+            }), 404
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 if __name__ == '__main__':
     # 启动时预加载缓存
     preload_axis_cache()

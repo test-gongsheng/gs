@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股票投资监控系统 v2.0</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=60">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=65">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/ib-analysis.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -141,6 +141,25 @@
                     <div class="ib-loading" style="display: flex; align-items: center; justify-content: center; padding: 12px; color: var(--text-secondary); gap: 8px; font-size: 0.8rem;">
                         <i class="fas fa-spinner fa-spin"></i>
                         <span>加载中...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 持仓健康度分析 -->
+            <div class="portfolio-analysis-section" style="padding: 16px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%); border: 2px solid #10b981; border-radius: 8px; margin-top: 12px;">
+                <div class="portfolio-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-heartbeat"></i> 持仓健康度
+                    </h3>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span id="portfolioHealthScore" style="font-size: 1rem; font-weight: 700; color: #10b981;">--</span>
+                        <span style="font-size: 0.7rem; color: var(--text-secondary); background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px;" id="portfolioReportDate">--</span>
+                    </div>
+                </div>
+                <div class="portfolio-analysis-content" id="portfolioAnalysisContent">
+                    <div class="portfolio-loading" style="display: flex; align-items: center; justify-content: center; padding: 12px; color: var(--text-secondary); gap: 8px; font-size: 0.8rem;">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>加载分析...</span>
                     </div>
                 </div>
             </div>
@@ -1484,10 +1503,124 @@
         }
     }
 
+    // ========== 持仓健康度分析 ==========
+    let portfolioAnalysisData = null;
+    
+    async function loadPortfolioAnalysis() {
+        try {
+            const response = await fetch('/api/portfolio-analysis');
+            const result = await response.json();
+            
+            if (result.success) {
+                portfolioAnalysisData = result.data;
+                renderPortfolioAnalysis(portfolioAnalysisData);
+            } else {
+                console.error('加载持仓分析失败:', result.error);
+                document.getElementById('portfolioAnalysisContent').innerHTML = `
+                    <div style="color: var(--text-secondary); font-size: 0.8rem; text-align: center; padding: 10px;">
+                        <i class="fas fa-exclamation-circle"></i> 加载失败
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('加载持仓分析错误:', error);
+        }
+    }
+    
+    function renderPortfolioAnalysis(data) {
+        if (!data) return;
+        
+        const summary = data.summary || {};
+        const reportDate = data.report_date || '--';
+        
+        // 更新健康度分数
+        const healthScore = summary.health_score || 0;
+        const healthColor = healthScore >= 70 ? '#10b981' : healthScore >= 50 ? '#f59e0b' : '#ef4444';
+        document.getElementById('portfolioHealthScore').textContent = healthScore + '/100';
+        document.getElementById('portfolioHealthScore').style.color = healthColor;
+        document.getElementById('portfolioReportDate').textContent = reportDate;
+        
+        // 生成HTML
+        let html = '';
+        
+        // 盈亏概况
+        const totalPnl = summary.total_pnl || 0;
+        const pnlPercent = summary.total_pnl_percent || 0;
+        const pnlColor = totalPnl >= 0 ? '#10b981' : '#ef4444';
+        const pnlIcon = totalPnl >= 0 ? '📈' : '📉';
+        
+        html += `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 6px;">
+                <div>
+                    <div style="font-size: 0.7rem; color: var(--text-secondary);">总盈亏</div>
+                    <div style="font-size: 0.9rem; font-weight: 600; color: ${pnlColor};">${pnlIcon} ¥${totalPnl.toLocaleString()} (${pnlPercent}%)</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 0.7rem; color: var(--text-secondary);">总市值</div>
+                    <div style="font-size: 0.9rem; font-weight: 600;">¥${(summary.total_market_value || 0).toLocaleString()}</div>
+                </div>
+            </div>
+        `;
+        
+        // 技术状态分布
+        const statusDist = summary.status_distribution || {};
+        html += `
+            <div style="margin-bottom: 10px;">
+                <div style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 6px;">中轴偏离分布</div>
+                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                    <span style="background: rgba(16,185,129,0.2); color: #10b981; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">🟢 强势 ${statusDist.strong || 0}</span>
+                    <span style="background: rgba(156,163,175,0.2); color: #9ca3af; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">⚪ 震荡 ${statusDist.neutral || 0}</span>
+                    <span style="background: rgba(239,68,68,0.2); color: #ef4444; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">🔴 弱势 ${statusDist.weak || 0}</span>
+                </div>
+                <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                    <span style="background: rgba(59,130,246,0.2); color: #3b82f6; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">💡 超卖(买) ${statusDist.oversold || 0}</span>
+                    <span style="background: rgba(245,158,11,0.2); color: #f59e0b; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">⚠️ 超买(卖) ${statusDist.overbought || 0}</span>
+                </div>
+            </div>
+        `;
+        
+        // 买卖信号
+        const buyOps = summary.buy_opportunities_count || 0;
+        const sellSigs = summary.sell_signals_count || 0;
+        
+        if (buyOps > 0 || sellSigs > 0) {
+            html += `<div style="margin-bottom: 10px;">`;
+            if (buyOps > 0) {
+                html += `<div style="background: rgba(59,130,246,0.1); border-left: 3px solid #3b82f6; padding: 6px 8px; margin-bottom: 4px; border-radius: 0 4px 4px 0;">
+                    <div style="font-size: 0.75rem; color: #3b82f6;"><i class="fas fa-shopping-cart"></i> 买入机会: ${buyOps}只跌破中轴8%</div>
+                </div>`;
+            }
+            if (sellSigs > 0) {
+                html += `<div style="background: rgba(245,158,11,0.1); border-left: 3px solid #f59e0b; padding: 6px 8px; border-radius: 0 4px 4px 0;">
+                    <div style="font-size: 0.75rem; color: #f59e0b;"><i class="fas fa-hand-holding-usd"></i> 减仓信号: ${sellSigs}只涨超中轴8%</div>
+                </div>`;
+            }
+            html += `</div>`;
+        }
+        
+        // 操作建议
+        const recommendations = data.recommendations || [];
+        if (recommendations.length > 0) {
+            html += `<div style="margin-top: 8px;">`;
+            html += `<div style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 4px;">💡 操作建议</div>`;
+            recommendations.slice(0, 2).forEach(rec => {
+                const icon = rec.type === 'buy' ? '💡' : rec.type === 'sell' ? '⚠️' : '📊';
+                html += `<div style="font-size: 0.75rem; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    ${icon} ${rec.content.substring(0, 35)}${rec.content.length > 35 ? '...' : ''}
+                </div>`;
+            });
+            html += `</div>`;
+        }
+        
+        document.getElementById('portfolioAnalysisContent').innerHTML = html;
+    }
+
     // 页面加载时初始化
     document.addEventListener('DOMContentLoaded', function() {
         // 延迟加载投行分析（优先加载核心数据）
         setTimeout(loadIBAnalysis, 2000);
+        // 加载持仓分析
+        setTimeout(loadPortfolioAnalysis, 3000);
     });
     </script>
     <script src="{{ url_for('static', filename='js/import.js') }}?v=27"></script>
