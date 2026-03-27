@@ -13,6 +13,14 @@ from typing import Dict, List, Optional
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from app import load_data, get_cached_axis_price
 
+# 导入P0技术分析模块
+try:
+    from analysis.technical_p0 import analyze_technical_p0, generate_technical_analysis_text
+except ImportError:
+    print("[WARN] P0技术分析模块导入失败，将使用基础分析")
+    analyze_technical_p0 = None
+    generate_technical_analysis_text = None
+
 REPORTS_DIR = os.path.join(os.path.dirname(__file__), 'reports')
 ANALYSIS_FILE = os.path.join(REPORTS_DIR, 'portfolio_analysis_latest.json')
 
@@ -96,14 +104,20 @@ def analyze_stock_detailed(stock: Dict) -> Dict:
     trigger_buy = round(avg_cost * 0.92, 2)
     trigger_sell = round(avg_cost * 1.08, 2)
     
+    # P0级别技术分析
+    tech_data = None
+    if analyze_technical_p0:
+        print(f"[P0分析] {code} 获取技术指标...")
+        tech_data = analyze_technical_p0(code, market, current_price)
+    
     # 生成详细分析内容
     analysis_detail = generate_stock_analysis_detail(
         name, code, market, current_price, avg_cost, axis_price,
         axis_deviation, pnl, pnl_percent, technical_status,
-        trigger_buy, trigger_sell
+        trigger_buy, trigger_sell, tech_data
     )
     
-    return {
+    result = {
         'code': code,
         'name': name,
         'market': market,
@@ -131,17 +145,25 @@ def analyze_stock_detailed(stock: Dict) -> Dict:
             'weak': '关注支撑',
             'oversold': '关注买入'
         }.get(technical_status, '正常持有'),
+        # P0技术指标
+        'technical_indicators': tech_data,
         # 详细分析内容
         'analysis': analysis_detail
     }
+    
+    return result
 
 
 def generate_stock_analysis_detail(name: str, code: str, market: str, 
                                    current_price: float, avg_cost: float, axis_price: float,
                                    axis_deviation: float, pnl: float, 
                                    pnl_percent: float, status: str,
-                                   trigger_buy: float, trigger_sell: float) -> Dict:
-    """生成单只股票的详细分析内容"""
+                                   trigger_buy: float, trigger_sell: float,
+                                   tech_data: Optional[Dict] = None) -> Dict:
+    """生成单只股票的详细分析内容（整合P0技术指标）"""
+    
+    # 生成技术分析文字
+    tech_texts = generate_technical_analysis_text(tech_data, name, current_price) if generate_technical_analysis_text else {}
     
     # 1. 数据来源
     data_sources = [
@@ -150,6 +172,19 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
         f"**持仓成本**: ¥{avg_cost:.2f}（您的实际买入均价）",
         f"**网格触发**: 买入≤¥{trigger_buy} / 卖出≥¥{trigger_sell}（成本±8%）",
     ]
+    
+    # 添加技术指标数据源
+    if tech_data:
+        ma = tech_data.get('ma', {})
+        macd = tech_data.get('macd', {})
+        flow = tech_data.get('capital_flow', {})
+        
+        if ma:
+            data_sources.append(f"**均线系统**: MA5/MA10/MA20/MA60（基于历史收盘价计算）")
+        if macd:
+            data_sources.append(f"**MACD指标**: DIF={macd.get('dif')}, DEA={macd.get('dea')}, 柱状图={macd.get('hist')}")
+        if flow:
+            data_sources.append(f"**资金流向**: 主力净流入¥{flow.get('main_inflow')}万元（基于Level2数据）")
     
     if market == 'A股':
         data_sources.append("**数据来源**: 东方财富/akshare历史行情数据")
@@ -208,6 +243,18 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
         )
     else:
         analysis_logic.append("**持仓盈亏**: 当前盈亏平衡，处于成本价附近。")
+    
+    # P0技术分析 - 均线系统
+    if tech_texts.get('ma_analysis'):
+        analysis_logic.append(f"**均线系统**: {tech_texts['ma_analysis']}")
+    
+    # P0技术分析 - MACD
+    if tech_texts.get('macd_analysis'):
+        analysis_logic.append(f"**MACD指标**: {tech_texts['macd_analysis']}")
+    
+    # P0技术分析 - 资金流向
+    if tech_texts.get('flow_analysis'):
+        analysis_logic.append(f"**资金流向**: {tech_texts['flow_analysis']}")
     
     # 3. 结论与建议
     if status == 'overbought':

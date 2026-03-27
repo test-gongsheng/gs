@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股票投资监控系统 v2.0</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=75">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=80">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/ib-analysis.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -1218,6 +1218,39 @@
                     </div>
                 </div>
                 
+                <!-- P0技术指标展示 -->
+                <div id="stockAnalysisTechSection" style="margin-bottom: 20px; display: none;">
+                    <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-chart-line"></i> 技术指标 (P0)
+                    </div>
+                    
+                    <!-- 均线系统 -->
+                    <div id="stockAnalysisMA" style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; margin-bottom: 10px; display: none;">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">均线系统</div>
+                        <div id="stockAnalysisMAContent" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center;">
+                            <!-- MA数据 -->
+                        </div>
+                        <div id="stockAnalysisMATrend" style="margin-top: 8px; font-size: 0.7rem; text-align: center;"></div>
+                    </div>
+                    
+                    <!-- MACD -->
+                    <div id="stockAnalysisMACD" style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; margin-bottom: 10px; display: none;">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">MACD指标</div>
+                        <div id="stockAnalysisMACDContent" style="display: flex; gap: 12px; justify-content: center; align-items: center;">
+                            <!-- MACD数据 -->
+                        </div>
+                        <div id="stockAnalysisMACDSignal" style="margin-top: 6px; font-size: 0.75rem; text-align: center;"></div>
+                    </div>
+                    
+                    <!-- 资金流向 -->
+                    <div id="stockAnalysisFlow" style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; display: none;">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">资金流向</div>
+                        <div id="stockAnalysisFlowContent" style="display: flex; gap: 12px; justify-content: center; align-items: center;">
+                            <!-- 资金流向数据 -->
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- 详细分析内容 -->
                 <div id="stockAnalysisDetail">
                     <!-- 数据来源 -->
@@ -1887,6 +1920,10 @@
             `<div style="margin-bottom: 4px;">• ${s}</div>`
         ).join('');
         
+        // 设置P0技术指标
+        const techData = stock.technical_indicators || {};
+        renderTechnicalIndicators(techData, stock.current_price);
+        
         // 设置分析逻辑
         const logicItems = analysis.analysis_logic || [];
         document.getElementById('stockAnalysisLogic').innerHTML = logicItems.map(l => 
@@ -1908,6 +1945,123 @@
         
         // 显示弹窗
         document.getElementById('stockAnalysisModal').style.display = 'block';
+    }
+    
+    // 渲染P0技术指标
+    function renderTechnicalIndicators(techData, currentPrice) {
+        const sectionEl = document.getElementById('stockAnalysisTechSection');
+        
+        if (!techData || Object.keys(techData).length === 0) {
+            sectionEl.style.display = 'none';
+            return;
+        }
+        
+        sectionEl.style.display = 'block';
+        
+        // 渲染均线系统
+        const maData = techData.ma || {};
+        const priceVsMA = techData.price_vs_ma || {};
+        const maEl = document.getElementById('stockAnalysisMA');
+        const maContentEl = document.getElementById('stockAnalysisMAContent');
+        const maTrendEl = document.getElementById('stockAnalysisMATrend');
+        
+        if (maData && Object.keys(maData).length > 0) {
+            maEl.style.display = 'block';
+            
+            let maHtml = '';
+            const periods = [5, 10, 20, 60];
+            const colors = { 5: '#ef4444', 10: '#f59e0b', 20: '#3b82f6', 60: '#10b981' };
+            
+            periods.forEach(period => {
+                const maValue = maData[period];
+                const pvma = priceVsMA[`ma${period}`] || {};
+                const deviation = pvma.deviation || 0;
+                const isAbove = pvma.above;
+                
+                maHtml += `
+                    <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px;">
+                        <div style="font-size: 0.65rem; color: var(--text-secondary);">MA${period}</div>
+                        <div style="font-size: 0.8rem; font-weight: 600; color: ${colors[period]};">¥${maValue}</div>
+                        <div style="font-size: 0.6rem; color: ${isAbove ? '#10b981' : '#ef4444'};">${deviation > 0 ? '+' : ''}${deviation}%</div>
+                    </div>
+                `;
+            });
+            
+            maContentEl.innerHTML = maHtml;
+            
+            // 均线趋势
+            const maTrend = techData.ma_trend || 'neutral';
+            const trendText = {
+                'bullish': '🟢 多头排列 (MA5>MA10>MA20)',
+                'bearish': '🔴 空头排列 (MA5<MA10<MA20)',
+                'neutral': '⚪ 震荡整理'
+            }[maTrend] || '⚪ 震荡整理';
+            maTrendEl.textContent = trendText;
+        } else {
+            maEl.style.display = 'none';
+        }
+        
+        // 渲染MACD
+        const macdData = techData.macd || {};
+        const macdEl = document.getElementById('stockAnalysisMACD');
+        const macdContentEl = document.getElementById('stockAnalysisMACDContent');
+        const macdSignalEl = document.getElementById('stockAnalysisMACDSignal');
+        
+        if (macdData && macdData.dif !== undefined) {
+            macdEl.style.display = 'block';
+            
+            const dif = macdData.dif;
+            const dea = macdData.dea;
+            const hist = macdData.hist;
+            const signal = macdData.signal || '暂无信号';
+            
+            const histColor = hist >= 0 ? '#10b981' : '#ef4444';
+            
+            macdContentEl.innerHTML = `
+                <div style="text-align: center;">
+                    <div style="font-size: 0.65rem; color: var(--text-secondary);">DIF</div>
+                    <div style="font-size: 0.9rem; font-weight: 600;">${dif}</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.65rem; color: var(--text-secondary);">DEA</div>
+                    <div style="font-size: 0.9rem; font-weight: 600;">${dea}</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.65rem; color: var(--text-secondary);">柱状图</div>
+                    <div style="font-size: 0.9rem; font-weight: 600; color: ${histColor};">${hist > 0 ? '+' : ''}${hist}</div>
+                </div>
+            `;
+            
+            macdSignalEl.innerHTML = `<span style="color: ${macdData.status?.includes('golden') || macdData.status?.includes('bullish') ? '#10b981' : macdData.status?.includes('death') || macdData.status?.includes('bearish') ? '#ef4444' : '#9ca3af'};">${signal}</span>`;
+        } else {
+            macdEl.style.display = 'none';
+        }
+        
+        // 渲染资金流向
+        const flowData = techData.capital_flow || {};
+        const flowEl = document.getElementById('stockAnalysisFlow');
+        const flowContentEl = document.getElementById('stockAnalysisFlowContent');
+        
+        if (flowData && flowData.main_inflow !== undefined) {
+            flowEl.style.display = 'block';
+            
+            const mainInflow = flowData.main_inflow;
+            const flowColor = mainInflow >= 0 ? '#10b981' : '#ef4444';
+            const flowIcon = mainInflow >= 0 ? '▲' : '▼';
+            
+            flowContentEl.innerHTML = `
+                <div style="text-align: center;">
+                    <div style="font-size: 0.65rem; color: var(--text-secondary);">主力净流入</div>
+                    <div style="font-size: 1rem; font-weight: 600; color: ${flowColor};">${flowIcon} ¥${Math.abs(mainInflow)}万</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.65rem; color: var(--text-secondary);">日期</div>
+                    <div style="font-size: 0.8rem;">${flowData.date || '--'}</div>
+                </div>
+            `;
+        } else {
+            flowEl.style.display = 'none';
+        }
     }
     
     // 隐藏股票详细分析弹窗
