@@ -182,12 +182,47 @@ SECTOR_KEYWORDS = {
     '军工': ['军工', '国防', '武器装备', '航空航天', '航母'],
 }
 
-# 投资日历事件（重要财经事件）
-INVESTMENT_CALENDAR = [
-    # 格式: (日期, 时间, 事件标题, 重要性, 影响板块)
-    (datetime.now().strftime("%Y-%m-%d"), "10:00", "中国2月工业增加值数据", 2, ["宏观", "周期"]),
-    (datetime.now().strftime("%Y-%m-%d"), "15:30", "美联储利率决议", 3, ["黄金", "券商", "宏观"]),
-]
+# 投资日历 - 改为实时获取
+def get_investment_calendar() -> List[Dict]:
+    """获取今日投资日历（实时数据）"""
+    try:
+        import akshare as ak
+        # 获取新浪财经投资日历
+        df = ak.stock_jsy_event(date=datetime.now().strftime("%Y%m%d"))
+        
+        calendar = []
+        for _, row in df.iterrows():
+            time_str = str(row.get('时间', ''))[:5] if '时间' in row else ''
+            event = row.get('事件', '')
+            
+            # 根据事件类型判断重要性和影响板块
+            importance = 1
+            sectors = ['宏观']
+            
+            if any(k in event for k in ['美联储', '央行', '利率决议', '非农就业']):
+                importance = 3
+                sectors = ['黄金', '券商', '宏观']
+            elif any(k in event for k in ['GDP', 'CPI', 'PPI', '工业增加值', 'PMI']):
+                importance = 2
+                sectors = ['宏观', '周期']
+            elif any(k in event for k in ['LPR', '房贷', '地产']):
+                importance = 2
+                sectors = ['地产', '银行']
+            
+            calendar.append({
+                'time': time_str,
+                'title': event,
+                'importance': importance,
+                'importance_label': '重要' if importance >= 2 else '一般',
+                'related_sectors': sectors,
+                'type': 'calendar'
+            })
+        
+        return calendar
+    except Exception as e:
+        print(f"[投资日历] 获取实时数据失败: {e}")
+        # 降级返回空列表
+        return []
 
 def classify_news(text: str) -> Tuple[str, int, List[str]]:
     """分类新闻，返回: (分类, 重要性, 关联板块列表)"""
@@ -231,24 +266,6 @@ def classify_news(text: str) -> Tuple[str, int, List[str]]:
     importance = min(3, max(0, importance))
     return category, importance, related_sectors
 
-def get_today_calendar() -> List[Dict]:
-    """获取今日投资日历"""
-    today = datetime.now().strftime("%Y-%m-%d")
-    result = []
-    
-    for item in INVESTMENT_CALENDAR:
-        date, time, event, importance, sectors = item
-        if date == today:
-            result.append({
-                'time': time,
-                'title': event,
-                'importance': importance,
-                'importance_label': '重要' if importance >= 2 else '一般',
-                'related_sectors': sectors,
-                'type': 'calendar'
-            })
-    
-    return result
 
 def get_hot_themes() -> List[Dict]:
     """获取热门题材（基于实时概念板块数据）"""
@@ -356,7 +373,7 @@ def get_cls_structured_news(limit: int = 30, portfolio_sectors: List[str] = None
         else:
             market_sentiment = {'index': 50, 'label': '未分析', 'distribution': {'positive': 0, 'neutral': 0, 'negative': 0}}
         
-        calendar = get_today_calendar()
+        calendar = get_investment_calendar()
         hot_themes = get_hot_themes()
         
         return {
