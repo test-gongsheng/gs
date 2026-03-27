@@ -1508,12 +1508,25 @@ function renderNews() {
         listEl.appendChild(themeNewsSection);
     }
 
-    // 6. 渲染普通快讯（如果没有其他内容）
-    if (listEl.children.length === 0 && general.length > 0) {
+    // 6. 渲染普通快讯
+    if (general.length > 0) {
+        const generalSection = document.createElement('div');
+        generalSection.className = 'news-section';
+        generalSection.innerHTML = '<div class="news-section-title">📋 财经快讯</div>';
+        
         general.forEach(news => {
             const el = createNewsElement(news, 'normal');
-            listEl.appendChild(el);
+            generalSection.appendChild(el);
         });
+        listEl.appendChild(generalSection);
+    }
+    
+    // 如果完全没有新闻（只有市场情绪卡片）
+    if (listEl.children.length <= 1) {
+        const emptySection = document.createElement('div');
+        emptySection.className = 'news-empty';
+        emptySection.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">暂无新闻数据</div>';
+        listEl.appendChild(emptySection);
     }
 }
 
