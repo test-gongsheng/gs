@@ -348,31 +348,11 @@ def get_cls_structured_news(limit: int = 30, portfolio_sectors: List[str] = None
             else:
                 general.append(news_item)
         
-        # 情绪分析（批量，限制数量）
+        # 情绪分析（批量，限制数量）- 直接修改原始对象
         if analyze_sentiment:
             all_news = headlines + themes + portfolio_related + general
-            analyzed = batch_analyze_sentiment(all_news, max_batch=15)
-            
-            # 重新分配回去（使用原始分类，避免对象引用问题）
-            idx = 0
-            for i, news in enumerate(headlines):
-                if idx < len(analyzed):
-                    headlines[i] = analyzed[idx]
-                    idx += 1
-            for i, news in enumerate(themes):
-                if idx < len(analyzed):
-                    themes[i] = analyzed[idx]
-                    idx += 1
-            for i, news in enumerate(portfolio_related):
-                if idx < len(analyzed):
-                    portfolio_related[i] = analyzed[idx]
-                    idx += 1
-            for i, news in enumerate(general):
-                if idx < len(analyzed):
-                    general[i] = analyzed[idx]
-                    idx += 1
-            
-            market_sentiment = calculate_market_sentiment(analyzed)
+            batch_analyze_sentiment(all_news, max_batch=15)
+            market_sentiment = calculate_market_sentiment(all_news)
         else:
             market_sentiment = {'index': 50, 'label': '未分析', 'distribution': {'positive': 0, 'neutral': 0, 'negative': 0}}
         
