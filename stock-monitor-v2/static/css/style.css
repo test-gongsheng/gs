@@ -401,7 +401,7 @@ body {
 .sidebar-left {
   width: var(--sidebar-width);
   min-width: var(--sidebar-width);
-  max-height: 600px;
+  max-height: calc(100vh - var(--header-height) - var(--asset-bar-height) - 32px);
   background: var(--bg-card);
   border-radius: var(--border-radius-lg);
   border: 1px solid var(--border-color);
