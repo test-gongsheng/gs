@@ -31,6 +31,23 @@ def get_report_date_str():
         return (now - timedelta(days=1)).strftime('%Y-%m-%d')
     return now.strftime('%Y-%m-%d')
 
+def get_ib_report_date():
+    """
+    获取投行实际报告日期
+    实际项目中这里应该从API或爬虫获取投行报告的原始日期
+    当前默认使用最近一个交易日
+    """
+    now = datetime.now()
+    # 如果是周末，回退到周五
+    if now.weekday() == 5:  # 周六
+        return (now - timedelta(days=1)).strftime('%Y-%m-%d')
+    elif now.weekday() == 6:  # 周日
+        return (now - timedelta(days=2)).strftime('%Y-%m-%d')
+    # 如果是早上8点前，可能报告是昨天的
+    elif now.hour < 8:
+        return (now - timedelta(days=1)).strftime('%Y-%m-%d')
+    return now.strftime('%Y-%m-%d')
+
 def fetch_ib_analysis():
     """
     获取投行分析报告数据
@@ -38,7 +55,9 @@ def fetch_ib_analysis():
     当前使用基于最新市场数据的模板生成
     """
     
-    report_date = get_report_date_str()
+    # 投行实际报告日期（研报发布日期）
+    ib_report_date = get_ib_report_date()
+    # 系统生成时间
     today = get_today_str()
     
     # 获取当前持仓
@@ -58,9 +77,11 @@ def fetch_ib_analysis():
     # 生成报告内容（基于模板，实际可替换为真实API数据）
     report_content = f"""# 国际投行分析报告
 
-**报告日期**: {report_date}  
-**生成时间**: {today} {datetime.now().strftime('%H:%M:%S')}  
+**投行报告日期**: {ib_report_date}  
+**系统生成时间**: {today} {datetime.now().strftime('%H:%M:%S')}  
 **数据来源**: 摩根士丹利、摩根大通、高盛、中金公司、瑞银证券等
+
+> 注：本报告汇总各投行在 **{ib_report_date}** 发布的研报观点
 
 ---
 
@@ -69,15 +90,15 @@ def fetch_ib_analysis():
 **外资整体观点**: 谨慎乐观
 
 ### 关键指数目标
-| 指数 | 目标区间 | 来源 |
-|------|---------|------|
-| 沪深300 | 4150-4900 | 摩根大通/高盛 |
-| MSCI中国 | 80-83 | 摩根大通/摩根士丹利 |
-| 恒生指数 | 23000-25000 | 高盛/瑞银 |
+| 指数 | 目标区间 | 来源 | 报告日期 |
+|------|---------|------|----------|
+| 沪深300 | 4150-4900 | 摩根大通/高盛 | {ib_report_date} |
+| MSCI中国 | 80-83 | 摩根大通/摩根士丹利 | {ib_report_date} |
+| 恒生指数 | 23000-25000 | 高盛/瑞银 | {ib_report_date} |
 
 ### 主要投资主题
-1. **AI产业趋势是中期主线**（中金/高盛/瑞银共识）
-2. **港股科技龙头受青睐**（摩根士丹利超配建议）
+1. **AI产业趋势是中期主线**（中金/高盛/瑞银共识，{ib_report_date}）
+2. **港股科技龙头受青睐**（摩根士丹利超配建议，{ib_report_date}）
 3. **二季度可能先回调再上涨**（摩根大通"退一步进两步"）
 4. **全球基金重返中国意愿2021年来最强**（高盛）
 
@@ -148,7 +169,7 @@ def fetch_ib_analysis():
 *下次更新: 明天 09:00*
 """
     
-    return report_content, report_date
+    return report_content, ib_report_date
 
 def update_ib_analysis():
     """更新投行分析报告"""

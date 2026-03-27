@@ -784,6 +784,18 @@ def parse_ib_analysis():
         with open(IB_ANALYSIS_FILE, 'r', encoding='utf-8') as f:
             content = f.read()
         
+        # 从报告中解析投行报告日期（研报原始发布日期）
+        import re
+        ib_report_date = None
+        
+        # 尝试匹配 "投行报告日期: YYYY-MM-DD"
+        date_match = re.search(r'\*\*投行报告日期\*\*[:\s]*(\d{4}-\d{2}-\d{2})', content)
+        if date_match:
+            ib_report_date = date_match.group(1)
+        else:
+            # 回退到文件修改时间
+            ib_report_date = datetime.fromtimestamp(os.path.getmtime(IB_ANALYSIS_FILE)).strftime('%Y-%m-%d')
+        
         # 解析持仓映射表格
         holdings_map = []
         stocks_data = load_data()
@@ -869,7 +881,8 @@ def parse_ib_analysis():
         }
         
         return {
-            'update_time': datetime.fromtimestamp(os.path.getmtime(IB_ANALYSIS_FILE)).strftime('%Y-%m-%d %H:%M'),
+            'update_time': ib_report_date,  # 使用投行报告日期
+            'system_time': datetime.now().strftime('%Y-%m-%d %H:%M'),  # 系统时间作为参考
             'macro_summary': macro_summary,
             'holdings_map': holdings_map,
             'ib_list': ['摩根士丹利', '摩根大通', '高盛', '中金公司', '瑞银证券', '富达国际', '汇丰'],
@@ -877,6 +890,8 @@ def parse_ib_analysis():
         }
     except Exception as e:
         print(f"解析投行分析失败: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 @app.route('/api/ib-analysis')
