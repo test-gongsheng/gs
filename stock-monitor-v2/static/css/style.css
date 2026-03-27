@@ -3742,3 +3742,53 @@ body {
   background: rgba(108, 117, 125, 0.15);
   color: var(--text-muted);
 }
+
+/* ========== 投行观点悬停提示 ========== */
+.ib-tooltip {
+  position: fixed;
+  background: rgba(30, 30, 40, 0.98);
+  border: 1px solid var(--accent-blue);
+  border-radius: var(--border-radius);
+  padding: 12px 16px;
+  max-width: 320px;
+  z-index: 9999;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.ib-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ib-tooltip-title {
+  font-weight: 600;
+  color: var(--accent-gold);
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+}
+
+.ib-tooltip-content {
+  color: var(--text-secondary);
+}
+
+.ib-tooltip-content strong {
+  color: var(--text-primary);
+}
+
+/* 持仓项悬停效果 */
+.ib-holding-item {
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ib-holding-item:hover {
+  background: rgba(59, 130, 246, 0.1);
+  transform: translateX(4px);
+}

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股票投资监控系统 v2.0</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=35">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=36">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/ib-analysis.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -1207,8 +1207,13 @@
                     'weak': '存在分歧'
                 }[holding.alignment] || '中性';
                 
+                // 构建悬停提示内容
+                const tooltipContent = holding.ib_views ? holding.ib_views.join('<br>• ') : '暂无详细观点';
+                
                 html += `
-                    <div class="ib-holding-item" onclick="showIBStockDetail('${holding.code}')">
+                    <div class="ib-holding-item" onclick="showIBStockDetail('${holding.code}')" 
+                         onmouseenter="showIBTooltip(this, '${holding.name}', '${tooltipContent.replace(/'/g, "\\'")}')"
+                         onmouseleave="hideIBTooltip()">
                         <div class="ib-holding-alignment ${holding.alignment}"></div>
                         <div class="ib-holding-info">
                             <div class="ib-holding-name">${holding.name}</div>
@@ -1375,6 +1380,55 @@
     function showIBStockDetail(code) {
         // 可以在这里添加跳转到个股详情的逻辑
         console.log('查看股票详情:', code);
+    }
+
+    // ========== 投行观点悬停提示 ==========
+    let ibTooltipEl = null;
+    
+    function showIBTooltip(element, title, content) {
+        // 创建tooltip元素（如果不存在）
+        if (!ibTooltipEl) {
+            ibTooltipEl = document.createElement('div');
+            ibTooltipEl.className = 'ib-tooltip';
+            document.body.appendChild(ibTooltipEl);
+        }
+        
+        // 设置内容
+        ibTooltipEl.innerHTML = `
+            <div class="ib-tooltip-title">${title} - 投行观点</div>
+            <div class="ib-tooltip-content">• ${content}</div>
+        `;
+        
+        // 计算位置
+        const rect = element.getBoundingClientRect();
+        const tooltipRect = ibTooltipEl.getBoundingClientRect();
+        
+        let left = rect.right + 10;
+        let top = rect.top;
+        
+        // 防止超出屏幕右侧
+        if (left + 320 > window.innerWidth) {
+            left = rect.left - 330;
+        }
+        
+        // 防止超出屏幕底部
+        if (top + 150 > window.innerHeight) {
+            top = window.innerHeight - 160;
+        }
+        
+        ibTooltipEl.style.left = left + 'px';
+        ibTooltipEl.style.top = top + 'px';
+        
+        // 显示
+        requestAnimationFrame(() => {
+            ibTooltipEl.classList.add('visible');
+        });
+    }
+    
+    function hideIBTooltip() {
+        if (ibTooltipEl) {
+            ibTooltipEl.classList.remove('visible');
+        }
     }
 
     // 页面加载时初始化

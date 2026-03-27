@@ -766,7 +766,7 @@ def preload_axis_cache():
 
 # ========== 投行分析报告 API ==========
 
-IB_ANALYSIS_FILE = os.path.join(os.path.dirname(__file__), 'reports', 'ib_analysis_20250327.md')
+IB_ANALYSIS_FILE = os.path.join(os.path.dirname(__file__), 'reports', 'ib_analysis_latest.md')
 
 # 投行分析数据缓存（内存中缓存）
 _ib_analysis_cache = {
