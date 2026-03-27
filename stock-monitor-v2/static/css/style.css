@@ -3745,22 +3745,28 @@ body {
 
 /* ========== 投行观点悬停提示 ========== */
 .ib-tooltip {
-  position: fixed;
-  background: rgba(30, 30, 40, 0.98);
-  border: 1px solid var(--accent-blue);
-  border-radius: var(--border-radius);
-  padding: 12px 16px;
-  max-width: 280px;
-  z-index: 99999;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  font-size: 0.8rem;
-  line-height: 1.5;
-  pointer-events: none;
+  position: fixed !important;
+  background: rgba(30, 30, 40, 0.98) !important;
+  border: 2px solid var(--accent-blue) !important;
+  border-radius: 8px !important;
+  padding: 12px 16px !important;
+  max-width: 300px !important;
+  min-width: 200px !important;
+  z-index: 999999 !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+  font-size: 0.8rem !important;
+  line-height: 1.6 !important;
+  pointer-events: none !important;
   display: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+  color: var(--text-primary);
 }
 
-.ib-tooltip.visible {
-  display: block;
+.ib-tooltip[style*="display: block"] {
+  opacity: 1;
+  visibility: visible;
 }
 
 .ib-tooltip-title {
@@ -3768,12 +3774,16 @@ body {
   color: var(--accent-gold);
   margin-bottom: 8px;
   font-size: 0.85rem;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   padding-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ib-tooltip-content {
   color: var(--text-secondary);
+  word-break: break-word;
 }
 
 .ib-tooltip-content strong {
@@ -3790,5 +3800,15 @@ body {
 }
 
 .ib-holding-item:hover {
-  background: rgba(59, 130, 246, 0.15);
+  background: rgba(59, 130, 246, 0.15) !important;
+}
+
+/* 投资主线样式 */
+.ib-theme-item {
+  transition: all 0.2s;
+}
+
+.ib-theme-item:hover {
+  background: rgba(59, 130, 246, 0.1);
+  padding-left: 4px;
 }

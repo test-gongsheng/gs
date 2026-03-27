@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股票投资监控系统 v2.0</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=40">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=45">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/ib-analysis.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -1182,10 +1182,40 @@
         if (macro.key_targets && macro.key_targets.length > 0) {
             html += '<div class="ib-targets">';
             macro.key_targets.forEach(target => {
+                const targetTooltip = target.source ? `数据来源: ${target.source}` : '';
                 html += `
-                    <div class="ib-target-item">
+                    <div class="ib-target-item" 
+                         onmouseenter="showIBTooltip(this, '${target.index} 目标', '${targetTooltip}')"
+                         onmouseleave="hideIBTooltip()">
                         <span class="ib-target-index">${target.index}</span>
                         <span class="ib-target-value">${target.target}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        // 投资主线
+        if (macro.main_themes && macro.main_themes.length > 0) {
+            html += `
+                <div class="ib-themes" style="margin: 10px 0; padding: 8px; background: rgba(59,130,246,0.08); border-radius: 6px;">
+                    <div style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">
+                        <i class="fas fa-chart-line"></i> 投资主线
+                    </div>
+            `;
+            macro.main_themes.slice(0, 2).forEach((theme, idx) => {
+                // 提取机构名称作为tooltip
+                const institutions = theme.match(/（(.+?)）/) || theme.match(/\((.+?)\)/);
+                const tooltipText = institutions ? `共识机构: ${institutions[1]}` : '点击查看详情';
+                
+                html += `
+                    <div class="ib-theme-item" 
+                         style="font-size: 0.75rem; color: var(--text-primary); padding: 4px 0; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05);"
+                         onmouseenter="showIBTooltip(this, '投资主线 ${idx + 1}', '${theme.replace(/'/g, "\\'")}')"
+                         onmouseleave="hideIBTooltip()"
+                         onclick="showIBDetailModal()">
+                        <i class="fas fa-angle-right" style="color: var(--accent-blue); margin-right: 4px;"></i>
+                        ${theme.substring(0, 20)}${theme.length > 20 ? '...' : ''}
                     </div>
                 `;
             });
@@ -1385,58 +1415,58 @@
     // ========== 投行观点悬停提示 ==========
     let ibTooltipEl = null;
     
-    function showIBTooltip(element, title, content) {
-        // 创建tooltip元素（如果不存在）
+    function initIBTooltip() {
         if (!ibTooltipEl) {
             ibTooltipEl = document.createElement('div');
             ibTooltipEl.className = 'ib-tooltip';
+            ibTooltipEl.id = 'ib-global-tooltip';
             document.body.appendChild(ibTooltipEl);
         }
+    }
+    
+    function showIBTooltip(element, title, content) {
+        initIBTooltip();
         
-        // 替换换行符为HTML换行
-        const formattedContent = content.replace(/<br>/g, '<br>• ');
+        // 清理内容中的引号
+        const safeTitle = title.replace(/"/g, '&quot;');
+        const safeContent = content.replace(/"/g, '&quot;').replace(/<br>/gi, '<br>• ');
         
-        // 设置内容
         ibTooltipEl.innerHTML = `
-            <div class="ib-tooltip-title">${title} - 投行观点</div>
-            <div class="ib-tooltip-content">• ${formattedContent}</div>
+            <div class="ib-tooltip-title">${safeTitle}</div>
+            <div class="ib-tooltip-content">${safeContent}</div>
         `;
         
-        // 先显示以获取尺寸
+        // 显示
         ibTooltipEl.style.display = 'block';
-        ibTooltipEl.classList.add('visible');
+        ibTooltipEl.style.opacity = '1';
+        ibTooltipEl.style.visibility = 'visible';
         
         // 计算位置
         const rect = element.getBoundingClientRect();
-        const tooltipWidth = ibTooltipEl.offsetWidth || 280;
-        const tooltipHeight = ibTooltipEl.offsetHeight || 100;
+        const tooltipRect = ibTooltipEl.getBoundingClientRect();
         
-        let left = rect.right + 8;
+        let left = rect.right + 10;
         let top = rect.top;
         
         // 防止超出屏幕右侧
-        if (left + tooltipWidth > window.innerWidth - 20) {
-            left = rect.left - tooltipWidth - 8;
+        if (left + tooltipRect.width > window.innerWidth - 10) {
+            left = rect.left - tooltipRect.width - 10;
         }
         
         // 防止超出屏幕底部
-        if (top + tooltipHeight > window.innerHeight - 20) {
-            top = window.innerHeight - tooltipHeight - 20;
+        if (top + tooltipRect.height > window.innerHeight - 10) {
+            top = window.innerHeight - tooltipRect.height - 10;
         }
         
-        // 防止超出屏幕顶部
-        if (top < 10) {
-            top = 10;
-        }
-        
-        ibTooltipEl.style.left = left + 'px';
-        ibTooltipEl.style.top = top + 'px';
+        ibTooltipEl.style.left = Math.max(10, left) + 'px';
+        ibTooltipEl.style.top = Math.max(10, top) + 'px';
     }
     
     function hideIBTooltip() {
         if (ibTooltipEl) {
-            ibTooltipEl.classList.remove('visible');
             ibTooltipEl.style.display = 'none';
+            ibTooltipEl.style.opacity = '0';
+            ibTooltipEl.style.visibility = 'hidden';
         }
     }
 
