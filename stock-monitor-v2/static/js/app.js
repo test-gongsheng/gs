@@ -44,18 +44,11 @@ window.appState = appState;
 const mockStocks = [];
 
 const mockHotSectors = [
-    { name: '半导体', change: 3.2 },
-    { name: '黄金', change: 2.8 },
-    { name: 'AI人工智能', change: 2.5 },
-    { name: '新能源', change: 1.9 },
-    { name: '稀土', change: 1.5 }
+    // 降级备用数据
 ];
 
 const mockNews = [
-    { time: '10:30', title: '阿里巴巴财报超预期，云业务增长34%', tag: 'important' },
-    { time: '10:15', title: '美联储3月议息会议在即，黄金价格上涨', tag: 'normal' },
-    { time: '09:45', title: '半导体板块资金净流入超50亿', tag: 'normal' },
-    { time: '09:30', title: '港股通今日净流入港股25亿港元', tag: 'normal' }
+    // 降级备用数据，仅在API完全失败时显示
 ];
 
 // 初始化
