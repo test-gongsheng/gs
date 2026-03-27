@@ -1369,7 +1369,7 @@ async function loadHotSectors() {
     }
 }
 
-// 渲染新闻 - 结构化财联社新闻 (头条/题材/日历/持仓)
+// 渲染新闻 - 结构化财联社新闻 (头条/题材/日历/持仓/情绪分析)
 function renderNews() {
     const listEl = document.getElementById('newsList');
     if (!listEl) return;
@@ -1382,7 +1382,38 @@ function renderNews() {
         return;
     }
 
-    const { headlines = [], themes = [], calendar = [], portfolio = [], general = [], hot_themes = [] } = appState.news;
+    const { headlines = [], themes = [], calendar = [], portfolio = [], general = [], hot_themes = [], market_sentiment = {} } = appState.news;
+    
+    // 0. 渲染市场情绪指数
+    if (market_sentiment && market_sentiment.index !== undefined) {
+        const sentimentSection = document.createElement('div');
+        sentimentSection.className = 'news-section sentiment-section';
+        const { index = 50, label = '中性', distribution = {} } = market_sentiment;
+        const total = (distribution.positive || 0) + (distribution.neutral || 0) + (distribution.negative || 0);
+        
+        // 根据指数确定颜色
+        let sentimentColor = '#888';
+        let sentimentBg = '#f0f0f0';
+        if (index >= 60) { sentimentColor = '#10b981'; sentimentBg = '#d1fae5'; }
+        else if (index <= 40) { sentimentColor = '#ef4444'; sentimentBg = '#fee2e2'; }
+        else { sentimentColor = '#f59e0b'; sentimentBg = '#fef3c7'; }
+        
+        sentimentSection.innerHTML = `
+            <div class="market-sentiment-card" style="background: ${sentimentBg}; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-weight: bold; color: #333;">📊 市场情绪</span>
+                    <span style="font-size: 24px; font-weight: bold; color: ${sentimentColor};">${index}<span style="font-size: 14px;">/100</span></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #666;">
+                    <span>整体: <b style="color: ${sentimentColor}">${label}</b></span>
+                    ${total > 0 ? `
+                        <span>🟢${distribution.positive || 0} 🟡${distribution.neutral || 0} 🔴${distribution.negative || 0}</span>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+        listEl.appendChild(sentimentSection);
+    }
     
     // 1. 渲染投资日历（今日重要事件）
     if (calendar.length > 0) {
@@ -1444,14 +1475,21 @@ function renderNews() {
         listEl.appendChild(headlineSection);
     }
 
-    // 4. 渲染持仓相关
+    // 4. 渲染持仓相关 (带负面预警)
     if (portfolio.length > 0) {
         const portfolioSection = document.createElement('div');
         portfolioSection.className = 'news-section';
-        portfolioSection.innerHTML = '<div class="news-section-title">💼 持仓相关</div>';
+        
+        // 检查是否有负面新闻
+        const negativeCount = portfolio.filter(n => n.sentiment === 'negative').length;
+        const warningHtml = negativeCount > 0 ? `<span style="color: #ef4444; font-size: 0.85rem;">⚠️ ${negativeCount}条需关注</span>` : '';
+        
+        portfolioSection.innerHTML = `<div class="news-section-title">💼 持仓相关 ${warningHtml}</div>`;
         
         portfolio.forEach(news => {
-            const el = createNewsElement(news, 'portfolio');
+            // 负面新闻添加 warning 类
+            const type = news.sentiment === 'negative' ? 'portfolio warning' : 'portfolio';
+            const el = createNewsElement(news, type);
             portfolioSection.appendChild(el);
         });
         listEl.appendChild(portfolioSection);
@@ -1486,6 +1524,10 @@ function createNewsElement(news, type) {
     
     const importanceClass = news.importance >= 2 ? 'important' : news.importance === 1 ? 'attention' : 'normal';
     
+    // 情绪标签
+    const sentimentEmoji = {'positive': '🟢', 'negative': '🔴', 'neutral': '🟡'}[news.sentiment] || '⚪';
+    const sentimentClass = news.sentiment || 'neutral';
+    
     // 关联板块标签
     let sectorsHtml = '';
     if (news.related_sectors && news.related_sectors.length > 0) {
@@ -1496,6 +1538,7 @@ function createNewsElement(news, type) {
         <div class="news-header">
             <span class="news-time">${news.time || ''}</span>
             <span class="news-tag ${importanceClass}">${news.importance_label || '一般'}</span>
+            <span class="sentiment-tag ${sentimentClass}" title="情绪: ${news.sentiment_label || '中性'}">${sentimentEmoji} ${news.sentiment_label || '中性'}</span>
         </div>
         <div class="news-title" title="${news.content || news.title}">${news.title}</div>
         ${sectorsHtml}

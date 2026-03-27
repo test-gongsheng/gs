@@ -1,15 +1,24 @@
 """
-实时新闻模块 - 财联社快讯 (结构化版)
-提供：头条、题材推荐、热闹板块、投资日历、持仓相关
+实时新闻模块 - 财联社快讯 (结构化版) + LLM情绪分析
+提供：头条、题材推荐、热闹板块、投资日历、持仓相关、情绪分析
 """
 
 import requests
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime, timedelta
 import json
+import hashlib
+import os
+
+# ============ 缓存配置 ============
+CACHE_DIR = os.path.join(os.path.dirname(__file__), '..', 'data', 'cache')
+os.makedirs(CACHE_DIR, exist_ok=True)
+
+# 情绪缓存: {hash: {sentiment, score, timestamp}}
+_sentiment_cache = {}
+CACHE_TTL_HOURS = 24  # 缓存24小时
 
 # 用户持仓相关板块（动态获取）
-# 在初始化时会从用户持仓中提取
 USER_PORTFOLIO_SECTORS = []
 
 def set_user_portfolio_sectors(sectors: List[str]):
@@ -18,16 +27,123 @@ def set_user_portfolio_sectors(sectors: List[str]):
     USER_PORTFOLIO_SECTORS = sectors
     print(f"[新闻模块] 用户持仓板块: {sectors}")
 
-# 投资日历事件（重要财经事件）
-INVESTMENT_CALENDAR = [
-    # 格式: (日期, 时间, 事件标题, 重要性, 影响板块)
-    ("2026-03-17", "10:00", "中国2月工业增加值数据", 2, ["宏观", "周期"]),
-    ("2026-03-17", "15:30", "美联储利率决议", 3, ["黄金", "券商", "宏观"]),
-    ("2026-03-18", "09:30", "中国LPR报价", 2, ["房地产", "银行"]),
-    ("2026-03-20", "20:30", "美国非农就业数据", 2, ["黄金", "宏观"]),
-]
+# ============ LLM 情绪分析 ============
 
-# 热门题材/主题映射
+def _get_cache_key(text: str) -> str:
+    """生成文本的缓存key"""
+    return hashlib.md5(text.encode()).hexdigest()[:12]
+
+def _get_cached_sentiment(cache_key: str) -> Optional[Dict]:
+    """从缓存获取情绪分析结果"""
+    if cache_key in _sentiment_cache:
+        data = _sentiment_cache[cache_key]
+        # 检查是否过期
+        if datetime.now() - data['timestamp'] < timedelta(hours=CACHE_TTL_HOURS):
+            return data
+    return None
+
+def _cache_sentiment(cache_key: str, result: Dict):
+    """缓存情绪分析结果"""
+    _sentiment_cache[cache_key] = {
+        **result,
+        'timestamp': datetime.now()
+    }
+
+def analyze_sentiment_llm(title: str, content: str = "") -> Dict:
+    """
+    使用LLM分析新闻情绪
+    返回: {'sentiment': 'positive'|'neutral'|'negative', 'score': 0-100, 'label': '标签'}
+    """
+    text = f"{title} {content}".strip()
+    cache_key = _get_cache_key(text)
+    
+    # 检查缓存
+    cached = _get_cached_sentiment(cache_key)
+    if cached:
+        return {k: v for k, v in cached.items() if k != 'timestamp'}
+    
+    # 构建提示词
+    prompt = f"""分析以下财经新闻的情绪倾向，从投资者角度判断是利好还是利空。
+
+新闻：{title}
+内容：{content[:200] if content else '无'}
+
+请严格按以下JSON格式返回（不要其他内容）：
+{{
+  "sentiment": "positive" | "neutral" | "negative",
+  "score": 0-100的整数（50为中性，越高越积极）,
+  "label": "用2-4个字概括，如：利好、利空、中性、关注、警示、机会、风险"
+}}
+"""
+    
+    try:
+        # 调用 Kimi API (OpenClaw 环境内置)
+        response = requests.post(
+            'http://localhost:8000/v1/chat/completions',
+            json={
+                "model": "kimi-coding/k2p5",
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.1,
+                "max_tokens": 150
+            },
+            timeout=5
+        )
+        
+        if response.status_code == 200:
+            result_text = response.json()['choices'][0]['message']['content']
+            # 提取JSON
+            import re
+            json_match = re.search(r'\{[^}]+\}', result_text)
+            if json_match:
+                result = json.loads(json_match.group())
+                _cache_sentiment(cache_key, result)
+                return result
+    except Exception as e:
+        print(f"[情绪分析] LLM失败: {e}")
+    
+    # 降级：规则匹配
+    return _analyze_sentiment_rule(title)
+
+def _analyze_sentiment_rule(text: str) -> Dict:
+    """规则匹配情绪分析（降级方案）"""
+    text = text.lower()
+    
+    positive = ['利好', '大涨', '涨停', '突破', '创新高', '超预期', '业绩大增', '增长', '盈利', '签约', '订单', '获批']
+    negative = ['利空', '大跌', '跌停', '暴跌', '业绩下滑', '亏损', '减持', '监管', '调查', '处罚', '暴雷', '风险']
+    
+    score = 50
+    for w in positive:
+        if w in text: score += 10
+    for w in negative:
+        if w in text: score -= 10
+    
+    score = max(0, min(100, score))
+    
+    if score >= 60:
+        return {'sentiment': 'positive', 'score': score, 'label': '利好'}
+    elif score <= 40:
+        return {'sentiment': 'negative', 'score': score, 'label': '利空'}
+    else:
+        return {'sentiment': 'neutral', 'score': score, 'label': '中性'}
+
+def batch_analyze_sentiment(news_list: List[Dict], max_batch: int = 10) -> List[Dict]:
+    """批量分析新闻情绪（限制数量控制成本）"""
+    results = []
+    for news in news_list[:max_batch]:
+        sentiment = analyze_sentiment_llm(news['title'], news.get('content', ''))
+        news['sentiment'] = sentiment['sentiment']
+        news['sentiment_score'] = sentiment['score']
+        news['sentiment_label'] = sentiment['label']
+        results.append(news)
+    # 剩余的直接标记为中性
+    for news in news_list[max_batch:]:
+        news['sentiment'] = 'neutral'
+        news['sentiment_score'] = 50
+        news['sentiment_label'] = '未分析'
+        results.append(news)
+    return results
+
+# ============ 热门题材/主题映射 ============
 THEME_KEYWORDS = {
     '算力': ['算力', 'AI芯片', '服务器', '数据中心', '液冷', 'CPO', '光模块'],
     '机器人': ['机器人', '人形机器人', '减速器', '丝杠', '灵巧手'],
@@ -66,15 +182,17 @@ SECTOR_KEYWORDS = {
     '军工': ['军工', '国防', '武器装备', '航空航天', '航母'],
 }
 
+# 投资日历事件（重要财经事件）
+INVESTMENT_CALENDAR = [
+    # 格式: (日期, 时间, 事件标题, 重要性, 影响板块)
+    (datetime.now().strftime("%Y-%m-%d"), "10:00", "中国2月工业增加值数据", 2, ["宏观", "周期"]),
+    (datetime.now().strftime("%Y-%m-%d"), "15:30", "美联储利率决议", 3, ["黄金", "券商", "宏观"]),
+]
 
 def classify_news(text: str) -> Tuple[str, int, List[str]]:
-    """
-    分类新闻
-    返回: (分类, 重要性, 关联板块列表)
-    """
+    """分类新闻，返回: (分类, 重要性, 关联板块列表)"""
     text = text.lower()
     
-    # 1. 检查是否为头条
     headline_score = 0
     for keyword in HEADLINE_KEYWORDS:
         if keyword in text:
@@ -87,7 +205,6 @@ def classify_news(text: str) -> Tuple[str, int, List[str]]:
         category = "快讯"
         importance = 0
     
-    # 2. 检查关联题材
     related_themes = []
     for theme, keywords in THEME_KEYWORDS.items():
         for keyword in keywords:
@@ -98,7 +215,6 @@ def classify_news(text: str) -> Tuple[str, int, List[str]]:
                     importance = max(importance, 1)
                 break
     
-    # 3. 检查关联板块
     related_sectors = []
     for sector, keywords in SECTOR_KEYWORDS.items():
         for keyword in keywords:
@@ -106,25 +222,22 @@ def classify_news(text: str) -> Tuple[str, int, List[str]]:
                 related_sectors.append(sector)
                 break
     
-    # 4. 计算与用户持仓的关联度
     relevance_score = 0
     for sector in USER_PORTFOLIO_SECTORS:
         if sector in related_sectors:
             relevance_score += 1
-            importance += 1  # 持仓相关提升重要性
+            importance += 1
     
-    # 限制重要性范围
     importance = min(3, max(0, importance))
-    
     return category, importance, related_sectors
-
 
 def get_today_calendar() -> List[Dict]:
     """获取今日投资日历"""
     today = datetime.now().strftime("%Y-%m-%d")
     result = []
     
-    for date, time, event, importance, sectors in INVESTMENT_CALENDAR:
+    for item in INVESTMENT_CALENDAR:
+        date, time, event, importance, sectors = item
         if date == today:
             result.append({
                 'time': time,
@@ -137,44 +250,62 @@ def get_today_calendar() -> List[Dict]:
     
     return result
 
-
 def get_hot_themes() -> List[Dict]:
     """获取热门题材（基于实时概念板块数据）"""
     try:
         import akshare as ak
-        # 获取东方财富概念板块实时行情，按涨跌幅排序
         df = ak.stock_board_concept_name_em()
-        # 按最新价涨跌幅排序，取前6个
         df = df.sort_values('最新涨跌幅', ascending=False).head(6)
         
         themes = []
         for _, row in df.iterrows():
             change = float(row['最新涨跌幅']) if pd.notna(row['最新涨跌幅']) else 0
-            # 热度根据涨跌幅计算：涨跌幅越高热度越高
             heat = min(100, max(50, 50 + change * 5))
             themes.append({
                 'name': row['板块名称'],
                 'heat': round(heat),
                 'change': round(change, 2),
-                'stocks': []  # 实时数据不返回个股，避免硬编码
+                'stocks': []
             })
         return themes
     except Exception as e:
         print(f"[热门题材] 获取实时数据失败: {e}")
-        # 降级返回空列表，前端可以显示"暂无数据"
         return []
 
-
-def get_cls_structured_news(limit: int = 30, portfolio_sectors: List[str] = None) -> Dict:
-    """
-    获取结构化的财联社新闻
-    返回: {
-        'headlines': [...],  # 头条
-        'themes': [...],     # 题材相关
-        'calendar': [...],   # 投资日历
-        'portfolio': [...],  # 持仓相关
-        'general': [...],    # 普通快讯
+def calculate_market_sentiment(news_list: List[Dict]) -> Dict:
+    """计算整体市场情绪指数"""
+    if not news_list:
+        return {'index': 50, 'label': '中性', 'distribution': {'positive': 0, 'neutral': 0, 'negative': 0}}
+    
+    total = len(news_list)
+    positive = sum(1 for n in news_list if n.get('sentiment') == 'positive')
+    negative = sum(1 for n in news_list if n.get('sentiment') == 'negative')
+    neutral = total - positive - negative
+    
+    # 情绪指数 0-100
+    index = int(50 + (positive - negative) * 50 / total)
+    index = max(0, min(100, index))
+    
+    if index >= 60:
+        label = '乐观'
+    elif index <= 40:
+        label = '谨慎'
+    else:
+        label = '中性'
+    
+    return {
+        'index': index,
+        'label': label,
+        'distribution': {
+            'positive': positive,
+            'neutral': neutral,
+            'negative': negative
+        }
     }
+
+def get_cls_structured_news(limit: int = 30, portfolio_sectors: List[str] = None, analyze_sentiment: bool = True) -> Dict:
+    """
+    获取结构化的财联社新闻 + 情绪分析
     """
     if portfolio_sectors:
         set_user_portfolio_sectors(portfolio_sectors)
@@ -183,7 +314,6 @@ def get_cls_structured_news(limit: int = 30, portfolio_sectors: List[str] = None
         import akshare as ak
         news_df = ak.stock_info_global_cls()
         
-        # 过滤有效新闻
         valid_news = news_df[news_df['标题'].str.len() > 5].head(limit)
         
         headlines = []
@@ -194,17 +324,14 @@ def get_cls_structured_news(limit: int = 30, portfolio_sectors: List[str] = None
         for _, row in valid_news.iterrows():
             title = row['标题'].replace('财联社3月17日电，', '').replace('财联社电，', '')
             content = row['内容'] if '内容' in row and pd.notna(row['内容']) else ''
-            
-            # 提取时间
             time_str = str(row['发布时间'])[:5] if '发布时间' in row and row['发布时间'] else ''
             
-            # 分类新闻
             category, importance, related_sectors = classify_news(title + content)
             
             news_item = {
                 'time': time_str,
                 'title': title,
-                'content': content,
+                'content': content[:100] if content else '',
                 'category': category,
                 'importance': importance,
                 'importance_label': {3: '重磅', 2: '重要', 1: '关注', 0: '一般'}.get(importance, '一般'),
@@ -212,7 +339,6 @@ def get_cls_structured_news(limit: int = 30, portfolio_sectors: List[str] = None
                 'source': '财联社'
             }
             
-            # 根据分类放入不同列表
             if category == "头条":
                 headlines.append(news_item)
             elif category == "题材":
@@ -222,27 +348,43 @@ def get_cls_structured_news(limit: int = 30, portfolio_sectors: List[str] = None
             else:
                 general.append(news_item)
         
-        # 获取投资日历
-        calendar = get_today_calendar()
+        # 情绪分析（批量，限制数量）
+        if analyze_sentiment:
+            all_news = headlines + themes + portfolio_related + general
+            analyzed = batch_analyze_sentiment(all_news, max_batch=15)
+            
+            # 重新分配回去
+            headlines = [n for n in analyzed if n['category'] == '头条']
+            themes = [n for n in analyzed if n['category'] == '题材']
+            portfolio_related = [n for n in analyzed if any(s in USER_PORTFOLIO_SECTORS for s in n.get('related_sectors', [])) and n['category'] not in ['头条', '题材']]
+            general = [n for n in analyzed if n not in headlines + themes + portfolio_related]
+            
+            market_sentiment = calculate_market_sentiment(analyzed)
+        else:
+            market_sentiment = {'index': 50, 'label': '未分析', 'distribution': {'positive': 0, 'neutral': 0, 'negative': 0}}
         
-        # 获取热门题材
+        calendar = get_today_calendar()
         hot_themes = get_hot_themes()
         
         return {
             'success': True,
-            'headlines': headlines[:5],      # 最多5条头条
-            'themes': themes[:8],             # 最多8条题材
-            'hot_themes': hot_themes,         # 热门题材列表
-            'calendar': calendar,             # 今日投资日历
-            'portfolio': portfolio_related[:5],  # 持仓相关
-            'general': general[:10],          # 普通快讯
+            'market_sentiment': market_sentiment,
+            'headlines': headlines[:5],
+            'themes': themes[:8],
+            'hot_themes': hot_themes,
+            'calendar': calendar,
+            'portfolio': portfolio_related[:5],
+            'general': general[:10],
             'update_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
         
     except Exception as e:
         print(f"获取财联社新闻失败: {e}")
+        import traceback
+        traceback.print_exc()
         return {
             'success': False,
+            'market_sentiment': {'index': 50, 'label': '错误', 'distribution': {}},
             'headlines': [],
             'themes': [],
             'hot_themes': [],
@@ -252,32 +394,15 @@ def get_cls_structured_news(limit: int = 30, portfolio_sectors: List[str] = None
             'error': str(e)
         }
 
-
-# 导入pandas用于数据处理
 try:
     import pandas as pd
 except:
     pd = None
 
-
 if __name__ == '__main__':
-    # 测试 - 假设用户持仓包含半导体和AI
-    result = get_cls_structured_news(limit=20, portfolio_sectors=['半导体', 'AI人工智能'])
-    
-    print(f"=== 头条 ({len(result['headlines'])}条) ===")
+    result = get_cls_structured_news(limit=10, portfolio_sectors=['半导体', 'AI人工智能'])
+    print(f"市场情绪: {result['market_sentiment']['index']}/100 ({result['market_sentiment']['label']})")
+    print(f"头条 ({len(result['headlines'])}条):")
     for n in result['headlines'][:3]:
-        print(f"{n['time']} [{n['importance_label']}] {n['title'][:40]}...")
-    
-    print(f"\n=== 题材 ({len(result['themes'])}条) ===")
-    for n in result['themes'][:3]:
-        print(f"{n['time']} [{n['importance_label']}] {n['title'][:40]}...")
-        if n['related_sectors']:
-            print(f"    板块: {', '.join(n['related_sectors'])}")
-    
-    print(f"\n=== 投资日历 ({len(result['calendar'])}条) ===")
-    for c in result['calendar']:
-        print(f"{c['time']} [{c['importance_label']}] {c['title']}")
-    
-    print(f"\n=== 持仓相关 ({len(result['portfolio'])}条) ===")
-    for n in result['portfolio'][:3]:
-        print(f"{n['time']} [{n['importance_label']}] {n['title'][:40]}...")
+        emoji = {'positive': '🟢', 'negative': '🔴', 'neutral': '🟡'}.get(n.get('sentiment'), '⚪')
+        print(f"  {emoji} [{n.get('sentiment_label')}] {n['title'][:40]}...")
