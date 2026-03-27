@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from app import load_data
+from app import load_data, get_cached_axis_price
 
 REPORTS_DIR = os.path.join(os.path.dirname(__file__), 'reports')
 ANALYSIS_FILE = os.path.join(REPORTS_DIR, 'portfolio_analysis_latest.json')
@@ -34,6 +34,24 @@ def get_stock_sector(code: str) -> str:
     return SECTOR_MAP.get(code, '其他')
 
 
+def get_real_axis_price(code: str, market: str, current_price: float) -> float:
+    """获取真实的中轴价格（基于历史数据计算）"""
+    try:
+        # 尝试从缓存/计算获取中轴价格
+        axis_data = get_cached_axis_price(code, market, days=90)
+        axis_price = axis_data.get('axis_price', 0)
+        
+        # 如果计算失败，使用当前价格作为fallback
+        if axis_price <= 0:
+            print(f"[WARN] {code} 中轴价格计算失败，使用当前价格作为参考")
+            return current_price
+        
+        return axis_price
+    except Exception as e:
+        print(f"[ERROR] {code} 获取中轴价格失败: {e}")
+        return current_price
+
+
 def analyze_stock_detailed(stock: Dict) -> Dict:
     """生成单只股票的详细分析报告"""
     code = stock['code']
@@ -43,43 +61,45 @@ def analyze_stock_detailed(stock: Dict) -> Dict:
     shares = stock.get('shares', 0)
     current_price = stock.get('current_price', 0)
     
+    # 获取真实的中轴价格（基于历史数据计算）
+    axis_price = get_real_axis_price(code, market, current_price)
+    
     # 基础计算
     market_value = current_price * shares
     cost_value = avg_cost * shares
     pnl = market_value - cost_value
     pnl_percent = round(pnl / cost_value * 100, 2) if cost_value > 0 else 0
     
-    # 中轴偏离计算
-    pivot_price = avg_cost
-    if pivot_price > 0:
-        pivot_deviation = round((current_price - pivot_price) / pivot_price * 100, 2)
+    # 计算与中轴的偏离度
+    if axis_price > 0:
+        axis_deviation = round((current_price - axis_price) / axis_price * 100, 2)
     else:
-        pivot_deviation = 0
+        axis_deviation = 0
     
     # 确定技术状态
     technical_status = 'neutral'
     status_desc = '震荡'
-    if pivot_deviation > 8:
+    if axis_deviation > 8:
         technical_status = 'overbought'
         status_desc = '超买'
-    elif pivot_deviation > 3:
+    elif axis_deviation > 3:
         technical_status = 'strong'
         status_desc = '强势'
-    elif pivot_deviation < -8:
+    elif axis_deviation < -8:
         technical_status = 'oversold'
         status_desc = '超卖'
-    elif pivot_deviation < -3:
+    elif axis_deviation < -3:
         technical_status = 'weak'
         status_desc = '弱势'
     
-    # 触发价格计算
-    trigger_buy = round(pivot_price * 0.92, 2)
-    trigger_sell = round(pivot_price * 1.08, 2)
+    # 触发价格计算（基于成本价的网格策略）
+    trigger_buy = round(avg_cost * 0.92, 2)
+    trigger_sell = round(avg_cost * 1.08, 2)
     
     # 生成详细分析内容
     analysis_detail = generate_stock_analysis_detail(
-        name, code, market, current_price, avg_cost, 
-        pivot_deviation, pnl, pnl_percent, technical_status,
+        name, code, market, current_price, avg_cost, axis_price,
+        axis_deviation, pnl, pnl_percent, technical_status,
         trigger_buy, trigger_sell
     )
     
@@ -90,8 +110,8 @@ def analyze_stock_detailed(stock: Dict) -> Dict:
         'sector': get_stock_sector(code),
         'current_price': current_price,
         'avg_cost': avg_cost,
-        'pivot_price': pivot_price,
-        'pivot_deviation': pivot_deviation,
+        'axis_price': axis_price,
+        'axis_deviation': axis_deviation,
         'shares': shares,
         'market_value': round(market_value, 2),
         'pnl': round(pnl, 2),
@@ -117,124 +137,127 @@ def analyze_stock_detailed(stock: Dict) -> Dict:
 
 
 def generate_stock_analysis_detail(name: str, code: str, market: str, 
-                                   current_price: float, avg_cost: float,
-                                   pivot_deviation: float, pnl: float, 
+                                   current_price: float, avg_cost: float, axis_price: float,
+                                   axis_deviation: float, pnl: float, 
                                    pnl_percent: float, status: str,
                                    trigger_buy: float, trigger_sell: float) -> Dict:
     """生成单只股票的详细分析内容"""
     
     # 1. 数据来源
     data_sources = [
-        f"**持仓成本**: ¥{avg_cost:.2f}（您的实际买入均价）",
         f"**当前价格**: ¥{current_price:.2f}（{market}实时行情）",
-        f"**中轴价格**: ¥{avg_cost:.2f}（基于持仓成本）",
-        f"**触发价格**: 买入≤¥{trigger_buy} / 卖出≥¥{trigger_sell}（中轴±8%）",
+        f"**中轴价格**: ¥{axis_price:.2f}（基于近90日均价计算）",
+        f"**持仓成本**: ¥{avg_cost:.2f}（您的实际买入均价）",
+        f"**网格触发**: 买入≤¥{trigger_buy} / 卖出≥¥{trigger_sell}（成本±8%）",
     ]
     
     if market == 'A股':
-        data_sources.append("**行情数据**: 东方财富/akshare实时数据")
+        data_sources.append("**数据来源**: 东方财富/akshare历史行情数据")
     else:
-        data_sources.append("**行情数据**: 港股实时行情")
+        data_sources.append("**数据来源**: 港股实时行情")
     
     # 2. 分析逻辑
     analysis_logic = []
     
     # 中轴偏离分析
-    if abs(pivot_deviation) < 3:
+    if abs(axis_deviation) < 3:
         analysis_logic.append(
-            f"**中轴偏离**: 当前价格偏离中轴{pivot_deviation:+.2f}%，处于±3%正常震荡区间，"
-            f"符合预期波动范围，无需特殊操作。"
+            f"**价格位置**: 当前价格偏离中轴{axis_deviation:+.2f}%，处于±3%正常震荡区间，"
+            f"说明股价围绕合理估值波动，暂无明确趋势。"
         )
-    elif pivot_deviation > 0:
+    elif axis_deviation > 0:
         analysis_logic.append(
-            f"**中轴偏离**: 当前价格高于中轴{pivot_deviation:+.2f}%，处于上涨趋势，"
-            f"偏离度{abs(pivot_deviation):.1f}%，"
+            f"**价格位置**: 当前价格高于中轴{axis_deviation:+.2f}%，处于相对高位，"
+            f"偏离度{abs(axis_deviation):.1f}%，说明近期表现强势。"
         )
-        if pivot_deviation > 8:
+        if axis_deviation > 8:
             analysis_logic.append(
-                f"已超过+8%卖出触发线（¥{trigger_sell}），建议考虑减仓锁定利润。"
+                f"**风险提示**: 价格已超过中轴+8%，进入超买区域，短期回调风险增加。"
             )
         else:
             analysis_logic.append(
-                f"距离+8%卖出触发线（¥{trigger_sell}）还有{((trigger_sell-current_price)/current_price*100):.1f}%空间。"
+                f"**空间测算**: 距离成本价卖出触发线（¥{trigger_sell}）"
+                f"还有{((trigger_sell-current_price)/current_price*100):.1f}%上涨空间。"
             )
     else:
         analysis_logic.append(
-            f"**中轴偏离**: 当前价格低于中轴{pivot_deviation:.2f}%，处于下跌趋势，"
-            f"偏离度{abs(pivot_deviation):.1f}%，"
+            f"**价格位置**: 当前价格低于中轴{axis_deviation:.2f}%，处于相对低位，"
+            f"偏离度{abs(axis_deviation):.1f}%，说明近期表现偏弱。"
         )
-        if pivot_deviation < -8:
+        if axis_deviation < -8:
             analysis_logic.append(
-                f"已跌破-8%买入触发线（¥{trigger_buy}），可关注加仓机会。"
+                f"**机会提示**: 价格已跌破中轴-8%，进入超卖区域，可能存在左侧布局机会。"
             )
         else:
             analysis_logic.append(
-                f"距离-8%买入触发线（¥{trigger_buy}）还有{((current_price-trigger_buy)/current_price*100):.1f}%空间。"
+                f"**空间测算**: 距离成本价买入触发线（¥{trigger_buy}）"
+                f"还有{((current_price-trigger_buy)/current_price*100):.1f}%下跌空间。"
             )
     
-    # 盈亏分析
+    # 持仓盈亏分析
+    cost_deviation = round((current_price - avg_cost) / avg_cost * 100, 2) if avg_cost > 0 else 0
     if pnl > 0:
         analysis_logic.append(
-            f"**盈亏状况**: 当前浮盈¥{pnl:,.2f}（+{pnl_percent}%），"
-            f"建议根据中轴偏离度决定是否获利了结。"
+            f"**持仓盈亏**: 当前浮盈¥{pnl:,.2f}（+{pnl_percent}%），"
+            f"成本偏离{cost_deviation:+.2f}%。建议结合中轴偏离度决定是否获利了结。"
         )
     elif pnl < 0:
         analysis_logic.append(
-            f"**盈亏状况**: 当前浮亏¥{abs(pnl):,.2f}（{pnl_percent}%），"
-            f"建议根据中轴偏离度和基本面判断是否补仓。"
+            f"**持仓盈亏**: 当前浮亏¥{abs(pnl):,.2f}（{pnl_percent}%），"
+            f"成本偏离{cost_deviation:.2f}%。建议关注是否继续下跌至网格买入点。"
         )
     else:
-        analysis_logic.append("**盈亏状况**: 当前盈亏平衡。")
+        analysis_logic.append("**持仓盈亏**: 当前盈亏平衡，处于成本价附近。")
     
     # 3. 结论与建议
     if status == 'overbought':
         conclusion = {
             'title': '⚠️ 超买区 - 建议减仓',
             'content': [
-                f"{name}当前处于超买状态，价格偏离中轴成本+8%以上。",
-                "根据中轴价格策略，这是网格策略的卖出点。",
-                f"建议：考虑卖出部分仓位（如1/4或1/3），锁定利润。",
-                "减仓后等待价格回落至中轴附近再考虑接回。"
+                f"{name}当前处于超买状态，价格偏离中轴{axis_deviation:+.1f}%，超过+8%阈值。",
+                "根据中轴价格策略，当前已进入相对高估区域，短期回调风险增加。",
+                f"建议：考虑减仓1/4至1/3，锁定部分利润。若继续上涨至¥{trigger_sell}（成本+8%），可进一步减仓。",
+                "未来观察：等待价格回落至中轴附近（¥{:.2f}）再考虑接回。".format(axis_price)
             ]
         }
     elif status == 'strong':
         conclusion = {
             'title': '🟢 强势区 - 持有观察',
             'content': [
-                f"{name}表现强势，价格高于中轴但尚未达到卖出触发线。",
-                "可继续持有，享受上涨收益。",
-                f"建议：设置卖出预警价为¥{trigger_sell}，达到后考虑减仓。",
-                "同时关注是否出现放量滞涨等见顶信号。"
+                f"{name}表现强势，价格高于中轴{axis_deviation:+.1f}%，处于相对高位。",
+                "尚未达到超买阈值，可继续持有享受上涨收益。",
+                f"建议：设置动态止盈，若跌破中轴或达到¥{trigger_sell}（成本+8%）考虑减仓。",
+                "未来观察：关注成交量是否持续放大，警惕放量滞涨信号。"
             ]
         }
     elif status == 'oversold':
         conclusion = {
             'title': '💡 超卖区 - 关注买入',
             'content': [
-                f"{name}当前处于超卖状态，价格跌破中轴成本8%以上。",
-                "根据中轴价格策略，这是网格策略的买入点。",
-                f"建议：关注买入机会，可考虑分批加仓。",
-                "买入后等待价格反弹至中轴附近。"
+                f"{name}当前处于超卖状态，价格偏离中轴{axis_deviation:.1f}%，跌破-8%阈值。",
+                "根据中轴价格策略，当前已进入相对低估区域，可能存在左侧布局机会。",
+                f"建议：关注买入机会，可考虑分批建仓。若继续下跌至¥{trigger_buy}（成本-8%），可加大仓位。",
+                "未来观察：等待价格反弹至中轴附近，或观察是否出现企稳信号。"
             ]
         }
     elif status == 'weak':
         conclusion = {
             'title': '🔴 弱势区 - 关注支撑',
             'content': [
-                f"{name}相对弱势，价格低于中轴但尚未达到买入触发线。",
-                "建议关注是否继续下跌，或出现企稳信号。",
-                f"若跌破¥{trigger_buy}则进入超卖区，可考虑加仓。",
-                "同时关注基本面是否有变化导致持续走弱。"
+                f"{name}相对弱势，价格低于中轴{axis_deviation:.1f}%，但尚未达到超卖阈值。",
+                "建议保持观望，等待更明确的买入信号。",
+                f"建议：若跌破¥{trigger_buy}（成本-8%）进入超卖区，可考虑加仓；若反弹突破中轴，趋势可能转强。",
+                "未来观察：关注是否出现止跌企稳信号，以及基本面是否有改善。"
             ]
         }
     else:
         conclusion = {
             'title': '⚪ 震荡区 - 正常持有',
             'content': [
-                f"{name}价格在正常震荡区间，偏离中轴±3%以内。",
-                "符合预期波动范围，保持当前仓位。",
-                "建议：继续监控，等待中轴偏离信号触发。",
-                f"上方阻力位¥{trigger_sell}，下方支撑位¥{trigger_buy}。"
+                f"{name}价格在正常震荡区间，偏离中轴{axis_deviation:+.1f}%，处于±3%合理范围内。",
+                "股价围绕中轴波动，暂无明确趋势，保持当前仓位即可。",
+                f"建议：继续持有，等待偏离度扩大至±8%触发网格交易信号。",
+                "未来观察：上方关注¥{:.2f}（中轴+8%），下方关注¥{:.2f}（中轴-8%）。".format(axis_price*1.08, axis_price*0.92)
             ]
         }
     
@@ -339,7 +362,7 @@ def generate_portfolio_analysis_v2() -> Dict:
         status = analysis['technical_status']
         status_counts[status] += 1
         
-        deviation = analysis['pivot_deviation']
+        deviation = analysis['axis_deviation']
         name = analysis['name']
         
         if status == 'overbought':
