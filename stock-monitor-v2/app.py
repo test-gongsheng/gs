@@ -330,25 +330,19 @@ def get_news():
     """获取结构化财联社新闻 (头条/题材/投资日历/持仓相关)"""
     try:
         # 从用户持仓中提取相关板块
+        from utils.news_data import get_stock_sectors
+        
         data = load_data()
         stocks = data.get('stocks', [])
         
-        # 简单的板块映射（基于股票代码或名称）
+        # 使用东方财富风格的细分板块映射
         portfolio_sectors = set()
         for stock in stocks:
             name = stock.get('name', '')
             code = stock.get('code', '')
-            # 根据股票名称判断板块（简化版）
-            if any(k in name for k in ['芯', '半', '微', '电']):
-                portfolio_sectors.add('半导体')
-            if any(k in name for k in ['药', '医', '生物']):
-                portfolio_sectors.add('医药')
-            if any(k in name for k in ['金', '矿']):
-                portfolio_sectors.add('黄金')
-            if any(k in name for k in ['券', '银', '保']):
-                portfolio_sectors.add('券商')
-            if any(k in name for k in ['锂', '光', '风', '新能']):
-                portfolio_sectors.add('新能源')
+            # 使用细分的板块判断函数
+            sectors = get_stock_sectors(name, code)
+            portfolio_sectors.update(sectors)
         
         result = get_cls_structured_news(
             limit=30,

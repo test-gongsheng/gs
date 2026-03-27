@@ -168,19 +168,225 @@ HEADLINE_KEYWORDS = [
     '重大', '突发', '紧急', '震惊', '重磅',
 ]
 
-# 板块关联关键词
+# 板块关联关键词 - 东方财富风格细分板块
 SECTOR_KEYWORDS = {
-    '半导体': ['芯片', '半导体', '集成电路', '光刻机', '中芯', '华为芯片', 'AI芯片', '存储芯片', '晶圆'],
-    'AI人工智能': ['AI', '人工智能', '大模型', '算力', 'ChatGPT', 'OpenAI', 'DeepSeek', '字节', '阿里云'],
+    # TMT科技
+    '半导体': ['芯片', '半导体', '集成电路', '光刻机', '中芯', '华为芯片', 'AI芯片', '存储芯片', '晶圆', 'EDA', '封装', '测试'],
+    'AI人工智能': ['AI', '人工智能', '大模型', '算力', 'ChatGPT', 'OpenAI', 'DeepSeek', '字节', '阿里云', '智谱', '月之暗面'],
+    '消费电子': ['苹果', '华为', '小米', '手机', '电脑', '可穿戴', 'MR', 'VR', 'AR'],
+    '通信': ['5G', '6G', '通信设备', '基站', '光模块', 'CPO', '光纤', '光缆', '卫星'],
+    '计算机': ['软件', '云计算', '大数据', '网络安全', '信创', '操作系统', '数据库'],
+    '传媒': ['游戏', '影视', '广告', '出版', '短剧', '直播', '网红', '元宇宙'],
+    
+    # 高端制造
+    '机器人': ['机器人', '人形机器人', '减速器', '丝杠', '灵巧手', '伺服电机', '控制器'],
+    '汽车': ['汽车', '新能源车', '电动车', '自动驾驶', '激光雷达', '车载芯片', '动力电池', '充电桩'],
+    '机械设备': ['机械', '工业母机', '机床', '机器人', '工程机械', '专用设备'],
+    '电力设备': ['电网', '特高压', '智能电网', '变压器', '储能', '逆变器', '光伏设备'],
+    '国防军工': ['军工', '国防', '武器装备', '航空航天', '航母', '卫星', '导弹', '雷达'],
+    
+    # 新能源
+    '光伏': ['光伏', '硅料', '硅片', '电池片', '组件', '逆变器', 'HJT', 'TOPCon', '钙钛矿'],
+    '锂电池': ['锂电', '宁德时代', '比亚迪', '正极', '负极', '电解液', '隔膜', '固态电池'],
+    '储能': ['储能', '户储', '工商储', '大储', '钠电池', '液流电池'],
+    '风电': ['风电', '风机', '叶片', '塔筒', '海缆', '海风', '陆风'],
+    '氢能源': ['氢能', '氢燃料', '电解槽', '储氢', '加氢站', '燃料电池'],
+    '核电': ['核电', '核反应堆', '核燃料', '核废料'],
+    
+    # 资源周期
     '黄金': ['黄金', '贵金属', '美联储', '加息', '降息', '美元指数', '通胀'],
-    '新能源': ['新能源', '光伏', '锂电', '储能', '宁德时代', '比亚迪', '风电', '氢能源'],
-    '稀土': ['稀土', '永磁', '稀有金属', '钨', '锑', '镓', '锗'],
+    '有色金属': ['铜', '铝', '锌', '铅', '镍', '钴', '锂', '稀土', '钨', '锑', '小金属'],
+    '煤炭': ['煤炭', '动力煤', '焦煤', '焦炭', '煤炭开采', '煤化工'],
+    '石油石化': ['石油', '原油', '天然气', '页岩气', '加油站', '炼油', '化工'],
+    '钢铁': ['钢铁', '钢材', '铁矿石', '螺纹钢', '板材', '特钢'],
+    '化工': ['化工', '化学', '塑料', '橡胶', '纤维', '农药', '化肥', 'MDI', 'TDI'],
+    '稀土': ['稀土', '永磁', '稀有金属', '钨', '锑', '镓', '锗', '磁材'],
+    
+    # 大消费
+    '医药生物': ['医药', '创新药', 'CXO', '医疗器械', '医保', '集采', '生物制品', '中药', '疫苗'],
+    '食品饮料': ['食品', '饮料', '白酒', '啤酒', '乳制品', '调味品', '休闲食品', '预制菜'],
+    '家用电器': ['家电', '空调', '冰箱', '洗衣机', '小家电', '智能家居', '扫地机器人'],
+    '纺织服装': ['纺织', '服装', '家纺', '鞋帽', '箱包', '化纤'],
+    '商贸零售': ['零售', '电商', '超市', '百货', '免税', '跨境电商'],
+    '社会服务': ['旅游', '酒店', '餐饮', '教育', '培训', '人力资源'],
+    '美容护理': ['化妆品', '医美', '护肤', '美容', '个护'],
+    
+    # 金融地产
+    '银行': ['银行', '银行业', '净息差', '不良贷款', '降准', 'LPR', 'MLF'],
     '券商': ['券商', '证券', '投行', 'A股', '港股', 'IPO', '证监会', '交易所'],
-    '医药': ['医药', '创新药', 'CXO', '医疗器械', '医保', '集采'],
-    '地产': ['房地产', '地产', '楼市', '房价', 'LPR', '房贷利率'],
-    '银行': ['银行', '银行业', '净息差', '不良贷款', '降准'],
-    '军工': ['军工', '国防', '武器装备', '航空航天', '航母'],
+    '保险': ['保险', '寿险', '财险', '健康险', '养老金'],
+    '房地产': ['房地产', '地产', '楼市', '房价', 'LPR', '房贷利率', '物业'],
+    '建筑装饰': ['建筑', '基建', '装修', '装饰', '园林', '装配式建筑'],
+    
+    # 交通运输
+    '航空机场': ['航空', '机场', '民航', '机票', '航运', '飞机'],
+    '港口航运': ['港口', '航运', '集装箱', '海运', '船舶', '造船'],
+    '物流': ['物流', '快递', '供应链', '仓储', '冷链'],
+    '铁路公路': ['铁路', '高铁', '公路', '高速', '地铁', '城轨'],
+    
+    # 农林牧渔
+    '农业': ['农业', '种植业', '种子', '农药', '化肥', '农机'],
+    '养殖': ['养殖', '猪肉', '鸡肉', '饲料', '兽药', '水产'],
+    
+    # 公用事业
+    '电力': ['电力', '火电', '水电', '风电', '光伏', '核电', '电网'],
+    '燃气': ['燃气', '天然气', '城市燃气'],
+    '环保': ['环保', '污水处理', '固废处理', '大气治理', '碳中和'],
+    
+    # 其他
+    '建筑材料': ['建材', '水泥', '玻璃', '陶瓷', '管材', '防水'],
 }
+
+
+
+def get_stock_sectors(stock_name: str, stock_code: str = '') -> List[str]:
+    """
+    根据股票名称和代码判断所属板块 - 东方财富风格细分板块
+    返回该股票可能所属的板块列表
+    """
+    sectors = []
+    name_lower = stock_name.lower()
+    
+    # ========== 优先匹配知名个股 ==========
+    # 白酒
+    if any(k in name_lower for k in ['茅台', '五粮液', '泸州', '洋河', '汾酒', '古井', '酒鬼', '舍得', '水井坊']):
+        sectors.append('食品饮料')
+    # 新能源龙头
+    if any(k in name_lower for k in ['隆基', '通威', '晶澳', '天合', '晶科', '阳光电源', '锦浪']):
+        sectors.append('光伏')
+    if any(k in name_lower for k in ['宁德', '亿纬', '国轩', '欣旺达', '鹏辉']):
+        sectors.append('锂电池')
+    # 保险
+    if any(k in name_lower for k in ['平安', '人寿', '太保', '新华', '人保', '财险']):
+        sectors.append('保险')
+    # 银行
+    if any(k in name_lower for k in ['工商', '招商', '建设', '农业', '中国银', '兴业', '平安银', '宁波银', '江苏银']):
+        sectors.append('银行')
+    # 航运
+    if any(k in name_lower for k in ['中远海', '招商轮', '中谷', '安通']):
+        sectors.append('港口航运')
+    # 航空
+    if any(k in name_lower for k in ['国航', '东航', '南航', '海航', '春秋', '吉祥']):
+        sectors.append('航空机场')
+    
+    # ========== 科技TMT ==========
+    if any(k in name_lower for k in ['芯', '半', '微', '集成', 'eda', '晶圆', '封测', '光刻']):
+        sectors.append('半导体')
+    if any(k in name_lower for k in ['存储', '内存', '闪存', 'dram', 'nand', 'nor']):
+        sectors.append('半导体')
+    if any(k in name_lower for k in ['ai', '智能', '算法', '软件', '信息', '数据', '云', '大模型']):
+        sectors.append('AI人工智能')
+        sectors.append('计算机')
+    if any(k in name_lower for k in ['算力', '服务器', '机房', 'idc', '液冷']):
+        sectors.append('AI人工智能')
+    if any(k in name_lower for k in ['手机', '电子', '穿戴', '耳机', '屏幕', '面板', '光学']):
+        sectors.append('消费电子')
+    if any(k in name_lower for k in ['通信', '5g', '6g', '基站', '光模块', '光纤', '卫星']):
+        sectors.append('通信')
+    if any(k in name_lower for k in ['游戏', '传媒', '影视', '广告', '出版', '直播', '网红', '短剧']):
+        sectors.append('传媒')
+    
+    # ========== 高端制造 ==========
+    if any(k in name_lower for k in ['机器人', '减速器', '丝杠', '伺服', '灵巧']):
+        sectors.append('机器人')
+    if any(k in name_lower for k in ['车', '汽', '驾驶', '雷达', '动力']):
+        if '电池' not in name_lower:
+            sectors.append('汽车')
+    if any(k in name_lower for k in ['机械', '机床', '设备', '工业', '母机']):
+        sectors.append('机械设备')
+    if any(k in name_lower for k in ['电网', '特高压', '变压器', '电气', '电力设备']):
+        sectors.append('电力设备')
+    if any(k in name_lower for k in ['军工', '国防', '航空', '航天', '船舶', '雷达', '导弹']):
+        sectors.append('国防军工')
+    
+    # ========== 新能源 ==========
+    if any(k in name_lower for k in ['光伏', '太阳', '硅料', '硅片', '组件', '逆变器', 'hjt', 'topcon', '钙钛矿']):
+        sectors.append('光伏')
+    if any(k in name_lower for k in ['锂', '钠', '电池', '正极', '负极', '电解液', '隔膜', '宁德', '比亚迪']):
+        sectors.append('锂电池')
+    if any(k in name_lower for k in ['储能', '户储', '大储', '液流', '压缩空气']):
+        sectors.append('储能')
+    if any(k in name_lower for k in ['风电', '风机', '叶片', '塔筒', '海缆', '海风']):
+        sectors.append('风电')
+    if any(k in name_lower for k in ['氢', '燃料', '电解槽', '储氢', '加氢']):
+        sectors.append('氢能源')
+    if any(k in name_lower for k in ['核电', '核反应堆', '核燃料']):
+        sectors.append('核电')
+    
+    # ========== 资源周期 ==========
+    if any(k in name_lower for k in ['黄金', '贵金属']):
+        sectors.append('黄金')
+    if any(k in name_lower for k in ['铜', '铝', '锌', '铅', '镍', '钴', '稀土', '钨', '锑', '有色']):
+        sectors.append('有色金属')
+    if any(k in name_lower for k in ['煤', '炭', '焦']):
+        sectors.append('煤炭')
+    if any(k in name_lower for k in ['油', '气', '石化', '页岩']):
+        sectors.append('石油石化')
+    if any(k in name_lower for k in ['钢', '铁', '矿']):
+        sectors.append('钢铁')
+    if any(k in name_lower for k in ['化工', '化学', '塑料', '橡胶', '纤维', '农药', '化肥']):
+        sectors.append('化工')
+    
+    # ========== 大消费 ==========
+    if any(k in name_lower for k in ['药', '医', '疗', '生物', '疫苗', 'cxo', 'cro']):
+        sectors.append('医药生物')
+    if any(k in name_lower for k in ['酒', '饮', '食', '奶', '调味', '零食', '预制']):
+        sectors.append('食品饮料')
+    if any(k in name_lower for k in ['家电', '空调', '冰箱', '电视', '小家电']):
+        sectors.append('家用电器')
+    if any(k in name_lower for k in ['纺织', '服装', '家纺', '鞋', '箱包', '化纤']):
+        sectors.append('纺织服装')
+    if any(k in name_lower for k in ['零售', '电商', '超市', '百货', '免税']):
+        sectors.append('商贸零售')
+    if any(k in name_lower for k in ['旅游', '酒店', '餐饮', '教育', '培训']):
+        sectors.append('社会服务')
+    if any(k in name_lower for k in ['化妆品', '医美', '护肤', '美容']):
+        sectors.append('美容护理')
+    
+    # ========== 金融地产 ==========
+    if any(k in name_lower for k in ['银行', '农商行', '城商行']):
+        sectors.append('银行')
+    if any(k in name_lower for k in ['券', '证']):
+        sectors.append('券商')
+    if any(k in name_lower for k in ['保险', '人寿', '财险']):
+        sectors.append('保险')
+    if any(k in name_lower for k in ['房', '地', '物业']):
+        sectors.append('房地产')
+    if any(k in name_lower for k in ['建筑', '基建', '装饰', '园林', '装修']):
+        sectors.append('建筑装饰')
+    
+    # ========== 交通运输 ==========
+    if any(k in name_lower for k in ['航空', '机场', '航运', '船舶', '港口', '集运', '物流', '快递', '铁路', '高速']):
+        if '航空' in name_lower or '机场' in name_lower:
+            sectors.append('航空机场')
+        elif '港口' in name_lower or '航运' in name_lower or '船舶' in name_lower:
+            sectors.append('港口航运')
+        elif '物流' in name_lower or '快递' in name_lower:
+            sectors.append('物流')
+        else:
+            sectors.append('铁路公路')
+    
+    # ========== 农林牧渔 ==========
+    if any(k in name_lower for k in ['农', '种植', '种子', '化肥', '农机']):
+        sectors.append('农业')
+    if any(k in name_lower for k in ['猪', '鸡', '养殖', '饲料', '水产', '牧']):
+        sectors.append('养殖')
+    
+    # ========== 公用事业 ==========
+    if any(k in name_lower for k in ['电力', '火电', '水电', '核电', '绿电', '电网']):
+        sectors.append('电力')
+    if any(k in name_lower for k in ['燃气', '天然气']):
+        sectors.append('燃气')
+    if any(k in name_lower for k in ['环保', '污水', '固废', '大气', '碳中和']):
+        sectors.append('环保')
+    
+    # ========== 建筑材料 ==========
+    if any(k in name_lower for k in ['建材', '水泥', '玻璃', '陶瓷', '管材', '防水']):
+        sectors.append('建筑材料')
+    
+    # 去除重复
+    return list(set(sectors)) if sectors else ['其他']
+
 
 # 投资日历 - 财联社风格，包含未来一周事件
 def get_investment_calendar(portfolio_sectors: List[str] = None) -> List[Dict]:
