@@ -377,7 +377,7 @@ def analyze_sector(stocks: List[Dict]) -> Dict:
 
 
 def generate_portfolio_analysis_v2() -> Dict:
-    """生成完整的持仓分析报告V2"""
+    """生成完整的持仓分析报告V2 - 先预加载所有中轴价格"""
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 开始生成持仓分析报告V2...")
     
     data = load_data()
@@ -385,7 +385,18 @@ def generate_portfolio_analysis_v2() -> Dict:
     
     report_date = datetime.now().strftime('%Y-%m-%d')
     
-    # 分析每只股票
+    # 第一步：预加载所有股票的中轴价格（确保数据准确性）
+    print(f"[预加载] 开始计算 {len(stocks)} 只股票的中轴价格...")
+    for stock in stocks:
+        code = stock['code']
+        market = stock['market']
+        current_price = stock.get('current_price', 0)
+        # 调用中轴价格计算，确保缓存中有数据
+        axis_price = get_real_axis_price(code, market, current_price)
+        print(f"[预加载] {code} 中轴价格: ¥{axis_price:.2f}")
+    print("[预加载] 中轴价格计算完成，开始生成分析报告...")
+    
+    # 第二步：分析每只股票
     stock_analyses = []
     total_market_value = 0
     total_cost = 0
