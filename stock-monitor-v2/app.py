@@ -764,12 +764,6 @@ def preload_axis_cache():
     thread.start()
 
 
-if __name__ == '__main__':
-    # 启动时预加载缓存
-    preload_axis_cache()
-    app.run(debug=False, host='0.0.0.0', port=8888, use_reloader=False)
-
-
 # ========== 投行分析报告 API ==========
 
 IB_ANALYSIS_FILE = os.path.join(os.path.dirname(__file__), 'reports', 'ib_analysis_20250327.md')
@@ -909,4 +903,12 @@ def get_ib_analysis():
             'success': False,
             'error': str(e)
         }), 500
+
+
+
+if __name__ == '__main__':
+    # 启动时预加载缓存
+    preload_axis_cache()
+    app.run(debug=False, host='0.0.0.0', port=8888, use_reloader=False)
+
 
