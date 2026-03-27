@@ -139,14 +139,30 @@ def get_today_calendar() -> List[Dict]:
 
 
 def get_hot_themes() -> List[Dict]:
-    """获取热门题材（基于当前新闻聚合）"""
-    # 实际应该通过API获取，这里返回预设的热门题材
-    return [
-        {'name': '算力', 'heat': 95, 'change': 3.2, 'stocks': ['中际旭创', '工业富联', '寒武纪']},
-        {'name': '机器人', 'heat': 88, 'change': 2.8, 'stocks': ['埃斯顿', '绿的谐波', '三花智控']},
-        {'name': '低空经济', 'heat': 82, 'change': 1.9, 'stocks': ['万丰奥威', '中信海直', '宗申动力']},
-        {'name': '固态电池', 'heat': 75, 'change': 1.5, 'stocks': ['宁德时代', '比亚迪', '亿纬锂能']},
-    ]
+    """获取热门题材（基于实时概念板块数据）"""
+    try:
+        import akshare as ak
+        # 获取东方财富概念板块实时行情，按涨跌幅排序
+        df = ak.stock_board_concept_name_em()
+        # 按最新价涨跌幅排序，取前6个
+        df = df.sort_values('最新涨跌幅', ascending=False).head(6)
+        
+        themes = []
+        for _, row in df.iterrows():
+            change = float(row['最新涨跌幅']) if pd.notna(row['最新涨跌幅']) else 0
+            # 热度根据涨跌幅计算：涨跌幅越高热度越高
+            heat = min(100, max(50, 50 + change * 5))
+            themes.append({
+                'name': row['板块名称'],
+                'heat': round(heat),
+                'change': round(change, 2),
+                'stocks': []  # 实时数据不返回个股，避免硬编码
+            })
+        return themes
+    except Exception as e:
+        print(f"[热门题材] 获取实时数据失败: {e}")
+        # 降级返回空列表，前端可以显示"暂无数据"
+        return []
 
 
 def get_cls_structured_news(limit: int = 30, portfolio_sectors: List[str] = None) -> Dict:
