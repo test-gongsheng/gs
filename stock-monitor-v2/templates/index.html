@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股票投资监控系统 v2.0</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=36">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=40">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/ib-analysis.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -1393,41 +1393,50 @@
             document.body.appendChild(ibTooltipEl);
         }
         
+        // 替换换行符为HTML换行
+        const formattedContent = content.replace(/<br>/g, '<br>• ');
+        
         // 设置内容
         ibTooltipEl.innerHTML = `
             <div class="ib-tooltip-title">${title} - 投行观点</div>
-            <div class="ib-tooltip-content">• ${content}</div>
+            <div class="ib-tooltip-content">• ${formattedContent}</div>
         `;
+        
+        // 先显示以获取尺寸
+        ibTooltipEl.style.display = 'block';
+        ibTooltipEl.classList.add('visible');
         
         // 计算位置
         const rect = element.getBoundingClientRect();
-        const tooltipRect = ibTooltipEl.getBoundingClientRect();
+        const tooltipWidth = ibTooltipEl.offsetWidth || 280;
+        const tooltipHeight = ibTooltipEl.offsetHeight || 100;
         
-        let left = rect.right + 10;
+        let left = rect.right + 8;
         let top = rect.top;
         
         // 防止超出屏幕右侧
-        if (left + 320 > window.innerWidth) {
-            left = rect.left - 330;
+        if (left + tooltipWidth > window.innerWidth - 20) {
+            left = rect.left - tooltipWidth - 8;
         }
         
         // 防止超出屏幕底部
-        if (top + 150 > window.innerHeight) {
-            top = window.innerHeight - 160;
+        if (top + tooltipHeight > window.innerHeight - 20) {
+            top = window.innerHeight - tooltipHeight - 20;
+        }
+        
+        // 防止超出屏幕顶部
+        if (top < 10) {
+            top = 10;
         }
         
         ibTooltipEl.style.left = left + 'px';
         ibTooltipEl.style.top = top + 'px';
-        
-        // 显示
-        requestAnimationFrame(() => {
-            ibTooltipEl.classList.add('visible');
-        });
     }
     
     function hideIBTooltip() {
         if (ibTooltipEl) {
             ibTooltipEl.classList.remove('visible');
+            ibTooltipEl.style.display = 'none';
         }
     }
 
