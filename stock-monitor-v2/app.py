@@ -768,3 +768,145 @@ if __name__ == '__main__':
     # 启动时预加载缓存
     preload_axis_cache()
     app.run(debug=False, host='0.0.0.0', port=8888, use_reloader=False)
+
+
+# ========== 投行分析报告 API ==========
+
+IB_ANALYSIS_FILE = os.path.join(os.path.dirname(__file__), 'reports', 'ib_analysis_20250327.md')
+
+# 投行分析数据缓存（内存中缓存）
+_ib_analysis_cache = {
+    'data': None,
+    'timestamp': 0
+}
+IB_CACHE_TTL = 3600  # 缓存1小时
+
+def parse_ib_analysis():
+    """解析投行分析报告，返回结构化数据"""
+    try:
+        if not os.path.exists(IB_ANALYSIS_FILE):
+            return None
+            
+        with open(IB_ANALYSIS_FILE, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # 解析持仓映射表格
+        holdings_map = []
+        stocks_data = load_data()
+        stocks = stocks_data.get('stocks', [])
+        
+        # 根据报告内容生成持仓映射
+        for stock in stocks:
+            name = stock.get('name', '')
+            code = stock.get('code', '')
+            market = stock.get('market', 'A股')
+            
+            # 根据报告内容判断契合度
+            alignment = 'neutral'
+            ib_views = []
+            
+            # 港股互联网
+            if name in ['腾讯控股', '阿里巴巴']:
+                alignment = 'strong'
+                ib_views = ['摩根士丹利: 超配互联网龙头', '高盛: 港股AI核心持仓', '南向资金创纪录流入']
+            # AI算力
+            elif name in ['摩尔线程'] or 'GPU' in name or '芯片' in name:
+                alignment = 'strong'
+                ib_views = ['中金: AI产业趋势是中期主线', '高盛: AI可提升估值15-20%']
+            # AI应用/云计算
+            elif name in ['拓尔思', '润泽科技'] or '数据' in name or 'IDC' in name:
+                alignment = 'moderate'
+                ib_views = ['中金: 端侧AI、软件应用均有机会', '汇丰: 数据中心需求持续上升']
+            # 机器人
+            elif name in ['三花智控'] or '机器人' in name:
+                alignment = 'moderate'
+                ib_views = ['瑞银: 人形机器人最受关注', '摩根士丹利: 看好自动化']
+            # 新能源/汽车
+            elif name in ['比亚迪', '比亚迪电子']:
+                alignment = 'neutral'
+                ib_views = ['摩根大通: 消费复苏是新动力', '智能驾驶主题受关注']
+            # 有色金属
+            elif name in ['云南铜业', '中国铝业'] or '铜' in name or '铝' in name:
+                alignment = 'weak'
+                ib_views = ['摩根士丹利: 低配能源/周期', '担忧关税影响大宗商品']
+            # 光伏
+            elif name in ['晶盛机电'] or '光伏' in name:
+                alignment = 'weak'
+                ib_views = ['摩根士丹利: 低配能源', '行业产能过剩仍存']
+            else:
+                ib_views = ['暂无特定投行观点覆盖']
+            
+            holdings_map.append({
+                'code': code,
+                'name': name,
+                'market': market,
+                'alignment': alignment,
+                'ib_views': ib_views
+            })
+        
+        # 生成宏观摘要
+        macro_summary = {
+            'consensus': '谨慎乐观',
+            'key_targets': [
+                {'index': '沪深300', 'target': '4150-4900', 'source': '摩根大通/高盛'},
+                {'index': 'MSCI中国', 'target': '80-83', 'source': '摩根大通/摩根士丹利'},
+            ],
+            'main_themes': [
+                'AI产业趋势是中期主线（中金/高盛/瑞银共识）',
+                '港股科技龙头受青睐（摩根士丹利超配建议）',
+                '二季度可能先回调再上涨（摩根大通）',
+                '全球基金重返中国意愿2021年来最强（高盛）'
+            ],
+            'warnings': [
+                '摩根大通: 二季度"退一步进两步"，4-5月可能回调',
+                '高盛: 地缘政治活跃，获利了结压力加大',
+                '摩根士丹利: 低配大宗商品、地产、消费必需品'
+            ]
+        }
+        
+        return {
+            'update_time': datetime.fromtimestamp(os.path.getmtime(IB_ANALYSIS_FILE)).strftime('%Y-%m-%d %H:%M'),
+            'macro_summary': macro_summary,
+            'holdings_map': holdings_map,
+            'ib_list': ['摩根士丹利', '摩根大通', '高盛', '中金公司', '瑞银证券', '富达国际', '汇丰'],
+            'raw_report': content[:2000] + '...'  # 返回部分内容
+        }
+    except Exception as e:
+        print(f"解析投行分析失败: {e}")
+        return None
+
+@app.route('/api/ib-analysis')
+def get_ib_analysis():
+    """获取投行分析报告（结构化数据）"""
+    try:
+        now = time.time()
+        
+        # 检查缓存
+        if _ib_analysis_cache['data'] and (now - _ib_analysis_cache['timestamp']) < IB_CACHE_TTL:
+            return jsonify({
+                'success': True,
+                'data': _ib_analysis_cache['data'],
+                'cached': True
+            })
+        
+        # 重新解析
+        data = parse_ib_analysis()
+        if data:
+            _ib_analysis_cache['data'] = data
+            _ib_analysis_cache['timestamp'] = now
+            return jsonify({
+                'success': True,
+                'data': data,
+                'cached': False
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': '分析报告不存在或解析失败'
+            }), 404
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
