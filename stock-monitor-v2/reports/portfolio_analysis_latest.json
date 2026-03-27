@@ -1,8 +1,8 @@
 {
   "report_date": "2026-03-27",
-  "report_type": "portfolio_daily_analysis",
-  "version": "1.0",
-  "generated_at": "2026-03-27 18:41:10",
+  "report_type": "portfolio_daily_analysis_v2",
+  "version": "2.0",
+  "generated_at": "2026-03-27 22:22:16",
   "strategy_note": "基于中轴价格±8%区间策略",
   "summary": {
     "total_stocks": 12,
@@ -26,253 +26,610 @@
       "code": "000559",
       "name": "万向钱潮",
       "market": "A股",
+      "sector": "汽车零部件",
       "current_price": 15.8,
       "avg_cost": 15.5,
       "pivot_price": 15.5,
       "pivot_deviation": 1.94,
-      "trigger_buy": 14.26,
-      "trigger_sell": 16.74,
-      "distance_to_buy": 10.8,
-      "distance_to_sell": -5.62,
       "shares": 28000,
       "market_value": 442400.0,
       "pnl": 8400.0,
       "pnl_percent": 1.94,
       "technical_status": "neutral",
-      "status_text": "⚪ 震荡",
-      "action_suggestion": "正常持有"
+      "status_desc": "震荡",
+      "status_icon": "⚪",
+      "trigger_buy": 14.26,
+      "trigger_sell": 16.74,
+      "action_suggestion": "正常持有",
+      "analysis": {
+        "data_sources": [
+          "**持仓成本**: ¥15.50（您的实际买入均价）",
+          "**当前价格**: ¥15.80（A股实时行情）",
+          "**中轴价格**: ¥15.50（基于持仓成本）",
+          "**触发价格**: 买入≤¥14.26 / 卖出≥¥16.74（中轴±8%）",
+          "**行情数据**: 东方财富/akshare实时数据"
+        ],
+        "analysis_logic": [
+          "**中轴偏离**: 当前价格偏离中轴+1.94%，处于±3%正常震荡区间，符合预期波动范围，无需特殊操作。",
+          "**盈亏状况**: 当前浮盈¥8,400.00（+1.94%），建议根据中轴偏离度决定是否获利了结。"
+        ],
+        "conclusion": {
+          "title": "⚪ 震荡区 - 正常持有",
+          "content": [
+            "万向钱潮价格在正常震荡区间，偏离中轴±3%以内。",
+            "符合预期波动范围，保持当前仓位。",
+            "建议：继续监控，等待中轴偏离信号触发。",
+            "上方阻力位¥16.74，下方支撑位¥14.26。"
+          ]
+        },
+        "update_time": "2026-03-27 22:22"
+      }
     },
     {
       "code": "000878",
       "name": "云南铜业",
       "market": "A股",
+      "sector": "有色金属",
       "current_price": 18.67,
       "avg_cost": 18.2,
       "pivot_price": 18.2,
       "pivot_deviation": 2.58,
-      "trigger_buy": 16.74,
-      "trigger_sell": 19.66,
-      "distance_to_buy": 11.53,
-      "distance_to_sell": -5.04,
       "shares": 3000,
       "market_value": 56010.0,
       "pnl": 1410.0,
       "pnl_percent": 2.58,
       "technical_status": "neutral",
-      "status_text": "⚪ 震荡",
-      "action_suggestion": "正常持有"
+      "status_desc": "震荡",
+      "status_icon": "⚪",
+      "trigger_buy": 16.74,
+      "trigger_sell": 19.66,
+      "action_suggestion": "正常持有",
+      "analysis": {
+        "data_sources": [
+          "**持仓成本**: ¥18.20（您的实际买入均价）",
+          "**当前价格**: ¥18.67（A股实时行情）",
+          "**中轴价格**: ¥18.20（基于持仓成本）",
+          "**触发价格**: 买入≤¥16.74 / 卖出≥¥19.66（中轴±8%）",
+          "**行情数据**: 东方财富/akshare实时数据"
+        ],
+        "analysis_logic": [
+          "**中轴偏离**: 当前价格偏离中轴+2.58%，处于±3%正常震荡区间，符合预期波动范围，无需特殊操作。",
+          "**盈亏状况**: 当前浮盈¥1,410.00（+2.58%），建议根据中轴偏离度决定是否获利了结。"
+        ],
+        "conclusion": {
+          "title": "⚪ 震荡区 - 正常持有",
+          "content": [
+            "云南铜业价格在正常震荡区间，偏离中轴±3%以内。",
+            "符合预期波动范围，保持当前仓位。",
+            "建议：继续监控，等待中轴偏离信号触发。",
+            "上方阻力位¥19.66，下方支撑位¥16.74。"
+          ]
+        },
+        "update_time": "2026-03-27 22:22"
+      }
     },
     {
       "code": "002050",
       "name": "三花智控",
       "market": "A股",
+      "sector": "智能制造",
       "current_price": 44.52,
       "avg_cost": 43.5,
       "pivot_price": 43.5,
       "pivot_deviation": 2.34,
-      "trigger_buy": 40.02,
-      "trigger_sell": 46.98,
-      "distance_to_buy": 11.24,
-      "distance_to_sell": -5.24,
       "shares": 6000,
       "market_value": 267120.0,
       "pnl": 6120.0,
       "pnl_percent": 2.34,
       "technical_status": "neutral",
-      "status_text": "⚪ 震荡",
-      "action_suggestion": "正常持有"
+      "status_desc": "震荡",
+      "status_icon": "⚪",
+      "trigger_buy": 40.02,
+      "trigger_sell": 46.98,
+      "action_suggestion": "正常持有",
+      "analysis": {
+        "data_sources": [
+          "**持仓成本**: ¥43.50（您的实际买入均价）",
+          "**当前价格**: ¥44.52（A股实时行情）",
+          "**中轴价格**: ¥43.50（基于持仓成本）",
+          "**触发价格**: 买入≤¥40.02 / 卖出≥¥46.98（中轴±8%）",
+          "**行情数据**: 东方财富/akshare实时数据"
+        ],
+        "analysis_logic": [
+          "**中轴偏离**: 当前价格偏离中轴+2.34%，处于±3%正常震荡区间，符合预期波动范围，无需特殊操作。",
+          "**盈亏状况**: 当前浮盈¥6,120.00（+2.34%），建议根据中轴偏离度决定是否获利了结。"
+        ],
+        "conclusion": {
+          "title": "⚪ 震荡区 - 正常持有",
+          "content": [
+            "三花智控价格在正常震荡区间，偏离中轴±3%以内。",
+            "符合预期波动范围，保持当前仓位。",
+            "建议：继续监控，等待中轴偏离信号触发。",
+            "上方阻力位¥46.98，下方支撑位¥40.02。"
+          ]
+        },
+        "update_time": "2026-03-27 22:22"
+      }
     },
     {
       "code": "002594",
       "name": "比亚迪",
       "market": "A股",
+      "sector": "新能源汽车",
       "current_price": 105.67,
       "avg_cost": 103,
       "pivot_price": 103,
       "pivot_deviation": 2.59,
-      "trigger_buy": 94.76,
-      "trigger_sell": 111.24,
-      "distance_to_buy": 11.51,
-      "distance_to_sell": -5.01,
       "shares": 100,
       "market_value": 10567.0,
       "pnl": 267.0,
       "pnl_percent": 2.59,
       "technical_status": "neutral",
-      "status_text": "⚪ 震荡",
-      "action_suggestion": "正常持有"
+      "status_desc": "震荡",
+      "status_icon": "⚪",
+      "trigger_buy": 94.76,
+      "trigger_sell": 111.24,
+      "action_suggestion": "正常持有",
+      "analysis": {
+        "data_sources": [
+          "**持仓成本**: ¥103.00（您的实际买入均价）",
+          "**当前价格**: ¥105.67（A股实时行情）",
+          "**中轴价格**: ¥103.00（基于持仓成本）",
+          "**触发价格**: 买入≤¥94.76 / 卖出≥¥111.24（中轴±8%）",
+          "**行情数据**: 东方财富/akshare实时数据"
+        ],
+        "analysis_logic": [
+          "**中轴偏离**: 当前价格偏离中轴+2.59%，处于±3%正常震荡区间，符合预期波动范围，无需特殊操作。",
+          "**盈亏状况**: 当前浮盈¥267.00（+2.59%），建议根据中轴偏离度决定是否获利了结。"
+        ],
+        "conclusion": {
+          "title": "⚪ 震荡区 - 正常持有",
+          "content": [
+            "比亚迪价格在正常震荡区间，偏离中轴±3%以内。",
+            "符合预期波动范围，保持当前仓位。",
+            "建议：继续监控，等待中轴偏离信号触发。",
+            "上方阻力位¥111.24，下方支撑位¥94.76。"
+          ]
+        },
+        "update_time": "2026-03-27 22:22"
+      }
     },
     {
       "code": "00700",
       "name": "腾讯控股",
       "market": "港股",
+      "sector": "互联网科技",
       "current_price": 498.4,
       "avg_cost": 391.69,
       "pivot_price": 391.69,
       "pivot_deviation": 27.24,
-      "trigger_buy": 360.35,
-      "trigger_sell": 423.03,
-      "distance_to_buy": 38.31,
-      "distance_to_sell": 17.82,
       "shares": 2900,
       "market_value": 1445360.0,
       "pnl": 309459.0,
       "pnl_percent": 27.24,
       "technical_status": "overbought",
-      "status_text": "⚠️ 超买区",
-      "action_suggestion": "考虑减仓"
+      "status_desc": "超买",
+      "status_icon": "⚠️",
+      "trigger_buy": 360.35,
+      "trigger_sell": 423.03,
+      "action_suggestion": "考虑减仓",
+      "analysis": {
+        "data_sources": [
+          "**持仓成本**: ¥391.69（您的实际买入均价）",
+          "**当前价格**: ¥498.40（港股实时行情）",
+          "**中轴价格**: ¥391.69（基于持仓成本）",
+          "**触发价格**: 买入≤¥360.35 / 卖出≥¥423.03（中轴±8%）",
+          "**行情数据**: 港股实时行情"
+        ],
+        "analysis_logic": [
+          "**中轴偏离**: 当前价格高于中轴+27.24%，处于上涨趋势，偏离度27.2%，",
+          "已超过+8%卖出触发线（¥423.03），建议考虑减仓锁定利润。",
+          "**盈亏状况**: 当前浮盈¥309,459.00（+27.24%），建议根据中轴偏离度决定是否获利了结。"
+        ],
+        "conclusion": {
+          "title": "⚠️ 超买区 - 建议减仓",
+          "content": [
+            "腾讯控股当前处于超买状态，价格偏离中轴成本+8%以上。",
+            "根据中轴价格策略，这是网格策略的卖出点。",
+            "建议：考虑卖出部分仓位（如1/4或1/3），锁定利润。",
+            "减仓后等待价格回落至中轴附近再考虑接回。"
+          ]
+        },
+        "update_time": "2026-03-27 22:22"
+      }
     },
     {
       "code": "300229",
       "name": "拓尔思",
       "market": "A股",
+      "sector": "其他",
       "current_price": 18.31,
       "avg_cost": 17.8,
       "pivot_price": 17.8,
       "pivot_deviation": 2.87,
-      "trigger_buy": 16.38,
-      "trigger_sell": 19.22,
-      "distance_to_buy": 11.78,
-      "distance_to_sell": -4.73,
       "shares": 21500,
       "market_value": 393665.0,
       "pnl": 10965.0,
       "pnl_percent": 2.87,
       "technical_status": "neutral",
-      "status_text": "⚪ 震荡",
-      "action_suggestion": "正常持有"
+      "status_desc": "震荡",
+      "status_icon": "⚪",
+      "trigger_buy": 16.38,
+      "trigger_sell": 19.22,
+      "action_suggestion": "正常持有",
+      "analysis": {
+        "data_sources": [
+          "**持仓成本**: ¥17.80（您的实际买入均价）",
+          "**当前价格**: ¥18.31（A股实时行情）",
+          "**中轴价格**: ¥17.80（基于持仓成本）",
+          "**触发价格**: 买入≤¥16.38 / 卖出≥¥19.22（中轴±8%）",
+          "**行情数据**: 东方财富/akshare实时数据"
+        ],
+        "analysis_logic": [
+          "**中轴偏离**: 当前价格偏离中轴+2.87%，处于±3%正常震荡区间，符合预期波动范围，无需特殊操作。",
+          "**盈亏状况**: 当前浮盈¥10,965.00（+2.87%），建议根据中轴偏离度决定是否获利了结。"
+        ],
+        "conclusion": {
+          "title": "⚪ 震荡区 - 正常持有",
+          "content": [
+            "拓尔思价格在正常震荡区间，偏离中轴±3%以内。",
+            "符合预期波动范围，保持当前仓位。",
+            "建议：继续监控，等待中轴偏离信号触发。",
+            "上方阻力位¥19.22，下方支撑位¥16.38。"
+          ]
+        },
+        "update_time": "2026-03-27 22:22"
+      }
     },
     {
       "code": "300316",
       "name": "晶盛机电",
       "market": "A股",
+      "sector": "其他",
       "current_price": 44,
       "avg_cost": 43,
       "pivot_price": 43,
       "pivot_deviation": 2.33,
-      "trigger_buy": 39.56,
-      "trigger_sell": 46.44,
-      "distance_to_buy": 11.22,
-      "distance_to_sell": -5.25,
       "shares": 10000,
       "market_value": 440000,
       "pnl": 10000,
       "pnl_percent": 2.33,
       "technical_status": "neutral",
-      "status_text": "⚪ 震荡",
-      "action_suggestion": "正常持有"
+      "status_desc": "震荡",
+      "status_icon": "⚪",
+      "trigger_buy": 39.56,
+      "trigger_sell": 46.44,
+      "action_suggestion": "正常持有",
+      "analysis": {
+        "data_sources": [
+          "**持仓成本**: ¥43.00（您的实际买入均价）",
+          "**当前价格**: ¥44.00（A股实时行情）",
+          "**中轴价格**: ¥43.00（基于持仓成本）",
+          "**触发价格**: 买入≤¥39.56 / 卖出≥¥46.44（中轴±8%）",
+          "**行情数据**: 东方财富/akshare实时数据"
+        ],
+        "analysis_logic": [
+          "**中轴偏离**: 当前价格偏离中轴+2.33%，处于±3%正常震荡区间，符合预期波动范围，无需特殊操作。",
+          "**盈亏状况**: 当前浮盈¥10,000.00（+2.33%），建议根据中轴偏离度决定是否获利了结。"
+        ],
+        "conclusion": {
+          "title": "⚪ 震荡区 - 正常持有",
+          "content": [
+            "晶盛机电价格在正常震荡区间，偏离中轴±3%以内。",
+            "符合预期波动范围，保持当前仓位。",
+            "建议：继续监控，等待中轴偏离信号触发。",
+            "上方阻力位¥46.44，下方支撑位¥39.56。"
+          ]
+        },
+        "update_time": "2026-03-27 22:22"
+      }
     },
     {
       "code": "300442",
       "name": "润泽科技",
       "market": "A股",
+      "sector": "其他",
       "current_price": 86.1,
       "avg_cost": 85,
       "pivot_price": 85,
       "pivot_deviation": 1.29,
-      "trigger_buy": 78.2,
-      "trigger_sell": 91.8,
-      "distance_to_buy": 10.1,
-      "distance_to_sell": -6.21,
       "shares": 4500,
       "market_value": 387450.0,
       "pnl": 4950.0,
       "pnl_percent": 1.29,
       "technical_status": "neutral",
-      "status_text": "⚪ 震荡",
-      "action_suggestion": "正常持有"
+      "status_desc": "震荡",
+      "status_icon": "⚪",
+      "trigger_buy": 78.2,
+      "trigger_sell": 91.8,
+      "action_suggestion": "正常持有",
+      "analysis": {
+        "data_sources": [
+          "**持仓成本**: ¥85.00（您的实际买入均价）",
+          "**当前价格**: ¥86.10（A股实时行情）",
+          "**中轴价格**: ¥85.00（基于持仓成本）",
+          "**触发价格**: 买入≤¥78.2 / 卖出≥¥91.8（中轴±8%）",
+          "**行情数据**: 东方财富/akshare实时数据"
+        ],
+        "analysis_logic": [
+          "**中轴偏离**: 当前价格偏离中轴+1.29%，处于±3%正常震荡区间，符合预期波动范围，无需特殊操作。",
+          "**盈亏状况**: 当前浮盈¥4,950.00（+1.29%），建议根据中轴偏离度决定是否获利了结。"
+        ],
+        "conclusion": {
+          "title": "⚪ 震荡区 - 正常持有",
+          "content": [
+            "润泽科技价格在正常震荡区间，偏离中轴±3%以内。",
+            "符合预期波动范围，保持当前仓位。",
+            "建议：继续监控，等待中轴偏离信号触发。",
+            "上方阻力位¥91.8，下方支撑位¥78.2。"
+          ]
+        },
+        "update_time": "2026-03-27 22:22"
+      }
     },
     {
       "code": "601600",
       "name": "中国铝业",
       "market": "A股",
+      "sector": "其他",
       "current_price": 11.5,
       "avg_cost": 11.2,
       "pivot_price": 11.2,
       "pivot_deviation": 2.68,
-      "trigger_buy": 10.3,
-      "trigger_sell": 12.1,
-      "distance_to_buy": 11.65,
-      "distance_to_sell": -4.96,
       "shares": 100,
       "market_value": 1150.0,
       "pnl": 30.0,
       "pnl_percent": 2.68,
       "technical_status": "neutral",
-      "status_text": "⚪ 震荡",
-      "action_suggestion": "正常持有"
+      "status_desc": "震荡",
+      "status_icon": "⚪",
+      "trigger_buy": 10.3,
+      "trigger_sell": 12.1,
+      "action_suggestion": "正常持有",
+      "analysis": {
+        "data_sources": [
+          "**持仓成本**: ¥11.20（您的实际买入均价）",
+          "**当前价格**: ¥11.50（A股实时行情）",
+          "**中轴价格**: ¥11.20（基于持仓成本）",
+          "**触发价格**: 买入≤¥10.3 / 卖出≥¥12.1（中轴±8%）",
+          "**行情数据**: 东方财富/akshare实时数据"
+        ],
+        "analysis_logic": [
+          "**中轴偏离**: 当前价格偏离中轴+2.68%，处于±3%正常震荡区间，符合预期波动范围，无需特殊操作。",
+          "**盈亏状况**: 当前浮盈¥30.00（+2.68%），建议根据中轴偏离度决定是否获利了结。"
+        ],
+        "conclusion": {
+          "title": "⚪ 震荡区 - 正常持有",
+          "content": [
+            "中国铝业价格在正常震荡区间，偏离中轴±3%以内。",
+            "符合预期波动范围，保持当前仓位。",
+            "建议：继续监控，等待中轴偏离信号触发。",
+            "上方阻力位¥12.1，下方支撑位¥10.3。"
+          ]
+        },
+        "update_time": "2026-03-27 22:22"
+      }
     },
     {
       "code": "688795",
       "name": "摩尔线程",
       "market": "A股",
+      "sector": "其他",
       "current_price": 562.5,
       "avg_cost": 550,
       "pivot_price": 550,
       "pivot_deviation": 2.27,
-      "trigger_buy": 506.0,
-      "trigger_sell": 594.0,
-      "distance_to_buy": 11.17,
-      "distance_to_sell": -5.3,
       "shares": 2200,
       "market_value": 1237500.0,
       "pnl": 27500.0,
       "pnl_percent": 2.27,
       "technical_status": "neutral",
-      "status_text": "⚪ 震荡",
-      "action_suggestion": "正常持有"
+      "status_desc": "震荡",
+      "status_icon": "⚪",
+      "trigger_buy": 506.0,
+      "trigger_sell": 594.0,
+      "action_suggestion": "正常持有",
+      "analysis": {
+        "data_sources": [
+          "**持仓成本**: ¥550.00（您的实际买入均价）",
+          "**当前价格**: ¥562.50（A股实时行情）",
+          "**中轴价格**: ¥550.00（基于持仓成本）",
+          "**触发价格**: 买入≤¥506.0 / 卖出≥¥594.0（中轴±8%）",
+          "**行情数据**: 东方财富/akshare实时数据"
+        ],
+        "analysis_logic": [
+          "**中轴偏离**: 当前价格偏离中轴+2.27%，处于±3%正常震荡区间，符合预期波动范围，无需特殊操作。",
+          "**盈亏状况**: 当前浮盈¥27,500.00（+2.27%），建议根据中轴偏离度决定是否获利了结。"
+        ],
+        "conclusion": {
+          "title": "⚪ 震荡区 - 正常持有",
+          "content": [
+            "摩尔线程价格在正常震荡区间，偏离中轴±3%以内。",
+            "符合预期波动范围，保持当前仓位。",
+            "建议：继续监控，等待中轴偏离信号触发。",
+            "上方阻力位¥594.0，下方支撑位¥506.0。"
+          ]
+        },
+        "update_time": "2026-03-27 22:22"
+      }
     },
     {
       "code": "00285",
       "name": "比亚迪电子",
       "market": "港股",
+      "sector": "其他",
       "current_price": 27.043,
       "avg_cost": 26.5,
       "pivot_price": 26.5,
       "pivot_deviation": 2.05,
-      "trigger_buy": 24.38,
-      "trigger_sell": 28.62,
-      "distance_to_buy": 10.92,
-      "distance_to_sell": -5.51,
       "shares": 24000,
       "market_value": 649032.0,
       "pnl": 13032.0,
       "pnl_percent": 2.05,
       "technical_status": "neutral",
-      "status_text": "⚪ 震荡",
-      "action_suggestion": "正常持有"
+      "status_desc": "震荡",
+      "status_icon": "⚪",
+      "trigger_buy": 24.38,
+      "trigger_sell": 28.62,
+      "action_suggestion": "正常持有",
+      "analysis": {
+        "data_sources": [
+          "**持仓成本**: ¥26.50（您的实际买入均价）",
+          "**当前价格**: ¥27.04（港股实时行情）",
+          "**中轴价格**: ¥26.50（基于持仓成本）",
+          "**触发价格**: 买入≤¥24.38 / 卖出≥¥28.62（中轴±8%）",
+          "**行情数据**: 港股实时行情"
+        ],
+        "analysis_logic": [
+          "**中轴偏离**: 当前价格偏离中轴+2.05%，处于±3%正常震荡区间，符合预期波动范围，无需特殊操作。",
+          "**盈亏状况**: 当前浮盈¥13,032.00（+2.05%），建议根据中轴偏离度决定是否获利了结。"
+        ],
+        "conclusion": {
+          "title": "⚪ 震荡区 - 正常持有",
+          "content": [
+            "比亚迪电子价格在正常震荡区间，偏离中轴±3%以内。",
+            "符合预期波动范围，保持当前仓位。",
+            "建议：继续监控，等待中轴偏离信号触发。",
+            "上方阻力位¥28.62，下方支撑位¥24.38。"
+          ]
+        },
+        "update_time": "2026-03-27 22:22"
+      }
     },
     {
       "code": "09988",
       "name": "阿里巴巴",
       "market": "港股",
+      "sector": "其他",
       "current_price": 107.488,
       "avg_cost": 105,
       "pivot_price": 105,
       "pivot_deviation": 2.37,
-      "trigger_buy": 96.6,
-      "trigger_sell": 113.4,
-      "distance_to_buy": 11.27,
-      "distance_to_sell": -5.21,
       "shares": 11500,
       "market_value": 1236112.0,
       "pnl": 28612.0,
       "pnl_percent": 2.37,
       "technical_status": "neutral",
-      "status_text": "⚪ 震荡",
-      "action_suggestion": "正常持有"
+      "status_desc": "震荡",
+      "status_icon": "⚪",
+      "trigger_buy": 96.6,
+      "trigger_sell": 113.4,
+      "action_suggestion": "正常持有",
+      "analysis": {
+        "data_sources": [
+          "**持仓成本**: ¥105.00（您的实际买入均价）",
+          "**当前价格**: ¥107.49（港股实时行情）",
+          "**中轴价格**: ¥105.00（基于持仓成本）",
+          "**触发价格**: 买入≤¥96.6 / 卖出≥¥113.4（中轴±8%）",
+          "**行情数据**: 港股实时行情"
+        ],
+        "analysis_logic": [
+          "**中轴偏离**: 当前价格偏离中轴+2.37%，处于±3%正常震荡区间，符合预期波动范围，无需特殊操作。",
+          "**盈亏状况**: 当前浮盈¥28,612.00（+2.37%），建议根据中轴偏离度决定是否获利了结。"
+        ],
+        "conclusion": {
+          "title": "⚪ 震荡区 - 正常持有",
+          "content": [
+            "阿里巴巴价格在正常震荡区间，偏离中轴±3%以内。",
+            "符合预期波动范围，保持当前仓位。",
+            "建议：继续监控，等待中轴偏离信号触发。",
+            "上方阻力位¥113.4，下方支撑位¥96.6。"
+          ]
+        },
+        "update_time": "2026-03-27 22:22"
+      }
     }
   ],
-  "buy_opportunities": [],
-  "sell_signals": [
+  "sector_analysis": [
     {
-      "stock": "腾讯控股",
-      "code": "00700",
-      "deviation": 27.24,
-      "current_price": 498.4,
-      "trigger_sell": 423.03,
-      "message": "偏离中轴+27.24%，建议考虑减仓",
-      "priority": "high"
+      "name": "其他",
+      "stock_count": 7,
+      "market_value": 4344909.0,
+      "pnl": 95089.0,
+      "pnl_percent": 2.24,
+      "status": "⚪ 震荡",
+      "distribution": {
+        "overbought": 0,
+        "strong": 0,
+        "neutral": 7,
+        "weak": 0,
+        "oversold": 0
+      }
+    },
+    {
+      "name": "互联网科技",
+      "stock_count": 1,
+      "market_value": 1445360.0,
+      "pnl": 309459.0,
+      "pnl_percent": 27.24,
+      "status": "⚠️ 过热",
+      "distribution": {
+        "overbought": 1,
+        "strong": 0,
+        "neutral": 0,
+        "weak": 0,
+        "oversold": 0
+      }
+    },
+    {
+      "name": "汽车零部件",
+      "stock_count": 1,
+      "market_value": 442400.0,
+      "pnl": 8400.0,
+      "pnl_percent": 1.94,
+      "status": "⚪ 震荡",
+      "distribution": {
+        "overbought": 0,
+        "strong": 0,
+        "neutral": 1,
+        "weak": 0,
+        "oversold": 0
+      }
+    },
+    {
+      "name": "智能制造",
+      "stock_count": 1,
+      "market_value": 267120.0,
+      "pnl": 6120.0,
+      "pnl_percent": 2.34,
+      "status": "⚪ 震荡",
+      "distribution": {
+        "overbought": 0,
+        "strong": 0,
+        "neutral": 1,
+        "weak": 0,
+        "oversold": 0
+      }
+    },
+    {
+      "name": "有色金属",
+      "stock_count": 1,
+      "market_value": 56010.0,
+      "pnl": 1410.0,
+      "pnl_percent": 2.58,
+      "status": "⚪ 震荡",
+      "distribution": {
+        "overbought": 0,
+        "strong": 0,
+        "neutral": 1,
+        "weak": 0,
+        "oversold": 0
+      }
+    },
+    {
+      "name": "新能源汽车",
+      "stock_count": 1,
+      "market_value": 10567.0,
+      "pnl": 267.0,
+      "pnl_percent": 2.59,
+      "status": "⚪ 震荡",
+      "distribution": {
+        "overbought": 0,
+        "strong": 0,
+        "neutral": 1,
+        "weak": 0,
+        "oversold": 0
+      }
     }
   ],
   "alerts": [
@@ -280,18 +637,10 @@
       "type": "warning",
       "stock": "腾讯控股",
       "code": "00700",
+      "deviation": 27.24,
       "message": "偏离中轴+27.24%，进入超买区",
       "action": "考虑减仓"
     }
   ],
-  "highlights": [],
-  "recommendations": [
-    {
-      "type": "sell",
-      "priority": "high",
-      "title": "⚠️ 减仓提示",
-      "content": "腾讯控股等涨超中轴8%以上，建议考虑减仓锁定利润（网格策略卖出点）",
-      "count": 1
-    }
-  ]
+  "highlights": []
 }

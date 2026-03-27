@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股票投资监控系统 v2.0</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=65">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=70">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/ib-analysis.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -146,7 +146,7 @@
             </div>
 
             <!-- 持仓健康度分析 -->
-            <div class="portfolio-analysis-section" style="padding: 16px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%); border: 2px solid #10b981; border-radius: 8px; margin-top: 12px;">
+            <div class="portfolio-analysis-section" style="padding: 16px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%); border: 2px solid #10b981; border-radius: 8px; margin-top: 12px; max-height: 600px; overflow-y: auto;">
                 <div class="portfolio-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
                         <i class="fas fa-heartbeat"></i> 持仓健康度
@@ -156,10 +156,33 @@
                         <span style="font-size: 0.7rem; color: var(--text-secondary); background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px;" id="portfolioReportDate">--</span>
                     </div>
                 </div>
+                
+                <!-- 总体概况 -->
                 <div class="portfolio-analysis-content" id="portfolioAnalysisContent">
                     <div class="portfolio-loading" style="display: flex; align-items: center; justify-content: center; padding: 12px; color: var(--text-secondary); gap: 8px; font-size: 0.8rem;">
                         <i class="fas fa-spinner fa-spin"></i>
                         <span>加载分析...</span>
+                    </div>
+                </div>
+                
+                <!-- 股票列表 -->
+                <div id="portfolioStockList" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px; display: flex; justify-content: space-between;">
+                        <span>📋 个股分析 (点击看详情)</span>
+                        <span id="portfolioStockCount">--</span>
+                    </div>
+                    <div id="portfolioStockItems" style="display: flex; flex-direction: column; gap: 6px;">
+                        <!-- 股票项将在这里动态生成 -->
+                    </div>
+                </div>
+                
+                <!-- 板块分析 -->
+                <div id="portfolioSectorList" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; display: none;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">
+                        📊 板块分布
+                    </div>
+                    <div id="portfolioSectorItems" style="display: flex; flex-direction: column; gap: 4px;">
+                        <!-- 板块项将在这里动态生成 -->
                     </div>
                 </div>
             </div>
@@ -1141,6 +1164,104 @@
         </div>
     </div>
 
+    <!-- 持仓股票详细分析弹窗 -->
+    <div class="modal" id="stockAnalysisModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7);">
+        <div class="modal-content" style="background: linear-gradient(135deg, #1a2332 0%, #0f1419 100%); border: 2px solid #10b981; border-radius: 12px; width: 90%; max-width: 600px; max-height: 85vh; overflow-y: auto; margin: 5% auto;">
+            <div class="modal-header" style="padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                        <span id="stockAnalysisTitle">--</span>
+                        <span id="stockAnalysisStatus" style="font-size: 0.75rem; padding: 2px 8px; border-radius: 4px;">--</span>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">
+                        基于中轴价格策略分析
+                    </div>
+                </div>
+                <button class="btn-close" onclick="hideStockAnalysisModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 1.2rem; cursor: pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body" style="padding: 20px;">
+                <!-- 核心数据卡片 -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+                    <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
+                        <div style="font-size: 0.7rem; color: var(--text-secondary);">当前价格</div>
+                        <div id="stockAnalysisPrice" style="font-size: 1.2rem; font-weight: 600; margin-top: 4px;">--</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
+                        <div style="font-size: 0.7rem; color: var(--text-secondary);">中轴价格</div>
+                        <div id="stockAnalysisPivot" style="font-size: 1.2rem; font-weight: 600; margin-top: 4px;">--</div>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
+                        <div style="font-size: 0.7rem; color: var(--text-secondary);">中轴偏离</div>
+                        <div id="stockAnalysisDeviation" style="font-size: 1.2rem; font-weight: 600; margin-top: 4px;">--</div>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
+                        <div style="font-size: 0.7rem; color: var(--text-secondary);">浮动盈亏</div>
+                        <div id="stockAnalysisPnl" style="font-size: 1.2rem; font-weight: 600; margin-top: 4px;">--</div>
+                    </div>
+                </div>
+                
+                <!-- 触发价格提示 -->
+                <div id="stockAnalysisTriggers" style="display: flex; gap: 8px; margin-bottom: 20px;">
+                    <div style="flex: 1; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); padding: 10px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 0.7rem; color: #3b82f6;">买入触发价</div>
+                        <div id="stockAnalysisTriggerBuy" style="font-size: 1rem; font-weight: 600; color: #3b82f6; margin-top: 4px;">--</div>
+                    </div>
+                    
+                    <div style="flex: 1; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); padding: 10px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 0.7rem; color: #f59e0b;">卖出触发价</div>
+                        <div id="stockAnalysisTriggerSell" style="font-size: 1rem; font-weight: 600; color: #f59e0b; margin-top: 4px;">--</div>
+                    </div>
+                </div>
+                
+                <!-- 详细分析内容 -->
+                <div id="stockAnalysisDetail">
+                    <!-- 数据来源 -->
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-database"></i> 数据来源
+                        </div>
+                        <div id="stockAnalysisDataSources" style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.8;">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 分析逻辑 -->
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-brain"></i> 分析逻辑
+                        </div>
+                        <div id="stockAnalysisLogic" style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.8;">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 结论建议 -->
+                    <div>
+                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-lightbulb"></i> 结论与建议
+                        </div>
+                        <div id="stockAnalysisConclusion" style="background: rgba(16,185,129,0.05); border: 1px solid rgba(16,185,129,0.2); padding: 12px; border-radius: 8px;">
+                            <div id="stockAnalysisConclusionTitle" style="font-size: 0.85rem; font-weight: 600; color: #10b981; margin-bottom: 8px;">--</div>
+                            <div id="stockAnalysisConclusionContent" style="font-size: 0.8rem; line-height: 1.8;">
+                                <!-- 动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 更新时间 -->
+                <div id="stockAnalysisUpdateTime" style="margin-top: 20px; text-align: center; font-size: 0.7rem; color: var(--text-secondary);">
+                    更新时间: --
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='js/app.js') }}?v=32"></script>
     <script>
     // ========== 国际投行观点分析 ==========
@@ -1613,7 +1734,192 @@
         }
         
         document.getElementById('portfolioAnalysisContent').innerHTML = html;
+        
+        // 渲染股票列表
+        renderStockList(data.stock_analyses || []);
+        
+        // 渲染板块列表
+        renderSectorList(data.sector_analysis || []);
     }
+    
+    // 渲染股票列表
+    function renderStockList(stocks) {
+        const container = document.getElementById('portfolioStockItems');
+        const countEl = document.getElementById('portfolioStockCount');
+        
+        if (!stocks || stocks.length === 0) {
+            container.innerHTML = '<div style="color: var(--text-secondary); font-size: 0.75rem; text-align: center;">暂无数据</div>';
+            return;
+        }
+        
+        countEl.textContent = `${stocks.length}只`;
+        
+        // 按中轴偏离度排序（绝对值大的在前）
+        const sortedStocks = [...stocks].sort((a, b) => 
+            Math.abs(b.pivot_deviation) - Math.abs(a.pivot_deviation)
+        );
+        
+        let html = '';
+        sortedStocks.forEach(stock => {
+            const statusColors = {
+                'overbought': { bg: 'rgba(245,158,11,0.1)', border: '#f59e0b', text: '#f59e0b' },
+                'strong': { bg: 'rgba(16,185,129,0.1)', border: '#10b981', text: '#10b981' },
+                'neutral': { bg: 'rgba(156,163,175,0.1)', border: '#9ca3af', text: '#9ca3af' },
+                'weak': { bg: 'rgba(239,68,68,0.1)', border: '#ef4444', text: '#ef4444' },
+                'oversold': { bg: 'rgba(59,130,246,0.1)', border: '#3b82f6', text: '#3b82f6' }
+            };
+            const colors = statusColors[stock.technical_status] || statusColors['neutral'];
+            
+            const pnlColor = stock.pnl >= 0 ? '#10b981' : '#ef4444';
+            const pnlIcon = stock.pnl >= 0 ? '+' : '';
+            
+            html += `
+                <div onclick="showStockAnalysisDetail('${stock.code}')" 
+                     style="background: ${colors.bg}; border: 1px solid ${colors.border}; border-radius: 8px; padding: 10px 12px; cursor: pointer; transition: all 0.2s;"
+                     onmouseover="this.style.opacity='0.9'" 
+                     onmouseout="this.style.opacity='1'"
+                     onmousedown="this.style.transform='scale(0.98)'"
+                     onmouseup="this.style.transform='scale(1)'"
+                >
+                    <div style="display: flex; justify-content: space-between; align-items: center;"
+                    >
+                        <div style="display: flex; align-items: center; gap: 8px;"
+                        >
+                            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);"
+                            >${stock.name}</span>
+                            <span style="font-size: 0.7rem; color: var(--text-secondary);">${stock.code}</span>
+                            <span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: ${colors.border}20; color: ${colors.text}; border: 1px solid ${colors.border}40;"
+                            >${stock.status_icon} ${stock.status_desc}</span>
+                        </div>
+                        <div style="text-align: right;"
+                        >
+                            <div style="font-size: 0.8rem; font-weight: 600; color: ${pnlColor};"
+                            >${pnlIcon}${stock.pnl_percent}%</div>
+                            <div style="font-size: 0.7rem; color: var(--text-secondary);"
+                            >偏离 ${stock.pivot_deviation > 0 ? '+' : ''}${stock.pivot_deviation}%</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    // 渲染板块列表
+    function renderSectorList(sectors) {
+        const container = document.getElementById('portfolioSectorItems');
+        const sectionEl = document.getElementById('portfolioSectorList');
+        
+        if (!sectors || sectors.length === 0) {
+            sectionEl.style.display = 'none';
+            return;
+        }
+        
+        sectionEl.style.display = 'block';
+        
+        let html = '';
+        sectors.slice(0, 4).forEach(sector => {
+            const pnlColor = sector.pnl >= 0 ? '#10b981' : '#ef4444';
+            html += `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: rgba(255,255,255,0.03); border-radius: 6px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 0.75rem; color: var(--text-primary);">${sector.name}</span>
+                        <span style="font-size: 0.65rem; color: var(--text-secondary);">${sector.stock_count}只</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.7rem; color: ${pnlColor};">${sector.pnl >= 0 ? '+' : ''}${sector.pnl_percent}%</span>
+                        <span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.05);">${sector.status}</span>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    // 显示股票详细分析弹窗
+    function showStockAnalysisDetail(code) {
+        if (!portfolioAnalysisData) return;
+        
+        const stock = portfolioAnalysisData.stock_analyses.find(s => s.code === code);
+        if (!stock) return;
+        
+        const analysis = stock.analysis || {};
+        
+        // 设置标题和状态
+        document.getElementById('stockAnalysisTitle').textContent = stock.name;
+        const statusEl = document.getElementById('stockAnalysisStatus');
+        statusEl.textContent = stock.status_icon + ' ' + stock.status_desc;
+        
+        // 设置状态颜色
+        const statusColors = {
+            'overbought': { bg: 'rgba(245,158,11,0.2)', text: '#f59e0b' },
+            'strong': { bg: 'rgba(16,185,129,0.2)', text: '#10b981' },
+            'neutral': { bg: 'rgba(156,163,175,0.2)', text: '#9ca3af' },
+            'weak': { bg: 'rgba(239,68,68,0.2)', text: '#ef4444' },
+            'oversold': { bg: 'rgba(59,130,246,0.2)', text: '#3b82f6' }
+        };
+        const colors = statusColors[stock.technical_status] || statusColors['neutral'];
+        statusEl.style.background = colors.bg;
+        statusEl.style.color = colors.text;
+        
+        // 设置核心数据
+        document.getElementById('stockAnalysisPrice').textContent = '¥' + stock.current_price.toFixed(2);
+        document.getElementById('stockAnalysisPivot').textContent = '¥' + stock.pivot_price.toFixed(2);
+        
+        const deviationEl = document.getElementById('stockAnalysisDeviation');
+        deviationEl.textContent = (stock.pivot_deviation > 0 ? '+' : '') + stock.pivot_deviation + '%';
+        deviationEl.style.color = stock.pivot_deviation >= 0 ? '#10b981' : '#ef4444';
+        
+        const pnlEl = document.getElementById('stockAnalysisPnl');
+        pnlEl.textContent = (stock.pnl >= 0 ? '+' : '') + '¥' + Math.abs(stock.pnl).toLocaleString();
+        pnlEl.style.color = stock.pnl >= 0 ? '#10b981' : '#ef4444';
+        
+        // 设置触发价格
+        document.getElementById('stockAnalysisTriggerBuy').textContent = '¥' + stock.trigger_buy.toFixed(2);
+        document.getElementById('stockAnalysisTriggerSell').textContent = '¥' + stock.trigger_sell.toFixed(2);
+        
+        // 设置数据来源
+        const dataSources = analysis.data_sources || [];
+        document.getElementById('stockAnalysisDataSources').innerHTML = dataSources.map(s => 
+            `<div style="margin-bottom: 4px;">• ${s}</div>`
+        ).join('');
+        
+        // 设置分析逻辑
+        const logicItems = analysis.analysis_logic || [];
+        document.getElementById('stockAnalysisLogic').innerHTML = logicItems.map(l => 
+            `<div style="margin-bottom: 8px; padding-left: 12px; border-left: 2px solid rgba(255,255,255,0.1);">${l}</div>`
+        ).join('');
+        
+        // 设置结论
+        const conclusion = analysis.conclusion || {};
+        document.getElementById('stockAnalysisConclusionTitle').textContent = conclusion.title || '--';
+        
+        const conclusionContent = conclusion.content || [];
+        document.getElementById('stockAnalysisConclusionContent').innerHTML = conclusionContent.map(c => 
+            `<div style="margin-bottom: 6px;">• ${c}</div>`
+        ).join('');
+        
+        // 设置更新时间
+        document.getElementById('stockAnalysisUpdateTime').textContent = 
+            '更新时间: ' + (analysis.update_time || '--');
+        
+        // 显示弹窗
+        document.getElementById('stockAnalysisModal').style.display = 'block';
+    }
+    
+    // 隐藏股票详细分析弹窗
+    function hideStockAnalysisModal() {
+        document.getElementById('stockAnalysisModal').style.display = 'none';
+    }
+    
+    // 点击弹窗外部关闭
+    document.getElementById('stockAnalysisModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            hideStockAnalysisModal();
+        }
+    });
 
     // 页面加载时初始化
     document.addEventListener('DOMContentLoaded', function() {
