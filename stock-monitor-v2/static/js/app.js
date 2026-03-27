@@ -128,7 +128,7 @@ async function init() {
     }
     
     appState.hotSectors = mockHotSectors;
-    appState.news = mockNews;  // 先显示模拟数据，然后异步加载真实数据
+    appState.news = { headlines: [], themes: [], calendar: [], portfolio: [], general: mockNews };
 
     renderStockList();
     renderHotSectors();
