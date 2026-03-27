@@ -621,7 +621,10 @@
             <div class="panel">
                 <div class="panel-header">
                     <h3><i class="fas fa-newspaper"></i> 实时新闻</h3>
-                    <span class="panel-badge">24H</span>
+                    <div class="panel-actions">
+                        <button class="btn-text" onclick="showNewsDetailModal()">查看全部 <i class="fas fa-arrow-right"></i></button>
+                        <span class="panel-badge">24H</span>
+                    </div>
                 </div>
                 <div class="news-list" id="newsList">
                     <!-- 动态生成 -->
@@ -1058,7 +1061,28 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/app.js') }}?v=30"></script>
+    <!-- 新闻详情弹窗 -->
+    <div class="modal" id="newsDetailModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3><i class="fas fa-newspaper"></i> 实时新闻</h3>
+                <button class="btn-close" onclick="hideNewsDetailModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="news-tabs">
+                    <button class="news-tab active" data-tab="all" onclick="filterNews('all')">全部</button>
+                    <button class="news-tab" data-tab="headline" onclick="filterNews('headline')">📰 头条</button>
+                    <button class="news-tab" data-tab="portfolio" onclick="filterNews('portfolio')">💼 持仓相关</button>
+                    <button class="news-tab" data-tab="theme" onclick="filterNews('theme')">💡 题材</button>
+                </div>
+                <div class="news-detail-list" id="newsDetailList">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=31"></script>
     <script src="{{ url_for('static', filename='js/import.js') }}?v=27"></script>
 </body>
 </html>

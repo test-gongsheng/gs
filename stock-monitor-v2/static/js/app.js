@@ -1604,6 +1604,85 @@ function hideAnalysisModal() {
     document.getElementById('analysisModal').classList.remove('active');
 }
 
+// ========== 新闻详情弹窗 ==========
+let currentNewsFilter = 'all';
+
+function showNewsDetailModal() {
+    document.getElementById('newsDetailModal').classList.add('active');
+    renderNewsDetailList();
+}
+
+function hideNewsDetailModal() {
+    document.getElementById('newsDetailModal').classList.remove('active');
+}
+
+function filterNews(type) {
+    currentNewsFilter = type;
+    // 更新标签样式
+    document.querySelectorAll('.news-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === type);
+    });
+    renderNewsDetailList();
+}
+
+function renderNewsDetailList() {
+    const listEl = document.getElementById('newsDetailList');
+    if (!listEl || !appState.news) {
+        listEl.innerHTML = '<div class="news-empty">暂无新闻</div>';
+        return;
+    }
+    
+    const { headlines = [], themes = [], portfolio = [], general = [] } = appState.news;
+    
+    // 根据过滤条件选择新闻
+    let allNews = [];
+    switch(currentNewsFilter) {
+        case 'headline':
+            allNews = [...headlines];
+            break;
+        case 'portfolio':
+            allNews = [...portfolio];
+            break;
+        case 'theme':
+            allNews = [...themes];
+            break;
+        case 'all':
+        default:
+            allNews = [...headlines, ...themes, ...portfolio, ...general];
+    }
+    
+    if (allNews.length === 0) {
+        listEl.innerHTML = '<div class="news-empty" style="text-align: center; padding: 40px; color: #666;">该分类暂无新闻</div>';
+        return;
+    }
+    
+    // 按时间排序
+    allNews.sort((a, b) => (b.time || '').localeCompare(a.time || ''));
+    
+    listEl.innerHTML = allNews.map(news => {
+        const sentimentClass = news.sentiment || 'neutral';
+        const sentimentLabel = news.sentiment_label || '中性';
+        const tagClass = news.importance >= 2 ? 'important' : news.importance === 1 ? 'attention' : 'normal';
+        
+        return `
+            <div class="news-detail-item">
+                <div class="news-detail-header">
+                    <span class="news-detail-time">${news.time || ''}</span>
+                    <span class="news-detail-tag ${tagClass}">${news.importance_label || '一般'}</span>
+                    <span class="news-detail-sentiment ${sentimentClass}">${sentimentLabel}</span>
+                </div>
+                <div class="news-detail-title">${news.title}</div>
+                ${news.content ? `<div class="news-detail-content">${news.content}</div>` : ''}
+                ${news.related_sectors?.length ? `
+                    <div class="news-detail-sectors">
+                        ${news.related_sectors.map(s => `<span>${s}</span>`).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
 // 处理添加股票
 function handleAddStock(e) {
     e.preventDefault();
