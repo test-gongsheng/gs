@@ -1101,7 +1101,287 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/app.js') }}?v=31"></script>
+    <!-- 投行分析详情弹窗 -->
+    <div class="modal ib-detail-modal" id="ibDetailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="ib-detail-header">
+                    <div>
+                        <div class="ib-detail-title"><i class="fas fa-globe"></i> 国际投行观点分析</div>
+                        <div class="ib-detail-subtitle" id="ibDetailSubtitle">数据来源：摩根士丹利、高盛、摩根大通、中金、瑞银、富达国际、汇丰</div>
+                    </div>
+                    <button class="btn-close" onclick="hideIBDetailModal()"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="ib-detail-content" id="ibDetailContent">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=32"></script>
+    <script>
+    // ========== 国际投行观点分析 ==========
+    let ibAnalysisData = null;
+
+    // 加载投行分析数据
+    async function loadIBAnalysis() {
+        try {
+            const response = await fetch('/api/ib-analysis');
+            const result = await response.json();
+            
+            if (result.success) {
+                ibAnalysisData = result.data;
+                renderIBAnalysis(ibAnalysisData);
+            } else {
+                console.error('加载投行分析失败:', result.error);
+                document.getElementById('ibAnalysisContent').innerHTML = `
+                    <div class="ib-loading">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>加载失败，请稍后重试</span>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('加载投行分析错误:', error);
+        }
+    }
+
+    // 渲染投行分析面板
+    function renderIBAnalysis(data) {
+        if (!data) return;
+        
+        // 更新时间
+        document.getElementById('ibUpdateTime').textContent = data.update_time || '--';
+        
+        const macro = data.macro_summary || {};
+        const holdings = data.holdings_map || [];
+        
+        // 分类持仓
+        const strongHoldings = holdings.filter(h => h.alignment === 'strong');
+        const moderateHoldings = holdings.filter(h => h.alignment === 'moderate');
+        const weakHoldings = holdings.filter(h => h.alignment === 'weak');
+        const neutralHoldings = holdings.filter(h => h.alignment === 'neutral');
+        
+        // 取前5个展示
+        const displayHoldings = [...strongHoldings, ...moderateHoldings, ...neutralHoldings, ...weakHoldings].slice(0, 5);
+        
+        let html = `
+            <div class="ib-summary">
+                <div class="ib-consensus">
+                    <div class="ib-consensus-icon ${getConsensusClass(macro.consensus)}"></div>
+                    <span class="ib-consensus-text">外资共识: ${macro.consensus || '未知'}</span>
+                </div>
+            </div>
+        `;
+        
+        // 指数目标
+        if (macro.key_targets && macro.key_targets.length > 0) {
+            html += '<div class="ib-targets">';
+            macro.key_targets.forEach(target => {
+                html += `
+                    <div class="ib-target-item">
+                        <span class="ib-target-index">${target.index}</span>
+                        <span class="ib-target-value">${target.target}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        // 持仓映射
+        if (displayHoldings.length > 0) {
+            html += `
+                <div class="ib-holdings">
+                    <div class="ib-holdings-title">持仓契合度 (${strongHoldings.length}强/${moderateHoldings.length}中/${weakHoldings.length}弱)</div>
+            `;
+            
+            displayHoldings.forEach(holding => {
+                const alignmentText = {
+                    'strong': '高度契合',
+                    'moderate': '部分契合',
+                    'neutral': '中性',
+                    'weak': '存在分歧'
+                }[holding.alignment] || '中性';
+                
+                html += `
+                    <div class="ib-holding-item" onclick="showIBStockDetail('${holding.code}')">
+                        <div class="ib-holding-alignment ${holding.alignment}"></div>
+                        <div class="ib-holding-info">
+                            <div class="ib-holding-name">${holding.name}</div>
+                            <div class="ib-holding-code">${holding.code}</div>
+                        </div>
+                        <span class="ib-holding-tag ${holding.alignment}">${alignmentText}</span>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+        }
+        
+        // 风险提示
+        if (macro.warnings && macro.warnings.length > 0) {
+            html += `
+                <div class="ib-warnings">
+                    <div class="ib-warning-title"><i class="fas fa-exclamation-triangle"></i> 风险提示</div>
+                    <div class="ib-warning-list">
+            `;
+            macro.warnings.slice(0, 2).forEach(warning => {
+                html += `<div class="ib-warning-item">${warning}</div>`;
+            });
+            html += '</div></div>';
+        }
+        
+        document.getElementById('ibAnalysisContent').innerHTML = html;
+    }
+
+    function getConsensusClass(consensus) {
+        if (!consensus) return '';
+        if (consensus.includes('乐观')) return '';
+        if (consensus.includes('谨慎')) return 'cautious';
+        if (consensus.includes('悲观')) return 'negative';
+        return '';
+    }
+
+    // 显示投行分析详情弹窗
+    function showIBDetailModal() {
+        if (!ibAnalysisData) {
+            loadIBAnalysis().then(() => showIBDetailModalContent());
+        } else {
+            showIBDetailModalContent();
+        }
+    }
+
+    function showIBDetailModalContent() {
+        const data = ibAnalysisData;
+        if (!data) return;
+        
+        const macro = data.macro_summary || {};
+        const holdings = data.holdings_map || [];
+        
+        let html = `
+            <div class="ib-detail-section">
+                <div class="ib-detail-section-title">宏观共识与指数目标</div>
+                <div class="ib-consensus" style="margin-bottom: 16px;">
+                    <div class="ib-consensus-icon ${getConsensusClass(macro.consensus)}"></div>
+                    <span class="ib-consensus-text">外资整体观点: ${macro.consensus || '未知'}</span>
+                </div>
+        `;
+        
+        if (macro.key_targets) {
+            html += '<div class="ib-targets">';
+            macro.key_targets.forEach(target => {
+                html += `
+                    <div class="ib-target-item">
+                        <span class="ib-target-index">${target.index}</span>
+                        <span class="ib-target-value">${target.target}</span>
+                        <span style="font-size: 0.7rem; color: var(--text-secondary);">${target.source}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        html += '</div>';
+        
+        // 主要主题
+        if (macro.main_themes && macro.main_themes.length > 0) {
+            html += `
+                <div class="ib-detail-section">
+                    <div class="ib-detail-section-title">投资主线</div>
+                    <div class="ib-theme-list">
+            `;
+            macro.main_themes.forEach(theme => {
+                html += `
+                    <div class="ib-theme-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>${theme}</span>
+                    </div>
+                `;
+            });
+            html += '</div></div>';
+        }
+        
+        // 持仓详细映射
+        html += `
+            <div class="ib-detail-section">
+                <div class="ib-detail-section-title">持仓与投行观点映射</div>
+                <table class="ib-detail-table">
+                    <thead>
+                        <tr>
+                            <th>股票</th>
+                            <th>契合度</th>
+                            <th>投行观点</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        const alignmentLabels = {
+            'strong': '高度契合',
+            'moderate': '部分契合',
+            'neutral': '中性',
+            'weak': '存在分歧'
+        };
+        
+        holdings.forEach(holding => {
+            const views = holding.ib_views || ['暂无观点'];
+            html += `
+                <tr>
+                    <td>
+                        <div style="font-weight: 500;">${holding.name}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">${holding.code}</div>
+                    </td>
+                    <td>
+                        <span class="ib-detail-alignment ${holding.alignment}">
+                            ${alignmentLabels[holding.alignment] || '中性'}
+                        </span>
+                    </td>
+                    <td>
+                        <ul class="ib-detail-views">
+                            ${views.map(v => `<li>• ${v}</li>`).join('')}
+                        </ul>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table></div>';
+        
+        // 风险提示
+        if (macro.warnings && macro.warnings.length > 0) {
+            html += `
+                <div class="ib-detail-section">
+                    <div class="ib-detail-section-title">⚠️ 风险与预警</div>
+                    <div class="ib-warning-list">
+            `;
+            macro.warnings.forEach(warning => {
+                html += `<div class="ib-warning-item">${warning}</div>`;
+            });
+            html += '</div></div>';
+        }
+        
+        document.getElementById('ibDetailContent').innerHTML = html;
+        document.getElementById('ibDetailModal').style.display = 'block';
+    }
+
+    function hideIBDetailModal() {
+        document.getElementById('ibDetailModal').style.display = 'none';
+    }
+
+    function showIBStockDetail(code) {
+        // 可以在这里添加跳转到个股详情的逻辑
+        console.log('查看股票详情:', code);
+    }
+
+    // 页面加载时初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        // 延迟加载投行分析（优先加载核心数据）
+        setTimeout(loadIBAnalysis, 2000);
+    });
+    </script>
     <script src="{{ url_for('static', filename='js/import.js') }}?v=27"></script>
 </body>
 </html>
