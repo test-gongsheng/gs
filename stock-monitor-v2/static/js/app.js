@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "2.8.0";
+const APP_VERSION = "2.8.1";
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -174,6 +174,9 @@ async function init() {
         console.log('开始异步刷新中轴价格...');
         await refreshAxisPrices();
     }
+    
+    // 恢复用户折叠偏好
+    restoreCollapsedState();
 }
 
 /**
@@ -532,7 +535,19 @@ function updateAssetOverview() {
 // 渲染股票列表
 function renderStockList() {
     const listEl = document.getElementById('stockList');
+    if (!listEl) {
+        console.error('[renderStockList] 找不到 stockList 元素');
+        return;
+    }
     listEl.innerHTML = '';
+
+    if (!appState.stocks || appState.stocks.length === 0) {
+        console.log('[renderStockList] 没有股票数据');
+        listEl.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">暂无持仓数据</div>';
+        return;
+    }
+
+    console.log('[renderStockList] 渲染', appState.stocks.length, '只股票');
 
     appState.stocks.forEach((stock, index) => {
         const item = document.createElement('div');
@@ -573,21 +588,20 @@ function renderStockList() {
         // 港股标识
         const hkBadge = isHKStock ? '<span class="stock-item-hk">HK</span>' : '';
 
+        // 与 CSS 样式匹配的横向布局结构
         item.innerHTML = `
-            <div class="stock-item-header">
-                <div>
-                    <span class="stock-item-name">${stock.name}</span>
-                    <span class="stock-item-code">${stock.code}</span>
-                    ${hkBadge}
-                    ${alertBadge}
-                </div>
-                <div class="stock-item-price ${isUp ? 'up' : 'down'}">
-                    ${isHKStock ? (stock.price || 0).toFixed(2) + ' HKD' : (stock.price || 0).toFixed(2)}
-                </div>
+            <div class="stock-info">
+                <span class="code">${stock.code}${hkBadge}${alertBadge}</span>
+                <span class="name">${stock.name}</span>
             </div>
-            <div class="stock-item-info">
-                <span>${stock.change >= 0 ? '+' : ''}${(stock.changePercent || 0).toFixed(2)}%</span>
-                <span>持仓: ${marketValueWan}万</span>
+            <div class="stock-price ${isUp ? 'up' : 'down'}">
+                ${isHKStock ? (stock.price || 0).toFixed(2) + '<small>HKD</small>' : (stock.price || 0).toFixed(2)}
+            </div>
+            <div class="stock-change ${isUp ? 'up' : 'down'}">
+                ${stock.change >= 0 ? '+' : ''}${(stock.changePercent || 0).toFixed(2)}%
+            </div>
+            <div class="stock-pnl">
+                ${marketValueWan}万
             </div>
         `;
 
@@ -2489,3 +2503,41 @@ async function fixStockAxis(code) {
     }
 }
 window.fixStockAxis = fixStockAxis;
+
+// ========== 可折叠区域控制 ==========
+
+/**
+ * 切换区域的折叠/展开状态
+ * @param {string} sectionId - 区域元素ID
+ */
+function toggleSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+    
+    const isCollapsed = section.classList.toggle('collapsed');
+    console.log(`[toggleSection] ${sectionId} ${isCollapsed ? '折叠' : '展开'}`);
+    
+    // 保存用户偏好到 localStorage
+    const collapsedSections = JSON.parse(localStorage.getItem('collapsedSections') || '{}');
+    collapsedSections[sectionId] = isCollapsed;
+    localStorage.setItem('collapsedSections', JSON.stringify(collapsedSections));
+}
+window.toggleSection = toggleSection;
+
+/**
+ * 恢复用户的折叠偏好
+ */
+function restoreCollapsedState() {
+    try {
+        const collapsedSections = JSON.parse(localStorage.getItem('collapsedSections') || '{}');
+        Object.entries(collapsedSections).forEach(([sectionId, isCollapsed]) => {
+            const section = document.getElementById(sectionId);
+            if (section && isCollapsed) {
+                section.classList.add('collapsed');
+            }
+        });
+        console.log('[restoreCollapsedState] 恢复折叠状态完成');
+    } catch (e) {
+        console.warn('[restoreCollapsedState] 恢复失败:', e);
+    }
+}

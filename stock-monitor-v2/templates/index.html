@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股票投资监控系统 v2.0</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=80">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=83">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/ib-analysis.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -127,62 +127,67 @@
             </div>
 
             <!-- 国际投行观点分析 -->
-            <div class="ib-analysis-section" style="padding: 16px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%); border: 2px solid #3b82f6; border-radius: 8px; margin-top: 12px;">
-                <div class="ib-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div class="ib-analysis-section collapsible-section" id="ibAnalysisSection" style="padding: 16px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%); border: 2px solid #3b82f6; border-radius: 8px; margin-top: 12px;">
+                <div class="ib-section-header collapsible-header" onclick="toggleSection('ibAnalysisSection')" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
                     <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
                         <i class="fas fa-globe"></i> 国际投行观点
                     </h3>
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <button class="btn-text" onclick="showIBDetailModal()" style="font-size: 0.75rem;">详情 <i class="fas fa-arrow-right"></i></button>
+                        <button class="btn-text" onclick="event.stopPropagation(); showIBDetailModal()" style="font-size: 0.75rem;">详情 <i class="fas fa-arrow-right"></i></button>
                         <span style="font-size: 0.7rem; color: var(--text-secondary); background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px;" id="ibUpdateTime">--</span>
+                        <i class="fas fa-chevron-down collapse-icon" style="transition: transform 0.3s;"></i>
                     </div>
                 </div>
-                <div class="ib-analysis-content" id="ibAnalysisContent">
-                    <div class="ib-loading" style="display: flex; align-items: center; justify-content: center; padding: 12px; color: var(--text-secondary); gap: 8px; font-size: 0.8rem;">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <span>加载中...</span>
+                <div class="collapsible-content">
+                    <div class="ib-analysis-content" id="ibAnalysisContent" style="margin-top: 12px;">
+                        <div class="ib-loading" style="display: flex; align-items: center; justify-content: center; padding: 12px; color: var(--text-secondary); gap: 8px; font-size: 0.8rem;">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>加载中...</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- 持仓健康度分析 -->
-            <div class="portfolio-analysis-section" style="padding: 16px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%); border: 2px solid #10b981; border-radius: 8px; margin-top: 12px; max-height: 600px; overflow-y: auto;">
-                <div class="portfolio-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div class="portfolio-analysis-section collapsible-section" id="portfolioAnalysisSection" style="padding: 16px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%); border: 2px solid #10b981; border-radius: 8px; margin-top: 12px;">
+                <div class="portfolio-section-header collapsible-header" onclick="toggleSection('portfolioAnalysisSection')" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
                     <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
                         <i class="fas fa-heartbeat"></i> 持仓健康度
                     </h3>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span id="portfolioHealthScore" style="font-size: 1rem; font-weight: 700; color: #10b981;">--</span>
                         <span style="font-size: 0.7rem; color: var(--text-secondary); background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px;" id="portfolioReportDate">--</span>
+                        <i class="fas fa-chevron-down collapse-icon" style="transition: transform 0.3s;"></i>
                     </div>
                 </div>
-                
-                <!-- 总体概况 -->
-                <div class="portfolio-analysis-content" id="portfolioAnalysisContent">
-                    <div class="portfolio-loading" style="display: flex; align-items: center; justify-content: center; padding: 12px; color: var(--text-secondary); gap: 8px; font-size: 0.8rem;">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <span>加载分析...</span>
+                <div class="collapsible-content">
+                    <!-- 总体概况 -->
+                    <div class="portfolio-analysis-content" id="portfolioAnalysisContent" style="margin-top: 12px;">
+                        <div class="portfolio-loading" style="display: flex; align-items: center; justify-content: center; padding: 12px; color: var(--text-secondary); gap: 8px; font-size: 0.8rem;">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>加载分析...</span>
+                        </div>
                     </div>
-                </div>
-                
-                <!-- 股票列表 -->
-                <div id="portfolioStockList" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
-                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px; display: flex; justify-content: space-between;">
-                        <span>📋 个股分析 (点击看详情)</span>
-                        <span id="portfolioStockCount">--</span>
+                    
+                    <!-- 股票列表 -->
+                    <div id="portfolioStockList" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px; display: flex; justify-content: space-between;">
+                            <span>📋 个股分析 (点击看详情)</span>
+                            <span id="portfolioStockCount">--</span>
+                        </div>
+                        <div id="portfolioStockItems" style="display: flex; flex-direction: column; gap: 6px;">
+                            <!-- 股票项将在这里动态生成 -->
+                        </div>
                     </div>
-                    <div id="portfolioStockItems" style="display: flex; flex-direction: column; gap: 6px;">
-                        <!-- 股票项将在这里动态生成 -->
-                    </div>
-                </div>
-                
-                <!-- 板块分析 -->
-                <div id="portfolioSectorList" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; display: none;">
-                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">
-                        📊 板块分布
-                    </div>
-                    <div id="portfolioSectorItems" style="display: flex; flex-direction: column; gap: 4px;">
-                        <!-- 板块项将在这里动态生成 -->
+                    
+                    <!-- 板块分析 -->
+                    <div id="portfolioSectorList" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; display: none;">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">
+                            📊 板块分布
+                        </div>
+                        <div id="portfolioSectorItems" style="display: flex; flex-direction: column; gap: 4px;">
+                            <!-- 板块项将在这里动态生成 -->
+                        </div>
                     </div>
                 </div>
             </div>
