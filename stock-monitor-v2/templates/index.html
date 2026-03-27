@@ -122,12 +122,12 @@
                 <span class="col-change">涨跌</span>
                 <span class="col-pnl">盈亏</span>
             </div>
-            <div class="stock-list" id="stockList">
+            <div class="stock-list" id="stockList" style="max-height: 400px; overflow-y: auto;">
                 <!-- 动态生成 -->
             </div>
 
             <!-- 国际投行观点分析 -->
-            <div class="ib-analysis-section" style="margin-top: 20px; padding: 16px; background: rgba(59, 130, 246, 0.05); border-left: 3px solid #3b82f6; border-radius: 8px;">
+            <div class="ib-analysis-section" style="padding: 16px; background: rgba(59, 130, 246, 0.05); border-left: 3px solid #3b82f6; border-radius: 8px; margin-top: 8px;">
                 <div class="ib-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
                         <i class="fas fa-globe"></i> 国际投行观点
@@ -138,9 +138,9 @@
                     </div>
                 </div>
                 <div class="ib-analysis-content" id="ibAnalysisContent">
-                    <div class="ib-loading" style="display: flex; align-items: center; justify-content: center; padding: 20px; color: var(--text-secondary); gap: 8px;">
+                    <div class="ib-loading" style="display: flex; align-items: center; justify-content: center; padding: 12px; color: var(--text-secondary); gap: 8px; font-size: 0.8rem;">
                         <i class="fas fa-spinner fa-spin"></i>
-                        <span>加载投行分析...</span>
+                        <span>加载中...</span>
                     </div>
                 </div>
             </div>
