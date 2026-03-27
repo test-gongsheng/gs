@@ -125,6 +125,25 @@
             <div class="stock-list" id="stockList">
                 <!-- 动态生成 -->
             </div>
+
+            <!-- 国际投行观点分析 -->
+            <div class="ib-analysis-section" style="margin-top: 20px; padding: 16px; background: rgba(59, 130, 246, 0.05); border-left: 3px solid #3b82f6; border-radius: 8px;">
+                <div class="ib-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-globe"></i> 国际投行观点
+                    </h3>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <button class="btn-text" onclick="showIBDetailModal()" style="font-size: 0.75rem;">详情 <i class="fas fa-arrow-right"></i></button>
+                        <span style="font-size: 0.7rem; color: var(--text-secondary); background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px;" id="ibUpdateTime">--</span>
+                    </div>
+                </div>
+                <div class="ib-analysis-content" id="ibAnalysisContent">
+                    <div class="ib-loading" style="display: flex; align-items: center; justify-content: center; padding: 20px; color: var(--text-secondary); gap: 8px;">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>加载投行分析...</span>
+                    </div>
+                </div>
+            </div>
         </aside>
 
         <!-- 中间：股票详情 -->
@@ -607,24 +626,6 @@
 
         <!-- 右侧：市场情报 -->
         <aside class="sidebar-right">
-            <!-- 投行观点分析 -->
-            <div class="panel ib-analysis-panel">
-                <div class="panel-header">
-                    <h3><i class="fas fa-globe"></i> 国际投行观点</h3>
-                    <div class="panel-actions">
-                        <button class="btn-text" onclick="showIBDetailModal()">详情 <i class="fas fa-arrow-right"></i></button>
-                        <span class="panel-badge" id="ibUpdateTime">--</span>
-                    </div>
-                </div>
-                <div class="ib-analysis-content" id="ibAnalysisContent">
-                    <!-- 动态生成 -->
-                    <div class="ib-loading">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <span>加载投行分析...</span>
-                    </div>
-                </div>
-            </div>
-
             <!-- 热点板块 -->
             <div class="panel">
                 <div class="panel-header">
