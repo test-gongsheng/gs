@@ -2444,8 +2444,17 @@ function showStockAnalysisDetail(code) {
     const data = appState.portfolioAnalysis;
     if (!data || !data.stock_analyses) return;
     
-    const stock = data.stock_analyses.find(s => s.code === code);
-    if (!stock) return;
+    const stockAnalysis = data.stock_analyses.find(s => s.code === code);
+    if (!stockAnalysis) return;
+    
+    // 从 stocks 中获取完整的股票数据（包括价格、市场等）
+    const stock = appState.stocks.find(s => s.code === code) || {};
+    const isHK = stock.market === '港股';
+    const currency = isHK ? 'HK$' : '¥';
+    
+    // 获取价格和轴价格
+    const currentPrice = stock.price || stockAnalysis.current_price || 0;
+    const pivotPrice = stock.pivotPrice || stockAnalysis.axis_price || 0;
     
     // 创建弹窗
     const modal = document.createElement('div');
@@ -2454,36 +2463,48 @@ function showStockAnalysisDetail(code) {
     modal.innerHTML = `
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
-                <h3><i class="fas fa-chart-line"></i> ${stock.name} (${stock.code}) 分析报告</h3>
+                <h3><i class="fas fa-chart-line"></i> ${stockAnalysis.name} (${stockAnalysis.code}) 分析报告</h3>
                 <button class="btn-close" onclick="document.getElementById('stockAnalysisDetailModal').remove()"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <!-- 价格信息 -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                    <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">当前价格</div>
+                        <div style="font-size: 1.2rem; font-weight: 600; margin-top: 4px;">${currency}${currentPrice.toFixed(2)}</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">中轴价格</div>
+                        <div style="font-size: 1.2rem; font-weight: 600; margin-top: 4px;">${currency}${pivotPrice.toFixed(2)}</div>
+                    </div>
+                </div>
+                
                 <div style="margin-bottom: 16px;">
                     <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">健康度评分</div>
-                    <div style="font-size: 1.5rem; font-weight: 700; color: ${stock.health_score >= 80 ? '#10b981' : stock.health_score >= 60 ? '#f59e0b' : '#ef4444'};">${stock.health_score || '--'}/100</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: ${stockAnalysis.health_score >= 80 ? '#10b981' : stockAnalysis.health_score >= 60 ? '#f59e0b' : '#ef4444'};">${stockAnalysis.health_score || '--'}/100</div>
                 </div>
                 
-                ${stock.analysis ? `
+                ${stockAnalysis.analysis ? `
                 <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
                     <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 6px;">📊 分析结论</div>
-                    <div style="font-size: 0.85rem; color: var(--text-primary); line-height: 1.6;">${stock.analysis}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-primary); line-height: 1.6;">${stockAnalysis.analysis}</div>
                 </div>
                 ` : ''}
                 
-                ${stock.recommendation ? `
+                ${stockAnalysis.recommendation ? `
                 <div style="background: rgba(16,185,129,0.1); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 3px solid #10b981;">
                     <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">💡 操作建议</div>
-                    <div style="font-size: 0.9rem; font-weight: 600; color: ${stock.signal === 'buy' ? '#10b981' : stock.signal === 'sell' ? '#ef4444' : '#f59e0b'};">${stock.recommendation}</div>
+                    <div style="font-size: 0.9rem; font-weight: 600; color: ${stockAnalysis.signal === 'buy' ? '#10b981' : stockAnalysis.signal === 'sell' ? '#ef4444' : '#f59e0b'};">${stockAnalysis.recommendation}</div>
                 </div>
                 ` : ''}
                 
-                ${stock.technical ? `
+                ${stockAnalysis.technical ? `
                 <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1);">
                     <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">📈 技术指标</div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.8rem;">
-                        ${stock.technical.ma ? `<div>均线: ${stock.technical.ma}</div>` : ''}
-                        ${stock.technical.macd ? `<div>MACD: ${stock.technical.macd}</div>` : ''}
-                        ${stock.technical.volume ? `<div>量能: ${stock.technical.volume}</div>` : ''}
+                        ${stockAnalysis.technical.ma ? `<div>均线: ${stockAnalysis.technical.ma}</div>` : ''}
+                        ${stockAnalysis.technical.macd ? `<div>MACD: ${stockAnalysis.technical.macd}</div>` : ''}
+                        ${stockAnalysis.technical.volume ? `<div>量能: ${stockAnalysis.technical.volume}</div>` : ''}
                     </div>
                 </div>
                 ` : ''}
