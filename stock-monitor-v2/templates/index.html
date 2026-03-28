@@ -1300,7 +1300,7 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/app.js') }}?v=36"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v={{ now }}"></script>
     <script>
     // ========== 国际投行观点分析 ==========
     let ibAnalysisData = null;
@@ -2089,6 +2089,6 @@
         setTimeout(loadPortfolioAnalysis, 3000);
     });
     </script>
-    <script src="{{ url_for('static', filename='js/import.js') }}?v=28"></script>
+    <script src="{{ url_for('static', filename='js/import.js') }}?v={{ now }}"></script>
 </body>
 </html>

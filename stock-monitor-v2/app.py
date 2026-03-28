@@ -128,7 +128,8 @@ def save_data(data):
 @app.route('/')
 def index():
     """主页面"""
-    return render_template('index.html')
+    import time
+    return render_template('index.html', now=int(time.time()))
 
 @app.route('/api/portfolio')
 def get_portfolio():
