@@ -2384,11 +2384,12 @@ function renderPortfolioAnalysis() {
         return;
     }
     
-    // 1. 更新健康度分数
+    // 1. 更新健康度分数和等级
     const scoreEl = document.getElementById('portfolioHealthScore');
-    if (scoreEl && data.health_score) {
-        scoreEl.textContent = data.health_score.value + '分';
-        scoreEl.style.color = data.health_score.color || '#10b981';
+    if (scoreEl && data.summary) {
+        scoreEl.textContent = data.summary.health_score + '分';
+        const healthLevel = data.summary.health_level || {};
+        scoreEl.style.color = healthLevel.color || '#10b981';
     }
     
     // 2. 更新报告日期
@@ -2397,19 +2398,75 @@ function renderPortfolioAnalysis() {
         dateEl.textContent = data.report_date;
     }
     
-    // 3. 更新总体分析内容
+    // 3. 更新总体分析内容（组合层面）
     const contentEl = document.getElementById('portfolioAnalysisContent');
-    if (contentEl && data.overall_analysis) {
-        const analysis = data.overall_analysis;
-        contentEl.innerHTML = `
+    if (contentEl && data.portfolio_analysis) {
+        const portfolio = data.portfolio_analysis;
+        const summary = data.summary;
+        
+        let html = `
             <div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6;">
-                <div style="margin-bottom: 8px; display: flex; gap: 12px; flex-wrap: wrap;">
-                    <span>📊 中轴偏离: <b style="color: ${analysis.axis_deviation?.color || '#fff'}">${analysis.axis_deviation?.label || '--'}</b></span>
-                    <span>💡 建议: <b style="color: ${analysis.recommendation?.color || '#fff'}">${analysis.recommendation?.text || '--'}</b></span>
+                <!-- 健康度 -->
+                <div style="margin-bottom: 12px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span>📊 组合健康度</span>
+                        <span style="color: ${summary.health_level?.color || '#fff'}; font-weight: 600;">${summary.health_level?.label || '--'} (${summary.health_score}分)</span>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">${summary.health_level?.desc || ''}</div>
                 </div>
-                ${analysis.summary ? `<div style="padding: 8px; background: rgba(255,255,255,0.05); border-radius: 6px; margin-top: 8px;">${analysis.summary}</div>` : ''}
+                
+                <!-- 仓位建议 -->
+                <div style="margin-bottom: 12px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span>💰 仓位建议</span>
+                        <span style="color: #3b82f6; font-weight: 600;">建议现金${portfolio.position?.suggested_cash_ratio || 30}%</span>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">${portfolio.position?.position_advice || ''}</div>
+                    <div style="margin-top: 8px; display: flex; gap: 12px; font-size: 0.7rem;">
+                        <span>💡 机会股: ${portfolio.position?.oversold_count || 0}只</span>
+                        <span>⚠️ 风险股: ${portfolio.position?.overbought_count || 0}只</span>
+                    </div>
+                </div>
+                
+                <!-- 板块分析 -->
+                <div style="margin-bottom: 12px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span>🏭 板块集中</span>
+                        <span style="color: ${portfolio.sector?.sector_risk === '高' ? '#ef4444' : portfolio.sector?.sector_risk === '中高' ? '#f59e0b' : '#10b981'}; font-weight: 600;">${portfolio.sector?.max_sector || '--'} ${portfolio.sector?.max_sector_ratio || 0}%</span>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">${portfolio.sector?.sector_advice || ''}</div>
+                </div>
+                
+                <!-- 风险提示 -->
+                ${portfolio.risks && portfolio.risks.length > 0 ? `
+                <div style="margin-bottom: 12px; padding: 10px; background: rgba(239,68,68,0.1); border-radius: 8px; border-left: 3px solid #ef4444;">
+                    <div style="font-weight: 600; color: #ef4444; margin-bottom: 8px;">⚠️ 风险提示</div>
+                    ${portfolio.risks.map(r => `
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">
+                            ${r.level === 'high' ? '🔴' : '🟡'} ${r.desc}
+                        </div>
+                    `).join('')}
+                </div>
+                ` : ''}
+                
+                <!-- 调仓建议 -->
+                ${portfolio.rebalance && portfolio.rebalance.actions && portfolio.rebalance.actions.length > 0 ? `
+                <div style="margin-bottom: 12px;">
+                    <div style="font-weight: 600; margin-bottom: 8px;">🔄 调仓建议</div>
+                    ${portfolio.rebalance.actions.map(a => `
+                        <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 6px; margin-bottom: 6px; border-left: 3px solid ${a.action === 'reduce' ? '#ef4444' : '#10b981'};">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: 600; font-size: 0.8rem;">${a.name} (${a.code})</span>
+                                <span style="font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; background: ${a.action === 'reduce' ? '#ef444420' : '#10b98120'}; color: ${a.action === 'reduce' ? '#ef4444' : '#10b981'};">${a.action === 'reduce' ? '减仓' : '加仓'}</span>
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">${a.suggestion}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                ` : '<div style="padding: 10px; background: rgba(16,185,129,0.1); border-radius: 8px; font-size: 0.8rem; color: #10b981;">✅ 当前持仓无需调仓</div>'}
             </div>
         `;
+        contentEl.innerHTML = html;
     }
     
     // 4. 渲染个股列表
@@ -2420,18 +2477,50 @@ function renderPortfolioAnalysis() {
         if (countEl) countEl.textContent = `${stocks.length}只`;
         
         itemsEl.innerHTML = stocks.map(stock => {
-            const signalColor = stock.signal === 'buy' ? '#10b981' : stock.signal === 'sell' ? '#ef4444' : '#f59e0b';
-            const signalText = stock.signal === 'buy' ? '买入' : stock.signal === 'sell' ? '减仓' : '持有';
+            const signalColor = stock.technical_status === 'overbought' ? '#ef4444' : 
+                               stock.technical_status === 'oversold' ? '#10b981' : '#f59e0b';
+            const signalText = stock.technical_status === 'overbought' ? '减仓' : 
+                              stock.technical_status === 'oversold' ? '买入' : '持有';
+            const statusIcon = stock.status_icon || '⚪';
             return `
-                <div onclick="showStockAnalysisDetail('${stock.code}')" style="padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 6px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.03)'">
+                <div onclick="showStockAnalysisDetail('${stock.code}')" style="padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 6px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.03)'">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="font-weight: 600; font-size: 0.8rem; color: var(--text-primary);">${stock.code}</span>
-                        <span style="font-size: 0.75rem; color: var(--text-secondary);">${stock.name}</span>
+                        <span style="font-size: 0.9rem;">${statusIcon}</span>
+                        <div>
+                            <div style="font-weight: 600; font-size: 0.8rem; color: var(--text-primary);">${stock.code}</div>
+                            <div style="font-size: 0.7rem; color: var(--text-secondary);">${stock.name}</div>
+                        </div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span style="font-size: 0.7rem; color: ${signalColor}; background: ${signalColor}20; padding: 2px 8px; border-radius: 4px;">${signalText}</span>
-                        <span style="font-size: 0.7rem; color: var(--text-muted);">健康度 ${stock.health_score || '--'}</span>
+                        <span style="font-size: 0.7rem; color: var(--text-muted);">${stock.axis_deviation > 0 ? '+' : ''}${stock.axis_deviation.toFixed(1)}%</span>
                         <i class="fas fa-chevron-right" style="font-size: 0.65rem; color: var(--text-muted);"></i>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    // 5. 渲染板块分析
+    const sectorCountEl = document.getElementById('portfolioSectorCount');
+    const sectorItemsEl = document.getElementById('portfolioSectorItems');
+    if (sectorItemsEl && data.sector_analysis) {
+        const sectors = data.sector_analysis;
+        if (sectorCountEl) sectorCountEl.textContent = `${sectors.length}个`;
+        
+        sectorItemsEl.innerHTML = sectors.map(sector => {
+            const statusColor = sector.status?.includes('超买') || sector.status?.includes('过热') ? '#ef4444' : 
+                               sector.status?.includes('超卖') ? '#10b981' : '#f59e0b';
+            return `
+                <div style="padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 6px; margin-bottom: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="font-weight: 600; font-size: 0.8rem; color: var(--text-primary);">${sector.name}</span>
+                        <span style="font-size: 0.7rem; color: ${statusColor};">${sector.status}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-secondary);">
+                        <span>${sector.stock_count}只</span>
+                        <span>¥${(sector.market_value / 10000).toFixed(0)}万</span>
+                        <span style="color: ${sector.pnl_percent >= 0 ? '#10b981' : '#ef4444'};">${sector.pnl_percent >= 0 ? '+' : ''}${sector.pnl_percent}%</span>
                     </div>
                 </div>
             `;

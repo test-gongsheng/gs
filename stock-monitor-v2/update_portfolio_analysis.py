@@ -377,7 +377,7 @@ def analyze_sector(stocks: List[Dict]) -> Dict:
 
 
 def generate_portfolio_analysis_v2() -> Dict:
-    """生成完整的持仓分析报告V2 - 先预加载所有中轴价格"""
+    """生成完整的持仓分析报告V2 - 包含个股、板块、组合三个层面"""
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 开始生成持仓分析报告V2...")
     
     data = load_data()
@@ -385,16 +385,15 @@ def generate_portfolio_analysis_v2() -> Dict:
     
     report_date = datetime.now().strftime('%Y-%m-%d')
     
-    # 第一步：预加载所有股票的中轴价格（确保数据准确性）
+    # 第一步：预加载所有股票的中轴价格
     print(f"[预加载] 开始计算 {len(stocks)} 只股票的中轴价格...")
     for stock in stocks:
         code = stock['code']
         market = stock['market']
         current_price = stock.get('current_price', 0)
-        # 调用中轴价格计算，确保缓存中有数据
         axis_price = get_real_axis_price(code, market, current_price)
         print(f"[预加载] {code} 中轴价格: ¥{axis_price:.2f}")
-    print("[预加载] 中轴价格计算完成，开始生成分析报告...")
+    print("[预加载] 中轴价格计算完成")
     
     # 第二步：分析每只股票
     stock_analyses = []
@@ -445,6 +444,11 @@ def generate_portfolio_analysis_v2() -> Dict:
     # 板块分析
     sector_analysis = analyze_sector(stock_analyses)
     
+    # 组合层面分析
+    portfolio_analysis = analyze_portfolio_overall(
+        stock_analyses, total_market_value, total_cost, total_pnl, total_pnl_percent, status_counts
+    )
+    
     # 生成报告
     report = {
         'report_date': report_date,
@@ -460,16 +464,152 @@ def generate_portfolio_analysis_v2() -> Dict:
             'total_pnl_percent': total_pnl_percent,
             'status_distribution': status_counts,
             'health_score': calculate_health_score(status_counts),
+            'health_level': get_health_level(calculate_health_score(status_counts)),
             'buy_opportunities_count': status_counts.get('oversold', 0),
             'sell_signals_count': status_counts.get('overbought', 0)
         },
         'stock_analyses': stock_analyses,
         'sector_analysis': sector_analysis,
+        'portfolio_analysis': portfolio_analysis,
         'alerts': alerts,
         'highlights': highlights
     }
     
     return report
+
+
+def get_health_level(score: int) -> Dict:
+    """根据健康度分数返回等级描述"""
+    if score >= 80:
+        return {'level': 'excellent', 'label': '优秀', 'color': '#10b981', 'desc': '组合状态良好'}
+    elif score >= 60:
+        return {'level': 'good', 'label': '良好', 'color': '#3b82f6', 'desc': '组合状态正常'}
+    elif score >= 40:
+        return {'level': 'average', 'label': '一般', 'color': '#f59e0b', 'desc': '需要关注'}
+    else:
+        return {'level': 'poor', 'label': '较差', 'color': '#ef4444', 'desc': '需要调整'}
+
+
+def analyze_portfolio_overall(stock_analyses: List[Dict], total_mv: float, 
+                               total_cost: float, total_pnl: float, 
+                               pnl_pct: float, status_counts: Dict) -> Dict:
+    """分析组合整体情况，生成仓位建议和风险提示"""
+    
+    # 1. 仓位分析
+    total_stocks = len(stock_analyses)
+    oversold_count = status_counts.get('oversold', 0)
+    overbought_count = status_counts.get('overbought', 0)
+    
+    # 现金比例建议（基于超卖股票数量）
+    if oversold_count >= 5:
+        cash_ratio_suggestion = 20  # 机会多，保留20%现金
+        position_advice = "机会较多，建议保留20%现金用于加仓"
+    elif oversold_count >= 3:
+        cash_ratio_suggestion = 30
+        position_advice = "有一定机会，建议保留30%现金"
+    elif overbought_count >= 3:
+        cash_ratio_suggestion = 40  # 风险高，多留现金
+        position_advice = "超买股票较多，建议保留40%现金防范风险"
+    else:
+        cash_ratio_suggestion = 30
+        position_advice = "市场平衡，建议保留30%现金"
+    
+    # 2. 板块集中度分析
+    sector_values = {}
+    for stock in stock_analyses:
+        sector = stock['sector']
+        sector_values[sector] = sector_values.get(sector, 0) + stock['market_value']
+    
+    max_sector = max(sector_values.items(), key=lambda x: x[1]) if sector_values else ('', 0)
+    max_sector_ratio = max_sector[1] / total_mv * 100 if total_mv > 0 else 0
+    
+    sector_risk = "正常"
+    sector_advice = "板块配置合理"
+    if max_sector_ratio > 50:
+        sector_risk = "高"
+        sector_advice = f"{max_sector[0]}占比过高({max_sector_ratio:.1f}%)，建议分散风险"
+    elif max_sector_ratio > 35:
+        sector_risk = "中高"
+        sector_advice = f"{max_sector[0]}占比{max_sector_ratio:.1f}%，注意板块集中风险"
+    
+    # 3. 调仓建议
+    rebalance_actions = []
+    
+    # 建议减仓（超买）
+    for stock in stock_analyses:
+        if stock['technical_status'] == 'overbought':
+            rebalance_actions.append({
+                'action': 'reduce',
+                'code': stock['code'],
+                'name': stock['name'],
+                'reason': f"偏离中轴+{stock['axis_deviation']:.1f}%，进入超买区",
+                'suggestion': f"减仓1/4至1/3，锁定利润"
+            })
+    
+    # 建议加仓（超卖）
+    for stock in stock_analyses:
+        if stock['technical_status'] == 'oversold':
+            rebalance_actions.append({
+                'action': 'add',
+                'code': stock['code'],
+                'name': stock['name'],
+                'reason': f"偏离中轴{stock['axis_deviation']:.1f}%，进入超卖区",
+                'suggestion': f"可分批买入，目标仓位{stock['market_value']/total_mv*100*1.2:.1f}%"
+            })
+    
+    # 4. 风险分析
+    risks = []
+    
+    # 市场风险
+    if overbought_count >= 2:
+        risks.append({
+            'level': 'medium',
+            'type': 'market',
+            'desc': f'{overbought_count}只股票处于超买状态，短期回调风险增加'
+        })
+    
+    # 板块风险
+    if max_sector_ratio > 40:
+        risks.append({
+            'level': 'high' if max_sector_ratio > 50 else 'medium',
+            'type': 'sector',
+            'desc': f'{max_sector[0]}板块占比{max_sector_ratio:.1f}%，存在集中风险'
+        })
+    
+    # 港股风险
+    hk_stocks = [s for s in stock_analyses if s['market'] == '港股']
+    hk_value = sum(s['market_value'] for s in hk_stocks)
+    hk_ratio = hk_value / total_mv * 100 if total_mv > 0 else 0
+    if hk_ratio > 40:
+        risks.append({
+            'level': 'medium',
+            'type': 'market',
+            'desc': f'港股持仓占比{hk_ratio:.1f}%，注意汇率和市场风险'
+        })
+    
+    return {
+        'position': {
+            'current_cash_ratio': 30,  # 假设当前现金比例
+            'suggested_cash_ratio': cash_ratio_suggestion,
+            'position_advice': position_advice,
+            'total_stocks': total_stocks,
+            'oversold_count': oversold_count,
+            'overbought_count': overbought_count
+        },
+        'sector': {
+            'max_sector': max_sector[0],
+            'max_sector_ratio': round(max_sector_ratio, 2),
+            'sector_risk': sector_risk,
+            'sector_advice': sector_advice
+        },
+        'rebalance': {
+            'actions': rebalance_actions,
+            'action_count': len(rebalance_actions)
+        },
+        'risks': risks,
+        'risk_level': 'high' if len([r for r in risks if r['level'] == 'high']) > 0 else 
+                     'medium' if len(risks) > 0 else 'low'
+    }
 
 
 def calculate_health_score(status_counts: Dict) -> int:
