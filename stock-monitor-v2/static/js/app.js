@@ -542,7 +542,9 @@ function updateAssetOverview() {
 // 渲染股票列表
 function renderStockList() {
     console.log('[renderStockList] ========== 开始执行 ==========');
-    console.log('[renderStockList] appState.stocks:', appState.stocks ? appState.stocks.length : 'undefined');
+    console.log('[renderStockList] 函数已被调用，this:', this);
+    console.log('[renderStockList] appState:', typeof appState);
+    console.log('[renderStockList] appState.stocks:', appState ? (appState.stocks ? appState.stocks.length : 'stocks undefined') : 'appState undefined');
     
     const listEl = document.getElementById('stockList');
     console.log('[renderStockList] listEl:', listEl);
