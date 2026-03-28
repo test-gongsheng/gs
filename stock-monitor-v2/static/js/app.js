@@ -124,11 +124,9 @@ async function init() {
     appState.hotSectors = mockHotSectors;
     appState.news = { headlines: [], themes: [], calendar: [], portfolio: [], general: mockNews };
 
-    // 直接内联渲染股票列表，绕过函数调用
-    console.log('[init] 开始内联渲染股票列表，当前股票数量:', appState.stocks.length);
+    // 直接内联渲染股票列表
     const listEl = document.getElementById('stockList');
     if (listEl) {
-        listEl.style.cssText = 'flex: 1 1 auto; overflow-y: auto; padding: 8px; min-height: 100px; background: #151b2d; border: 3px solid red !important;';
         listEl.innerHTML = '';
         if (appState.stocks && appState.stocks.length > 0) {
             appState.stocks.forEach((stock, index) => {
@@ -142,16 +140,12 @@ async function init() {
                 let marketValue = isHKStock ? ((stock.priceCny || (stock.price / exchangeRate)) * quantity) : ((stock.price || 0) * quantity);
                 const marketValueWan = marketValue > 0 ? (marketValue / 10000).toFixed(1) : '0.0';
                 const hkBadge = isHKStock ? '<span class="stock-item-hk">HK</span>' : '';
-                item.style.cssText = 'display: flex !important; align-items: center; padding: 12px 8px; border-radius: 8px; cursor: pointer; margin-bottom: 4px; min-height: 50px; background: #1a1f2e; border: 2px solid #52c41a !important; color: white;';
-                item.innerHTML = `<div class="stock-info" style="flex: 1.5; text-align: left; display: flex; flex-direction: column; gap: 2px;"><span class="code" style="font-weight: 600; font-size: 0.875rem; color: #e8eaed;">${stock.code}${hkBadge}</span><span class="name" style="font-size: 0.75rem; color: #9ca3af;">${stock.name}</span></div><div style="flex: 1; text-align: right; font-weight: 600; color: ${isUp ? '#ff4d4f' : '#52c41a'};">${(stock.price || 0).toFixed(2)}</div><div style="flex: 1; text-align: right; font-weight: 600; color: ${isUp ? '#ff4d4f' : '#52c41a'};">${stock.change >= 0 ? '+' : ''}${(stock.changePercent || 0).toFixed(2)}%</div><div style="flex: 1; text-align: right; font-size: 0.75rem; color: #e8eaed;">${marketValueWan}万</div>`;
+                item.innerHTML = `<div class="stock-info"><span class="code">${stock.code}${hkBadge}</span><span class="name">${stock.name}</span></div><div class="stock-price ${isUp ? 'up' : 'down'}">${(stock.price || 0).toFixed(2)}</div><div class="stock-change ${isUp ? 'up' : 'down'}">${stock.change >= 0 ? '+' : ''}${(stock.changePercent || 0).toFixed(2)}%</div><div class="stock-pnl">${marketValueWan}万</div>`;
                 listEl.appendChild(item);
             });
-            console.log('[init] 股票列表渲染完成，子元素数:', listEl.children.length);
         } else {
-            listEl.innerHTML = '<div style="padding: 20px; text-align: center; color: #9ca3af;">暂无持仓数据</div>';
+            listEl.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">暂无持仓数据</div>';
         }
-    } else {
-        console.error('[init] 找不到 stockList 元素');
     }
     renderHotSectors();
     renderNews();
