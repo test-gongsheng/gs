@@ -535,37 +535,45 @@ function updateAssetOverview() {
 
 // 渲染股票列表
 function renderStockList() {
+    console.log('[renderStockList] ========== 开始执行 ==========');
+    console.log('[renderStockList] appState.stocks:', appState.stocks ? appState.stocks.length : 'undefined');
+    
     const listEl = document.getElementById('stockList');
+    console.log('[renderStockList] listEl:', listEl);
+    
     if (!listEl) {
         console.error('[renderStockList] 找不到 stockList 元素');
         return;
     }
+    
+    // 强制设置 stock-list 样式 - 红色边框便于调试
+    listEl.style.cssText = 'flex: 1 1 auto; overflow-y: auto; padding: 8px; min-height: 100px; background: #151b2d; border: 3px solid red !important;';
     listEl.innerHTML = '';
+    console.log('[renderStockList] 已清空列表，准备渲染');
 
     if (!appState.stocks || appState.stocks.length === 0) {
-        console.log('[renderStockList] 没有股票数据');
-        listEl.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">暂无持仓数据</div>';
+        console.log('[renderStockList] 没有股票数据，显示空状态');
+        listEl.innerHTML = '<div style="padding: 20px; text-align: center; color: #9ca3af;">暂无持仓数据</div>';
         return;
     }
 
     console.log('[renderStockList] 渲染', appState.stocks.length, '只股票');
+    console.log('[renderStockList] 股票代码:', appState.stocks.map(s => s.code).join(', '));
 
     appState.stocks.forEach((stock, index) => {
+        console.log(`[renderStockList] 创建第 ${index + 1} 个股票项:`, stock.code);
+        
         const item = document.createElement('div');
         item.className = 'stock-item' + (index === 0 ? ' active' : '');
         item.onclick = () => selectStock(index);
 
         const isUp = stock.change >= 0;
         const isHKStock = stock.market === '港股';
-        // 港股使用官方中间价汇率（1港币≈0.9229人民币 => 1人民币≈1.0836港币）
         const exchangeRate = stock.exchangeRate || appState.exchangeRate || 1.0836;
 
-        // 港股市值实时计算（港币价格 × 持仓数量 ÷ 汇率 = 人民币市值）
-        // 注意：数据文件中字段可能是 shares 或 holdQuantity
         const quantity = stock.holdQuantity || stock.shares || 0;
         let marketValue;
         if (isHKStock) {
-            // 优先使用 priceCny（人民币价格），避免汇率转换误差
             if (stock.priceCny) {
                 marketValue = stock.priceCny * quantity;
             } else {
@@ -578,7 +586,6 @@ function renderStockList() {
         
         const marketValueWan = marketValue > 0 ? (marketValue / 10000).toFixed(1) : '0.0';
 
-        // 检查是否触发买卖
         let alertBadge = '';
         if (stock.price >= stock.triggerSell) {
             alertBadge = '<span class="stock-item-alert sell">卖</span>';
@@ -586,11 +593,10 @@ function renderStockList() {
             alertBadge = '<span class="stock-item-alert buy">买</span>';
         }
         
-        // 港股标识
         const hkBadge = isHKStock ? '<span class="stock-item-hk">HK</span>' : '';
 
-        // 与 CSS 样式匹配的横向布局结构 - 强制添加内联样式确保可见
-        item.style.cssText = 'display: flex; align-items: center; padding: 12px 8px; border-radius: 8px; cursor: pointer; margin-bottom: 4px; min-height: 50px; background: #1a1f2e; border: 1px solid #2a3142;';
+        // 强制添加内联样式确保可见 - 绿色边框
+        item.style.cssText = 'display: flex !important; align-items: center; padding: 12px 8px; border-radius: 8px; cursor: pointer; margin-bottom: 4px; min-height: 50px; background: #1a1f2e; border: 2px solid #52c41a !important; color: white;';
         
         item.innerHTML = `
             <div class="stock-info" style="flex: 1.5; text-align: left; display: flex; flex-direction: column; gap: 2px;">
@@ -609,7 +615,11 @@ function renderStockList() {
         `;
 
         listEl.appendChild(item);
+        console.log(`[renderStockList] 已添加第 ${index + 1} 个股票项到 DOM`);
     });
+    
+    console.log('[renderStockList] 渲染完成，列表子元素数量:', listEl.children.length);
+    console.log('[renderStockList] ========== 执行结束 ==========');
 }
 
 // 选择股票
