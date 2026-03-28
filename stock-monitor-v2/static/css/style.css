@@ -3424,7 +3424,11 @@ body {
 }
 
 .collapsible-section.collapsed .collapsible-content {
-  display: none;
+  display: none !important;
+}
+
+.collapsible-section:not(.collapsed) .collapsible-content {
+  display: block !important;
 }
 
 .collapsible-section.collapsed .collapse-icon {
