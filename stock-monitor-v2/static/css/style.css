@@ -407,7 +407,7 @@ body {
   display: flex;
   flex-direction: column;
   max-height: calc(100vh - var(--header-height) - var(--asset-bar-height) - 32px);
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .panel-header {
@@ -3460,7 +3460,7 @@ body {
 .portfolio-analysis-section {
   flex-shrink: 0;
   max-height: none;
-  overflow-y: auto;
+  overflow-y: visible;
 }
 
 .ib-analysis-section.collapsed,
