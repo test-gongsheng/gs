@@ -790,12 +790,20 @@ function renderStockDetail() {
     let pivotPriceValue = parseFloat(safeStock.pivotPrice) || 0;
     const pivotCenterEl = document.getElementById('pivotCenter');
     if (pivotCenterEl) {
-        pivotCenterEl.textContent = pivotPriceValue.toFixed(2);
+        if (isHKStock) {
+            pivotCenterEl.textContent = 'HK$' + pivotPriceValue.toFixed(2);
+        } else {
+            pivotCenterEl.textContent = pivotPriceValue.toFixed(2);
+        }
     }
 
     const currentPriceLabelEl = document.getElementById('currentPriceLabel');
     if (currentPriceLabelEl) {
-        currentPriceLabelEl.textContent = safeStock.price.toFixed(2);
+        if (isHKStock) {
+            currentPriceLabelEl.textContent = 'HK$' + safeStock.price.toFixed(2);
+        } else {
+            currentPriceLabelEl.textContent = safeStock.price.toFixed(2);
+        }
     }
 
     setText('detailBase', safeStock.baseRatio + '%');
@@ -813,8 +821,13 @@ function renderStockDetail() {
         }
     }
     
-    setText('triggerBuy', triggerBuy.toFixed(2));
-    setText('triggerSell', triggerSell.toFixed(2));
+    if (isHKStock) {
+        setText('triggerBuy', 'HK$' + triggerBuy.toFixed(2));
+        setText('triggerSell', 'HK$' + triggerSell.toFixed(2));
+    } else {
+        setText('triggerBuy', triggerBuy.toFixed(2));
+        setText('triggerSell', triggerSell.toFixed(2));
+    }
 
     // 安全计算距离
     let distBuy = '0.0';
