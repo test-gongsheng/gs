@@ -474,8 +474,8 @@ body {
   flex: 1;
   overflow-y: auto;
   padding: 8px;
-  min-height: 200px;
-  max-height: 400px;
+  min-height: 300px;
+  max-height: 500px;
 }
 
 .stock-item {
@@ -3415,6 +3415,7 @@ body {
 /* 可折叠区域样式 */
 .collapsible-section {
   transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .collapsible-section.collapsed {
@@ -3435,6 +3436,18 @@ body {
 
 .collapsible-header:hover {
   opacity: 0.8;
+}
+
+/* 分析模块默认紧凑 */
+.ib-analysis-section,
+.portfolio-analysis-section {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.ib-analysis-section.collapsed,
+.portfolio-analysis-section.collapsed {
+  max-height: none;
 }
 
 /* 港股沽空风险提示 - 个股部分 */
