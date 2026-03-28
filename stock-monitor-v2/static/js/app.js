@@ -170,6 +170,9 @@ async function init() {
     
     // 定时刷新新闻（每60秒）
     setInterval(loadNews, 60000);
+    
+    // 定时刷新持仓股分析（每5分钟）
+    setInterval(loadPortfolioAnalysis, 300000);
 
     // 绑定表单提交
     document.getElementById('addStockForm').addEventListener('submit', handleAddStock);
@@ -185,6 +188,10 @@ async function init() {
     // 页面加载完成后，加载实时新闻
     console.log('加载财联社实时新闻...');
     await loadNews();
+    
+    // 页面加载完成后，加载持仓股分析报告
+    console.log('加载持仓股分析报告...');
+    await loadPortfolioAnalysis();
     
     // 页面加载完成后，立即获取一次实时行情（获取当天收盘价）
     if (appState.stocks.length > 0) {
@@ -2317,10 +2324,158 @@ function renderSentiment() {
     document.getElementById('newHigh').textContent = breadth.new_high;
     document.getElementById('newLow').textContent = breadth.new_low;
     
-    // 8. 加载持仓港股沽空风险分析
+    // 8. 加载持仓股分析报告
+    console.log('[DEBUG] 准备调用 loadPortfolioAnalysis');
+    loadPortfolioAnalysis();
+    console.log('[DEBUG] loadPortfolioAnalysis 调用完成');
+    
+    // 9. 加载持仓港股沽空风险分析
     console.log('[DEBUG] 准备调用 loadHKPortfolioRisk');
     loadHKPortfolioRisk();
     console.log('[DEBUG] loadHKPortfolioRisk 调用完成');
+}
+
+// 加载持仓股分析报告
+async function loadPortfolioAnalysis() {
+    try {
+        console.log('[DEBUG] loadPortfolioAnalysis 开始执行');
+        const response = await fetch('/api/portfolio-analysis');
+        console.log('[DEBUG] 持仓分析 API 响应状态:', response.status);
+        if (!response.ok) {
+            console.log('[DEBUG] 持仓分析 API 响应不成功, 返回');
+            return;
+        }
+        
+        const result = await response.json();
+        console.log('[DEBUG] 持仓分析 API 返回:', result);
+        if (!result.success || !result.data) {
+            console.log('[DEBUG] 持仓分析数据无效, 返回');
+            return;
+        }
+        
+        appState.portfolioAnalysis = result.data;
+        renderPortfolioAnalysis();
+    } catch (error) {
+        console.error('[DEBUG] 加载持仓分析出错:', error);
+    }
+}
+
+// 渲染持仓股分析报告
+function renderPortfolioAnalysis() {
+    console.log('[DEBUG] renderPortfolioAnalysis 开始执行');
+    const data = appState.portfolioAnalysis;
+    if (!data) {
+        console.log('[DEBUG] 没有持仓分析数据, 返回');
+        return;
+    }
+    
+    // 1. 更新健康度分数
+    const scoreEl = document.getElementById('portfolioHealthScore');
+    if (scoreEl && data.health_score) {
+        scoreEl.textContent = data.health_score.value + '分';
+        scoreEl.style.color = data.health_score.color || '#10b981';
+    }
+    
+    // 2. 更新报告日期
+    const dateEl = document.getElementById('portfolioReportDate');
+    if (dateEl && data.report_date) {
+        dateEl.textContent = data.report_date;
+    }
+    
+    // 3. 更新总体分析内容
+    const contentEl = document.getElementById('portfolioAnalysisContent');
+    if (contentEl && data.overall_analysis) {
+        const analysis = data.overall_analysis;
+        contentEl.innerHTML = `
+            <div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6;">
+                <div style="margin-bottom: 8px; display: flex; gap: 12px; flex-wrap: wrap;">
+                    <span>📊 中轴偏离: <b style="color: ${analysis.axis_deviation?.color || '#fff'}">${analysis.axis_deviation?.label || '--'}</b></span>
+                    <span>💡 建议: <b style="color: ${analysis.recommendation?.color || '#fff'}">${analysis.recommendation?.text || '--'}</b></span>
+                </div>
+                ${analysis.summary ? `<div style="padding: 8px; background: rgba(255,255,255,0.05); border-radius: 6px; margin-top: 8px;">${analysis.summary}</div>` : ''}
+            </div>
+        `;
+    }
+    
+    // 4. 渲染个股列表
+    const countEl = document.getElementById('portfolioStockCount');
+    const itemsEl = document.getElementById('portfolioStockItems');
+    if (itemsEl && data.stock_analyses) {
+        const stocks = data.stock_analyses;
+        if (countEl) countEl.textContent = `${stocks.length}只`;
+        
+        itemsEl.innerHTML = stocks.map(stock => {
+            const signalColor = stock.signal === 'buy' ? '#10b981' : stock.signal === 'sell' ? '#ef4444' : '#f59e0b';
+            const signalText = stock.signal === 'buy' ? '买入' : stock.signal === 'sell' ? '减仓' : '持有';
+            return `
+                <div onclick="showStockAnalysisDetail('${stock.code}')" style="padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 6px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.03)'">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-weight: 600; font-size: 0.8rem; color: var(--text-primary);">${stock.code}</span>
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">${stock.name}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.7rem; color: ${signalColor}; background: ${signalColor}20; padding: 2px 8px; border-radius: 4px;">${signalText}</span>
+                        <span style="font-size: 0.7rem; color: var(--text-muted);">健康度 ${stock.health_score || '--'}</span>
+                        <i class="fas fa-chevron-right" style="font-size: 0.65rem; color: var(--text-muted);"></i>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+}
+
+// 显示个股分析详情弹窗
+function showStockAnalysisDetail(code) {
+    const data = appState.portfolioAnalysis;
+    if (!data || !data.stock_analyses) return;
+    
+    const stock = data.stock_analyses.find(s => s.code === code);
+    if (!stock) return;
+    
+    // 创建弹窗
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.id = 'stockAnalysisDetailModal';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-chart-line"></i> ${stock.name} (${stock.code}) 分析报告</h3>
+                <button class="btn-close" onclick="document.getElementById('stockAnalysisDetailModal').remove()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <div style="margin-bottom: 16px;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">健康度评分</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: ${stock.health_score >= 80 ? '#10b981' : stock.health_score >= 60 ? '#f59e0b' : '#ef4444'};">${stock.health_score || '--'}/100</div>
+                </div>
+                
+                ${stock.analysis ? `
+                <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 6px;">📊 分析结论</div>
+                    <div style="font-size: 0.85rem; color: var(--text-primary); line-height: 1.6;">${stock.analysis}</div>
+                </div>
+                ` : ''}
+                
+                ${stock.recommendation ? `
+                <div style="background: rgba(16,185,129,0.1); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 3px solid #10b981;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">💡 操作建议</div>
+                    <div style="font-size: 0.9rem; font-weight: 600; color: ${stock.signal === 'buy' ? '#10b981' : stock.signal === 'sell' ? '#ef4444' : '#f59e0b'};">${stock.recommendation}</div>
+                </div>
+                ` : ''}
+                
+                ${stock.technical ? `
+                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">📈 技术指标</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.8rem;">
+                        ${stock.technical.ma ? `<div>均线: ${stock.technical.ma}</div>` : ''}
+                        ${stock.technical.macd ? `<div>MACD: ${stock.technical.macd}</div>` : ''}
+                        ${stock.technical.volume ? `<div>量能: ${stock.technical.volume}</div>` : ''}
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
 }
 
 // 加载持仓港股沽空风险分析
