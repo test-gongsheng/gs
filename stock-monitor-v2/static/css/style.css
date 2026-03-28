@@ -3459,7 +3459,7 @@ body {
 .ib-analysis-section,
 .portfolio-analysis-section {
   flex-shrink: 0;
-  max-height: 140px;
+  max-height: none;
   overflow-y: auto;
 }
 
