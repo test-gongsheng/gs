@@ -2411,7 +2411,12 @@ document.addEventListener('DOMContentLoaded', () => {
         window.history.replaceState({}, document.title, window.location.pathname);
     }
     
-    init();
+    // 确保DOM加载完成后再初始化
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
     // 数据导入功能在import.js中初始化 - v2
     console.log('Checking initDataImport...', typeof initDataImport);
     if (typeof initDataImport === 'function') {
