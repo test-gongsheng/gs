@@ -2726,14 +2726,14 @@ window.toggleSection = toggleSection;
  */
 function restoreCollapsedState() {
     try {
+        // 清除分析模块的折叠状态，确保默认展开
         const collapsedSections = JSON.parse(localStorage.getItem('collapsedSections') || '{}');
-        Object.entries(collapsedSections).forEach(([sectionId, isCollapsed]) => {
-            const section = document.getElementById(sectionId);
-            if (section && isCollapsed) {
-                section.classList.add('collapsed');
-            }
-        });
-        console.log('[restoreCollapsedState] 恢复折叠状态完成');
+        delete collapsedSections['ibAnalysisSection'];
+        delete collapsedSections['portfolioAnalysisSection'];
+        localStorage.setItem('collapsedSections', JSON.stringify(collapsedSections));
+        
+        // 不再恢复这两个分析模块的折叠状态
+        console.log('[restoreCollapsedState] 分析模块默认展开');
     } catch (e) {
         console.warn('[restoreCollapsedState] 恢复失败:', e);
     }
