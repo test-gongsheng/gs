@@ -589,19 +589,21 @@ function renderStockList() {
         // 港股标识
         const hkBadge = isHKStock ? '<span class="stock-item-hk">HK</span>' : '';
 
-        // 与 CSS 样式匹配的横向布局结构
+        // 与 CSS 样式匹配的横向布局结构 - 强制添加内联样式确保可见
+        item.style.cssText = 'display: flex; align-items: center; padding: 12px 8px; border-radius: 8px; cursor: pointer; margin-bottom: 4px; min-height: 50px; background: #1a1f2e; border: 1px solid #2a3142;';
+        
         item.innerHTML = `
-            <div class="stock-info">
-                <span class="code">${stock.code}${hkBadge}${alertBadge}</span>
-                <span class="name">${stock.name}</span>
+            <div class="stock-info" style="flex: 1.5; text-align: left; display: flex; flex-direction: column; gap: 2px;">
+                <span class="code" style="font-weight: 600; font-size: 0.875rem; color: #e8eaed;">${stock.code}${hkBadge}${alertBadge}</span>
+                <span class="name" style="font-size: 0.75rem; color: #9ca3af;">${stock.name}</span>
             </div>
-            <div class="stock-price ${isUp ? 'up' : 'down'}">
+            <div class="stock-price ${isUp ? 'up' : 'down'}" style="flex: 1; text-align: right; font-weight: 600; color: ${isUp ? '#ff4d4f' : '#52c41a'};">
                 ${isHKStock ? (stock.price || 0).toFixed(2) + '<small>HKD</small>' : (stock.price || 0).toFixed(2)}
             </div>
-            <div class="stock-change ${isUp ? 'up' : 'down'}">
+            <div class="stock-change ${isUp ? 'up' : 'down'}" style="flex: 1; text-align: right; font-weight: 600; color: ${isUp ? '#ff4d4f' : '#52c41a'};">
                 ${stock.change >= 0 ? '+' : ''}${(stock.changePercent || 0).toFixed(2)}%
             </div>
-            <div class="stock-pnl">
+            <div class="stock-pnl" style="flex: 1; text-align: right; font-size: 0.75rem; color: #e8eaed;">
                 ${marketValueWan}万
             </div>
         `;
