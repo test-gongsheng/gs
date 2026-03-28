@@ -124,7 +124,13 @@ async function init() {
     appState.hotSectors = mockHotSectors;
     appState.news = { headlines: [], themes: [], calendar: [], portfolio: [], general: mockNews };
 
-    renderStockList();
+    console.log('[init] 即将调用 renderStockList，当前股票数量:', appState.stocks.length);
+    try {
+        renderStockList();
+        console.log('[init] renderStockList 调用完成');
+    } catch (e) {
+        console.error('[init] renderStockList 调用失败:', e);
+    }
     renderHotSectors();
     renderNews();
     updateTime();

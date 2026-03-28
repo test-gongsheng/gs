@@ -1302,6 +1302,23 @@
 
     <script src="{{ url_for('static', filename='js/app.js') }}?v={{ now }}"></script>
     <script>
+        // 强制清除缓存并重新加载
+        console.log('页面加载完成，检查 stockList...');
+        setTimeout(function() {
+            var list = document.getElementById('stockList');
+            console.log('stockList 元素:', list);
+            console.log('stockList 子元素数:', list ? list.children.length : 'N/A');
+            if (list && list.children.length === 0) {
+                console.log('列表为空，强制调用 renderStockList...');
+                if (typeof renderStockList === 'function') {
+                    renderStockList();
+                } else {
+                    console.error('renderStockList 函数不存在!');
+                }
+            }
+        }, 2000);
+    </script>
+    <script>
     // ========== 国际投行观点分析 ==========
     let ibAnalysisData = null;
 
