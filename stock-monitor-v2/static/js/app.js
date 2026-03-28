@@ -245,9 +245,10 @@ async function refreshAxisPrices(forceRefresh = false) {
         try {
             console.log(`[refreshAxisPrices] 调用API: ${stock.code}`);
             
-            // 使用 AbortController 设置5秒超时
+            // 使用 AbortController 设置超时 - 港股需要更长时间
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            const timeoutMs = stock.market === '港股' ? 15000 : 8000;
+            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
             
             const response = await fetch('/api/axis-price', {
                 method: 'POST',
@@ -295,7 +296,8 @@ async function refreshAxisPrices(forceRefresh = false) {
             }
         } catch (error) {
             if (error.name === 'AbortError') {
-                console.warn(`[refreshAxisPrices] ${stock.code} 请求超时(8秒)`);
+                const timeoutSec = stock.market === '港股' ? '15' : '8';
+                console.warn(`[refreshAxisPrices] ${stock.code} 请求超时(${timeoutSec}秒)`);
             } else {
                 console.error(`[refreshAxisPrices] ${stock.code} 异常:`, error.message);
             }
