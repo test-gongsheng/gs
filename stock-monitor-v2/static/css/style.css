@@ -3437,10 +3437,22 @@ body {
 
 .collapsible-header {
   user-select: none;
+  cursor: pointer;
+  position: relative;
+  z-index: 10;
 }
 
 .collapsible-header:hover {
   opacity: 0.8;
+}
+
+.collapsible-header * {
+  pointer-events: none;
+}
+
+.collapsible-header button,
+.collapsible-header a {
+  pointer-events: auto;
 }
 
 /* 分析模块默认紧凑 */
