@@ -1348,7 +1348,11 @@
 
     // 渲染投行分析面板
     function renderIBAnalysis(data) {
-        if (!data) return;
+        console.log('renderIBAnalysis 被调用，数据:', data);
+        if (!data) {
+            console.error('renderIBAnalysis: data 为空');
+            return;
+        }
         
         // 更新时间和报告日期
         const reportDate = data.update_time || '--';
@@ -1357,14 +1361,20 @@
         const macro = data.macro_summary || {};
         const holdings = data.holdings_map || [];
         
+        console.log('holdings_map 数量:', holdings.length);
+        console.log('macro_summary:', macro);
+        
         // 分类持仓
         const strongHoldings = holdings.filter(h => h.alignment === 'strong');
         const moderateHoldings = holdings.filter(h => h.alignment === 'moderate');
         const weakHoldings = holdings.filter(h => h.alignment === 'weak');
         const neutralHoldings = holdings.filter(h => h.alignment === 'neutral');
         
+        console.log('分类统计:', {strong: strongHoldings.length, moderate: moderateHoldings.length, weak: weakHoldings.length, neutral: neutralHoldings.length});
+        
         // 显示所有持仓股
         const displayHoldings = holdings;
+        console.log('displayHoldings 数量:', displayHoldings.length);
         
         let html = `
             <div class="ib-summary" style="margin-bottom: 8px;">
@@ -1494,6 +1504,7 @@
         }
         
         document.getElementById('ibAnalysisContent').innerHTML = html;
+        console.log('ibAnalysisContent HTML 已设置，长度:', html.length);
     }
 
     function getConsensusClass(consensus) {
