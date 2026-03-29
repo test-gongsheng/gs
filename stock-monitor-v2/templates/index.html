@@ -1382,10 +1382,12 @@
         if (macro.key_targets && macro.key_targets.length > 0) {
             html += `<div class="ib-targets" style="margin-bottom: 8px;">`;
             macro.key_targets.forEach(target => {
-                const targetTooltip = target.source ? `数据来源: ${target.source}<br>报告日期: ${reportDate}` : `报告日期: ${reportDate}`;
+                const targetTooltip = target.source ? `数据来源: ${target.source}\n报告日期: ${reportDate}` : `报告日期: ${reportDate}`;
                 html += `
                     <div class="ib-target-item" 
-                         onmouseenter="showIBTooltip(this, '${target.index} 目标', '${targetTooltip}')"
+                         data-tooltip-title="${target.index} 目标"
+                         data-tooltip-content="${targetTooltip.replace(/"/g, '&quot;')}"
+                         onmouseenter="showIBTooltipFromData(this)"
                          onmouseleave="hideIBTooltip()">
                         <span class="ib-target-index">${target.index}</span>
                         <span class="ib-target-value">${target.target}</span>
@@ -1405,12 +1407,14 @@
                     </div>
             `;
             themesToShow.forEach((theme, idx) => {
-                const tooltipText = `${theme}<br><br><span style="color: var(--accent-gold);">报告日期: ${reportDate}</span>`;
+                const tooltipText = `${theme}\n\n报告日期: ${reportDate}`;
                 
                 html += `
                     <div class="ib-theme-item" 
                          style="font-size: 0.75rem; color: var(--text-primary); padding: 3px 0; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.03);"
-                         onmouseenter="showIBTooltip(this, '投资主线 ${idx + 1}', '${tooltipText.replace(/'/g, "\\'")}')"
+                         data-tooltip-title="投资主线 ${idx + 1}"
+                         data-tooltip-content="${tooltipText.replace(/"/g, '&quot;')}"
+                         onmouseenter="showIBTooltipFromData(this)"
                          onmouseleave="hideIBTooltip()"
                          onclick="showIBDetailModal()">
                         <span style="color: var(--accent-blue); margin-right: 4px;">${idx + 1}.</span>
@@ -1444,12 +1448,14 @@
                 }[holding.alignment] || '中性';
                 
                 // 构建悬停提示内容，包含报告日期
-                const viewsWithDate = holding.ib_views ? holding.ib_views.map(v => `${v} [${reportDate}]`).join('<br>• ') : '暂无详细观点';
-                const tooltipContent = `${viewsWithDate}<br><br><span style="color: var(--accent-gold);">报告日期: ${reportDate}</span>`;
+                const viewsWithDate = holding.ib_views ? holding.ib_views.map(v => `${v} [${reportDate}]`).join('\n• ') : '暂无详细观点';
+                const tooltipContent = `${viewsWithDate}\n\n报告日期: ${reportDate}`;
                 
                 html += `
                     <div class="ib-holding-item" onclick="showIBStockDetail('${holding.code}')" 
-                         onmouseenter="showIBTooltip(this, '${holding.name}', '${tooltipContent.replace(/'/g, "\\'")}')"
+                         data-tooltip-title="${holding.name}"
+                         data-tooltip-content="${tooltipContent.replace(/"/g, '&quot;')}"
+                         onmouseenter="showIBTooltipFromData(this)"
                          onmouseleave="hideIBTooltip()"
                          style="padding: 4px 6px; margin-bottom: 2px;">
                         <div class="ib-holding-alignment ${holding.alignment}"></div>
@@ -1637,20 +1643,26 @@
     function showIBTooltip(element, title, content) {
         initIBTooltip();
         
-        // 清理内容中的引号
+        // 清理内容中的引号，将换行符转换为 <br>
         const safeTitle = title.replace(/"/g, '&quot;');
-        const safeContent = content.replace(/"/g, '&quot;').replace(/<br>/gi, '<br>• ');
+        const safeContent = content.replace(/"/g, '&quot;').replace(/\n/g, '<br>');
         
         ibTooltipEl.innerHTML = `
             <div class="ib-tooltip-title">${safeTitle}</div>
             <div class="ib-tooltip-content">${safeContent}</div>
         `;
         
-        // 显示
-        ibTooltipEl.style.display = 'block';
-        ibTooltipEl.style.opacity = '1';
-        ibTooltipEl.style.visibility = 'visible';
-        
+        positionIBTooltip(element);
+    }
+    
+    // 从 data 属性读取 tooltip 内容
+    function showIBTooltipFromData(element) {
+        const title = element.getAttribute('data-tooltip-title') || '';
+        const content = element.getAttribute('data-tooltip-content') || '';
+        showIBTooltip(element, title, content);
+    }
+    
+    function positionIBTooltip(element) {
         // 计算位置
         const rect = element.getBoundingClientRect();
         const tooltipRect = ibTooltipEl.getBoundingClientRect();
@@ -1670,6 +1682,11 @@
         
         ibTooltipEl.style.left = Math.max(10, left) + 'px';
         ibTooltipEl.style.top = Math.max(10, top) + 'px';
+        
+        // 显示
+        ibTooltipEl.style.display = 'block';
+        ibTooltipEl.style.opacity = '1';
+        ibTooltipEl.style.visibility = 'visible';
     }
     
     function hideIBTooltip() {
