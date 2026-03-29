@@ -1382,7 +1382,7 @@
         if (macro.key_targets && macro.key_targets.length > 0) {
             html += `<div class="ib-targets" style="margin-bottom: 8px;">`;
             macro.key_targets.forEach(target => {
-                const targetTooltip = target.source ? `数据来源: ${target.source}\n报告日期: ${reportDate}` : `报告日期: ${reportDate}`;
+                const targetTooltip = target.source ? `数据来源: ${target.source}@@报告日期: ${reportDate}` : `报告日期: ${reportDate}`;
                 html += `
                     <div class="ib-target-item" 
                          data-tooltip-title="${target.index} 目标"
@@ -1407,7 +1407,7 @@
                     </div>
             `;
             themesToShow.forEach((theme, idx) => {
-                const tooltipText = `${theme}\n\n报告日期: ${reportDate}`;
+                const tooltipText = `${theme}@@报告日期: ${reportDate}`;
                 
                 html += `
                     <div class="ib-theme-item" 
@@ -1447,9 +1447,9 @@
                     'weak': '存在分歧'
                 }[holding.alignment] || '中性';
                 
-                // 构建悬停提示内容，包含报告日期
-                const viewsWithDate = holding.ib_views ? holding.ib_views.map(v => `${v} [${reportDate}]`).join('\n• ') : '暂无详细观点';
-                const tooltipContent = `${viewsWithDate}\n\n报告日期: ${reportDate}`;
+                // 构建悬停提示内容，包含报告日期 - 使用占位符避免HTML解析问题
+                const viewsWithDate = holding.ib_views ? holding.ib_views.map(v => `${v} [${reportDate}]`).join('||') : '暂无详细观点';
+                const tooltipContent = `${viewsWithDate}@@报告日期: ${reportDate}`;
                 
                 html += `
                     <div class="ib-holding-item" onclick="showIBStockDetail('${holding.code}')" 
@@ -1643,9 +1643,9 @@
     function showIBTooltip(element, title, content) {
         initIBTooltip();
         
-        // 清理内容中的引号，将换行符转换为 <br>
+        // 将占位符替换为HTML标签
         const safeTitle = title.replace(/"/g, '&quot;');
-        const safeContent = content.replace(/"/g, '&quot;').replace(/\n/g, '<br>');
+        const safeContent = content.replace(/"/g, '&quot;').replace(/\|\|/g, '<br>• ').replace(/@@/g, '<br><br>');
         
         ibTooltipEl.innerHTML = `
             <div class="ib-tooltip-title">${safeTitle}</div>
