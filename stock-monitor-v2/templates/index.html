@@ -1326,10 +1326,20 @@
     // 加载投行分析数据
     async function loadIBAnalysis() {
         try {
-            const response = await fetch('/api/ib-analysis');
+            const response = await fetch('/api/ib-analysis?t=' + Date.now()); // 加时间戳防止缓存
             const result = await response.json();
             
-            if (result.success) {
+            console.log('loadIBAnalysis API 返回:', result);
+            
+            if (result.success && result.data) {
+                // 检查数据是否有效
+                const holdings = result.data.holdings_map || [];
+                if (holdings.length === 0) {
+                    console.warn('API 返回的 holdings_map 为空');
+                } else {
+                    console.log('API 返回 holdings 数量:', holdings.length);
+                }
+                
                 ibAnalysisData = result.data;
                 renderIBAnalysis(ibAnalysisData);
             } else {
@@ -1348,18 +1358,31 @@
 
     // 渲染投行分析面板
     function renderIBAnalysis(data) {
-        console.log('renderIBAnalysis 被调用，数据:', data);
+        console.log('renderIBAnalysis 被调用，完整数据:', JSON.stringify(data, null, 2));
         if (!data) {
             console.error('renderIBAnalysis: data 为空');
             return;
         }
         
+        // 检查数据结构
+        console.log('data 的 keys:', Object.keys(data));
+        
         // 更新时间和报告日期
         const reportDate = data.update_time || '--';
         document.getElementById('ibUpdateTime').textContent = reportDate;
         
-        const macro = data.macro_summary || {};
-        const holdings = data.holdings_map || [];
+        // 尝试不同的数据路径
+        let holdings = data.holdings_map || [];
+        let macro = data.macro_summary || {};
+        
+        // 如果 holdings 为空，检查是否有 portfolio_mapping
+        if (holdings.length === 0 && data.portfolio_mapping) {
+            console.log('使用 portfolio_mapping 替代 holdings_map');
+            holdings = data.portfolio_mapping.holdings || [];
+        }
+        
+        console.log('最终 holdings 数量:', holdings.length);
+        console.log('macro:', macro);
         
         console.log('holdings_map 数量:', holdings.length);
         console.log('macro_summary:', macro);
