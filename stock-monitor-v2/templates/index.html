@@ -1913,10 +1913,28 @@
     
     // 显示股票详细分析弹窗
     function showStockAnalysisDetail(code) {
-        if (!portfolioAnalysisData) return;
+        console.log('点击股票:', code, 'portfolioAnalysisData:', portfolioAnalysisData);
+        
+        if (!portfolioAnalysisData) {
+            console.error('portfolioAnalysisData 为空');
+            alert('数据加载中，请稍后重试');
+            return;
+        }
+        
+        if (!portfolioAnalysisData.stock_analyses) {
+            console.error('stock_analyses 不存在');
+            alert('数据格式错误');
+            return;
+        }
         
         const stock = portfolioAnalysisData.stock_analyses.find(s => s.code === code);
-        if (!stock) return;
+        console.log('找到股票:', stock);
+        
+        if (!stock) {
+            console.error('未找到股票:', code, '可用股票:', portfolioAnalysisData.stock_analyses.map(s => s.code));
+            alert('未找到该股票数据');
+            return;
+        }
         
         const analysis = stock.analysis || {};
         
@@ -1938,8 +1956,9 @@
         statusEl.style.color = colors.text;
         
         // 设置核心数据
-        document.getElementById('stockAnalysisPrice').textContent = '¥' + (stock.current_price || 0).toFixed(2);
-        document.getElementById('stockAnalysisPivot').textContent = '¥' + (stock.axis_price || 0).toFixed(2);
+        const currency = stock.market === '港股' ? 'HK$' : '¥';
+        document.getElementById('stockAnalysisPrice').textContent = currency + (stock.current_price || 0).toFixed(2);
+        document.getElementById('stockAnalysisPivot').textContent = currency + (stock.axis_price || 0).toFixed(2);
         
         const deviationEl = document.getElementById('stockAnalysisDeviation');
         const axisDev = stock.axis_deviation || 0;
@@ -1951,14 +1970,14 @@
         pnlEl.style.color = stock.pnl >= 0 ? '#10b981' : '#ef4444';
         
         // 设置触发价格
-        document.getElementById('stockAnalysisTriggerBuy').textContent = '¥' + stock.trigger_buy.toFixed(2);
-        document.getElementById('stockAnalysisTriggerSell').textContent = '¥' + stock.trigger_sell.toFixed(2);
+        document.getElementById('stockAnalysisTriggerBuy').textContent = currency + (stock.trigger_buy || 0).toFixed(2);
+        document.getElementById('stockAnalysisTriggerSell').textContent = currency + (stock.trigger_sell || 0).toFixed(2);
         
         // 设置数据来源
         const dataSources = analysis.data_sources || [];
         document.getElementById('stockAnalysisDataSources').innerHTML = dataSources.map(s => 
             `<div style="margin-bottom: 4px;">• ${s}</div>`
-        ).join('');
+        ).join('') || '<div style="color: var(--text-secondary);">暂无数据来源信息</div>';
         
         // 设置P0技术指标
         const techData = stock.technical_indicators || {};
@@ -1968,23 +1987,24 @@
         const logicItems = analysis.analysis_logic || [];
         document.getElementById('stockAnalysisLogic').innerHTML = logicItems.map(l => 
             `<div style="margin-bottom: 8px; padding-left: 12px; border-left: 2px solid rgba(255,255,255,0.1);">${l}</div>`
-        ).join('');
+        ).join('') || '<div style="color: var(--text-secondary);">暂无分析逻辑</div>';
         
         // 设置结论
         const conclusion = analysis.conclusion || {};
-        document.getElementById('stockAnalysisConclusionTitle').textContent = conclusion.title || '--';
+        document.getElementById('stockAnalysisConclusionTitle').textContent = conclusion.title || '暂无结论';
         
         const conclusionContent = conclusion.content || [];
         document.getElementById('stockAnalysisConclusionContent').innerHTML = conclusionContent.map(c => 
             `<div style="margin-bottom: 6px;">• ${c}</div>`
-        ).join('');
+        ).join('') || '<div style="color: var(--text-secondary);">暂无建议</div>';
         
         // 设置更新时间
         document.getElementById('stockAnalysisUpdateTime').textContent = 
-            '更新时间: ' + (analysis.update_time || '--');
+            '更新时间: ' + (analysis.update_time || data.report_date || '--');
         
         // 显示弹窗
         document.getElementById('stockAnalysisModal').style.display = 'block';
+        console.log('弹窗已显示');
     }
     
     // 渲染P0技术指标
