@@ -1467,7 +1467,9 @@
         }
         
         // 持仓映射 - 显示所有持仓股
+        console.log('准备渲染持仓契合度, displayHoldings.length:', displayHoldings.length);
         if (displayHoldings.length > 0) {
+            console.log('开始渲染持仓契合度列表');
             html += `
                 <div class="ib-holdings" style="margin-top: 8px;">
                     <div class="ib-holdings-title" style="font-size: 0.75rem; margin-bottom: 6px;">
@@ -1476,7 +1478,8 @@
                     </div>
             `;
             
-            displayHoldings.forEach(holding => {
+            displayHoldings.forEach((holding, idx) => {
+                console.log(`渲染第${idx+1}只股票:`, holding.name, holding.alignment);
                 const alignmentText = {
                     'strong': '高度契合',
                     'moderate': '部分契合',
@@ -1509,6 +1512,9 @@
             });
             
             html += '</div>';
+        } else {
+            console.log('持仓契合度不渲染: displayHoldings.length =', displayHoldings.length);
+            console.log('holdings 数据:', holdings);
         }
         
         // 风险提示
