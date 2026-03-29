@@ -1383,10 +1383,12 @@
             html += `<div class="ib-targets" style="margin-bottom: 8px;">`;
             macro.key_targets.forEach(target => {
                 const targetTooltip = target.source ? `数据来源: ${target.source}@@报告日期: ${reportDate}` : `报告日期: ${reportDate}`;
+                const safeTitle = (target.index || '').replace(/"/g, '&quot;');
+                const safeTooltip = targetTooltip.replace(/"/g, '&quot;');
                 html += `
                     <div class="ib-target-item" 
-                         data-tooltip-title="${target.index} 目标"
-                         data-tooltip-content="${targetTooltip.replace(/"/g, '&quot;')}"
+                         data-tooltip-title="${safeTitle} 目标"
+                         data-tooltip-content="${safeTooltip}"
                          onmouseenter="showIBTooltipFromData(this)"
                          onmouseleave="hideIBTooltip()">
                         <span class="ib-target-index">${target.index}</span>
@@ -1407,13 +1409,15 @@
                     </div>
             `;
             themesToShow.forEach((theme, idx) => {
+                const safeTheme = (theme || '').replace(/"/g, '&quot;');
                 const tooltipText = `${theme}@@报告日期: ${reportDate}`;
+                const safeTooltip = tooltipText.replace(/"/g, '&quot;');
                 
                 html += `
                     <div class="ib-theme-item" 
                          style="font-size: 0.75rem; color: var(--text-primary); padding: 3px 0; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.03);"
                          data-tooltip-title="投资主线 ${idx + 1}"
-                         data-tooltip-content="${tooltipText.replace(/"/g, '&quot;')}"
+                         data-tooltip-content="${safeTooltip}"
                          onmouseenter="showIBTooltipFromData(this)"
                          onmouseleave="hideIBTooltip()"
                          onclick="showIBDetailModal()">
@@ -1447,14 +1451,17 @@
                     'weak': '存在分歧'
                 }[holding.alignment] || '中性';
                 
+                // HTML转义函数
+                const escapeHtml = (str) => str ? str.replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+                
                 // 构建悬停提示内容，包含报告日期 - 使用占位符避免HTML解析问题
                 const viewsWithDate = holding.ib_views ? holding.ib_views.map(v => `${v} [${reportDate}]`).join('||') : '暂无详细观点';
                 const tooltipContent = `${viewsWithDate}@@报告日期: ${reportDate}`;
                 
                 html += `
                     <div class="ib-holding-item" onclick="showIBStockDetail('${holding.code}')" 
-                         data-tooltip-title="${holding.name}"
-                         data-tooltip-content="${tooltipContent.replace(/"/g, '&quot;')}"
+                         data-tooltip-title="${escapeHtml(holding.name)}"
+                         data-tooltip-content="${escapeHtml(tooltipContent)}"
                          onmouseenter="showIBTooltipFromData(this)"
                          onmouseleave="hideIBTooltip()"
                          style="padding: 4px 6px; margin-bottom: 2px;">
