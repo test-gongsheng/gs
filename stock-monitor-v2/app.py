@@ -899,21 +899,9 @@ def parse_ib_analysis():
 def get_ib_analysis():
     """获取投行分析报告（结构化数据）"""
     try:
-        now = time.time()
-        
-        # 检查缓存
-        if _ib_analysis_cache['data'] and (now - _ib_analysis_cache['timestamp']) < IB_CACHE_TTL:
-            return jsonify({
-                'success': True,
-                'data': _ib_analysis_cache['data'],
-                'cached': True
-            })
-        
-        # 重新解析
+        # 强制重新解析，不使用缓存（调试模式）
         data = parse_ib_analysis()
         if data:
-            _ib_analysis_cache['data'] = data
-            _ib_analysis_cache['timestamp'] = now
             return jsonify({
                 'success': True,
                 'data': data,
