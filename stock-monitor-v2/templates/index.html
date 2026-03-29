@@ -1388,10 +1388,10 @@
         console.log('macro_summary:', macro);
         
         // 分类持仓
-        const strongHoldings = holdings.filter(h => h.alignment === 'strong');
-        const moderateHoldings = holdings.filter(h => h.alignment === 'moderate');
-        const weakHoldings = holdings.filter(h => h.alignment === 'weak');
-        const neutralHoldings = holdings.filter(h => h.alignment === 'neutral');
+        var strongHoldings = holdings.filter(h => h.alignment === 'strong');
+        var moderateHoldings = holdings.filter(h => h.alignment === 'moderate');
+        var weakHoldings = holdings.filter(h => h.alignment === 'weak');
+        var neutralHoldings = holdings.filter(h => h.alignment === 'neutral');
         
         console.log('分类统计:', {strong: strongHoldings.length, moderate: moderateHoldings.length, weak: weakHoldings.length, neutral: neutralHoldings.length});
         
