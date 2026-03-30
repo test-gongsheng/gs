@@ -2183,13 +2183,15 @@ async function updateStockPricesOnce() {
             }
 
             // 更新股票价格和涨跌幅
+            let updatedCount = 0;
             appState.stocks.forEach(stock => {
                 const quote = data.quotes[stock.code];
                 if (quote) {
-                    console.log(`[updateStockPricesOnce] ${stock.code}: ${stock.price} -> ${quote.price}`);
+                    console.log(`[updateStockPricesOnce] ${stock.code}: 价格 ${stock.price} -> ${quote.price}, 涨跌 ${quote.change}, 涨跌幅 ${quote.change_percent}%`);
                     stock.price = quote.price;
                     stock.change = quote.change;
                     stock.changePercent = quote.change_percent;
+                    updatedCount++;
 
                     // 港股：保存人民币转换价格和汇率
                     if (quote.market === '港股') {
@@ -2197,9 +2199,11 @@ async function updateStockPricesOnce() {
                         stock.exchangeRate = quote.exchange_rate;
                     }
                 } else {
-                    console.log(`[updateStockPricesOnce] ${stock.code}: 无报价数据`);
+                    console.warn(`[updateStockPricesOnce] ${stock.code}: 无报价数据`);
                 }
             });
+
+            console.log(`[updateStockPricesOnce] 成功更新 ${updatedCount}/${appState.stocks.length} 只股票`);
 
             // 重新渲染
             renderStockList();
@@ -2215,6 +2219,12 @@ async function updateStockPricesOnce() {
             console.log('[updateStockPricesOnce] 实时行情更新完成');
         } else {
             console.error('[updateStockPricesOnce] API返回失败:', data);
+            // 如果API返回失败，尝试重新获取
+            if (retryCount < maxRetries) {
+                retryCount++;
+                console.log(`[updateStockPricesOnce] 第 ${retryCount} 次重试...`);
+                setTimeout(() => updateStockPricesOnceWithRetry(retryCount, maxRetries), 2000);
+            }
         }
     } catch (error) {
         console.error('[updateStockPricesOnce] 获取行情失败:', error.name, error.message);
