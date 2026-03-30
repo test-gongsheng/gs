@@ -13,15 +13,20 @@
     <script>
         // 自动缓存清除机制 - 每次部署版本变化时自动清除缓存
         (function() {
-            const APP_VERSION = '20250330-2';  // 每次部署时更新这个版本号
+            const APP_VERSION = '20250330-3';  // 每次部署时更新这个版本号
             const storedVersion = localStorage.getItem('app_version');
             
             if (storedVersion !== APP_VERSION) {
                 console.log('[Cache Clear] 版本变化:', storedVersion, '->', APP_VERSION);
                 // 清除可能导致问题的缓存数据
                 localStorage.removeItem('import_data_last');
+                localStorage.removeItem('alertedStocks');
+                localStorage.removeItem('trade_alert_date');
+                sessionStorage.clear();
                 localStorage.setItem('app_version', APP_VERSION);
-                console.log('[Cache Clear] 已清除旧缓存');
+                console.log('[Cache Clear] 已清除旧缓存，页面将刷新...');
+                // 强制刷新页面以加载最新JS
+                window.location.reload(true);
             }
         })();
     </script>

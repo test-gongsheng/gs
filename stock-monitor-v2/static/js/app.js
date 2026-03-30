@@ -87,8 +87,9 @@ async function init() {
                 floatRatio: s.float_position_pct || 50,
                 strategy: s.strategy_mode || '基础',
                 gridLevels: s.grid_levels || [],
-                change: 0,
-                changePercent: 0,
+                change: s.change ?? 0,
+                changePercent: s.change_percent ?? 0,
+                price: s.current_price || 0,
                 exchangeRate: s.exchange_rate  // 从后端获取汇率
             }));
             loadedFromBackend = true;
