@@ -266,6 +266,193 @@ def get_hk_stock_short_selling(stock_code: str) -> Dict:
         }
 
 
+def get_hk_stock_short_history(stock_code: str, days: int = 90) -> Dict:
+    """
+    获取港股个股90天沽空历史数据
+    
+    Args:
+        stock_code: 港股代码，如 '00700'
+        days: 历史天数，默认90天
+    
+    Returns:
+        {
+            'success': True,
+            'stock_code': '00700',
+            'stock_name': '腾讯控股',
+            'history': [
+                {'date': '2025-12-30', 'short_volume': 3023300, 'short_ratio': 14.87},
+                ...
+            ]
+        }
+    """
+    from datetime import datetime, timedelta
+    
+    try:
+        stock_code = stock_code.zfill(5)
+        
+        url = 'https://datacenter-web.eastmoney.com/api/data/v1/get'
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Referer': 'https://data.eastmoney.com/',
+        }
+        
+        history = []
+        stock_name = ''
+        
+        # 向前追溯最多120天，获取最近的有效交易日数据
+        for days_back in range(1, 120):
+            if len(history) >= days:
+                break
+                
+            check_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
+            
+            params = {
+                'sortColumns': 'SHORT_SELLING_RATIO',
+                'sortTypes': '-1',
+                'pageSize': '500',
+                'pageNumber': '1',
+                'reportName': 'RPT_HK_SHORTSELLING',
+                'columns': 'ALL',
+                'filter': f"(TRADE_DATE='{check_date}')"
+            }
+            
+            try:
+                resp = _session.get(url, params=params, headers=headers, timeout=10)
+                data = resp.json()
+                
+                if data.get('result') and data['result'].get('data'):
+                    records = data['result']['data']
+                    
+                    # 查找目标股票
+                    for r in records:
+                        if r['SECURITY_CODE'] == stock_code:
+                            if not stock_name:
+                                stock_name = r.get('SECURITY_NAME_ABBR', '')
+                            
+                            history.insert(0, {  # 插入到开头，保持日期从旧到新
+                                'date': check_date,
+                                'short_volume': int(r.get('SHORT_SELLING_SHARES', 0)),
+                                'short_ratio': round(float(r.get('SHORT_SELLING_RATIO', 0)), 2),
+                                'short_amount': round(float(r.get('SHORT_SELLING_AMT', 0)) / 10000, 2)
+                            })
+                            break
+            except Exception as e:
+                continue
+        
+        return {
+            'success': True,
+            'stock_code': stock_code,
+            'stock_name': stock_name,
+            'days': len(history),
+            'history': history
+        }
+        
+    except Exception as e:
+        print(f"获取港股{stock_code}沽空历史数据失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            'success': False,
+            'stock_code': stock_code,
+            'error': str(e),
+            'history': []
+        }
+
+
+def get_hk_short_selling_history(days: int = 90) -> Dict:
+    """
+    获取港股恒生科技指数90天沽空历史数据
+    
+    Args:
+        days: 历史天数，默认90天
+    
+    Returns:
+        {
+            'success': True,
+            'history': [
+                {'date': '2025-12-30', 'short_volume': 170251160, 'short_ratio': 21.81},
+                ...
+            ]
+        }
+    """
+    try:
+        import pandas as pd
+        from datetime import datetime, timedelta
+        
+        url = 'https://datacenter-web.eastmoney.com/api/data/v1/get'
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Referer': 'https://data.eastmoney.com/',
+        }
+        
+        history = []
+        
+        # 向前追溯最多120天，获取最近的有效交易日数据
+        for days_back in range(1, 120):
+            if len(history) >= days:
+                break
+                
+            check_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
+            
+            params = {
+                'sortColumns': 'SHORT_SELLING_RATIO',
+                'sortTypes': '-1',
+                'pageSize': '500',
+                'pageNumber': '1',
+                'reportName': 'RPT_HK_SHORTSELLING',
+                'columns': 'ALL',
+                'filter': f"(TRADE_DATE='{check_date}')"
+            }
+            
+            try:
+                resp = _session.get(url, params=params, headers=headers, timeout=10)
+                data = resp.json()
+                
+                if data.get('result') and data['result'].get('data'):
+                    records = data['result']['data']
+                    df = pd.DataFrame(records)
+                    
+                    # 筛选恒生科技指数成分股
+                    hstech_df = df[df['SECURITY_CODE'].isin(HSTECH_COMPONENTS)]
+                    
+                    if len(hstech_df) > 0:
+                        total_short_volume = hstech_df['SHORT_SELLING_SHARES'].sum()
+                        total_short_amount = hstech_df['SHORT_SELLING_AMT'].sum()
+                        total_deal_amount = hstech_df['DEAL_AMT'].sum()
+                        
+                        # 指数整体沽空比例（按成交金额加权）
+                        if total_deal_amount > 0:
+                            market_short_ratio = (total_short_amount / total_deal_amount) * 100
+                        else:
+                            market_short_ratio = hstech_df['SHORT_SELLING_RATIO'].mean()
+                        
+                        history.insert(0, {  # 插入到开头，保持日期从旧到新
+                            'date': check_date,
+                            'short_volume': int(total_short_volume),
+                            'short_volume_wan': round(total_short_volume / 10000, 2),
+                            'short_ratio': round(float(market_short_ratio), 2),
+                            'stock_count': len(hstech_df)
+                        })
+            except Exception as e:
+                continue
+        
+        return {
+            'success': True,
+            'days': len(history),
+            'history': history
+        }
+        
+    except Exception as e:
+        print(f"获取恒生科技指数沽空历史数据失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            'success': False,
+            'error': str(e),
+            'history': []
+        }
+
+
 # 已禁用：爬取阿思达克网站会导致15秒超时，阻塞Flask服务
 # def _get_hk_stock_short_selling_from_web(stock_code: str) -> Dict:
 #     ... (原代码已注释掉)

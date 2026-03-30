@@ -1263,6 +1263,152 @@ function renderHKShortDataInternal(marketData, stockData) {
             setText('hkIndividualUpdateTime', individualShort.update_date || '--');
         }
     }
+    
+    // 渲染90日历史趋势图
+    renderHKShortHistoryCharts(stockData);
+}
+
+/**
+ * 渲染港股沽空90日历史趋势图
+ * @param {Object} stockData - 个股沽空数据（包含股票代码）
+ */
+async function renderHKShortHistoryCharts(stockData) {
+    if (!stockData || !stockData.stock_code) return;
+    
+    try {
+        // 并行获取个股和指数历史数据
+        const [stockHistoryRes, marketHistoryRes] = await Promise.all([
+            fetch(`/api/hk-stock/${stockData.stock_code}/short-selling-history?days=90`),
+            fetch('/api/hk-short-selling-history?days=90')
+        ]);
+        
+        const stockHistory = await stockHistoryRes.json();
+        const marketHistory = await marketHistoryRes.json();
+        
+        // 绘制个股历史趋势图
+        if (stockHistory.success && stockHistory.history && stockHistory.history.length > 0) {
+            drawShortHistoryChart('hkIndividualHistoryChart', stockHistory.history, '个股沽空股数');
+        }
+        
+        // 绘制指数历史趋势图
+        if (marketHistory.success && marketHistory.history && marketHistory.history.length > 0) {
+            drawShortHistoryChart('hkMarketHistoryChart', marketHistory.history, '指数沽空股数');
+        }
+    } catch (e) {
+        console.error('[renderHKShortHistoryCharts] 加载历史数据失败:', e);
+    }
+}
+
+/**
+ * 绘制沽空历史趋势图（Canvas）
+ * @param {string} canvasId - Canvas元素ID
+ * @param {Array} history - 历史数据数组 [{date, short_volume}, ...]
+ * @param {string} label - 图表标签
+ */
+function drawShortHistoryChart(canvasId, history, label) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    
+    // 清空画布
+    ctx.clearRect(0, 0, width, height);
+    
+    if (history.length === 0) return;
+    
+    // 边距
+    const padding = { top: 20, right: 10, bottom: 30, left: 50 };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+    
+    // 提取数据
+    const volumes = history.map(h => h.short_volume);
+    const minVolume = Math.min(...volumes);
+    const maxVolume = Math.max(...volumes);
+    const volumeRange = maxVolume - minVolume || 1;
+    
+    // 颜色
+    const upColor = '#4caf50';
+    const downColor = '#f44336';
+    const gridColor = 'rgba(255,255,255,0.1)';
+    const textColor = 'rgba(255,255,255,0.6)';
+    
+    // 绘制网格线（水平）
+    ctx.strokeStyle = gridColor;
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+        const y = padding.top + (chartHeight / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(width - padding.right, y);
+        ctx.stroke();
+    }
+    
+    // 绘制Y轴标签
+    ctx.fillStyle = textColor;
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let i = 0; i <= 4; i++) {
+        const value = maxVolume - (volumeRange / 4) * i;
+        const y = padding.top + (chartHeight / 4) * i;
+        ctx.fillText(formatVolume(value), padding.left - 5, y);
+    }
+    
+    // 绘制柱状图
+    const barWidth = Math.max(2, chartWidth / history.length * 0.7);
+    const gap = chartWidth / history.length * 0.3;
+    
+    history.forEach((item, index) => {
+        const x = padding.left + (chartWidth / history.length) * index + gap / 2;
+        const barHeight = ((item.short_volume - minVolume) / volumeRange) * chartHeight;
+        const y = padding.top + chartHeight - barHeight;
+        
+        // 判断涨跌（与前一天比较）
+        let color = upColor;
+        if (index > 0 && item.short_volume > history[index - 1].short_volume) {
+            color = downColor; // 沽空增加为红色
+        }
+        
+        // 绘制柱子
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, barWidth, barHeight);
+    });
+    
+    // 绘制X轴标签（只显示部分日期）
+    ctx.fillStyle = textColor;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    const labelStep = Math.ceil(history.length / 6);
+    for (let i = 0; i < history.length; i += labelStep) {
+        const x = padding.left + (chartWidth / history.length) * i + gap / 2 + barWidth / 2;
+        const date = history[i].date.substring(5); // 只显示 MM-DD
+        ctx.fillText(date, x, padding.top + chartHeight + 5);
+    }
+    
+    // 绘制标题
+    ctx.fillStyle = textColor;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.font = '11px sans-serif';
+    ctx.fillText(label, padding.left, 5);
+}
+
+/**
+ * 格式化成交量
+ * @param {number} volume - 成交量
+ * @returns {string} 格式化后的字符串
+ */
+function formatVolume(volume) {
+    if (volume >= 100000000) {
+        return (volume / 100000000).toFixed(1) + '亿';
+    } else if (volume >= 10000) {
+        return (volume / 10000).toFixed(0) + '万';
+    } else {
+        return volume.toFixed(0);
+    }
 }
 
 /**

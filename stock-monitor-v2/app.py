@@ -562,6 +562,51 @@ def get_hk_stock_short(stock_code):
         }), 500
 
 
+@app.route('/api/hk-stock/<stock_code>/short-selling-history')
+def get_hk_stock_short_history(stock_code):
+    """
+    获取港股个股90天沽空历史数据
+    
+    Args:
+        stock_code: 港股代码，如 '00700'
+    """
+    try:
+        from utils.market_sentiment import get_hk_stock_short_history
+        
+        days = request.args.get('days', 90, type=int)
+        result = get_hk_stock_short_history(stock_code, days)
+        return jsonify(result)
+    except Exception as e:
+        print(f"获取港股{stock_code}沽空历史数据失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/hk-short-selling-history')
+def get_hk_market_short_history():
+    """
+    获取港股恒生科技指数90天沽空历史数据
+    """
+    try:
+        from utils.market_sentiment import get_hk_short_selling_history
+        
+        days = request.args.get('days', 90, type=int)
+        result = get_hk_short_selling_history(days)
+        return jsonify(result)
+    except Exception as e:
+        print(f"获取恒生科技指数沽空历史数据失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 def update_risk_control(data):
     """更新风险控制数据"""
     stocks = data['stocks']

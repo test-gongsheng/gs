@@ -357,8 +357,11 @@
                             </div>
                         </div>
                         <!-- 个股沽空趋势图表 -->
-                        <div id="hkIndividualTrendChart" style="display: flex; gap: 8px; margin: 12px 0; padding: 12px; background: var(--bg-tertiary); border-radius: var(--border-radius); min-height: 80px; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.8rem;">
-                            <i class="fas fa-chart-bar"></i> 选择港股查看沽空趋势
+                        <div style="margin: 12px 0; padding: 12px; background: var(--bg-tertiary); border-radius: var(--border-radius);">
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">
+                                <i class="fas fa-chart-area"></i> 近90日沽空股数趋势
+                            </div>
+                            <canvas id="hkIndividualHistoryChart" width="600" height="150" style="width: 100%; height: 150px;"></canvas>
                         </div>
                         <!-- 个股沽空趋势 -->
                         <div class="hk-individual-trends" style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -415,6 +418,13 @@
                                 <div style="font-size: 0.7rem; color: var(--text-secondary);">1月变化</div>
                                 <div id="hkStockChange1M" style="font-size: 0.95rem; font-weight: 600; margin-top: 4px;">--</div>
                             </div>
+                        </div>
+                        <!-- 恒生科技指数沽空趋势图表 -->
+                        <div style="margin: 12px 0; padding: 12px; background: var(--bg-tertiary); border-radius: var(--border-radius);">
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">
+                                <i class="fas fa-chart-area"></i> 近90日指数沽空股数趋势
+                            </div>
+                            <canvas id="hkMarketHistoryChart" width="600" height="150" style="width: 100%; height: 150px;"></canvas>
                         </div>
                         <div class="hk-risk-advice" id="hkStockRiskAdvice" style="margin-top: 12px;">
                             --
