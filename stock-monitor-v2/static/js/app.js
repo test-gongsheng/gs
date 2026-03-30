@@ -211,46 +211,22 @@ async function init() {
 }
 
 /**
- * 刷新所有股票的中轴价格
+ * 刷新所有股票的中轴价格 - 串行处理，稳妥优先
  * @param {boolean} forceRefresh - 是否强制刷新（清除缓存）
  */
 async function refreshAxisPrices(forceRefresh = false) {
-    console.log('[refreshAxisPrices] 开始执行，股票数量:', appState.stocks.length, '强制刷新:', forceRefresh);
+    if (appState.stocks.length === 0) return;
     
-    // 如果强制刷新，先清除后端缓存
+    // 强制刷新时清除后端缓存
     if (forceRefresh) {
-        console.log('[refreshAxisPrices] 清除后端缓存...');
         try {
             await fetch('/api/axis-price/cache/clear', { method: 'POST' });
-            console.log('[refreshAxisPrices] 缓存已清除');
-        } catch (e) {
-            console.warn('[refreshAxisPrices] 清除缓存失败:', e);
-        }
+        } catch (e) {}
     }
     
-    console.log('[refreshAxisPrices] 股票列表:', appState.stocks.map(s => s.code).join(', '));
-    
-    if (appState.stocks.length === 0) {
-        console.log('[refreshAxisPrices] 没有持仓数据，跳过');
-        return;
-    }
-    
-    let updatedCount = 0;
-    let failedCount = 0;
-    let changedStocks = [];
-    
-    // 并行处理所有股票，大幅提升速度（有缓存时 < 1秒完成）
-    console.log(`[refreshAxisPrices] 开始并行处理 ${appState.stocks.length} 只股票...`);
-    
-    const promises = appState.stocks.map(async (stock) => {
+    // 串行处理，稳妥优先
+    for (const stock of appState.stocks) {
         try {
-            console.log(`[refreshAxisPrices] 调用API: ${stock.code}`);
-            
-            // 使用 AbortController 设置超时 - 增加超时时间避免网络波动
-            const controller = new AbortController();
-            const timeoutMs = stock.market === '港股' ? 30000 : 20000;
-            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-            
             const response = await fetch('/api/axis-price', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -258,35 +234,49 @@ async function refreshAxisPrices(forceRefresh = false) {
                     code: stock.code, 
                     market: stock.market || 'A股', 
                     days: 90 
-                }),
-                signal: controller.signal
+                })
             });
-            clearTimeout(timeoutId);
             
-            if (!response.ok) {
-                console.error(`[refreshAxisPrices] ${stock.code} HTTP错误: ${response.status}`);
-                return { stock, success: false };
-            }
+            if (!response.ok) continue;
             
             const axisData = await response.json();
-            
             if (axisData.success && axisData.data && axisData.data.axis_price) {
-                const oldPivot = parseFloat(stock.pivotPrice) || 0;
-                const newPivot = axisData.data.axis_price;
-                
-                // 保存当前的涨跌幅数据（避免被覆盖）
+                // 保存当前涨跌幅
                 const currentChange = stock.change;
                 const currentChangePercent = stock.changePercent;
                 const currentPrice = stock.price;
                 const currentPriceCny = stock.priceCny;
                 
-                // 直接修改 stock 对象
-                stock.pivotPrice = newPivot;
+                // 更新中轴价
+                stock.pivotPrice = axisData.data.axis_price;
                 stock.triggerBuy = axisData.data.trigger_buy;
                 stock.triggerSell = axisData.data.trigger_sell;
                 
-                // 恢复涨跌幅数据
+                // 恢复涨跌幅
                 stock.change = currentChange;
+                stock.changePercent = currentChangePercent;
+                stock.price = currentPrice;
+                stock.priceCny = currentPriceCny;
+            }
+        } catch (e) {}
+    }
+    
+    // 保存到 localStorage
+    try {
+        localStorage.setItem('import_data_last', JSON.stringify(appState.stocks));
+    } catch (e) {}
+    
+    // 重新渲染
+    renderStockList();
+    if (appState.selectedStock) {
+        const updatedStock = appState.stocks.find(s => s.code === appState.selectedStock.code);
+        if (updatedStock) {
+            appState.selectedStock = updatedStock;
+            renderStockDetail();
+        }
+    }
+    updateAssetOverview();
+}
                 stock.changePercent = currentChangePercent;
                 stock.price = currentPrice;
                 stock.priceCny = currentPriceCny;
@@ -2137,92 +2127,37 @@ async function simulatePriceUpdate() {
  * 与 simulatePriceUpdate 不同，这个函数不检查市场状态，强制更新一次
  */
 async function updateStockPricesOnce() {
-    if (appState.stocks.length === 0) {
-        console.log('[updateStockPricesOnce] 没有股票数据，跳过');
-        return;
-    }
-
-    // 防止重复调用
-    if (window._updatingPrices) {
-        console.log('[updateStockPricesOnce] 已有更新在进行中，跳过');
-        return;
-    }
-    window._updatingPrices = true;
-
-    const startTime = Date.now();
-    console.log('[updateStockPricesOnce] ========== 开始获取实时行情 ==========');
-    console.log('[updateStockPricesOnce] 股票数量:', appState.stocks.length);
+    if (appState.stocks.length === 0) return;
     
     try {
-        // 分批获取，避免一次性请求太多导致超时
-        const batchSize = 6;
-        const stocks = appState.stocks;
-        let allQuotes = {};
+        const response = await fetch('/api/quotes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                stocks: appState.stocks.map(s => ({ code: s.code, market: s.market }))
+            })
+        });
         
-        for (let i = 0; i < stocks.length; i += batchSize) {
-            const batch = stocks.slice(i, i + batchSize);
-            console.log(`[updateStockPricesOnce] 获取批次 ${Math.floor(i/batchSize) + 1}/${Math.ceil(stocks.length/batchSize)}: ${batch.map(s => s.code).join(',')}`);
-            
-            const requestBody = {
-                stocks: batch.map(s => ({
-                    code: s.code,
-                    market: s.market
-                }))
-            };
-            
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => {
-                console.log('[updateStockPricesOnce] 批次请求超时(20秒)');
-                controller.abort();
-            }, 20000);
-            
-            try {
-                const response = await fetch('/api/quotes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody),
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-                
-                if (!response.ok) {
-                    console.error('[updateStockPricesOnce] HTTP错误:', response.status);
-                    continue;
-                }
-                
-                const data = await response.json();
-                if (data.success && data.quotes) {
-                    Object.assign(allQuotes, data.quotes);
-                    if (data.exchange_rate) {
-                        appState.exchangeRate = data.exchange_rate;
-                    }
-                }
-            } catch (e) {
-                clearTimeout(timeoutId);
-                console.error('[updateStockPricesOnce] 批次请求失败:', e.message);
-            }
-        }
+        if (!response.ok) return;
         
-        // 更新股票数据
-        let updatedCount = 0;
+        const data = await response.json();
+        if (!data.success || !data.quotes) return;
+        
+        if (data.exchange_rate) appState.exchangeRate = data.exchange_rate;
+        
         appState.stocks.forEach(stock => {
-            const quote = allQuotes[stock.code];
-            if (quote) {
-                stock.price = quote.price;
-                stock.change = quote.change;
-                stock.changePercent = quote.change_percent;
-                updatedCount++;
-                
-                if (quote.market === '港股') {
-                    stock.priceCny = quote.price_cny;
-                    stock.exchangeRate = quote.exchange_rate;
+            const q = data.quotes[stock.code];
+            if (q) {
+                stock.price = q.price;
+                stock.change = q.change;
+                stock.changePercent = q.change_percent;
+                if (q.market === '港股') {
+                    stock.priceCny = q.price_cny;
+                    stock.exchangeRate = q.exchange_rate;
                 }
             }
         });
         
-        console.log(`[updateStockPricesOnce] 更新完成: ${updatedCount}/${appState.stocks.length} 只，耗时 ${Date.now() - startTime}ms`);
-        
-        // 重新渲染
         renderStockList();
         if (appState.selectedStock) {
             const selected = appState.stocks.find(s => s.code === appState.selectedStock.code);
@@ -2232,12 +2167,8 @@ async function updateStockPricesOnce() {
             }
         }
         updateAssetOverview();
-        
-    } catch (error) {
-        console.error('[updateStockPricesOnce] 失败:', error);
-    } finally {
-        window._updatingPrices = false;
-        console.log('[updateStockPricesOnce] ========== 结束 ==========');
+    } catch (e) {
+        console.log('[updateStockPricesOnce] 失败:', e.message);
     }
 }
 
