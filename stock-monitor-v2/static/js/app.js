@@ -2254,12 +2254,10 @@ async function updateStockPricesOnce() {
             console.log('[updateStockPricesOnce] 实时行情更新完成');
         } else {
             console.error('[updateStockPricesOnce] API返回失败:', data);
-            // 如果API返回失败，尝试重新获取
-            if (retryCount < maxRetries) {
-                retryCount++;
-                console.log(`[updateStockPricesOnce] 第 ${retryCount} 次重试...`);
-                setTimeout(() => updateStockPricesOnceWithRetry(retryCount, maxRetries), 2000);
-            }
+            // API返回失败，也渲染列表（使用已有数据）
+            renderStockList();
+            if (appState.selectedStock) renderStockDetail();
+            updateAssetOverview();
         }
     } catch (error) {
         console.error('[updateStockPricesOnce] 获取行情失败:', error.name, error.message);
