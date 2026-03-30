@@ -27,6 +27,7 @@ def get_hk_stock_short_selling(stock_code: str) -> Dict:
     """
     获取港股个股沽空数据
     从东方财富获取港交所官方T+1披露数据
+    自动向前追溯最近的有效交易日（处理周末和节假日）
     """
     from datetime import datetime, timedelta
     
@@ -34,30 +35,37 @@ def get_hk_stock_short_selling(stock_code: str) -> Dict:
         # 标准化代码
         stock_code = stock_code.zfill(5)
         
-        # 获取昨天日期
-        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-        
         url = 'https://datacenter-web.eastmoney.com/api/data/v1/get'
-        params = {
-            'sortColumns': 'SHORT_SELLING_RATIO',
-            'sortTypes': '-1',
-            'pageSize': '500',
-            'pageNumber': '1',
-            'reportName': 'RPT_HK_SHORTSELLING',
-            'columns': 'ALL',
-            'filter': f"(TRADE_DATE='{yesterday}')"
-        }
-        
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Referer': 'https://data.eastmoney.com/',
         }
         
-        resp = requests.get(url, params=params, headers=headers, timeout=10)
-        data = resp.json()
+        # 向前追溯最近的有效交易日（最多追溯7天）
+        target_date = None
+        records = []
+        for days_back in range(1, 8):
+            check_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
+            
+            params = {
+                'sortColumns': 'SHORT_SELLING_RATIO',
+                'sortTypes': '-1',
+                'pageSize': '500',
+                'pageNumber': '1',
+                'reportName': 'RPT_HK_SHORTSELLING',
+                'columns': 'ALL',
+                'filter': f"(TRADE_DATE='{check_date}')"
+            }
+            
+            resp = requests.get(url, params=params, headers=headers, timeout=10)
+            data = resp.json()
+            
+            if data.get('result') and data['result'].get('data'):
+                target_date = check_date
+                records = data['result']['data']
+                break
         
-        if data.get('result') and data['result'].get('data'):
-            records = data['result']['data']
+        if records:
             
             # 查找特定股票
             target_stock = None
@@ -267,37 +275,44 @@ def get_hk_short_selling() -> Dict:
     """
     获取港股恒生科技指数成分股的整体沽空数据
     返回：指数整体数据 + 3天/1周/2周/1月变化（与个股维度一致）
+    自动向前追溯最近的有效交易日（处理周末和节假日）
     """
     try:
         import pandas as pd
         from datetime import datetime, timedelta
         
-        # 获取昨天日期
-        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-        
         url = 'https://datacenter-web.eastmoney.com/api/data/v1/get'
-        params = {
-            'sortColumns': 'SHORT_SELLING_RATIO',
-            'sortTypes': '-1',
-            'pageSize': '5000',
-            'pageNumber': '1',
-            'reportName': 'RPT_HK_SHORTSELLING',
-            'columns': 'ALL',
-            'filter': f"(TRADE_DATE='{yesterday}')"
-        }
-        
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Referer': 'https://data.eastmoney.com/',
         }
         
-        resp = _session.get(url, params=params, headers=headers, timeout=15)
-        data = resp.json()
+        # 向前追溯最近的有效交易日（最多追溯7天）
+        latest_trade_date = None
+        df = None
+        for days_back in range(1, 8):
+            check_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
+            
+            params = {
+                'sortColumns': 'SHORT_SELLING_RATIO',
+                'sortTypes': '-1',
+                'pageSize': '5000',
+                'pageNumber': '1',
+                'reportName': 'RPT_HK_SHORTSELLING',
+                'columns': 'ALL',
+                'filter': f"(TRADE_DATE='{check_date}')"
+            }
+            
+            resp = _session.get(url, params=params, headers=headers, timeout=15)
+            data = resp.json()
+            
+            if data.get('result') and data['result'].get('data'):
+                latest_trade_date = check_date
+                df = pd.DataFrame(data['result']['data'])
+                break
         
-        if not data.get('result') or not data['result'].get('data'):
+        if df is None or len(df) == 0:
             raise Exception("无沽空数据")
-        
-        df = pd.DataFrame(data['result']['data'])
         
         # 筛选恒生科技指数成分股
         hstech_df = df[df['SECURITY_CODE'].isin(HSTECH_COMPONENTS)].copy()
@@ -454,9 +469,9 @@ def get_hk_short_selling() -> Dict:
             'changes': changes,
             'trade_signals': trade_signals,
             'stock_count': len(hstech_df),
-            'update_date': yesterday,
+            'update_date': latest_trade_date,
             'source': '恒生科技指数成分股',
-            'note': f'恒生科技指数{len(hstech_df)}只成分股加权平均，{yesterday}数据'
+            'note': f'恒生科技指数{len(hstech_df)}只成分股加权平均，{latest_trade_date}数据'
         }
         
     except Exception as e:
