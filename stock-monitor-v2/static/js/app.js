@@ -273,15 +273,27 @@ async function refreshAxisPrices(forceRefresh = false) {
                 const oldPivot = parseFloat(stock.pivotPrice) || 0;
                 const newPivot = axisData.data.axis_price;
                 
+                // 保存当前的涨跌幅数据（避免被覆盖）
+                const currentChange = stock.change;
+                const currentChangePercent = stock.changePercent;
+                const currentPrice = stock.price;
+                const currentPriceCny = stock.priceCny;
+                
                 // 直接修改 stock 对象
                 stock.pivotPrice = newPivot;
                 stock.triggerBuy = axisData.data.trigger_buy;
                 stock.triggerSell = axisData.data.trigger_sell;
                 
+                // 恢复涨跌幅数据
+                stock.change = currentChange;
+                stock.changePercent = currentChangePercent;
+                stock.price = currentPrice;
+                stock.priceCny = currentPriceCny;
+                
                 // 同步更新后端数据库（不等待），自动处理股票不存在的情况
                 syncAxisPriceToBackend(stock, newPivot);
                 
-                console.log(`[refreshAxisPrices] ${stock.code} 更新: ${oldPivot.toFixed(2)} -> ${newPivot.toFixed(2)}`);
+                console.log(`[refreshAxisPrices] ${stock.code} 中轴价: ${oldPivot.toFixed(2)} -> ${newPivot.toFixed(2)}, 涨跌: ${stock.change}, 涨跌幅: ${stock.changePercent}%`);
                 
                 return { 
                     stock, 
