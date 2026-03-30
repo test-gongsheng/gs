@@ -24,7 +24,9 @@ SINA_API_URL = "https://hq.sinajs.cn/list={codes}"
 _cache = {
     'a_spot': None,
     'hk_spot': None,
-    'last_update': None
+    'last_update': None,
+    'quotes': {},  # 行情缓存
+    'quotes_time': None
 }
 
 # 创建 Session 复用连接，提高性能
@@ -174,6 +176,7 @@ def get_stock_quotes(stocks: List[Dict]) -> Dict[str, Dict]:
     """
     获取多只股票实时行情
     使用腾讯API批量获取（更快更稳定）
+    添加3秒缓存，避免频繁请求
     
     Args:
         stocks: 股票列表，每个元素包含 code 和 market
@@ -183,6 +186,21 @@ def get_stock_quotes(stocks: List[Dict]) -> Dict[str, Dict]:
     """
     if not stocks:
         return {}
+    
+    # 检查缓存（3秒内有效）
+    from time import time
+    current_time = time()
+    if _cache['quotes_time'] and (current_time - _cache['quotes_time']) < 3:
+        # 从缓存中筛选需要的股票
+        result = {}
+        for stock in stocks:
+            code = stock.get('code', '')
+            market = stock.get('market', 'A股')
+            tencent_code = normalize_tencent_code(code, market)
+            if tencent_code in _cache['quotes']:
+                result[tencent_code] = _cache['quotes'][tencent_code]
+        if len(result) == len(stocks):
+            return result
     
     # 转换为腾讯代码格式
     tencent_codes = []
@@ -200,7 +218,7 @@ def get_stock_quotes(stocks: List[Dict]) -> Dict[str, Dict]:
         codes_str = ','.join(tencent_codes)
         url = f"http://qt.gtimg.cn/q={codes_str}"
         
-        response = _session.get(url, timeout=15)
+        response = _session.get(url, timeout=10)
         response.encoding = 'gb2312'
         
         result = {}
@@ -225,7 +243,7 @@ def get_stock_quotes(stocks: List[Dict]) -> Dict[str, Dict]:
             
             original_code, market = code_map[tencent_code]
             
-            result[tencent_code] = {
+            quote = {
                 'name': name,
                 'price': price,
                 'open': open_price,
@@ -237,12 +255,25 @@ def get_stock_quotes(stocks: List[Dict]) -> Dict[str, Dict]:
                 'volume': volume,
                 'market': market
             }
+            
+            result[tencent_code] = quote
+            # 更新缓存
+            _cache['quotes'][tencent_code] = quote
         
+        _cache['quotes_time'] = current_time
         return result
         
     except Exception as e:
         print(f"[腾讯API] 批量获取行情失败: {e}")
-        return {}
+        # 如果请求失败，返回缓存数据（即使有旧的）
+        result = {}
+        for stock in stocks:
+            code = stock.get('code', '')
+            market = stock.get('market', 'A股')
+            tencent_code = normalize_tencent_code(code, market)
+            if tencent_code in _cache['quotes']:
+                result[tencent_code] = _cache['quotes'][tencent_code]
+        return result
 
 
 def get_quote_from_tencent(code: str, market: str = 'A股') -> Optional[Dict]:
