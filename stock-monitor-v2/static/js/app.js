@@ -124,28 +124,10 @@ async function init() {
     appState.hotSectors = mockHotSectors;
     appState.news = { headlines: [], themes: [], calendar: [], portfolio: [], general: mockNews };
 
-    // 直接内联渲染股票列表
+    // 显示加载中，等待行情获取后再渲染
     const listEl = document.getElementById('stockList');
     if (listEl) {
-        listEl.innerHTML = '';
-        if (appState.stocks && appState.stocks.length > 0) {
-            appState.stocks.forEach((stock, index) => {
-                const item = document.createElement('div');
-                item.className = 'stock-item' + (index === 0 ? ' active' : '');
-                item.onclick = () => selectStock(index);
-                const isUp = stock.change >= 0;
-                const isHKStock = stock.market === '港股';
-                const exchangeRate = stock.exchangeRate || 1.0836;
-                const quantity = stock.holdQuantity || stock.shares || 0;
-                let marketValue = isHKStock ? ((stock.priceCny || (stock.price / exchangeRate)) * quantity) : ((stock.price || 0) * quantity);
-                const marketValueWan = marketValue > 0 ? (marketValue / 10000).toFixed(1) : '0.0';
-                const hkBadge = isHKStock ? '<span class="stock-item-hk">HK</span>' : '';
-                item.innerHTML = `<div class="stock-info"><span class="code">${stock.code}${hkBadge}</span><span class="name">${stock.name}</span></div><div class="stock-price ${isUp ? 'up' : 'down'}">${(stock.price || 0).toFixed(2)}</div><div class="stock-change ${isUp ? 'up' : 'down'}">${stock.change >= 0 ? '+' : ''}${(stock.changePercent || 0).toFixed(2)}%</div><div class="stock-pnl">${marketValueWan}万</div>`;
-                listEl.appendChild(item);
-            });
-        } else {
-            listEl.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">暂无持仓数据</div>';
-        }
+        listEl.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> 加载行情中...</div>';
     }
     renderHotSectors();
     renderNews();
@@ -193,20 +175,59 @@ async function init() {
     console.log('加载持仓股分析报告...');
     await loadPortfolioAnalysis();
     
-    // 页面加载完成后，先刷新中轴价格（后台计算，不渲染）
-    if (appState.stocks.length > 0) {
-        console.log('开始异步刷新中轴价格...');
-        await refreshAxisPrices(false, false);  // forceRefresh=false, shouldRender=false
-    }
-    
-    // 最后获取实时行情并渲染（确保显示最新价格）
+    // 页面加载完成后，立即获取实时行情并渲染（优先显示）
     if (appState.stocks.length > 0) {
         console.log('初始化完成，立即获取实时行情...');
         await updateStockPricesOnce();
     }
     
+    // 中轴价格在后台异步刷新（不阻塞页面）
+    if (appState.stocks.length > 0) {
+        console.log('后台异步刷新中轴价格...');
+        refreshAxisPricesInBackground();
+    }
+    
     // 恢复用户折叠偏好
     restoreCollapsedState();
+}
+
+/**
+ * 后台异步刷新中轴价格（串行处理，不阻塞页面）
+ */
+async function refreshAxisPricesInBackground() {
+    console.log('[refreshAxisPricesInBackground] 后台开始刷新中轴价格...');
+    
+    for (const stock of appState.stocks) {
+        try {
+            const response = await fetch('/api/axis-price', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    code: stock.code, 
+                    market: stock.market || 'A股', 
+                    days: 90 
+                })
+            });
+            
+            if (!response.ok) continue;
+            
+            const axisData = await response.json();
+            if (axisData.success && axisData.data && axisData.data.axis_price) {
+                // 只更新中轴价，不碰价格和涨跌幅
+                stock.pivotPrice = axisData.data.axis_price;
+                stock.triggerBuy = axisData.data.trigger_buy;
+                stock.triggerSell = axisData.data.trigger_sell;
+            }
+        } catch (e) {
+            // 静默失败，不影响页面
+        }
+    }
+    
+    // 完成后只保存，不重新渲染（避免覆盖行情数据）
+    try {
+        localStorage.setItem('import_data_last', JSON.stringify(appState.stocks));
+        console.log('[refreshAxisPricesInBackground] 后台刷新完成');
+    } catch (e) {}
 }
 
 /**
@@ -2185,6 +2206,9 @@ async function updateStockPricesOnce() {
 
         if (!response.ok) {
             console.error('[updateStockPricesOnce] HTTP 错误:', response.status, response.statusText);
+            renderStockList();
+            if (appState.selectedStock) renderStockDetail();
+            updateAssetOverview();
             return;
         }
 
@@ -2243,9 +2267,10 @@ async function updateStockPricesOnce() {
         }
     } catch (error) {
         console.error('[updateStockPricesOnce] 获取行情失败:', error.name, error.message);
-        if (error.name === 'AbortError') {
-            console.error('[updateStockPricesOnce] 请求超时(5秒)');
-        }
+        // 即使失败也渲染列表（使用已有数据）
+        renderStockList();
+        if (appState.selectedStock) renderStockDetail();
+        updateAssetOverview();
     }
 }
 
