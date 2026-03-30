@@ -193,16 +193,16 @@ async function init() {
     console.log('加载持仓股分析报告...');
     await loadPortfolioAnalysis();
     
-    // 页面加载完成后，立即获取一次实时行情（获取当天收盘价）
+    // 页面加载完成后，先刷新中轴价格（后台计算，不渲染）
+    if (appState.stocks.length > 0) {
+        console.log('开始异步刷新中轴价格...');
+        await refreshAxisPrices(false, false);  // forceRefresh=false, shouldRender=false
+    }
+    
+    // 最后获取实时行情并渲染（确保显示最新价格）
     if (appState.stocks.length > 0) {
         console.log('初始化完成，立即获取实时行情...');
         await updateStockPricesOnce();
-    }
-    
-    // 页面加载完成后，异步重新计算中轴价格（确保数据最新）
-    if (appState.stocks.length > 0) {
-        console.log('开始异步刷新中轴价格...');
-        await refreshAxisPrices();
     }
     
     // 恢复用户折叠偏好
@@ -212,9 +212,10 @@ async function init() {
 /**
  * 刷新所有股票的中轴价格
  * @param {boolean} forceRefresh - 是否强制刷新（清除缓存）
+ * @param {boolean} shouldRender - 是否重新渲染（默认true，初始化时为false）
  */
-async function refreshAxisPrices(forceRefresh = false) {
-    console.log('[refreshAxisPrices] 开始执行，股票数量:', appState.stocks.length, '强制刷新:', forceRefresh);
+async function refreshAxisPrices(forceRefresh = false, shouldRender = true) {
+    console.log('[refreshAxisPrices] 开始执行，股票数量:', appState.stocks.length, '强制刷新:', forceRefresh, '是否渲染:', shouldRender);
     
     // 如果强制刷新，先清除后端缓存
     if (forceRefresh) {
@@ -347,29 +348,31 @@ async function refreshAxisPrices(forceRefresh = false) {
         console.error('[refreshAxisPrices] 保存到 localStorage 失败:', e);
     }
     
-    // 重新渲染 - 确保使用最新的数据
-    renderStockList();
-    
-    // 强制重新获取选中的股票对象（确保引用正确）
-    if (appState.selectedStock) {
-        const updatedStock = appState.stocks.find(s => s.code === appState.selectedStock.code);
-        if (updatedStock) {
-            // 完全替换 selectedStock 对象，确保所有字段都是最新的
-            appState.selectedStock = updatedStock;
-            console.log('[refreshAxisPrices] 已更新 selectedStock:', updatedStock.code, 'pivotPrice=', updatedStock.pivotPrice);
-            renderStockDetail();
+    // 重新渲染 - 只在需要时渲染
+    if (shouldRender) {
+        renderStockList();
+        
+        // 强制重新获取选中的股票对象（确保引用正确）
+        if (appState.selectedStock) {
+            const updatedStock = appState.stocks.find(s => s.code === appState.selectedStock.code);
+            if (updatedStock) {
+                // 完全替换 selectedStock 对象，确保所有字段都是最新的
+                appState.selectedStock = updatedStock;
+                console.log('[refreshAxisPrices] 已更新 selectedStock:', updatedStock.code, 'pivotPrice=', updatedStock.pivotPrice);
+                renderStockDetail();
+            }
         }
-    }
-    updateAssetOverview();
-    
-    // 显示通知（如果函数可用）
-    if (typeof showNotification === 'function') {
-        if (changedStocks.length > 0) {
-            const changes = changedStocks.slice(0, 3).map(s => `${s.name}: ${s.oldPrice.toFixed(2)}→${s.newPrice.toFixed(2)}`).join(', ');
-            const more = changedStocks.length > 3 ? ` 等${changedStocks.length}只` : '';
-            showNotification(`已更新${changedStocks.length}只股票中轴价格: ${changes}${more}`, 'success');
-        } else {
-            showNotification(`中轴价格已是最新 (${updatedCount}只成功${failedCount > 0 ? ', ' + failedCount + '只失败' : ''})`, 'success');
+        updateAssetOverview();
+        
+        // 显示通知（如果函数可用）
+        if (typeof showNotification === 'function') {
+            if (changedStocks.length > 0) {
+                const changes = changedStocks.slice(0, 3).map(s => `${s.name}: ${s.oldPrice.toFixed(2)}→${s.newPrice.toFixed(2)}`).join(', ');
+                const more = changedStocks.length > 3 ? ` 等${changedStocks.length}只` : '';
+                showNotification(`已更新${changedStocks.length}只股票中轴价格: ${changes}${more}`, 'success');
+            } else {
+                showNotification(`中轴价格已是最新 (${updatedCount}只成功${failedCount > 0 ? ', ' + failedCount + '只失败' : ''})`, 'success');
+            }
         }
     }
     
