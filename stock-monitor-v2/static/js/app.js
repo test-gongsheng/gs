@@ -159,29 +159,25 @@ async function init() {
     // 绑定表单提交
     document.getElementById('addStockForm').addEventListener('submit', handleAddStock);
     
-    // 页面加载完成后，加载实时热点板块数据
-    console.log('加载热点板块数据...');
-    await loadHotSectors();
+    // 并行加载非关键数据（不阻塞页面显示）
+    console.log('并行加载热点板块、市场情绪、新闻...');
+    Promise.all([
+        loadHotSectors(),
+        loadSentiment(),
+        loadNews()
+    ]).then(() => console.log('热点板块、情绪、新闻加载完成'));
     
-    // 页面加载完成后，加载市场情绪数据
-    console.log('加载市场情绪数据...');
-    await loadSentiment();
+    // 持仓股分析报告也在后台加载
+    console.log('后台加载持仓股分析报告...');
+    loadPortfolioAnalysis();
     
-    // 页面加载完成后，加载实时新闻
-    console.log('加载财联社实时新闻...');
-    await loadNews();
-    
-    // 页面加载完成后，加载持仓股分析报告
-    console.log('加载持仓股分析报告...');
-    await loadPortfolioAnalysis();
-    
-    // 页面加载完成后，立即获取实时行情并渲染（优先显示）
+    // 优先获取实时行情并渲染（关键路径）
     if (appState.stocks.length > 0) {
-        console.log('初始化完成，立即获取实时行情...');
+        console.log('优先获取实时行情...');
         await updateStockPricesOnce();
     }
     
-    // 中轴价格在后台异步刷新（不阻塞页面）
+    // 中轴价格在后台异步刷新（不阻塞）
     if (appState.stocks.length > 0) {
         console.log('后台异步刷新中轴价格...');
         refreshAxisPricesInBackground();
