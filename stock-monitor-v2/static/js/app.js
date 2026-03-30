@@ -2142,81 +2142,104 @@ async function updateStockPricesOnce() {
         return;
     }
 
+    // 防止重复调用
+    if (window._updatingPrices) {
+        console.log('[updateStockPricesOnce] 已有更新在进行中，跳过');
+        return;
+    }
+    window._updatingPrices = true;
+
+    const startTime = Date.now();
+    console.log('[updateStockPricesOnce] ========== 开始获取实时行情 ==========');
+    console.log('[updateStockPricesOnce] 股票数量:', appState.stocks.length);
+    
     try {
-        console.log('[updateStockPricesOnce] 获取实时行情...');
-        console.log('[updateStockPricesOnce] 股票列表:', appState.stocks.map(s => s.code));
+        // 分批获取，避免一次性请求太多导致超时
+        const batchSize = 6;
+        const stocks = appState.stocks;
+        let allQuotes = {};
         
-        const requestBody = {
-            stocks: appState.stocks.map(s => ({
-                code: s.code,
-                market: s.market
-            }))
-        };
-        console.log('[updateStockPricesOnce] 请求体:', JSON.stringify(requestBody));
-        
-        // 调用后端API获取真实行情，添加超时
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => {
-            console.log('[updateStockPricesOnce] 请求超时(30秒)，中止');
-            controller.abort();
-        }, 30000); // 30秒超时
-        
-        console.log('[updateStockPricesOnce] 发起 fetch 请求...');
-        let response;
-        try {
-            response = await fetch('/api/quotes', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestBody),
-                signal: controller.signal
-            });
-        } catch (fetchError) {
-            console.error('[updateStockPricesOnce] fetch 异常:', fetchError.name, fetchError.message);
-            clearTimeout(timeoutId);
-            throw fetchError;
-        }
-        clearTimeout(timeoutId);
-        
-        console.log('[updateStockPricesOnce] fetch 完成，状态:', response.status);
-
-        if (!response.ok) {
-            console.error('[updateStockPricesOnce] HTTP 错误:', response.status, response.statusText);
-            return;
-        }
-
-        const data = await response.json();
-        console.log('[updateStockPricesOnce] 响应数据:', data);
-
-        if (data.success && data.quotes) {
-            // 保存全局汇率
-            if (data.exchange_rate) {
-                appState.exchangeRate = data.exchange_rate;
-            }
-
-            // 更新股票价格和涨跌幅
-            let updatedCount = 0;
-            appState.stocks.forEach(stock => {
-                const quote = data.quotes[stock.code];
-                if (quote) {
-                    console.log(`[updateStockPricesOnce] ${stock.code}: 价格 ${stock.price} -> ${quote.price}, 涨跌 ${quote.change}, 涨跌幅 ${quote.change_percent}%`);
-                    stock.price = quote.price;
-                    stock.change = quote.change;
-                    stock.changePercent = quote.change_percent;
-                    updatedCount++;
-
-                    // 港股：保存人民币转换价格和汇率
-                    if (quote.market === '港股') {
-                        stock.priceCny = quote.price_cny;
-                        stock.exchangeRate = quote.exchange_rate;
-                    }
-                } else {
-                    console.warn(`[updateStockPricesOnce] ${stock.code}: 无报价数据`);
+        for (let i = 0; i < stocks.length; i += batchSize) {
+            const batch = stocks.slice(i, i + batchSize);
+            console.log(`[updateStockPricesOnce] 获取批次 ${Math.floor(i/batchSize) + 1}/${Math.ceil(stocks.length/batchSize)}: ${batch.map(s => s.code).join(',')}`);
+            
+            const requestBody = {
+                stocks: batch.map(s => ({
+                    code: s.code,
+                    market: s.market
+                }))
+            };
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                console.log('[updateStockPricesOnce] 批次请求超时(20秒)');
+                controller.abort();
+            }, 20000);
+            
+            try {
+                const response = await fetch('/api/quotes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    console.error('[updateStockPricesOnce] HTTP错误:', response.status);
+                    continue;
                 }
-            });
-
-            console.log(`[updateStockPricesOnce] 成功更新 ${updatedCount}/${appState.stocks.length} 只股票`);
+                
+                const data = await response.json();
+                if (data.success && data.quotes) {
+                    Object.assign(allQuotes, data.quotes);
+                    if (data.exchange_rate) {
+                        appState.exchangeRate = data.exchange_rate;
+                    }
+                }
+            } catch (e) {
+                clearTimeout(timeoutId);
+                console.error('[updateStockPricesOnce] 批次请求失败:', e.message);
+            }
+        }
+        
+        // 更新股票数据
+        let updatedCount = 0;
+        appState.stocks.forEach(stock => {
+            const quote = allQuotes[stock.code];
+            if (quote) {
+                stock.price = quote.price;
+                stock.change = quote.change;
+                stock.changePercent = quote.change_percent;
+                updatedCount++;
+                
+                if (quote.market === '港股') {
+                    stock.priceCny = quote.price_cny;
+                    stock.exchangeRate = quote.exchange_rate;
+                }
+            }
+        });
+        
+        console.log(`[updateStockPricesOnce] 更新完成: ${updatedCount}/${appState.stocks.length} 只，耗时 ${Date.now() - startTime}ms`);
+        
+        // 重新渲染
+        renderStockList();
+        if (appState.selectedStock) {
+            const selected = appState.stocks.find(s => s.code === appState.selectedStock.code);
+            if (selected) {
+                appState.selectedStock = selected;
+                renderStockDetail();
+            }
+        }
+        updateAssetOverview();
+        
+    } catch (error) {
+        console.error('[updateStockPricesOnce] 失败:', error);
+    } finally {
+        window._updatingPrices = false;
+        console.log('[updateStockPricesOnce] ========== 结束 ==========');
+    }
+}
 
             // 重新渲染
             renderStockList();
