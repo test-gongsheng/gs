@@ -246,9 +246,9 @@ async function refreshAxisPrices(forceRefresh = false) {
         try {
             console.log(`[refreshAxisPrices] 调用API: ${stock.code}`);
             
-            // 使用 AbortController 设置超时 - 港股需要更长时间
+            // 使用 AbortController 设置超时 - 增加超时时间避免网络波动
             const controller = new AbortController();
-            const timeoutMs = stock.market === '港股' ? 15000 : 8000;
+            const timeoutMs = stock.market === '港股' ? 30000 : 20000;
             const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
             
             const response = await fetch('/api/axis-price', {
@@ -2157,9 +2157,9 @@ async function updateStockPricesOnce() {
         // 调用后端API获取真实行情，添加超时
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
-            console.log('[updateStockPricesOnce] 请求超时(8秒)，中止');
+            console.log('[updateStockPricesOnce] 请求超时(30秒)，中止');
             controller.abort();
-        }, 8000); // 8秒超时
+        }, 30000); // 30秒超时
         
         console.log('[updateStockPricesOnce] 发起 fetch 请求...');
         let response;
