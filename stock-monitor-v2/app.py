@@ -17,13 +17,21 @@ app.config['STATIC_FOLDER'] = 'static'
 
 # 添加自定义模板过滤器：自动为静态文件添加版本号（基于文件修改时间）
 @app.template_filter('autoversion')
-def autoversion_filter(filename):
-    """为静态文件 URL 添加基于修改时间的版本号，彻底避免缓存问题"""
-    filepath = os.path.join(app.static_folder, filename)
-    if os.path.exists(filepath):
-        mtime = int(os.path.getmtime(filepath))
-        return f"{filename}?v={mtime}"
-    return filename
+def autoversion_filter(url):
+    """为静态文件 URL 添加基于修改时间的版本号，彻底避免缓存问题
+    
+    用法: {{ url_for('static', filename='js/app.js') | autoversion }}
+    输出: /static/js/app.js?v=1774924800
+    """
+    # 从 URL 中提取文件路径
+    if '/static/' in url:
+        # 提取 /static/ 后面的部分
+        filepath = url.split('/static/', 1)[1]
+        full_path = os.path.join(app.static_folder, filepath)
+        if os.path.exists(full_path):
+            mtime = int(os.path.getmtime(full_path))
+            return f"{url}?v={mtime}"
+    return url
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), 'data', 'stocks.json')
 

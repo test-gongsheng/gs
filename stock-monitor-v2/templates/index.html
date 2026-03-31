@@ -7,8 +7,8 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>股票投资监控系统 v2.0</title>
-    <link rel="stylesheet" href="{{ 'css/style.css' | autoversion }}">
-    <link rel="stylesheet" href="{{ 'css/ib-analysis.css' | autoversion }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') | autoversion }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/ib-analysis.css') | autoversion }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
         // 自动缓存清除机制 - 每次部署版本变化时自动清除缓存
@@ -1334,8 +1334,8 @@
         </div>
     </div>
 
-    <script src="{{ 'js/app.js' | autoversion }}"></script>
-    <script src="{{ 'js/import.js' | autoversion }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') | autoversion }}"></script>
+    <script src="{{ url_for('static', filename='js/import.js') | autoversion }}"></script>
     <script>
         // 强制清除缓存并重新加载
         console.log('页面加载完成，检查 stockList...');
