@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "3.0.1"; // 固定版本号
+const APP_VERSION = "3.0.2"; // 修复：确保行情更新后重新渲染列表 // 固定版本号
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
