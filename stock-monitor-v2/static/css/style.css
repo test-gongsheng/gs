@@ -472,7 +472,9 @@ body {
 
 .stock-list {
   padding: 8px;
-  /* 移除滚动限制，一次性显示所有股票 */
+  flex: 1;
+  overflow-y: auto;
+  min-height: 200px;
 }
 
 .stock-item {
