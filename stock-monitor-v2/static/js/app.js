@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "3.0.2"; // 修复：确保行情更新后重新渲染列表 // 固定版本号
+const APP_VERSION = "3.0.3"; // 添加调试日志，确认渲染执行 // 修复：确保行情更新后重新渲染列表 // 固定版本号
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -2134,7 +2134,9 @@ async function simulatePriceUpdate() {
                 }
             });
 
+            console.log('[updateStockPricesOnce] 开始重新渲染列表...');
             renderStockList();
+            console.log('[updateStockPricesOnce] 列表重新渲染完成');
             if (appState.selectedStock) {
                 const selected = appState.stocks.find(s => s.code === appState.selectedStock.code);
                 if (selected) {
