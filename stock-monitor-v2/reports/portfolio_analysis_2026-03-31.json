@@ -1,0 +1,1318 @@
+{
+  "report_date": "2026-03-31",
+  "report_type": "portfolio_daily_analysis_v2",
+  "version": "2.0",
+  "generated_at": "2026-03-31 09:00:09",
+  "strategy_note": "基于中轴价格±8%区间策略",
+  "summary": {
+    "total_stocks": 12,
+    "total_market_value": 6566366.0,
+    "total_cost": 6145621.0,
+    "total_pnl": 420745.0,
+    "total_pnl_percent": 6.85,
+    "status_distribution": {
+      "overbought": 2,
+      "strong": 0,
+      "neutral": 1,
+      "weak": 1,
+      "oversold": 8
+    },
+    "health_score": 52,
+    "health_level": {
+      "level": "average",
+      "label": "一般",
+      "color": "#f59e0b",
+      "desc": "需要关注"
+    },
+    "buy_opportunities_count": 8,
+    "sell_signals_count": 2
+  },
+  "stock_analyses": [
+    {
+      "code": "000559",
+      "name": "万向钱潮",
+      "market": "A股",
+      "sector": "汽车零部件",
+      "current_price": 15.8,
+      "avg_cost": 15.5,
+      "axis_price": 16.53,
+      "axis_deviation": -4.42,
+      "shares": 28000,
+      "market_value": 442400.0,
+      "pnl": 8400.0,
+      "pnl_percent": 1.94,
+      "technical_status": "weak",
+      "status_desc": "弱势",
+      "status_icon": "🔴",
+      "trigger_buy": 14.26,
+      "trigger_sell": 16.74,
+      "action_suggestion": "关注支撑",
+      "technical_indicators": {
+        "ma": {
+          "5": 15.38,
+          "10": 15.61,
+          "20": 16.58,
+          "60": 17.69
+        },
+        "ma_trend": "bearish",
+        "price_vs_ma": {
+          "ma5": {
+            "value": 15.38,
+            "deviation": 2.73,
+            "above": true
+          },
+          "ma10": {
+            "value": 15.61,
+            "deviation": 1.22,
+            "above": true
+          },
+          "ma20": {
+            "value": 16.58,
+            "deviation": -4.7,
+            "above": false
+          },
+          "ma60": {
+            "value": 17.69,
+            "deviation": -10.68,
+            "above": false
+          }
+        },
+        "macd": {
+          "dif": -0.752,
+          "dea": -0.613,
+          "hist": -0.277,
+          "status": "bearish_weakening",
+          "signal": "空头减弱",
+          "prev_hist": -0.361
+        },
+        "capital_flow": {
+          "main_inflow": -38584.86,
+          "retail_inflow": 0.0,
+          "status": "strong_outflow",
+          "date": "2025-09-24"
+        },
+        "update_time": "2026-03-31 09:00"
+      },
+      "analysis": {
+        "data_sources": [
+          "**当前价格**: ¥15.80（A股实时行情）",
+          "**中轴价格**: ¥16.53（基于近90日均价计算）",
+          "**持仓成本**: ¥15.50（您的实际买入均价）",
+          "**网格触发**: 买入≤¥14.26 / 卖出≥¥16.74（成本±8%）",
+          "**均线系统**: MA5/MA10/MA20/MA60（基于历史收盘价计算）",
+          "**MACD指标**: DIF=-0.752, DEA=-0.613, 柱状图=-0.277",
+          "**资金流向**: 主力净流入¥-38584.86万元（基于Level2数据）",
+          "**数据来源**: 东方财富/akshare历史行情数据"
+        ],
+        "analysis_logic": [
+          "**价格位置**: 当前价格低于中轴-4.42%，处于相对低位，偏离度4.4%，说明近期表现偏弱。",
+          "**空间测算**: 距离成本价买入触发线（¥14.26）还有9.7%下跌空间。",
+          "**持仓盈亏**: 当前浮盈¥8,400.00（+1.94%），成本偏离+1.94%。建议结合中轴偏离度决定是否获利了结。",
+          "**均线系统**: 股价在MA5(¥15.38)附近震荡，方向待确认。\n股价跌破MA60(¥17.69)，中长期趋势偏空。",
+          "**MACD指标**: MACD指标显示：DIF=-0.752, DEA=-0.613, 柱状图=-0.277。\n信号解读：空头减弱。",
+          "**资金流向**: 主力净流出¥38584.86万元，资金呈流出态势。"
+        ],
+        "conclusion": {
+          "title": "🔴 弱势区 - 关注支撑",
+          "content": [
+            "万向钱潮相对弱势，价格低于中轴-4.4%，但尚未达到超卖阈值。",
+            "建议保持观望，等待更明确的买入信号。",
+            "建议：若跌破¥14.26（成本-8%）进入超卖区，可考虑加仓；若反弹突破中轴，趋势可能转强。",
+            "未来观察：关注是否出现止跌企稳信号，以及基本面是否有改善。"
+          ]
+        },
+        "update_time": "2026-03-31 09:00"
+      }
+    },
+    {
+      "code": "000878",
+      "name": "云南铜业",
+      "market": "A股",
+      "sector": "有色金属",
+      "current_price": 18.67,
+      "avg_cost": 18.2,
+      "axis_price": 21.05,
+      "axis_deviation": -11.31,
+      "shares": 3000,
+      "market_value": 56010.0,
+      "pnl": 1410.0,
+      "pnl_percent": 2.58,
+      "technical_status": "oversold",
+      "status_desc": "超卖",
+      "status_icon": "💡",
+      "trigger_buy": 16.74,
+      "trigger_sell": 19.66,
+      "action_suggestion": "关注买入",
+      "technical_indicators": {
+        "ma": {
+          "5": 18.44,
+          "10": 18.9,
+          "20": 21.07,
+          "60": 22.29
+        },
+        "ma_trend": "bearish",
+        "price_vs_ma": {
+          "ma5": {
+            "value": 18.44,
+            "deviation": 1.25,
+            "above": true
+          },
+          "ma10": {
+            "value": 18.9,
+            "deviation": -1.22,
+            "above": false
+          },
+          "ma20": {
+            "value": 21.07,
+            "deviation": -11.39,
+            "above": false
+          },
+          "ma60": {
+            "value": 22.29,
+            "deviation": -16.24,
+            "above": false
+          }
+        },
+        "macd": {
+          "dif": -1.383,
+          "dea": -1.072,
+          "hist": -0.622,
+          "status": "bearish_weakening",
+          "signal": "空头减弱",
+          "prev_hist": -0.774
+        },
+        "capital_flow": {
+          "main_inflow": -1431.15,
+          "retail_inflow": 0.0,
+          "status": "strong_outflow",
+          "date": "2025-09-24"
+        },
+        "update_time": "2026-03-31 09:00"
+      },
+      "analysis": {
+        "data_sources": [
+          "**当前价格**: ¥18.67（A股实时行情）",
+          "**中轴价格**: ¥21.05（基于近90日均价计算）",
+          "**持仓成本**: ¥18.20（您的实际买入均价）",
+          "**网格触发**: 买入≤¥16.74 / 卖出≥¥19.66（成本±8%）",
+          "**均线系统**: MA5/MA10/MA20/MA60（基于历史收盘价计算）",
+          "**MACD指标**: DIF=-1.383, DEA=-1.072, 柱状图=-0.622",
+          "**资金流向**: 主力净流入¥-1431.15万元（基于Level2数据）",
+          "**数据来源**: 东方财富/akshare历史行情数据"
+        ],
+        "analysis_logic": [
+          "**价格位置**: 当前价格低于中轴-11.31%，处于相对低位，偏离度11.3%，说明近期表现偏弱。",
+          "**机会提示**: 价格已跌破中轴-8%，进入超卖区域，可能存在左侧布局机会。",
+          "**持仓盈亏**: 当前浮盈¥1,410.00（+2.58%），成本偏离+2.58%。建议结合中轴偏离度决定是否获利了结。",
+          "**均线系统**: 股价在MA5(¥18.44)附近震荡，方向待确认。\n股价跌破MA60(¥22.29)，中长期趋势偏空。",
+          "**MACD指标**: MACD指标显示：DIF=-1.383, DEA=-1.072, 柱状图=-0.622。\n信号解读：空头减弱。",
+          "**资金流向**: 主力净流出¥1431.15万元，资金呈流出态势。"
+        ],
+        "conclusion": {
+          "title": "💡 超卖区 - 关注买入",
+          "content": [
+            "云南铜业当前处于超卖状态，价格偏离中轴-11.3%，跌破-8%阈值。",
+            "根据中轴价格策略，当前已进入相对低估区域，可能存在左侧布局机会。",
+            "建议：关注买入机会，可考虑分批建仓。若继续下跌至¥16.74（成本-8%），可加大仓位。",
+            "未来观察：等待价格反弹至中轴附近，或观察是否出现企稳信号。"
+          ]
+        },
+        "update_time": "2026-03-31 09:00"
+      }
+    },
+    {
+      "code": "002050",
+      "name": "三花智控",
+      "market": "A股",
+      "sector": "智能制造",
+      "current_price": 44.52,
+      "avg_cost": 43.5,
+      "axis_price": 48.51,
+      "axis_deviation": -8.23,
+      "shares": 6000,
+      "market_value": 267120.0,
+      "pnl": 6120.0,
+      "pnl_percent": 2.34,
+      "technical_status": "oversold",
+      "status_desc": "超卖",
+      "status_icon": "💡",
+      "trigger_buy": 40.02,
+      "trigger_sell": 46.98,
+      "action_suggestion": "关注买入",
+      "technical_indicators": {
+        "ma": {
+          "5": 43.26,
+          "10": 44.08,
+          "20": 45.83,
+          "60": 50.77
+        },
+        "ma_trend": "bearish",
+        "price_vs_ma": {
+          "ma5": {
+            "value": 43.26,
+            "deviation": 2.91,
+            "above": true
+          },
+          "ma10": {
+            "value": 44.08,
+            "deviation": 1.0,
+            "above": true
+          },
+          "ma20": {
+            "value": 45.83,
+            "deviation": -2.86,
+            "above": false
+          },
+          "ma60": {
+            "value": 50.77,
+            "deviation": -12.31,
+            "above": false
+          }
+        },
+        "macd": {
+          "dif": -1.981,
+          "dea": -1.805,
+          "hist": -0.352,
+          "status": "bearish_weakening",
+          "signal": "空头减弱",
+          "prev_hist": -0.443
+        },
+        "capital_flow": null,
+        "update_time": "2026-03-31 09:00"
+      },
+      "analysis": {
+        "data_sources": [
+          "**当前价格**: ¥44.52（A股实时行情）",
+          "**中轴价格**: ¥48.51（基于近90日均价计算）",
+          "**持仓成本**: ¥43.50（您的实际买入均价）",
+          "**网格触发**: 买入≤¥40.02 / 卖出≥¥46.98（成本±8%）",
+          "**均线系统**: MA5/MA10/MA20/MA60（基于历史收盘价计算）",
+          "**MACD指标**: DIF=-1.981, DEA=-1.805, 柱状图=-0.352",
+          "**数据来源**: 东方财富/akshare历史行情数据"
+        ],
+        "analysis_logic": [
+          "**价格位置**: 当前价格低于中轴-8.23%，处于相对低位，偏离度8.2%，说明近期表现偏弱。",
+          "**机会提示**: 价格已跌破中轴-8%，进入超卖区域，可能存在左侧布局机会。",
+          "**持仓盈亏**: 当前浮盈¥6,120.00（+2.34%），成本偏离+2.34%。建议结合中轴偏离度决定是否获利了结。",
+          "**均线系统**: 股价在MA5(¥43.26)附近震荡，方向待确认。\n股价跌破MA60(¥50.77)，中长期趋势偏空。",
+          "**MACD指标**: MACD指标显示：DIF=-1.981, DEA=-1.805, 柱状图=-0.352。\n信号解读：空头减弱。",
+          "**资金流向**: 资金流向数据暂不可用"
+        ],
+        "conclusion": {
+          "title": "💡 超卖区 - 关注买入",
+          "content": [
+            "三花智控当前处于超卖状态，价格偏离中轴-8.2%，跌破-8%阈值。",
+            "根据中轴价格策略，当前已进入相对低估区域，可能存在左侧布局机会。",
+            "建议：关注买入机会，可考虑分批建仓。若继续下跌至¥40.02（成本-8%），可加大仓位。",
+            "未来观察：等待价格反弹至中轴附近，或观察是否出现企稳信号。"
+          ]
+        },
+        "update_time": "2026-03-31 09:00"
+      }
+    },
+    {
+      "code": "002594",
+      "name": "比亚迪",
+      "market": "A股",
+      "sector": "新能源汽车",
+      "current_price": 105.67,
+      "avg_cost": 103,
+      "axis_price": 96.46,
+      "axis_deviation": 9.55,
+      "shares": 100,
+      "market_value": 10567.0,
+      "pnl": 267.0,
+      "pnl_percent": 2.59,
+      "technical_status": "overbought",
+      "status_desc": "超买",
+      "status_icon": "⚠️",
+      "trigger_buy": 94.76,
+      "trigger_sell": 111.24,
+      "action_suggestion": "考虑减仓",
+      "technical_indicators": {
+        "ma": {
+          "5": 105.55,
+          "10": 104.53,
+          "20": 101.06,
+          "60": 96.26
+        },
+        "ma_trend": "bullish",
+        "price_vs_ma": {
+          "ma5": {
+            "value": 105.55,
+            "deviation": 0.11,
+            "above": true
+          },
+          "ma10": {
+            "value": 104.53,
+            "deviation": 1.09,
+            "above": true
+          },
+          "ma20": {
+            "value": 101.06,
+            "deviation": 4.56,
+            "above": true
+          },
+          "ma60": {
+            "value": 96.26,
+            "deviation": 9.78,
+            "above": true
+          }
+        },
+        "macd": {
+          "dif": 3.176,
+          "dea": 2.884,
+          "hist": 0.583,
+          "status": "bullish_weakening",
+          "signal": "多头减弱",
+          "prev_hist": 0.738
+        },
+        "capital_flow": {
+          "main_inflow": -66787.91,
+          "retail_inflow": 0.0,
+          "status": "strong_outflow",
+          "date": "2025-09-24"
+        },
+        "update_time": "2026-03-31 09:00"
+      },
+      "analysis": {
+        "data_sources": [
+          "**当前价格**: ¥105.67（A股实时行情）",
+          "**中轴价格**: ¥96.46（基于近90日均价计算）",
+          "**持仓成本**: ¥103.00（您的实际买入均价）",
+          "**网格触发**: 买入≤¥94.76 / 卖出≥¥111.24（成本±8%）",
+          "**均线系统**: MA5/MA10/MA20/MA60（基于历史收盘价计算）",
+          "**MACD指标**: DIF=3.176, DEA=2.884, 柱状图=0.583",
+          "**资金流向**: 主力净流入¥-66787.91万元（基于Level2数据）",
+          "**数据来源**: 东方财富/akshare历史行情数据"
+        ],
+        "analysis_logic": [
+          "**价格位置**: 当前价格高于中轴+9.55%，处于相对高位，偏离度9.6%，说明近期表现强势。",
+          "**风险提示**: 价格已超过中轴+8%，进入超买区域，短期回调风险增加。",
+          "**持仓盈亏**: 当前浮盈¥267.00（+2.59%），成本偏离+2.59%。建议结合中轴偏离度决定是否获利了结。",
+          "**均线系统**: 股价站上MA5(¥105.55)和MA20(¥101.06)，短期趋势向好。\n股价位于MA60(¥96.26)之上，中长期趋势偏多。",
+          "**MACD指标**: MACD指标显示：DIF=3.176, DEA=2.884, 柱状图=0.583。\n信号解读：多头减弱。",
+          "**资金流向**: 主力净流出¥66787.91万元，资金呈流出态势。"
+        ],
+        "conclusion": {
+          "title": "⚠️ 超买区 - 建议减仓",
+          "content": [
+            "比亚迪当前处于超买状态，价格偏离中轴+9.6%，超过+8%阈值。",
+            "根据中轴价格策略，当前已进入相对高估区域，短期回调风险增加。",
+            "建议：考虑减仓1/4至1/3，锁定部分利润。若继续上涨至¥111.24（成本+8%），可进一步减仓。",
+            "未来观察：等待价格回落至中轴附近（¥96.46）再考虑接回。"
+          ]
+        },
+        "update_time": "2026-03-31 09:00"
+      }
+    },
+    {
+      "code": "00700",
+      "name": "腾讯控股",
+      "market": "港股",
+      "sector": "互联网科技",
+      "current_price": 498.4,
+      "avg_cost": 391.69,
+      "axis_price": 583.03,
+      "axis_deviation": -14.52,
+      "shares": 2900,
+      "market_value": 1445360.0,
+      "pnl": 309459.0,
+      "pnl_percent": 27.24,
+      "technical_status": "oversold",
+      "status_desc": "超卖",
+      "status_icon": "💡",
+      "trigger_buy": 360.35,
+      "trigger_sell": 423.03,
+      "action_suggestion": "关注买入",
+      "technical_indicators": null,
+      "analysis": {
+        "data_sources": [
+          "**当前价格**: ¥498.40（港股实时行情）",
+          "**中轴价格**: ¥583.03（基于近90日均价计算）",
+          "**持仓成本**: ¥391.69（您的实际买入均价）",
+          "**网格触发**: 买入≤¥360.35 / 卖出≥¥423.03（成本±8%）",
+          "**数据来源**: 港股实时行情"
+        ],
+        "analysis_logic": [
+          "**价格位置**: 当前价格低于中轴-14.52%，处于相对低位，偏离度14.5%，说明近期表现偏弱。",
+          "**机会提示**: 价格已跌破中轴-8%，进入超卖区域，可能存在左侧布局机会。",
+          "**持仓盈亏**: 当前浮盈¥309,459.00（+27.24%），成本偏离+27.24%。建议结合中轴偏离度决定是否获利了结。",
+          "**均线系统**: 暂无数据",
+          "**MACD指标**: 暂无数据",
+          "**资金流向**: 暂无数据"
+        ],
+        "conclusion": {
+          "title": "💡 超卖区 - 关注买入",
+          "content": [
+            "腾讯控股当前处于超卖状态，价格偏离中轴-14.5%，跌破-8%阈值。",
+            "根据中轴价格策略，当前已进入相对低估区域，可能存在左侧布局机会。",
+            "建议：关注买入机会，可考虑分批建仓。若继续下跌至¥360.35（成本-8%），可加大仓位。",
+            "未来观察：等待价格反弹至中轴附近，或观察是否出现企稳信号。"
+          ]
+        },
+        "update_time": "2026-03-31 09:00"
+      }
+    },
+    {
+      "code": "300229",
+      "name": "拓尔思",
+      "market": "A股",
+      "sector": "其他",
+      "current_price": 18.31,
+      "avg_cost": 17.8,
+      "axis_price": 21.75,
+      "axis_deviation": -15.82,
+      "shares": 21500,
+      "market_value": 393665.0,
+      "pnl": 10965.0,
+      "pnl_percent": 2.87,
+      "technical_status": "oversold",
+      "status_desc": "超卖",
+      "status_icon": "💡",
+      "trigger_buy": 16.38,
+      "trigger_sell": 19.22,
+      "action_suggestion": "关注买入",
+      "technical_indicators": {
+        "ma": {
+          "5": 18.09,
+          "10": 18.56,
+          "20": 19.68,
+          "60": 21.89
+        },
+        "ma_trend": "bearish",
+        "price_vs_ma": {
+          "ma5": {
+            "value": 18.09,
+            "deviation": 1.22,
+            "above": true
+          },
+          "ma10": {
+            "value": 18.56,
+            "deviation": -1.35,
+            "above": false
+          },
+          "ma20": {
+            "value": 19.68,
+            "deviation": -6.96,
+            "above": false
+          },
+          "ma60": {
+            "value": 21.89,
+            "deviation": -16.35,
+            "above": false
+          }
+        },
+        "macd": {
+          "dif": -1.157,
+          "dea": -1.025,
+          "hist": -0.264,
+          "status": "bearish_weakening",
+          "signal": "空头减弱",
+          "prev_hist": -0.356
+        },
+        "capital_flow": {
+          "main_inflow": -2755.34,
+          "retail_inflow": 0.0,
+          "status": "strong_outflow",
+          "date": "2025-09-24"
+        },
+        "update_time": "2026-03-31 09:00"
+      },
+      "analysis": {
+        "data_sources": [
+          "**当前价格**: ¥18.31（A股实时行情）",
+          "**中轴价格**: ¥21.75（基于近90日均价计算）",
+          "**持仓成本**: ¥17.80（您的实际买入均价）",
+          "**网格触发**: 买入≤¥16.38 / 卖出≥¥19.22（成本±8%）",
+          "**均线系统**: MA5/MA10/MA20/MA60（基于历史收盘价计算）",
+          "**MACD指标**: DIF=-1.157, DEA=-1.025, 柱状图=-0.264",
+          "**资金流向**: 主力净流入¥-2755.34万元（基于Level2数据）",
+          "**数据来源**: 东方财富/akshare历史行情数据"
+        ],
+        "analysis_logic": [
+          "**价格位置**: 当前价格低于中轴-15.82%，处于相对低位，偏离度15.8%，说明近期表现偏弱。",
+          "**机会提示**: 价格已跌破中轴-8%，进入超卖区域，可能存在左侧布局机会。",
+          "**持仓盈亏**: 当前浮盈¥10,965.00（+2.87%），成本偏离+2.87%。建议结合中轴偏离度决定是否获利了结。",
+          "**均线系统**: 股价在MA5(¥18.09)附近震荡，方向待确认。\n股价跌破MA60(¥21.89)，中长期趋势偏空。",
+          "**MACD指标**: MACD指标显示：DIF=-1.157, DEA=-1.025, 柱状图=-0.264。\n信号解读：空头减弱。",
+          "**资金流向**: 主力净流出¥2755.34万元，资金呈流出态势。"
+        ],
+        "conclusion": {
+          "title": "💡 超卖区 - 关注买入",
+          "content": [
+            "拓尔思当前处于超卖状态，价格偏离中轴-15.8%，跌破-8%阈值。",
+            "根据中轴价格策略，当前已进入相对低估区域，可能存在左侧布局机会。",
+            "建议：关注买入机会，可考虑分批建仓。若继续下跌至¥16.38（成本-8%），可加大仓位。",
+            "未来观察：等待价格反弹至中轴附近，或观察是否出现企稳信号。"
+          ]
+        },
+        "update_time": "2026-03-31 09:00"
+      }
+    },
+    {
+      "code": "300316",
+      "name": "晶盛机电",
+      "market": "A股",
+      "sector": "其他",
+      "current_price": 44,
+      "avg_cost": 43,
+      "axis_price": 43.56,
+      "axis_deviation": 1.01,
+      "shares": 10000,
+      "market_value": 440000,
+      "pnl": 10000,
+      "pnl_percent": 2.33,
+      "technical_status": "neutral",
+      "status_desc": "震荡",
+      "status_icon": "⚪",
+      "trigger_buy": 39.56,
+      "trigger_sell": 46.44,
+      "action_suggestion": "正常持有",
+      "technical_indicators": {
+        "ma": {
+          "5": 43.54,
+          "10": 44.35,
+          "20": 46.15,
+          "60": 46.18
+        },
+        "ma_trend": "bearish",
+        "price_vs_ma": {
+          "ma5": {
+            "value": 43.54,
+            "deviation": 1.06,
+            "above": true
+          },
+          "ma10": {
+            "value": 44.35,
+            "deviation": -0.79,
+            "above": false
+          },
+          "ma20": {
+            "value": 46.15,
+            "deviation": -4.66,
+            "above": false
+          },
+          "ma60": {
+            "value": 46.18,
+            "deviation": -4.72,
+            "above": false
+          }
+        },
+        "macd": {
+          "dif": -1.618,
+          "dea": -1.099,
+          "hist": -1.039,
+          "status": "bearish",
+          "signal": "空头增强",
+          "prev_hist": -0.991
+        },
+        "capital_flow": {
+          "main_inflow": -7837.71,
+          "retail_inflow": 0.0,
+          "status": "strong_outflow",
+          "date": "2025-09-24"
+        },
+        "update_time": "2026-03-31 09:00"
+      },
+      "analysis": {
+        "data_sources": [
+          "**当前价格**: ¥44.00（A股实时行情）",
+          "**中轴价格**: ¥43.56（基于近90日均价计算）",
+          "**持仓成本**: ¥43.00（您的实际买入均价）",
+          "**网格触发**: 买入≤¥39.56 / 卖出≥¥46.44（成本±8%）",
+          "**均线系统**: MA5/MA10/MA20/MA60（基于历史收盘价计算）",
+          "**MACD指标**: DIF=-1.618, DEA=-1.099, 柱状图=-1.039",
+          "**资金流向**: 主力净流入¥-7837.71万元（基于Level2数据）",
+          "**数据来源**: 东方财富/akshare历史行情数据"
+        ],
+        "analysis_logic": [
+          "**价格位置**: 当前价格偏离中轴+1.01%，处于±3%正常震荡区间，说明股价围绕合理估值波动，暂无明确趋势。",
+          "**持仓盈亏**: 当前浮盈¥10,000.00（+2.33%），成本偏离+2.33%。建议结合中轴偏离度决定是否获利了结。",
+          "**均线系统**: 股价在MA5(¥43.54)附近震荡，方向待确认。\n股价跌破MA60(¥46.18)，中长期趋势偏空。",
+          "**MACD指标**: MACD指标显示：DIF=-1.618, DEA=-1.099, 柱状图=-1.039。\n信号解读：空头增强。",
+          "**资金流向**: 主力净流出¥7837.71万元，资金呈流出态势。"
+        ],
+        "conclusion": {
+          "title": "⚪ 震荡区 - 正常持有",
+          "content": [
+            "晶盛机电价格在正常震荡区间，偏离中轴+1.0%，处于±3%合理范围内。",
+            "股价围绕中轴波动，暂无明确趋势，保持当前仓位即可。",
+            "建议：继续持有，等待偏离度扩大至±8%触发网格交易信号。",
+            "未来观察：上方关注¥47.04（中轴+8%），下方关注¥40.08（中轴-8%）。"
+          ]
+        },
+        "update_time": "2026-03-31 09:00"
+      }
+    },
+    {
+      "code": "300442",
+      "name": "润泽科技",
+      "market": "A股",
+      "sector": "其他",
+      "current_price": 86.1,
+      "avg_cost": 85,
+      "axis_price": 70.5,
+      "axis_deviation": 22.13,
+      "shares": 4500,
+      "market_value": 387450.0,
+      "pnl": 4950.0,
+      "pnl_percent": 1.29,
+      "technical_status": "overbought",
+      "status_desc": "超买",
+      "status_icon": "⚠️",
+      "trigger_buy": 78.2,
+      "trigger_sell": 91.8,
+      "action_suggestion": "考虑减仓",
+      "technical_indicators": {
+        "ma": {
+          "5": 84.52,
+          "10": 85.17,
+          "20": 88.46,
+          "60": 77.43
+        },
+        "ma_trend": "bearish",
+        "price_vs_ma": {
+          "ma5": {
+            "value": 84.52,
+            "deviation": 1.87,
+            "above": true
+          },
+          "ma10": {
+            "value": 85.17,
+            "deviation": 1.09,
+            "above": true
+          },
+          "ma20": {
+            "value": 88.46,
+            "deviation": -2.67,
+            "above": false
+          },
+          "ma60": {
+            "value": 77.43,
+            "deviation": 11.2,
+            "above": true
+          }
+        },
+        "macd": {
+          "dif": -0.012,
+          "dea": 1.239,
+          "hist": -2.501,
+          "status": "bearish_weakening",
+          "signal": "空头减弱",
+          "prev_hist": -2.536
+        },
+        "capital_flow": {
+          "main_inflow": 10792.96,
+          "retail_inflow": 0.0,
+          "status": "strong_inflow",
+          "date": "2025-09-16"
+        },
+        "update_time": "2026-03-31 09:00"
+      },
+      "analysis": {
+        "data_sources": [
+          "**当前价格**: ¥86.10（A股实时行情）",
+          "**中轴价格**: ¥70.50（基于近90日均价计算）",
+          "**持仓成本**: ¥85.00（您的实际买入均价）",
+          "**网格触发**: 买入≤¥78.2 / 卖出≥¥91.8（成本±8%）",
+          "**均线系统**: MA5/MA10/MA20/MA60（基于历史收盘价计算）",
+          "**MACD指标**: DIF=-0.012, DEA=1.239, 柱状图=-2.501",
+          "**资金流向**: 主力净流入¥10792.96万元（基于Level2数据）",
+          "**数据来源**: 东方财富/akshare历史行情数据"
+        ],
+        "analysis_logic": [
+          "**价格位置**: 当前价格高于中轴+22.13%，处于相对高位，偏离度22.1%，说明近期表现强势。",
+          "**风险提示**: 价格已超过中轴+8%，进入超买区域，短期回调风险增加。",
+          "**持仓盈亏**: 当前浮盈¥4,950.00（+1.29%），成本偏离+1.29%。建议结合中轴偏离度决定是否获利了结。",
+          "**均线系统**: 股价在MA5(¥84.52)附近震荡，方向待确认。\n股价位于MA60(¥77.43)之上，中长期趋势偏多。",
+          "**MACD指标**: MACD指标显示：DIF=-0.012, DEA=1.239, 柱状图=-2.501。\n信号解读：空头减弱。",
+          "**资金流向**: 主力净流入¥10792.96万元，资金呈流入态势。"
+        ],
+        "conclusion": {
+          "title": "⚠️ 超买区 - 建议减仓",
+          "content": [
+            "润泽科技当前处于超买状态，价格偏离中轴+22.1%，超过+8%阈值。",
+            "根据中轴价格策略，当前已进入相对高估区域，短期回调风险增加。",
+            "建议：考虑减仓1/4至1/3，锁定部分利润。若继续上涨至¥91.8（成本+8%），可进一步减仓。",
+            "未来观察：等待价格回落至中轴附近（¥70.50）再考虑接回。"
+          ]
+        },
+        "update_time": "2026-03-31 09:00"
+      }
+    },
+    {
+      "code": "601600",
+      "name": "中国铝业",
+      "market": "A股",
+      "sector": "其他",
+      "current_price": 11.5,
+      "avg_cost": 11.2,
+      "axis_price": 12.63,
+      "axis_deviation": -8.95,
+      "shares": 100,
+      "market_value": 1150.0,
+      "pnl": 30.0,
+      "pnl_percent": 2.68,
+      "technical_status": "oversold",
+      "status_desc": "超卖",
+      "status_icon": "💡",
+      "trigger_buy": 10.3,
+      "trigger_sell": 12.1,
+      "action_suggestion": "关注买入",
+      "technical_indicators": {
+        "ma": {
+          "5": 11.51,
+          "10": 11.76,
+          "20": 12.94,
+          "60": 13.17
+        },
+        "ma_trend": "bearish",
+        "price_vs_ma": {
+          "ma5": {
+            "value": 11.51,
+            "deviation": -0.09,
+            "above": false
+          },
+          "ma10": {
+            "value": 11.76,
+            "deviation": -2.21,
+            "above": false
+          },
+          "ma20": {
+            "value": 12.94,
+            "deviation": -11.13,
+            "above": false
+          },
+          "ma60": {
+            "value": 13.17,
+            "deviation": -12.68,
+            "above": false
+          }
+        },
+        "macd": {
+          "dif": -0.557,
+          "dea": -0.382,
+          "hist": -0.349,
+          "status": "bearish_weakening",
+          "signal": "空头减弱",
+          "prev_hist": -0.504
+        },
+        "capital_flow": {
+          "main_inflow": 7507.83,
+          "retail_inflow": 0.0,
+          "status": "strong_inflow",
+          "date": "2025-09-24"
+        },
+        "update_time": "2026-03-31 09:00"
+      },
+      "analysis": {
+        "data_sources": [
+          "**当前价格**: ¥11.50（A股实时行情）",
+          "**中轴价格**: ¥12.63（基于近90日均价计算）",
+          "**持仓成本**: ¥11.20（您的实际买入均价）",
+          "**网格触发**: 买入≤¥10.3 / 卖出≥¥12.1（成本±8%）",
+          "**均线系统**: MA5/MA10/MA20/MA60（基于历史收盘价计算）",
+          "**MACD指标**: DIF=-0.557, DEA=-0.382, 柱状图=-0.349",
+          "**资金流向**: 主力净流入¥7507.83万元（基于Level2数据）",
+          "**数据来源**: 东方财富/akshare历史行情数据"
+        ],
+        "analysis_logic": [
+          "**价格位置**: 当前价格低于中轴-8.95%，处于相对低位，偏离度8.9%，说明近期表现偏弱。",
+          "**机会提示**: 价格已跌破中轴-8%，进入超卖区域，可能存在左侧布局机会。",
+          "**持仓盈亏**: 当前浮盈¥30.00（+2.68%），成本偏离+2.68%。建议结合中轴偏离度决定是否获利了结。",
+          "**均线系统**: 股价跌破MA5(¥11.51)和MA20(¥12.94)，短期趋势走弱。\n股价跌破MA60(¥13.17)，中长期趋势偏空。",
+          "**MACD指标**: MACD指标显示：DIF=-0.557, DEA=-0.382, 柱状图=-0.349。\n信号解读：空头减弱。",
+          "**资金流向**: 主力净流入¥7507.83万元，资金呈流入态势。"
+        ],
+        "conclusion": {
+          "title": "💡 超卖区 - 关注买入",
+          "content": [
+            "中国铝业当前处于超卖状态，价格偏离中轴-8.9%，跌破-8%阈值。",
+            "根据中轴价格策略，当前已进入相对低估区域，可能存在左侧布局机会。",
+            "建议：关注买入机会，可考虑分批建仓。若继续下跌至¥10.3（成本-8%），可加大仓位。",
+            "未来观察：等待价格反弹至中轴附近，或观察是否出现企稳信号。"
+          ]
+        },
+        "update_time": "2026-03-31 09:00"
+      }
+    },
+    {
+      "code": "688795",
+      "name": "摩尔线程",
+      "market": "A股",
+      "sector": "其他",
+      "current_price": 562.5,
+      "avg_cost": 550,
+      "axis_price": 622.21,
+      "axis_deviation": -9.6,
+      "shares": 2200,
+      "market_value": 1237500.0,
+      "pnl": 27500.0,
+      "pnl_percent": 2.27,
+      "technical_status": "oversold",
+      "status_desc": "超卖",
+      "status_icon": "💡",
+      "trigger_buy": 506.0,
+      "trigger_sell": 594.0,
+      "action_suggestion": "关注买入",
+      "technical_indicators": {
+        "ma": {
+          "5": 555.95,
+          "10": 550.41,
+          "20": 557.72,
+          "60": 588.76
+        },
+        "ma_trend": "neutral",
+        "price_vs_ma": {
+          "ma5": {
+            "value": 555.95,
+            "deviation": 1.18,
+            "above": true
+          },
+          "ma10": {
+            "value": 550.41,
+            "deviation": 2.2,
+            "above": true
+          },
+          "ma20": {
+            "value": 557.72,
+            "deviation": 0.86,
+            "above": true
+          },
+          "ma60": {
+            "value": 588.76,
+            "deviation": -4.46,
+            "above": false
+          }
+        },
+        "macd": {
+          "dif": -8.79,
+          "dea": -10.421,
+          "hist": 3.262,
+          "status": "bullish",
+          "signal": "多头增强",
+          "prev_hist": 2.323
+        },
+        "capital_flow": {
+          "main_inflow": 249458.43,
+          "retail_inflow": 0.0,
+          "status": "strong_inflow",
+          "date": "2025-12-05"
+        },
+        "update_time": "2026-03-31 09:00"
+      },
+      "analysis": {
+        "data_sources": [
+          "**当前价格**: ¥562.50（A股实时行情）",
+          "**中轴价格**: ¥622.21（基于近90日均价计算）",
+          "**持仓成本**: ¥550.00（您的实际买入均价）",
+          "**网格触发**: 买入≤¥506.0 / 卖出≥¥594.0（成本±8%）",
+          "**均线系统**: MA5/MA10/MA20/MA60（基于历史收盘价计算）",
+          "**MACD指标**: DIF=-8.79, DEA=-10.421, 柱状图=3.262",
+          "**资金流向**: 主力净流入¥249458.43万元（基于Level2数据）",
+          "**数据来源**: 东方财富/akshare历史行情数据"
+        ],
+        "analysis_logic": [
+          "**价格位置**: 当前价格低于中轴-9.60%，处于相对低位，偏离度9.6%，说明近期表现偏弱。",
+          "**机会提示**: 价格已跌破中轴-8%，进入超卖区域，可能存在左侧布局机会。",
+          "**持仓盈亏**: 当前浮盈¥27,500.00（+2.27%），成本偏离+2.27%。建议结合中轴偏离度决定是否获利了结。",
+          "**均线系统**: 股价站上MA5(¥555.95)和MA20(¥557.72)，短期趋势向好。\n股价跌破MA60(¥588.76)，中长期趋势偏空。",
+          "**MACD指标**: MACD指标显示：DIF=-8.79, DEA=-10.421, 柱状图=3.262。\n信号解读：多头增强。",
+          "**资金流向**: 主力净流入¥249458.43万元，资金呈流入态势。"
+        ],
+        "conclusion": {
+          "title": "💡 超卖区 - 关注买入",
+          "content": [
+            "摩尔线程当前处于超卖状态，价格偏离中轴-9.6%，跌破-8%阈值。",
+            "根据中轴价格策略，当前已进入相对低估区域，可能存在左侧布局机会。",
+            "建议：关注买入机会，可考虑分批建仓。若继续下跌至¥506.0（成本-8%），可加大仓位。",
+            "未来观察：等待价格反弹至中轴附近，或观察是否出现企稳信号。"
+          ]
+        },
+        "update_time": "2026-03-31 09:00"
+      }
+    },
+    {
+      "code": "00285",
+      "name": "比亚迪电子",
+      "market": "港股",
+      "sector": "其他",
+      "current_price": 27.043,
+      "avg_cost": 26.5,
+      "axis_price": 33.08,
+      "axis_deviation": -18.25,
+      "shares": 24000,
+      "market_value": 649032.0,
+      "pnl": 13032.0,
+      "pnl_percent": 2.05,
+      "technical_status": "oversold",
+      "status_desc": "超卖",
+      "status_icon": "💡",
+      "trigger_buy": 24.38,
+      "trigger_sell": 28.62,
+      "action_suggestion": "关注买入",
+      "technical_indicators": null,
+      "analysis": {
+        "data_sources": [
+          "**当前价格**: ¥27.04（港股实时行情）",
+          "**中轴价格**: ¥33.08（基于近90日均价计算）",
+          "**持仓成本**: ¥26.50（您的实际买入均价）",
+          "**网格触发**: 买入≤¥24.38 / 卖出≥¥28.62（成本±8%）",
+          "**数据来源**: 港股实时行情"
+        ],
+        "analysis_logic": [
+          "**价格位置**: 当前价格低于中轴-18.25%，处于相对低位，偏离度18.2%，说明近期表现偏弱。",
+          "**机会提示**: 价格已跌破中轴-8%，进入超卖区域，可能存在左侧布局机会。",
+          "**持仓盈亏**: 当前浮盈¥13,032.00（+2.05%），成本偏离+2.05%。建议结合中轴偏离度决定是否获利了结。",
+          "**均线系统**: 暂无数据",
+          "**MACD指标**: 暂无数据",
+          "**资金流向**: 暂无数据"
+        ],
+        "conclusion": {
+          "title": "💡 超卖区 - 关注买入",
+          "content": [
+            "比亚迪电子当前处于超卖状态，价格偏离中轴-18.2%，跌破-8%阈值。",
+            "根据中轴价格策略，当前已进入相对低估区域，可能存在左侧布局机会。",
+            "建议：关注买入机会，可考虑分批建仓。若继续下跌至¥24.38（成本-8%），可加大仓位。",
+            "未来观察：等待价格反弹至中轴附近，或观察是否出现企稳信号。"
+          ]
+        },
+        "update_time": "2026-03-31 09:00"
+      }
+    },
+    {
+      "code": "09988",
+      "name": "阿里巴巴",
+      "market": "港股",
+      "sector": "其他",
+      "current_price": 107.488,
+      "avg_cost": 105,
+      "axis_price": 149.36,
+      "axis_deviation": -28.03,
+      "shares": 11500,
+      "market_value": 1236112.0,
+      "pnl": 28612.0,
+      "pnl_percent": 2.37,
+      "technical_status": "oversold",
+      "status_desc": "超卖",
+      "status_icon": "💡",
+      "trigger_buy": 96.6,
+      "trigger_sell": 113.4,
+      "action_suggestion": "关注买入",
+      "technical_indicators": null,
+      "analysis": {
+        "data_sources": [
+          "**当前价格**: ¥107.49（港股实时行情）",
+          "**中轴价格**: ¥149.36（基于近90日均价计算）",
+          "**持仓成本**: ¥105.00（您的实际买入均价）",
+          "**网格触发**: 买入≤¥96.6 / 卖出≥¥113.4（成本±8%）",
+          "**数据来源**: 港股实时行情"
+        ],
+        "analysis_logic": [
+          "**价格位置**: 当前价格低于中轴-28.03%，处于相对低位，偏离度28.0%，说明近期表现偏弱。",
+          "**机会提示**: 价格已跌破中轴-8%，进入超卖区域，可能存在左侧布局机会。",
+          "**持仓盈亏**: 当前浮盈¥28,612.00（+2.37%），成本偏离+2.37%。建议结合中轴偏离度决定是否获利了结。",
+          "**均线系统**: 暂无数据",
+          "**MACD指标**: 暂无数据",
+          "**资金流向**: 暂无数据"
+        ],
+        "conclusion": {
+          "title": "💡 超卖区 - 关注买入",
+          "content": [
+            "阿里巴巴当前处于超卖状态，价格偏离中轴-28.0%，跌破-8%阈值。",
+            "根据中轴价格策略，当前已进入相对低估区域，可能存在左侧布局机会。",
+            "建议：关注买入机会，可考虑分批建仓。若继续下跌至¥96.6（成本-8%），可加大仓位。",
+            "未来观察：等待价格反弹至中轴附近，或观察是否出现企稳信号。"
+          ]
+        },
+        "update_time": "2026-03-31 09:00"
+      }
+    }
+  ],
+  "sector_analysis": [
+    {
+      "name": "其他",
+      "stock_count": 7,
+      "market_value": 4344909.0,
+      "pnl": 95089.0,
+      "pnl_percent": 2.24,
+      "status": "💡 超卖",
+      "distribution": {
+        "overbought": 1,
+        "strong": 0,
+        "neutral": 1,
+        "weak": 0,
+        "oversold": 5
+      }
+    },
+    {
+      "name": "互联网科技",
+      "stock_count": 1,
+      "market_value": 1445360.0,
+      "pnl": 309459.0,
+      "pnl_percent": 27.24,
+      "status": "💡 超卖",
+      "distribution": {
+        "overbought": 0,
+        "strong": 0,
+        "neutral": 0,
+        "weak": 0,
+        "oversold": 1
+      }
+    },
+    {
+      "name": "汽车零部件",
+      "stock_count": 1,
+      "market_value": 442400.0,
+      "pnl": 8400.0,
+      "pnl_percent": 1.94,
+      "status": "🔴 弱势",
+      "distribution": {
+        "overbought": 0,
+        "strong": 0,
+        "neutral": 0,
+        "weak": 1,
+        "oversold": 0
+      }
+    },
+    {
+      "name": "智能制造",
+      "stock_count": 1,
+      "market_value": 267120.0,
+      "pnl": 6120.0,
+      "pnl_percent": 2.34,
+      "status": "💡 超卖",
+      "distribution": {
+        "overbought": 0,
+        "strong": 0,
+        "neutral": 0,
+        "weak": 0,
+        "oversold": 1
+      }
+    },
+    {
+      "name": "有色金属",
+      "stock_count": 1,
+      "market_value": 56010.0,
+      "pnl": 1410.0,
+      "pnl_percent": 2.58,
+      "status": "💡 超卖",
+      "distribution": {
+        "overbought": 0,
+        "strong": 0,
+        "neutral": 0,
+        "weak": 0,
+        "oversold": 1
+      }
+    },
+    {
+      "name": "新能源汽车",
+      "stock_count": 1,
+      "market_value": 10567.0,
+      "pnl": 267.0,
+      "pnl_percent": 2.59,
+      "status": "⚠️ 过热",
+      "distribution": {
+        "overbought": 1,
+        "strong": 0,
+        "neutral": 0,
+        "weak": 0,
+        "oversold": 0
+      }
+    }
+  ],
+  "portfolio_analysis": {
+    "position": {
+      "current_cash_ratio": 30,
+      "suggested_cash_ratio": 20,
+      "position_advice": "机会较多，建议保留20%现金用于加仓",
+      "total_stocks": 12,
+      "oversold_count": 8,
+      "overbought_count": 2
+    },
+    "sector": {
+      "max_sector": "其他",
+      "max_sector_ratio": 66.17,
+      "sector_risk": "高",
+      "sector_advice": "其他占比过高(66.2%)，建议分散风险"
+    },
+    "rebalance": {
+      "actions": [
+        {
+          "action": "reduce",
+          "code": "002594",
+          "name": "比亚迪",
+          "reason": "偏离中轴+9.6%，进入超买区",
+          "suggestion": "减仓1/4至1/3，锁定利润"
+        },
+        {
+          "action": "reduce",
+          "code": "300442",
+          "name": "润泽科技",
+          "reason": "偏离中轴+22.1%，进入超买区",
+          "suggestion": "减仓1/4至1/3，锁定利润"
+        },
+        {
+          "action": "add",
+          "code": "000878",
+          "name": "云南铜业",
+          "reason": "偏离中轴-11.3%，进入超卖区",
+          "suggestion": "可分批买入，目标仓位1.0%"
+        },
+        {
+          "action": "add",
+          "code": "002050",
+          "name": "三花智控",
+          "reason": "偏离中轴-8.2%，进入超卖区",
+          "suggestion": "可分批买入，目标仓位4.9%"
+        },
+        {
+          "action": "add",
+          "code": "00700",
+          "name": "腾讯控股",
+          "reason": "偏离中轴-14.5%，进入超卖区",
+          "suggestion": "可分批买入，目标仓位26.4%"
+        },
+        {
+          "action": "add",
+          "code": "300229",
+          "name": "拓尔思",
+          "reason": "偏离中轴-15.8%，进入超卖区",
+          "suggestion": "可分批买入，目标仓位7.2%"
+        },
+        {
+          "action": "add",
+          "code": "601600",
+          "name": "中国铝业",
+          "reason": "偏离中轴-8.9%，进入超卖区",
+          "suggestion": "可分批买入，目标仓位0.0%"
+        },
+        {
+          "action": "add",
+          "code": "688795",
+          "name": "摩尔线程",
+          "reason": "偏离中轴-9.6%，进入超卖区",
+          "suggestion": "可分批买入，目标仓位22.6%"
+        },
+        {
+          "action": "add",
+          "code": "00285",
+          "name": "比亚迪电子",
+          "reason": "偏离中轴-18.2%，进入超卖区",
+          "suggestion": "可分批买入，目标仓位11.9%"
+        },
+        {
+          "action": "add",
+          "code": "09988",
+          "name": "阿里巴巴",
+          "reason": "偏离中轴-28.0%，进入超卖区",
+          "suggestion": "可分批买入，目标仓位22.6%"
+        }
+      ],
+      "action_count": 10
+    },
+    "risks": [
+      {
+        "level": "medium",
+        "type": "market",
+        "desc": "2只股票处于超买状态，短期回调风险增加"
+      },
+      {
+        "level": "high",
+        "type": "sector",
+        "desc": "其他板块占比66.2%，存在集中风险"
+      },
+      {
+        "level": "medium",
+        "type": "market",
+        "desc": "港股持仓占比50.7%，注意汇率和市场风险"
+      }
+    ],
+    "risk_level": "high"
+  },
+  "alerts": [
+    {
+      "type": "warning",
+      "stock": "比亚迪",
+      "code": "002594",
+      "deviation": 9.55,
+      "message": "偏离中轴+9.55%，进入超买区",
+      "action": "考虑减仓"
+    },
+    {
+      "type": "warning",
+      "stock": "润泽科技",
+      "code": "300442",
+      "deviation": 22.13,
+      "message": "偏离中轴+22.13%，进入超买区",
+      "action": "考虑减仓"
+    }
+  ],
+  "highlights": [
+    {
+      "type": "opportunity",
+      "stock": "云南铜业",
+      "code": "000878",
+      "deviation": -11.31,
+      "message": "偏离中轴-11.31%，进入超卖区",
+      "action": "关注买入"
+    },
+    {
+      "type": "opportunity",
+      "stock": "三花智控",
+      "code": "002050",
+      "deviation": -8.23,
+      "message": "偏离中轴-8.23%，进入超卖区",
+      "action": "关注买入"
+    },
+    {
+      "type": "opportunity",
+      "stock": "腾讯控股",
+      "code": "00700",
+      "deviation": -14.52,
+      "message": "偏离中轴-14.52%，进入超卖区",
+      "action": "关注买入"
+    },
+    {
+      "type": "opportunity",
+      "stock": "拓尔思",
+      "code": "300229",
+      "deviation": -15.82,
+      "message": "偏离中轴-15.82%，进入超卖区",
+      "action": "关注买入"
+    },
+    {
+      "type": "opportunity",
+      "stock": "中国铝业",
+      "code": "601600",
+      "deviation": -8.95,
+      "message": "偏离中轴-8.95%，进入超卖区",
+      "action": "关注买入"
+    },
+    {
+      "type": "opportunity",
+      "stock": "摩尔线程",
+      "code": "688795",
+      "deviation": -9.6,
+      "message": "偏离中轴-9.6%，进入超卖区",
+      "action": "关注买入"
+    },
+    {
+      "type": "opportunity",
+      "stock": "比亚迪电子",
+      "code": "00285",
+      "deviation": -18.25,
+      "message": "偏离中轴-18.25%，进入超卖区",
+      "action": "关注买入"
+    },
+    {
+      "type": "opportunity",
+      "stock": "阿里巴巴",
+      "code": "09988",
+      "deviation": -28.03,
+      "message": "偏离中轴-28.03%，进入超卖区",
+      "action": "关注买入"
+    }
+  ]
+}

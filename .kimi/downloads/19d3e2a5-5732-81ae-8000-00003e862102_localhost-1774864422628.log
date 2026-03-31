@@ -1,0 +1,473 @@
+ [Cache Clear] 版本变化: 2.8.1 -> 20250330-2
+ [Cache Clear] 已清除旧缓存
+ [版本更新] 20250330-2 -> 2.8.1，清除所有缓存...
+ [版本更新] 缓存清除完成
+ 页面加载完成，检查 stockList...
+ [init] 开始初始化，已清空股票列表
+ Checking initDataImport... function
+ Calling initDataImport...
+ 初始化数据导入模块...
+ 数据导入模块初始化完成
+ 已从后端 API 加载 12 只股票
+ 加载热点板块数据...
+ stockList 元素: 
+ stockList 子元素数: 12
+ loadIBAnalysis API 返回: Object
+ API 返回 holdings 数量: 12
+ renderIBAnalysis 被调用，完整数据: {
+  "holdings_map": [
+    {
+      "alignment": "neutral",
+      "code": "000559",
+      "ib_views": [
+        "暂无特定投行观点覆盖"
+      ],
+      "market": "A股",
+      "name": "万向钱潮"
+    },
+    {
+      "alignment": "weak",
+      "code": "000878",
+      "ib_views": [
+        "摩根士丹利: 低配能源/周期",
+        "担忧关税影响大宗商品"
+      ],
+      "market": "A股",
+      "name": "云南铜业"
+    },
+    {
+      "alignment": "moderate",
+      "code": "002050",
+      "ib_views": [
+        "瑞银: 人形机器人最受关注",
+        "摩根士丹利: 看好自动化"
+      ],
+      "market": "A股",
+      "name": "三花智控"
+    },
+    {
+      "alignment": "neutral",
+      "code": "002594",
+      "ib_views": [
+        "摩根大通: 消费复苏是新动力",
+        "智能驾驶主题受关注"
+      ],
+      "market": "A股",
+      "name": "比亚迪"
+    },
+    {
+      "alignment": "moderate",
+      "code": "300229",
+      "ib_views": [
+        "中金: 端侧AI、软件应用均有机会",
+        "汇丰: 数据中心需求持续上升"
+      ],
+      "market": "A股",
+      "name": "拓尔思"
+    },
+    {
+      "alignment": "weak",
+      "code": "300316",
+      "ib_views": [
+        "摩根士丹利: 低配能源",
+        "行业产能过剩仍存"
+      ],
+      "market": "A股",
+      "name": "晶盛机电"
+    },
+    {
+      "alignment": "moderate",
+      "code": "300442",
+      "ib_views": [
+        "中金: 端侧AI、软件应用均有机会",
+        "汇丰: 数据中心需求持续上升"
+      ],
+      "market": "A股",
+      "name": "润泽科技"
+    },
+    {
+      "alignment": "weak",
+      "code": "601600",
+      "ib_views": [
+        "摩根士丹利: 低配能源/周期",
+        "担忧关税影响大宗商品"
+      ],
+      "market": "A股",
+      "name": "中国铝业"
+    },
+    {
+      "alignment": "strong",
+      "code": "688795",
+      "ib_views": [
+        "中金: AI产业趋势是中期主线",
+        "高盛: AI可提升估值15-20%"
+      ],
+      "market": "A股",
+      "name": "摩尔线程"
+    },
+    {
+      "alignment": "neutral",
+      "code": "00285",
+      "ib_views": [
+        "暂无特定投行观点覆盖"
+      ],
+      "market": "港股",
+      "name": "比亚迪电"
+    },
+    {
+      "alignment": "strong",
+      "code": "00700",
+      "ib_views": [
+        "摩根士丹利: 超配互联网龙头",
+        "高盛: 港股AI核心持仓",
+        "南向资金创纪录流入"
+      ],
+      "market": "港股",
+      "name": "腾讯控股"
+    },
+    {
+      "alignment": "strong",
+      "code": "09988",
+      "ib_views": [
+        "摩根士丹利: 超配互联网龙头",
+        "高盛: 港股AI核心持仓",
+        "南向资金创纪录流入"
+      ],
+      "market": "港股",
+      "name": "阿里巴巴"
+    }
+  ],
+  "ib_list": [
+    "摩根士丹利",
+    "摩根大通",
+    "高盛",
+    "中金公司",
+    "瑞银证券",
+    "富达国际",
+    "汇丰"
+  ],
+  "macro_summary": {
+    "consensus": "谨慎乐观",
+    "key_targets": [
+      {
+        "index": "沪深300",
+        "source": "摩根大通/高盛",
+        "target": "4150-4900"
+      },
+      {
+        "index": "MSCI中国",
+        "source": "摩根大通/摩根士丹利",
+        "target": "80-83"
+      }
+    ],
+    "main_themes": [
+      "AI产业趋势是中期主线（中金/高盛/瑞银共识）",
+      "港股科技龙头受青睐（摩根士丹利超配建议）",
+      "二季度可能先回调再上涨（摩根大通）",
+      "全球基金重返中国意愿2021年来最强（高盛）",
+      "南向资金创纪录流入港股（摩根士丹利）",
+      "AI可提升中国科技股估值15-20%（高盛）",
+      "端侧AI、软件应用均有机会（中金公司）",
+      "人形机器人最受投资者关注（瑞银证券）",
+      "消费复苏是新动力（摩根大通）",
+      "数据中心需求持续上升（汇丰银行）",
+      "智能驾驶主题受市场关注（中金公司）",
+      "自动化相关企业前景看好（摩根士丹利）",
+      "港股AI核心持仓推荐（高盛）",
+      "港股互联网配置价值凸显（瑞银证券）"
+    ],
+    "warnings": [
+      "摩根大通: 二季度\"退一步进两步\"，4-5月可能回调",
+      "高盛: 地缘政治活跃，获利了结压力加大",
+      "摩根士丹利: 低配大宗商品、地产、消费必需品"
+    ]
+  },
+  "raw_report": "# 国际投行分析报告\n\n**投行报告日期**: 2026-03-30  \n**系统生成时间**: 2026-03-30 09:01:16  \n**数据来源**: 摩根士丹利、摩根大通、高盛、中金公司、瑞银证券等\n\n> 注：本报告汇总各投行在 **2026-03-30** 发布的研报观点\n\n---\n\n## 一、宏观共识\n\n**外资整体观点**: 谨慎乐观\n\n### 关键指数目标\n| 指数 | 目标区间 | 来源 | 报告日期 |\n|------|---------|------|----------|\n| 沪深300 | 4150-4900 | 摩根大通/高盛 | 2026-03-30 |\n| MSCI中国 | 80-83 | 摩根大通/摩根士丹利 | 2026-03-30 |\n| 恒生指数 | 23000-25000 | 高盛/瑞银 | 2026-03-30 |\n\n### 主要投资主题\n1. **AI产业趋势是中期主线**（中金/高盛/瑞银共识，2026-03-30）\n2. **港股科技龙头受青睐**（摩根士丹利超配建议，2026-03-30）\n3. **二季度可能先回调再上涨**（摩根大通\"退一步进两步\"）\n4. **全球基金重返中国意愿2021年来最强**（高盛）\n\n---\n\n## 二、持仓映射分析\n\n### 当前持仓列表\n- 万向钱潮 (000559) [A股]\n- 云南铜业 (000878) [A股]\n- 三花智控 (002050) [A股]\n- 比亚迪 (002594) [A股]\n- 腾讯控股 (00700) [港股]\n- 拓尔思 (300229) [A股]\n- 晶盛机电 (300316) [A股]\n- 润泽科技 (300442) [A股]\n- 中国铝业 (601600) [A股]\n- 摩尔线程 (688795) [A股]\n- 比亚迪电子 (00285) [港股]\n- 阿里巴巴 (09988) [港股]\n\n### 契合度分析\n\n#### 🟢 高度契合（Strong）\n- **腾讯控股、阿里巴巴**: 摩根士丹利超配互联网龙头，高盛推荐港股AI核心持仓，南向资金创纪录流入\n- **摩尔线程**: 中金认为AI产业趋势是中期主线，高盛称AI可提升估值15-20%\n\n#### 🔵 部分契合（Moderate）\n- **拓尔思、润泽科技**: 中金看好端侧AI、软件应用机会，汇丰认为数据中心需求持续上升\n- **三花智控**: 瑞银关注人形机器人，摩根士丹利看好自动化\n\n#### ⚪ 中性（Neutral）\n- **比亚迪、比亚迪电子**: 摩根大通认为消费复苏是新动力，智能驾驶主题受关注\n\n#### 🔴 存在分歧（Weak）\n- **云南铜业、中国铝业**: 摩根士丹利低配能源/周期，担忧关税影响大宗商品\n- **晶盛机电**: 摩根士丹利低配能源，行业产能过剩仍存\n\n---\n\n## 三、风险提示\n\n⚠️ **摩根大通**: 二季度\"退一步进两步\"，4-5月可能回调  \n⚠️ **高盛**: 地缘政治活跃，获利了结压力加大  \n⚠️ **摩根士丹利**: 低配大宗商品、地产、消费必需品  \n\n---\n\n## 四、机构观点摘要\n\n### 摩根士丹利\n- 超配互联网龙头、AI相关\n- 低配能源、周期、地产\n- 看好港股科技板块\n\n### 高盛\n- 全球基金重返中国意愿2021年来最强\n- AI可提升中国科技股估值15-20%\n- 关注地缘政治风险\n\n### 摩根大通\n- 二季度策略：退一步进两步\n- 4-5月可能经历技术性回调\n- 消费复苏是新动力\n\n### 中金公司\n- AI产业趋势是中期主线\n- 端侧AI、软件应用均有机会\n- 看好算力基础设施\n\n### 瑞银证券\n- 人形机器人最受关注\n- 港股科技配置价值凸显\n- 看好自动化相关企业\n\n---\n\n*报告自动生成于 2026-03-30 09:01:16*\n*下次更新: 明天 09:00*\n...",
+  "system_time": "2026-03-30 17:36",
+  "update_time": "2026-03-30"
+}
+ data 的 keys: Array(6)
+ 最终 holdings 数量: 12
+ macro: Object
+ holdings_map 数量: 12
+ macro_summary: Object
+ 分类统计: Object
+ displayHoldings 数量: 12
+ 准备渲染持仓契合度, displayHoldings.length: 12
+ 开始渲染持仓契合度列表
+ 渲染第1只股票: 万向钱潮 neutral
+ 渲染第2只股票: 云南铜业 weak
+ 渲染第3只股票: 三花智控 moderate
+ 渲染第4只股票: 比亚迪 neutral
+ 渲染第5只股票: 拓尔思 moderate
+ 渲染第6只股票: 晶盛机电 weak
+ 渲染第7只股票: 润泽科技 moderate
+ 渲染第8只股票: 中国铝业 weak
+ 渲染第9只股票: 摩尔线程 strong
+ 渲染第10只股票: 比亚迪电 neutral
+ 渲染第11只股票: 腾讯控股 strong
+ 渲染第12只股票: 阿里巴巴 strong
+ ibAnalysisContent HTML 已设置，长度: 23501
+ [热点板块] 已更新 6 个板块
+ 加载市场情绪数据...
+ 加载市场情绪数据...
+ 加载市场情绪数据...
+ 加载结构化财联社新闻...
+ [热点板块] 已更新 6 个板块
+ [热点板块] 已更新 6 个板块
+ [DEBUG] renderSentiment 开始执行, appState.sentiment: Object
+ [DEBUG] 准备调用 loadPortfolioAnalysis
+ [DEBUG] loadPortfolioAnalysis 调用完成
+ [DEBUG] 准备调用 loadHKPortfolioRisk
+ [DEBUG] loadHKPortfolioRisk 开始执行
+ [DEBUG] loadHKPortfolioRisk 调用完成
+ 市场情绪加载完成: 中性
+ [DEBUG] renderSentiment 开始执行, appState.sentiment: Object
+ [DEBUG] 准备调用 loadPortfolioAnalysis
+ [DEBUG] loadPortfolioAnalysis 调用完成
+ [DEBUG] 准备调用 loadHKPortfolioRisk
+ [DEBUG] loadHKPortfolioRisk 开始执行
+ [DEBUG] loadHKPortfolioRisk 调用完成
+ 市场情绪加载完成: 中性
+ 加载财联社实时新闻...
+ 加载结构化财联社新闻...
+ 加载市场情绪数据...
+ 加载结构化财联社新闻...
+ [热点板块] 已更新 6 个板块
+ [DEBUG] renderSentiment 开始执行, appState.sentiment: Object
+ [DEBUG] 准备调用 loadPortfolioAnalysis
+ [DEBUG] loadPortfolioAnalysis 调用完成
+ [DEBUG] 准备调用 loadHKPortfolioRisk
+ [DEBUG] loadHKPortfolioRisk 开始执行
+ [DEBUG] loadHKPortfolioRisk 调用完成
+ 市场情绪加载完成: 贪婪
+app.js?v=1774863363:1587 [热点板块] 已更新 6 个板块
+app.js?v=1774863363:2339 加载市场情绪数据...
+app.js?v=1774863363:1834 加载结构化财联社新闻...
+app.js?v=1774863363:1587 [热点板块] 已更新 6 个板块
+app.js?v=1774863363:1841 新闻加载完成: 头条2条, 题材1条, 日历3条
+app.js?v=1774863363:2339 加载市场情绪数据...
+app.js?v=1774863363:1834 加载结构化财联社新闻...
+app.js?v=1774863363:1587 [热点板块] 已更新 6 个板块
+app.js?v=1774863363:2357 [DEBUG] renderSentiment 开始执行, appState.sentiment: Object
+app.js?v=1774863363:2511 [DEBUG] 准备调用 loadPortfolioAnalysis
+app.js?v=1774863363:2513 [DEBUG] loadPortfolioAnalysis 调用完成
+app.js?v=1774863363:2516 [DEBUG] 准备调用 loadHKPortfolioRisk
+app.js?v=1774863363:2777 [DEBUG] loadHKPortfolioRisk 开始执行
+app.js?v=1774863363:2518 [DEBUG] loadHKPortfolioRisk 调用完成
+app.js?v=1774863363:2346 市场情绪加载完成: 贪婪
+app.js?v=1774863363:2339 加载市场情绪数据...
+app.js?v=1774863363:1834 加载结构化财联社新闻...
+app.js?v=1774863363:1841 新闻加载完成: 头条2条, 题材1条, 日历12条
+localhost/:1 Uncaught (in promise) Error: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
+app.js?v=1774863363:1841 新闻加载完成: 头条2条, 题材1条, 日历3条
+app.js?v=1774863363:193 加载持仓股分析报告...
+app.js?v=1774863363:1587 [热点板块] 已更新 6 个板块
+app.js?v=1774863363:2339 加载市场情绪数据...
+app.js?v=1774863363:1834 加载结构化财联社新闻...
+:8888/api/portfolio/hk-short-analysis:1 
+        
+        
+       Failed to load resource: the server responded with a status of 500 (INTERNAL SERVER ERROR)
+app.js?v=1774863363:2779 [DEBUG] API 响应状态: 500
+app.js?v=1774863363:2781 [DEBUG] API 响应不成功, 返回
+app.js?v=1774863363:1587 [热点板块] 已更新 6 个板块
+app.js?v=1774863363:2779 [DEBUG] API 响应状态: 200
+app.js?v=1774863363:2786 [DEBUG] API 返回数据: Object
+app.js?v=1774863363:2816 [DEBUG] changes type: object keys: Array(4)
+app.js?v=1774863363:2817 [DEBUG] changes[3d]: Object
+app.js?v=1774863363:2818 [DEBUG] changes[1w]: Object
+app.js?v=1774863363:2339 加载市场情绪数据...
+app.js?v=1774863363:1834 加载结构化财联社新闻...
+app.js?v=1774863363:2357 [DEBUG] renderSentiment 开始执行, appState.sentiment: Object
+app.js?v=1774863363:2511 [DEBUG] 准备调用 loadPortfolioAnalysis
+app.js?v=1774863363:2513 [DEBUG] loadPortfolioAnalysis 调用完成
+app.js?v=1774863363:2516 [DEBUG] 准备调用 loadHKPortfolioRisk
+app.js?v=1774863363:2777 [DEBUG] loadHKPortfolioRisk 开始执行
+app.js?v=1774863363:2518 [DEBUG] loadHKPortfolioRisk 调用完成
+app.js?v=1774863363:2346 市场情绪加载完成: 贪婪
+app.js?v=1774863363:1841 新闻加载完成: 头条2条, 题材1条, 日历3条
+app.js?v=1774863363:1587 [热点板块] 已更新 6 个板块
+app.js?v=1774863363:2357 [DEBUG] renderSentiment 开始执行, appState.sentiment: Object
+app.js?v=1774863363:2511 [DEBUG] 准备调用 loadPortfolioAnalysis
+app.js?v=1774863363:2513 [DEBUG] loadPortfolioAnalysis 调用完成
+app.js?v=1774863363:2516 [DEBUG] 准备调用 loadHKPortfolioRisk
+app.js?v=1774863363:2777 [DEBUG] loadHKPortfolioRisk 开始执行
+app.js?v=1774863363:2518 [DEBUG] loadHKPortfolioRisk 调用完成
+app.js?v=1774863363:2346 市场情绪加载完成: 贪婪
+app.js?v=1774863363:2339 加载市场情绪数据...
+app.js?v=1774863363:1834 加载结构化财联社新闻...
+app.js?v=1774863363:1587 [热点板块] 已更新 6 个板块
+app.js?v=1774863363:198 初始化完成，立即获取实时行情...
+app.js?v=1774863363:2145 [updateStockPricesOnce] 获取实时行情...
+app.js?v=1774863363:2146 [updateStockPricesOnce] 股票列表: Array(12)
+app.js?v=1774863363:2154 [updateStockPricesOnce] 请求体: {"stocks":[{"code":"000559","market":"A股"},{"code":"000878","market":"A股"},{"code":"002050","market":"A股"},{"code":"002594","market":"A股"},{"code":"300229","market":"A股"},{"code":"300316","market":"A股"},{"code":"300442","market":"A股"},{"code":"601600","market":"A股"},{"code":"688795","market":"A股"},{"code":"00285","market":"港股"},{"code":"00700","market":"港股"},{"code":"09988","market":"港股"}]}
+app.js?v=1774863363:2163 [updateStockPricesOnce] 发起 fetch 请求...
+app.js?v=1774863363:2159 [updateStockPricesOnce] 请求超时(8秒)，中止
+app.js?v=1774863363:2175 [updateStockPricesOnce] fetch 异常: AbortError The user aborted a request.
+updateStockPricesOnce @ app.js?v=1774863363:2175
+app.js?v=1774863363:2242 [updateStockPricesOnce] 获取行情失败: AbortError The user aborted a request.
+updateStockPricesOnce @ app.js?v=1774863363:2242
+app.js?v=1774863363:2244 [updateStockPricesOnce] 请求超时(5秒)
+updateStockPricesOnce @ app.js?v=1774863363:2244
+app.js?v=1774863363:204 开始异步刷新中轴价格...
+app.js?v=1774863363:217 [refreshAxisPrices] 开始执行，股票数量: 12 强制刷新: false
+app.js?v=1774863363:230 [refreshAxisPrices] 股票列表: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+app.js?v=1774863363:242 [refreshAxisPrices] 开始并行处理 12 只股票...
+app.js?v=1774863363:246 [refreshAxisPrices] 调用API: 000559
+app.js?v=1774863363:246 [refreshAxisPrices] 调用API: 000878
+app.js?v=1774863363:246 [refreshAxisPrices] 调用API: 002050
+app.js?v=1774863363:246 [refreshAxisPrices] 调用API: 002594
+app.js?v=1774863363:246 [refreshAxisPrices] 调用API: 300229
+app.js?v=1774863363:246 [refreshAxisPrices] 调用API: 300316
+app.js?v=1774863363:246 [refreshAxisPrices] 调用API: 300442
+app.js?v=1774863363:246 [refreshAxisPrices] 调用API: 601600
+app.js?v=1774863363:246 [refreshAxisPrices] 调用API: 688795
+app.js?v=1774863363:246 [refreshAxisPrices] 调用API: 00285
+app.js?v=1774863363:246 [refreshAxisPrices] 调用API: 00700
+app.js?v=1774863363:246 [refreshAxisPrices] 调用API: 09988
+app.js?v=1774863363:1587 [热点板块] 已更新 6 个板块
+app.js?v=1774863363:312 [refreshAxisPrices] 000559 请求超时(8秒)
+（匿名） @ app.js?v=1774863363:312
+app.js?v=1774863363:312 [refreshAxisPrices] 000878 请求超时(8秒)
+（匿名） @ app.js?v=1774863363:312
+app.js?v=1774863363:312 [refreshAxisPrices] 002050 请求超时(8秒)
+（匿名） @ app.js?v=1774863363:312
+app.js?v=1774863363:312 [refreshAxisPrices] 002594 请求超时(8秒)
+（匿名） @ app.js?v=1774863363:312
+app.js?v=1774863363:312 [refreshAxisPrices] 300229 请求超时(8秒)
+（匿名） @ app.js?v=1774863363:312
+app.js?v=1774863363:312 [refreshAxisPrices] 300316 请求超时(8秒)
+（匿名） @ app.js?v=1774863363:312
+app.js?v=1774863363:312 [refreshAxisPrices] 300442 请求超时(8秒)
+（匿名） @ app.js?v=1774863363:312
+app.js?v=1774863363:312 [refreshAxisPrices] 601600 请求超时(8秒)
+（匿名） @ app.js?v=1774863363:312
+app.js?v=1774863363:312 [refreshAxisPrices] 688795 请求超时(8秒)
+（匿名） @ app.js?v=1774863363:312
+app.js?v=1774863363:312 [refreshAxisPrices] 00285 请求超时(15秒)
+（匿名） @ app.js?v=1774863363:312
+app.js?v=1774863363:312 [refreshAxisPrices] 00700 请求超时(15秒)
+（匿名） @ app.js?v=1774863363:312
+app.js?v=1774863363:312 [refreshAxisPrices] 09988 请求超时(15秒)
+（匿名） @ app.js?v=1774863363:312
+app.js?v=1774863363:340 [refreshAxisPrices] 完成: 0只成功, 12只失败, 0只变化
+app.js?v=1774863363:345 [refreshAxisPrices] 已保存到 localStorage
+app.js?v=1774863363:359 [refreshAxisPrices] 已更新 selectedStock: 000559 pivotPrice= 0
+app.js?v=1774863363:3029 [restoreCollapsedState] 分析模块默认展开
+app.js?v=1774863363:2339 加载市场情绪数据...
+app.js?v=1774863363:1834 加载结构化财联社新闻...
+app.js?v=1774863363:2357 [DEBUG] renderSentiment 开始执行, appState.sentiment: Object
+app.js?v=1774863363:2511 [DEBUG] 准备调用 loadPortfolioAnalysis
+app.js?v=1774863363:2513 [DEBUG] loadPortfolioAnalysis 调用完成
+app.js?v=1774863363:2516 [DEBUG] 准备调用 loadHKPortfolioRisk
+app.js?v=1774863363:2777 [DEBUG] loadHKPortfolioRisk 开始执行
+app.js?v=1774863363:2518 [DEBUG] loadHKPortfolioRisk 调用完成
+app.js?v=1774863363:2346 市场情绪加载完成: 贪婪
+app.js?v=1774863363:2779 [DEBUG] API 响应状态: 200
+app.js?v=1774863363:2786 [DEBUG] API 返回数据: Object
+app.js?v=1774863363:2816 [DEBUG] changes type: object keys: Array(4)
+app.js?v=1774863363:2817 [DEBUG] changes[3d]: Object
+app.js?v=1774863363:2818 [DEBUG] changes[1w]: Object
+app.js?v=1774863363:1587 [热点板块] 已更新 6 个板块
+app.js?v=1774863363:1841 新闻加载完成: 头条3条, 题材1条, 日历3条
+app.js?v=1774863363:2339 加载市场情绪数据...
+app.js?v=1774863363:1834 加载结构化财联社新闻...
+app.js?v=1774863363:1587 [热点板块] 已更新 6 个板块
+app.js?v=1774863363:1841 新闻加载完成: 头条2条, 题材1条, 日历3条
+app.js?v=1774863363:1587 [热点板块] 已更新 6 个板块
+app.js?v=1774863363:2357 [DEBUG] renderSentiment 开始执行, appState.sentiment: Object
+app.js?v=1774863363:2511 [DEBUG] 准备调用 loadPortfolioAnalysis
+app.js?v=1774863363:2513 [DEBUG] loadPortfolioAnalysis 调用完成
+app.js?v=1774863363:2516 [DEBUG] 准备调用 loadHKPortfolioRisk
+app.js?v=1774863363:2777 [DEBUG] loadHKPortfolioRisk 开始执行
+app.js?v=1774863363:2518 [DEBUG] loadHKPortfolioRisk 调用完成
+app.js?v=1774863363:2346 市场情绪加载完成: 贪婪
+app.js?v=1774863363:2339 加载市场情绪数据...
+app.js?v=1774863363:1834 加载结构化财联社新闻...
+app.js?v=1774863363:1587 [热点板块] 已更新 6 个板块
+app.js?v=1774863363:2779 [DEBUG] API 响应状态: 200
+app.js?v=1774863363:2786 [DEBUG] API 返回数据: Object
+app.js?v=1774863363:2816 [DEBUG] changes type: object keys: Array(4)
+app.js?v=1774863363:2817 [DEBUG] changes[3d]: Object
+app.js?v=1774863363:2818 [DEBUG] changes[1w]: Object
+app.js?v=1774863363:2779 [DEBUG] API 响应状态: 200
+app.js?v=1774863363:2786 [DEBUG] API 返回数据: Object
+app.js?v=1774863363:2816 [DEBUG] changes type: object keys: Array(4)
+app.js?v=1774863363:2817 [DEBUG] changes[3d]: Object
+app.js?v=1774863363:2818 [DEBUG] changes[1w]: Object
+app.js?v=1774863363:1587 [热点板块] 已更新 6 个板块
+app.js?v=1774863363:2339 加载市场情绪数据...
+app.js?v=1774863363:1834 加载结构化财联社新闻...
+app.js?v=1774863363:2357 [DEBUG] renderSentiment 开始执行, appState.sentiment: Object
+app.js?v=1774863363:2511 [DEBUG] 准备调用 loadPortfolioAnalysis
+app.js?v=1774863363:2513 [DEBUG] loadPortfolioAnalysis 调用完成
+app.js?v=1774863363:2516 [DEBUG] 准备调用 loadHKPortfolioRisk
+app.js?v=1774863363:2777 [DEBUG] loadHKPortfolioRisk 开始执行
+app.js?v=1774863363:2518 [DEBUG] loadHKPortfolioRisk 调用完成
+app.js?v=1774863363:2346 市场情绪加载完成: 中性
+app.js?v=1774863363:2779 [DEBUG] API 响应状态: 200
+app.js?v=1774863363:2786 [DEBUG] API 返回数据: Object
+app.js?v=1774863363:2816 [DEBUG] changes type: object keys: Array(4)
+app.js?v=1774863363:2817 [DEBUG] changes[3d]: Object
+app.js?v=1774863363:2818 [DEBUG] changes[1w]: Object
+app.js?v=1774863363:1587 [热点板块] 已更新 6 个板块
+app.js?v=1774863363:1587 [热点板块] 已更新 6 个板块
+app.js?v=1774863363:1841 新闻加载完成: 头条1条, 题材2条, 日历3条
+app.js?v=1774863363:2339 加载市场情绪数据...
+app.js?v=1774863363:1834 加载结构化财联社新闻...
+app.js?v=1774863363:2357 [DEBUG] renderSentiment 开始执行, appState.sentiment: Object
+app.js?v=1774863363:2511 [DEBUG] 准备调用 loadPortfolioAnalysis
+app.js?v=1774863363:2513 [DEBUG] loadPortfolioAnalysis 调用完成
+app.js?v=1774863363:2516 [DEBUG] 准备调用 loadHKPortfolioRisk
+app.js?v=1774863363:2777 [DEBUG] loadHKPortfolioRisk 开始执行
+app.js?v=1774863363:2518 [DEBUG] loadHKPortfolioRisk 调用完成
+app.js?v=1774863363:2346 市场情绪加载完成: 贪婪
+app.js?v=1774863363:1841 新闻加载完成: 头条1条, 题材2条, 日历3条
+app.js?v=1774863363:1587 [热点板块] 已更新 6 个板块
+app.js?v=1774863363:2357 [DEBUG] renderSentiment 开始执行, appState.sentiment: Object
+app.js?v=1774863363:2511 [DEBUG] 准备调用 loadPortfolioAnalysis
+app.js?v=1774863363:2513 [DEBUG] loadPortfolioAnalysis 调用完成
+app.js?v=1774863363:2516 [DEBUG] 准备调用 loadHKPortfolioRisk
+app.js?v=1774863363:2777 [DEBUG] loadHKPortfolioRisk 开始执行
+app.js?v=1774863363:2518 [DEBUG] loadHKPortfolioRisk 调用完成
+app.js?v=1774863363:2346 市场情绪加载完成: 中性
+app.js?v=1774863363:2339 加载市场情绪数据...
+app.js?v=1774863363:1834 加载结构化财联社新闻...
+app.js?v=1774863363:1587 [热点板块] 已更新 6 个板块
+app.js?v=1774863363:1587 [热点板块] 已更新 6 个板块
+app.js?v=1774863363:1841 新闻加载完成: 头条1条, 题材1条, 日历3条
+app.js?v=1774863363:2339 加载市场情绪数据...
+app.js?v=1774863363:1834 加载结构化财联社新闻...
+app.js?v=1774863363:1587 [热点板块] 已更新 6 个板块
+app.js?v=1774863363:2357 [DEBUG] renderSentiment 开始执行, appState.sentiment: Object
+app.js?v=1774863363:2511 [DEBUG] 准备调用 loadPortfolioAnalysis
+app.js?v=1774863363:2513 [DEBUG] loadPortfolioAnalysis 调用完成
+app.js?v=1774863363:2516 [DEBUG] 准备调用 loadHKPortfolioRisk
+app.js?v=1774863363:2777 [DEBUG] loadHKPortfolioRisk 开始执行
+app.js?v=1774863363:2518 [DEBUG] loadHKPortfolioRisk 调用完成
+app.js?v=1774863363:2346 市场情绪加载完成: 贪婪
+app.js?v=1774863363:1841 新闻加载完成: 头条2条, 题材1条, 日历3条
+app.js?v=1774863363:2339 加载市场情绪数据...
+app.js?v=1774863363:1834 加载结构化财联社新闻...
+app.js?v=1774863363:2357 [DEBUG] renderSentiment 开始执行, appState.sentiment: Object
+app.js?v=1774863363:2511 [DEBUG] 准备调用 loadPortfolioAnalysis
+app.js?v=1774863363:2513 [DEBUG] loadPortfolioAnalysis 调用完成
+app.js?v=1774863363:2516 [DEBUG] 准备调用 loadHKPortfolioRisk
+app.js?v=1774863363:2777 [DEBUG] loadHKPortfolioRisk 开始执行
+app.js?v=1774863363:2518 [DEBUG] loadHKPortfolioRisk 调用完成
+app.js?v=1774863363:2346 市场情绪加载完成: 中性
+app.js?v=1774863363:1587 [热点板块] 已更新 6 个板块
+app.js?v=1774863363:2779 [DEBUG] API 响应状态: 200
+app.js?v=1774863363:2786 [DEBUG] API 返回数据: Object
+app.js?v=1774863363:2816 [DEBUG] changes type: object keys: Array(4)
+app.js?v=1774863363:2817 [DEBUG] changes[3d]: Object
+app.js?v=1774863363:2818 [DEBUG] changes[1w]: Object
+app.js?v=1774863363:1841 新闻加载完成: 头条2条, 题材1条, 日历12条
+app.js?v=1774863363:2339 加载市场情绪数据...
+app.js?v=1774863363:1834 加载结构化财联社新闻...
+app.js?v=1774863363:2779 [DEBUG] API 响应状态: 200
+app.js?v=1774863363:2786 [DEBUG] API 返回数据: Object
+app.js?v=1774863363:2816 [DEBUG] changes type: object keys: Array(4)
+app.js?v=1774863363:2817 [DEBUG] changes[3d]: Object
+app.js?v=1774863363:2818 [DEBUG] changes[1w]: Object

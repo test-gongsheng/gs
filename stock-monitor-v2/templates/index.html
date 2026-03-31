@@ -13,7 +13,7 @@
     <script>
         // 自动缓存清除机制 - 每次部署版本变化时自动清除缓存
         (function() {
-            const APP_VERSION = '20250330-15';  // 每次部署时更新这个版本号
+            const APP_VERSION = '20250331-001-fix';  // 每次部署时更新这个版本号
             const storedVersion = localStorage.getItem('app_version');
             
             if (storedVersion !== APP_VERSION) {
@@ -1334,7 +1334,7 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/app.js') }}?v={{ now }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=20250331-001"></script>
     <script>
         // 强制清除缓存并重新加载
         console.log('页面加载完成，检查 stockList...');
