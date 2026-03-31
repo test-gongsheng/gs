@@ -7,13 +7,13 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>股票投资监控系统 v2.0</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ css_version }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/ib-analysis.css') }}?v={{ css_version }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ now }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/ib-analysis.css') }}?v={{ now }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
         // 自动缓存清除机制 - 每次部署版本变化时自动清除缓存
         (function() {
-            const APP_VERSION = '{{ js_version }}';  // 使用JS文件修改时间作为版本号
+            const APP_VERSION = '20250330-14';  // 每次部署时更新这个版本号
             const storedVersion = localStorage.getItem('app_version');
             
             if (storedVersion !== APP_VERSION) {
@@ -1334,7 +1334,7 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/app.v2.js') }}?v={{ js_version }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v={{ now }}"></script>
     <script>
         // 强制清除缓存并重新加载
         console.log('页面加载完成，检查 stockList...');

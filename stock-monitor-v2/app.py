@@ -13,25 +13,6 @@ app = Flask(__name__)
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), 'data', 'stocks.json')
 
-# 静态文件版本缓存（使用文件修改时间）
-_static_versions = {}
-
-def get_static_version(filename):
-    """获取静态文件版本号（基于文件修改时间）"""
-    if filename not in _static_versions:
-        filepath = os.path.join(os.path.dirname(__file__), 'static', filename)
-        if os.path.exists(filepath):
-            # 使用文件修改时间作为版本号
-            mtime = int(os.path.getmtime(filepath))
-            _static_versions[filename] = mtime
-        else:
-            _static_versions[filename] = int(time.time())
-    return _static_versions[filename]
-
-def clear_static_version_cache():
-    """清除静态文件版本缓存（用于开发调试）"""
-    _static_versions.clear()
-
 # 中轴价格缓存: { 'code:market': {'data': {...}, 'timestamp': ...} }
 axis_price_cache = {}
 CACHE_TTL = 1800  # 缓存30分钟
@@ -146,11 +127,9 @@ def save_data(data):
 
 @app.route('/')
 def index():
-    """主页面 - 使用文件修改时间作为静态资源版本号"""
-    return render_template('index.html', 
-                         css_version=get_static_version('css/style.css'),
-                         js_version=get_static_version('js/app.js'),
-                         now=int(time.time()))
+    """主页面"""
+    import time
+    return render_template('index.html', now=int(time.time()))
 
 @app.route('/api/portfolio')
 def get_portfolio():
