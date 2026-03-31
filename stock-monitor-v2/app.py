@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, make_response
 import json
 import os
 import time
@@ -129,7 +129,12 @@ def save_data(data):
 def index():
     """主页面"""
     import time
-    return render_template('index.html', now=int(time.time()))
+    response = make_response(render_template('index.html', now=int(time.time())))
+    # 禁用缓存，确保每次都能加载最新JS
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 @app.route('/api/portfolio')
 def get_portfolio():
