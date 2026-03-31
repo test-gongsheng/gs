@@ -3,8 +3,13 @@
  * 版本: 2026-03-27 - 新闻模块已集成
  */
 
-// 版本号，用于强制刷新缓存
-const APP_VERSION = "2.8.3-fix-loading";
+// 版本号，用于强制刷新缓存（从 HTML 中的 localStorage 获取）
+// 实际版本控制由后端通过文件修改时间自动管理
+const APP_VERSION = (function() {
+    // 尝试从 localStorage 获取版本
+    const v = localStorage.getItem('app_version');
+    return v || '2.8.3';
+})();
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
