@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "2.9.0-fix-list";
+const APP_VERSION = "2.9.1"; // 更新版本号强制刷新缓存
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -607,21 +607,15 @@ function updateAssetOverview() {
 // 渲染股票列表
 function renderStockList() {
     console.log('[renderStockList] ========== 开始执行 ==========');
-    alert('[DEBUG] renderStockList 被调用! 股票数量: ' + (appState.stocks ? appState.stocks.length : 0));
     
     const listEl = document.getElementById('stockList');
-    console.log('[renderStockList] listEl:', listEl);
-    
     if (!listEl) {
         console.error('[renderStockList] 找不到 stockList 元素');
-        alert('[DEBUG] 找不到 stockList 元素!');
         return;
     }
     
-    // 强制设置 stock-list 样式 - 红色边框便于调试
-    listEl.style.cssText = 'flex: 1 1 auto; overflow-y: auto; padding: 8px; min-height: 300px; background: #151b2d; border: 5px solid red !important;';
     listEl.innerHTML = '';
-    console.log('[renderStockList] 已清空列表，准备渲染');
+    console.log('[renderStockList] appState.stocks 数量:', appState.stocks ? appState.stocks.length : 0);
 
     if (!appState.stocks || appState.stocks.length === 0) {
         console.log('[renderStockList] 没有股票数据，显示空状态');
