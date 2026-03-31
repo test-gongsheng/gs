@@ -11,7 +11,31 @@ from utils.market_sentiment import get_market_sentiment
 
 app = Flask(__name__)
 
+# 彻底禁用静态文件缓存
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+app.config['STATIC_FOLDER'] = 'static'
+
+# 添加自定义模板过滤器：自动为静态文件添加版本号（基于文件修改时间）
+@app.template_filter('autoversion')
+def autoversion_filter(filename):
+    """为静态文件 URL 添加基于修改时间的版本号，彻底避免缓存问题"""
+    filepath = os.path.join(app.static_folder, filename)
+    if os.path.exists(filepath):
+        mtime = int(os.path.getmtime(filepath))
+        return f"{filename}?v={mtime}"
+    return filename
+
 DATA_FILE = os.path.join(os.path.dirname(__file__), 'data', 'stocks.json')
+
+# 为所有静态文件响应添加禁用缓存头部
+@app.after_request
+def add_header(response):
+    """为所有响应添加禁用缓存头部"""
+    if 'Cache-Control' not in response.headers:
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
 
 # 中轴价格缓存: { 'code:market': {'data': {...}, 'timestamp': ...} }
 axis_price_cache = {}
