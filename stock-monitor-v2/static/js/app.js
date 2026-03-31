@@ -2084,11 +2084,8 @@ function handleAddStock(e) {
 
 // 模拟价格更新
 async function simulatePriceUpdate() {
-    // 只在开市时更新价格
-    if (appState.marketStatus !== 'open') {
-        return;
-    }
-
+    // 【修改】始终更新行情（休市时获取收盘价格）
+    // 只在有股票数据时更新
     if (appState.stocks.length === 0) {
         return;
     }
