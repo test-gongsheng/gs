@@ -2915,12 +2915,9 @@ document.addEventListener('DOMContentLoaded', () => {
         window.history.replaceState({}, document.title, window.location.pathname);
     }
     
-    // 确保DOM加载完成后再初始化
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
+    // 直接调用初始化（已经在 DOMContentLoaded 回调中）
+    console.log('[DOMContentLoaded] 页面加载完成，开始初始化...');
+    init();
     // 数据导入功能在import.js中初始化 - v2
     console.log('Checking initDataImport...', typeof initDataImport);
     if (typeof initDataImport === 'function') {
