@@ -11,20 +11,21 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/ib-analysis.css') }}?v={{ now }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
-        // 自动缓存清除机制 - 强制每次刷新
+        // 自动缓存清除机制 - 使用固定版本号
         (function() {
-            const APP_VERSION = 'v3-' + Date.now();  // 每次加载生成新版本
+            const APP_VERSION = '20250331-stable';  // 固定版本号，需要刷新时手动修改
             const storedVersion = localStorage.getItem('app_version');
             
-            // 总是清除缓存确保最新代码
-            localStorage.removeItem('import_data_last');
-            localStorage.removeItem('alertedStocks');
-            localStorage.removeItem('trade_alert_date');
-            localStorage.setItem('app_version', APP_VERSION);
-            
-            if (storedVersion && storedVersion !== APP_VERSION) {
-                console.log('[Cache Clear] 版本变化，刷新页面...');
-                window.location.reload(true);
+            if (storedVersion !== APP_VERSION) {
+                console.log('[Cache Clear] 版本变化:', storedVersion, '->', APP_VERSION);
+                localStorage.removeItem('import_data_last');
+                localStorage.removeItem('alertedStocks');
+                localStorage.removeItem('trade_alert_date');
+                localStorage.setItem('app_version', APP_VERSION);
+                // 只刷新一次
+                if (storedVersion) {
+                    window.location.reload(true);
+                }
             }
         })();
     </script>

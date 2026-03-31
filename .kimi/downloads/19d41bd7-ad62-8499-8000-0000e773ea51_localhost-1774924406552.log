@@ -1,0 +1,304 @@
+app.js?v=1774924187:12 [版本更新] 20250330-14 -> 2.8.1，清除所有缓存...
+app.js?v=1774924187:24 [版本更新] 缓存清除完成
+（索引）:1340 页面加载完成，检查 stockList...
+app.js?v=1774924187:68 [init] 开始初始化，已清空股票列表
+app.js?v=1774924187:2932 Checking initDataImport... function
+app.js?v=1774924187:2934 Calling initDataImport...
+import.js?v=1774924187:17 初始化数据导入模块...
+import.js?v=1774924187:24 数据导入模块初始化完成
+app.js?v=1774924187:95 已从后端 API 加载 12 只股票
+app.js?v=1774924187:129 [init] 立即渲染持仓列表（使用本地数据）...
+app.js?v=1774924187:163 并行加载热点板块、市场情绪、新闻...
+app.js?v=1774924187:2366 加载市场情绪数据...
+app.js?v=1774924187:1859 加载结构化财联社新闻...
+app.js?v=1774924187:171 后台加载持仓股分析报告...
+app.js?v=1774924187:176 后台获取实时行情更新...
+app.js?v=1774924187:187 后台异步刷新中轴价格...
+app.js?v=1774924187:199 [refreshAxisPricesInBackground] 后台开始刷新中轴价格...
+app.js?v=1774924187:3056 [restoreCollapsedState] 分析模块默认展开
+app.js?v=1774924187:2170 [updateStockPricesOnce] 获取实时行情...
+app.js?v=1774924187:2171 [updateStockPricesOnce] 股票列表: (12) ['000559', '000878', '002050', '002594', '300229', '300316', '300442', '601600', '688795', '00285', '00700', '09988']
+app.js?v=1774924187:2179 [updateStockPricesOnce] 请求体: {"stocks":[{"code":"000559","market":"A股"},{"code":"000878","market":"A股"},{"code":"002050","market":"A股"},{"code":"002594","market":"A股"},{"code":"300229","market":"A股"},{"code":"300316","market":"A股"},{"code":"300442","market":"A股"},{"code":"601600","market":"A股"},{"code":"688795","market":"A股"},{"code":"00285","market":"港股"},{"code":"00700","market":"港股"},{"code":"09988","market":"港股"}]}
+app.js?v=1774924187:2188 [updateStockPricesOnce] 发起 fetch 请求...
+app.js?v=1774924187:1612 [热点板块] 已更新 6 个板块
+app.js?v=1774924187:2206 [updateStockPricesOnce] fetch 完成，状态: 200
+app.js?v=1774924187:2217 [updateStockPricesOnce] 响应数据: {exchange_rate: 1.0836, quotes: {…}, reference_rate: 1.0836, success: true}
+app.js?v=1774924187:2230 [updateStockPricesOnce] 000559: 价格 15.45 -> 15.69, 涨跌 0.29, 涨跌幅 1.88%
+app.js?v=1774924187:2230 [updateStockPricesOnce] 000878: 价格 18.44 -> 18.33, 涨跌 -0.05, 涨跌幅 -0.27%
+app.js?v=1774924187:2230 [updateStockPricesOnce] 002050: 价格 43.34 -> 43.32, 涨跌 0.29, 涨跌幅 0.67%
+app.js?v=1774924187:2230 [updateStockPricesOnce] 002594: 价格 107.08 -> 106.92, 涨跌 0.87, 涨跌幅 0.82%
+app.js?v=1774924187:2230 [updateStockPricesOnce] 300229: 价格 18.03 -> 18.27, 涨跌 0.21, 涨跌幅 1.16%
+app.js?v=1774924187:2230 [updateStockPricesOnce] 300316: 价格 42.19 -> 42.59, 涨跌 0.57, 涨跌幅 1.36%
+app.js?v=1774924187:2230 [updateStockPricesOnce] 300442: 价格 83.01 -> 83.34, 涨跌 0.54, 涨跌幅 0.65%
+app.js?v=1774924187:2230 [updateStockPricesOnce] 601600: 价格 11.97 -> 11.56, 涨跌 -0.41, 涨跌幅 -3.43%
+app.js?v=1774924187:2230 [updateStockPricesOnce] 688795: 价格 565 -> 565.28, 涨跌 9.18, 涨跌幅 1.65%
+app.js?v=1774924187:2230 [updateStockPricesOnce] 00285: 价格 24.684 -> 28.24, 涨跌 -0.88, 涨跌幅 -3.02%
+app.js?v=1774924187:2230 [updateStockPricesOnce] 00700: 价格 415.06 -> 484.4, 涨跌 2.8, 涨跌幅 0.58%
+app.js?v=1774924187:2230 [updateStockPricesOnce] 09988: 价格 103.551 -> 120.5, 涨跌 0, 涨跌幅 0%
+app.js?v=1774924187:2246 [updateStockPricesOnce] 成功更新 12/12 只股票
+app.js?v=1774924187:2259 [updateStockPricesOnce] 实时行情更新完成
+（索引）:1343 stockList 元素: <div class=​"stock-list" id=​"stockList">​…​</div>​
+（索引）:1344 stockList 子元素数: 0
+（索引）:1346 列表为空，强制调用 renderStockList...
+（索引）:1365 loadIBAnalysis API 返回: {cached: false, data: {…}, success: true}
+（索引）:1373 API 返回 holdings 数量: 12
+（索引）:1394 renderIBAnalysis 被调用，完整数据: {
+  "holdings_map": [
+    {
+      "alignment": "neutral",
+      "code": "000559",
+      "ib_views": [
+        "暂无特定投行观点覆盖"
+      ],
+      "market": "A股",
+      "name": "万向钱潮"
+    },
+    {
+      "alignment": "weak",
+      "code": "000878",
+      "ib_views": [
+        "摩根士丹利: 低配能源/周期",
+        "担忧关税影响大宗商品"
+      ],
+      "market": "A股",
+      "name": "云南铜业"
+    },
+    {
+      "alignment": "moderate",
+      "code": "002050",
+      "ib_views": [
+        "瑞银: 人形机器人最受关注",
+        "摩根士丹利: 看好自动化"
+      ],
+      "market": "A股",
+      "name": "三花智控"
+    },
+    {
+      "alignment": "neutral",
+      "code": "002594",
+      "ib_views": [
+        "摩根大通: 消费复苏是新动力",
+        "智能驾驶主题受关注"
+      ],
+      "market": "A股",
+      "name": "比亚迪"
+    },
+    {
+      "alignment": "moderate",
+      "code": "300229",
+      "ib_views": [
+        "中金: 端侧AI、软件应用均有机会",
+        "汇丰: 数据中心需求持续上升"
+      ],
+      "market": "A股",
+      "name": "拓尔思"
+    },
+    {
+      "alignment": "weak",
+      "code": "300316",
+      "ib_views": [
+        "摩根士丹利: 低配能源",
+        "行业产能过剩仍存"
+      ],
+      "market": "A股",
+      "name": "晶盛机电"
+    },
+    {
+      "alignment": "moderate",
+      "code": "300442",
+      "ib_views": [
+        "中金: 端侧AI、软件应用均有机会",
+        "汇丰: 数据中心需求持续上升"
+      ],
+      "market": "A股",
+      "name": "润泽科技"
+    },
+    {
+      "alignment": "weak",
+      "code": "601600",
+      "ib_views": [
+        "摩根士丹利: 低配能源/周期",
+        "担忧关税影响大宗商品"
+      ],
+      "market": "A股",
+      "name": "中国铝业"
+    },
+    {
+      "alignment": "strong",
+      "code": "688795",
+      "ib_views": [
+        "中金: AI产业趋势是中期主线",
+        "高盛: AI可提升估值15-20%"
+      ],
+      "market": "A股",
+      "name": "摩尔线程"
+    },
+    {
+      "alignment": "neutral",
+      "code": "00285",
+      "ib_views": [
+        "暂无特定投行观点覆盖"
+      ],
+      "market": "港股",
+      "name": "比亚迪电"
+    },
+    {
+      "alignment": "strong",
+      "code": "00700",
+      "ib_views": [
+        "摩根士丹利: 超配互联网龙头",
+        "高盛: 港股AI核心持仓",
+        "南向资金创纪录流入"
+      ],
+      "market": "港股",
+      "name": "腾讯控股"
+    },
+    {
+      "alignment": "strong",
+      "code": "09988",
+      "ib_views": [
+        "摩根士丹利: 超配互联网龙头",
+        "高盛: 港股AI核心持仓",
+        "南向资金创纪录流入"
+      ],
+      "market": "港股",
+      "name": "阿里巴巴"
+    }
+  ],
+  "ib_list": [
+    "摩根士丹利",
+    "摩根大通",
+    "高盛",
+    "中金公司",
+    "瑞银证券",
+    "富达国际",
+    "汇丰"
+  ],
+  "macro_summary": {
+    "consensus": "谨慎乐观",
+    "key_targets": [
+      {
+        "index": "沪深300",
+        "source": "摩根大通/高盛",
+        "target": "4150-4900"
+      },
+      {
+        "index": "MSCI中国",
+        "source": "摩根大通/摩根士丹利",
+        "target": "80-83"
+      }
+    ],
+    "main_themes": [
+      "AI产业趋势是中期主线（中金/高盛/瑞银共识）",
+      "港股科技龙头受青睐（摩根士丹利超配建议）",
+      "二季度可能先回调再上涨（摩根大通）",
+      "全球基金重返中国意愿2021年来最强（高盛）",
+      "南向资金创纪录流入港股（摩根士丹利）",
+      "AI可提升中国科技股估值15-20%（高盛）",
+      "端侧AI、软件应用均有机会（中金公司）",
+      "人形机器人最受投资者关注（瑞银证券）",
+      "消费复苏是新动力（摩根大通）",
+      "数据中心需求持续上升（汇丰银行）",
+      "智能驾驶主题受市场关注（中金公司）",
+      "自动化相关企业前景看好（摩根士丹利）",
+      "港股AI核心持仓推荐（高盛）",
+      "港股互联网配置价值凸显（瑞银证券）"
+    ],
+    "warnings": [
+      "摩根大通: 二季度\"退一步进两步\"，4-5月可能回调",
+      "高盛: 地缘政治活跃，获利了结压力加大",
+      "摩根士丹利: 低配大宗商品、地产、消费必需品"
+    ]
+  },
+  "raw_report": "# 国际投行分析报告\n\n**投行报告日期**: 2026-03-30  \n**系统生成时间**: 2026-03-30 09:01:16  \n**数据来源**: 摩根士丹利、摩根大通、高盛、中金公司、瑞银证券等\n\n> 注：本报告汇总各投行在 **2026-03-30** 发布的研报观点\n\n---\n\n## 一、宏观共识\n\n**外资整体观点**: 谨慎乐观\n\n### 关键指数目标\n| 指数 | 目标区间 | 来源 | 报告日期 |\n|------|---------|------|----------|\n| 沪深300 | 4150-4900 | 摩根大通/高盛 | 2026-03-30 |\n| MSCI中国 | 80-83 | 摩根大通/摩根士丹利 | 2026-03-30 |\n| 恒生指数 | 23000-25000 | 高盛/瑞银 | 2026-03-30 |\n\n### 主要投资主题\n1. **AI产业趋势是中期主线**（中金/高盛/瑞银共识，2026-03-30）\n2. **港股科技龙头受青睐**（摩根士丹利超配建议，2026-03-30）\n3. **二季度可能先回调再上涨**（摩根大通\"退一步进两步\"）\n4. **全球基金重返中国意愿2021年来最强**（高盛）\n\n---\n\n## 二、持仓映射分析\n\n### 当前持仓列表\n- 万向钱潮 (000559) [A股]\n- 云南铜业 (000878) [A股]\n- 三花智控 (002050) [A股]\n- 比亚迪 (002594) [A股]\n- 腾讯控股 (00700) [港股]\n- 拓尔思 (300229) [A股]\n- 晶盛机电 (300316) [A股]\n- 润泽科技 (300442) [A股]\n- 中国铝业 (601600) [A股]\n- 摩尔线程 (688795) [A股]\n- 比亚迪电子 (00285) [港股]\n- 阿里巴巴 (09988) [港股]\n\n### 契合度分析\n\n#### 🟢 高度契合（Strong）\n- **腾讯控股、阿里巴巴**: 摩根士丹利超配互联网龙头，高盛推荐港股AI核心持仓，南向资金创纪录流入\n- **摩尔线程**: 中金认为AI产业趋势是中期主线，高盛称AI可提升估值15-20%\n\n#### 🔵 部分契合（Moderate）\n- **拓尔思、润泽科技**: 中金看好端侧AI、软件应用机会，汇丰认为数据中心需求持续上升\n- **三花智控**: 瑞银关注人形机器人，摩根士丹利看好自动化\n\n#### ⚪ 中性（Neutral）\n- **比亚迪、比亚迪电子**: 摩根大通认为消费复苏是新动力，智能驾驶主题受关注\n\n#### 🔴 存在分歧（Weak）\n- **云南铜业、中国铝业**: 摩根士丹利低配能源/周期，担忧关税影响大宗商品\n- **晶盛机电**: 摩根士丹利低配能源，行业产能过剩仍存\n\n---\n\n## 三、风险提示\n\n⚠️ **摩根大通**: 二季度\"退一步进两步\"，4-5月可能回调  \n⚠️ **高盛**: 地缘政治活跃，获利了结压力加大  \n⚠️ **摩根士丹利**: 低配大宗商品、地产、消费必需品  \n\n---\n\n## 四、机构观点摘要\n\n### 摩根士丹利\n- 超配互联网龙头、AI相关\n- 低配能源、周期、地产\n- 看好港股科技板块\n\n### 高盛\n- 全球基金重返中国意愿2021年来最强\n- AI可提升中国科技股估值15-20%\n- 关注地缘政治风险\n\n### 摩根大通\n- 二季度策略：退一步进两步\n- 4-5月可能经历技术性回调\n- 消费复苏是新动力\n\n### 中金公司\n- AI产业趋势是中期主线\n- 端侧AI、软件应用均有机会\n- 看好算力基础设施\n\n### 瑞银证券\n- 人形机器人最受关注\n- 港股科技配置价值凸显\n- 看好自动化相关企业\n\n---\n\n*报告自动生成于 2026-03-30 09:01:16*\n*下次更新: 明天 09:00*\n...",
+  "system_time": "2026-03-31 10:29",
+  "update_time": "2026-03-30"
+}
+（索引）:1401 data 的 keys: (6) ['holdings_map', 'ib_list', 'macro_summary', 'raw_report', 'system_time', 'update_time']
+（索引）:1417 最终 holdings 数量: 12
+（索引）:1418 macro: {consensus: '谨慎乐观', key_targets: Array(2), main_themes: Array(14), warnings: Array(3)}
+（索引）:1420 holdings_map 数量: 12
+（索引）:1421 macro_summary: {consensus: '谨慎乐观', key_targets: Array(2), main_themes: Array(14), warnings: Array(3)}
+（索引）:1429 分类统计: {strong: 3, moderate: 3, weak: 3, neutral: 3}
+（索引）:1433 displayHoldings 数量: 12
+（索引）:1503 准备渲染持仓契合度, displayHoldings.length: 12
+（索引）:1505 开始渲染持仓契合度列表
+（索引）:1515 渲染第1只股票: 万向钱潮 neutral
+（索引）:1515 渲染第2只股票: 云南铜业 weak
+（索引）:1515 渲染第3只股票: 三花智控 moderate
+（索引）:1515 渲染第4只股票: 比亚迪 neutral
+（索引）:1515 渲染第5只股票: 拓尔思 moderate
+（索引）:1515 渲染第6只股票: 晶盛机电 weak
+（索引）:1515 渲染第7只股票: 润泽科技 moderate
+（索引）:1515 渲染第8只股票: 中国铝业 weak
+（索引）:1515 渲染第9只股票: 摩尔线程 strong
+（索引）:1515 渲染第10只股票: 比亚迪电 neutral
+（索引）:1515 渲染第11只股票: 腾讯控股 strong
+（索引）:1515 渲染第12只股票: 阿里巴巴 strong
+（索引）:1569 ibAnalysisContent HTML 已设置，长度: 23501
+app.js?v=1774924187:230 [refreshAxisPricesInBackground] 后台刷新完成
+app.js?v=1774924187:2384 [DEBUG] renderSentiment 开始执行, appState.sentiment: {breadth: {…}, capital_flow: {…}, margin: {…}, north_south: {…}, sentiment_index: {…}, …}
+app.js?v=1774924187:2538 [DEBUG] 准备调用 loadPortfolioAnalysis
+app.js?v=1774924187:2540 [DEBUG] loadPortfolioAnalysis 调用完成
+app.js?v=1774924187:2543 [DEBUG] 准备调用 loadHKPortfolioRisk
+app.js?v=1774924187:2804 [DEBUG] loadHKPortfolioRisk 开始执行
+app.js?v=1774924187:2545 [DEBUG] loadHKPortfolioRisk 调用完成
+app.js?v=1774924187:2373 市场情绪加载完成: 中性
+app.js?v=1774924187:2806 [DEBUG] API 响应状态: 200
+app.js?v=1774924187:2813 [DEBUG] API 返回数据: {market_short: {…}, portfolio: {…}, stock_short_data: {…}, success: true, update_time: '2026-03-31 10:30:03'}
+app.js?v=1774924187:2843 [DEBUG] changes type: object keys: (4) ['1m', '1w', '2w', '3d']
+app.js?v=1774924187:2844 [DEBUG] changes[3d]: {ratio_change: 5.42, reference_date: '2026-03-27', signal: 'bearish', volume_change: 3873.26}
+app.js?v=1774924187:2845 [DEBUG] changes[1w]: {ratio_change: 6.06, reference_date: '2026-03-23', signal: 'bearish', volume_change: -6671.78}
+app.js?v=1774924187:1612 [热点板块] 已更新 6 个板块
+app.js?v=1774924187:2366 加载市场情绪数据...
+app.js?v=1774924187:1859 加载结构化财联社新闻...
+app.js?v=1774924187:1612 [热点板块] 已更新 6 个板块
+app.js?v=1774924187:2384 [DEBUG] renderSentiment 开始执行, appState.sentiment: {breadth: {…}, capital_flow: {…}, margin: {…}, north_south: {…}, sentiment_index: {…}, …}
+app.js?v=1774924187:2538 [DEBUG] 准备调用 loadPortfolioAnalysis
+app.js?v=1774924187:2540 [DEBUG] loadPortfolioAnalysis 调用完成
+app.js?v=1774924187:2543 [DEBUG] 准备调用 loadHKPortfolioRisk
+app.js?v=1774924187:2804 [DEBUG] loadHKPortfolioRisk 开始执行
+app.js?v=1774924187:2545 [DEBUG] loadHKPortfolioRisk 调用完成
+app.js?v=1774924187:2373 市场情绪加载完成: 中性
+app.js?v=1774924187:1866 新闻加载完成: 头条3条, 题材1条, 日历3条
+app.js?v=1774924187:168 热点板块、情绪、新闻加载完成
+app.js?v=1774924187:2806 [DEBUG] API 响应状态: 200
+app.js?v=1774924187:2813 [DEBUG] API 返回数据: {market_short: {…}, portfolio: {…}, stock_short_data: {…}, success: true, update_time: '2026-03-31 10:31:04'}
+app.js?v=1774924187:2843 [DEBUG] changes type: object keys: (4) ['1m', '1w', '2w', '3d']
+app.js?v=1774924187:2844 [DEBUG] changes[3d]: {ratio_change: 5.42, reference_date: '2026-03-27', signal: 'bearish', volume_change: 3873.26}
+app.js?v=1774924187:2845 [DEBUG] changes[1w]: {ratio_change: 6.06, reference_date: '2026-03-23', signal: 'bearish', volume_change: -6671.78}
+app.js?v=1774924187:1612 [热点板块] 已更新 6 个板块
+app.js?v=1774924187:2366 加载市场情绪数据...
+app.js?v=1774924187:1859 加载结构化财联社新闻...
+app.js?v=1774924187:1612 [热点板块] 已更新 6 个板块
+app.js?v=1774924187:2384 [DEBUG] renderSentiment 开始执行, appState.sentiment: {breadth: {…}, capital_flow: {…}, margin: {…}, north_south: {…}, sentiment_index: {…}, …}
+app.js?v=1774924187:2538 [DEBUG] 准备调用 loadPortfolioAnalysis
+app.js?v=1774924187:2540 [DEBUG] loadPortfolioAnalysis 调用完成
+app.js?v=1774924187:2543 [DEBUG] 准备调用 loadHKPortfolioRisk
+app.js?v=1774924187:2804 [DEBUG] loadHKPortfolioRisk 开始执行
+app.js?v=1774924187:2545 [DEBUG] loadHKPortfolioRisk 调用完成
+app.js?v=1774924187:2373 市场情绪加载完成: 中性
+app.js?v=1774924187:1866 新闻加载完成: 头条2条, 题材1条, 日历3条
+app.js?v=1774924187:2806 [DEBUG] API 响应状态: 200
+app.js?v=1774924187:2813 [DEBUG] API 返回数据: {market_short: {…}, portfolio: {…}, stock_short_data: {…}, success: true, update_time: '2026-03-31 10:32:04'}
+app.js?v=1774924187:2843 [DEBUG] changes type: object keys: (4) ['1m', '1w', '2w', '3d']
+app.js?v=1774924187:2844 [DEBUG] changes[3d]: {ratio_change: 5.42, reference_date: '2026-03-27', signal: 'bearish', volume_change: 3873.26}
+app.js?v=1774924187:2845 [DEBUG] changes[1w]: {ratio_change: 6.06, reference_date: '2026-03-23', signal: 'bearish', volume_change: -6671.78}
+app.js?v=1774924187:1612 [热点板块] 已更新 6 个板块
+app.js?v=1774924187:2366 加载市场情绪数据...
+app.js?v=1774924187:1859 加载结构化财联社新闻...
+app.js?v=1774924187:2384 [DEBUG] renderSentiment 开始执行, appState.sentiment: {breadth: {…}, capital_flow: {…}, margin: {…}, north_south: {…}, sentiment_index: {…}, …}
+app.js?v=1774924187:2538 [DEBUG] 准备调用 loadPortfolioAnalysis
+app.js?v=1774924187:2540 [DEBUG] loadPortfolioAnalysis 调用完成
+app.js?v=1774924187:2543 [DEBUG] 准备调用 loadHKPortfolioRisk
+app.js?v=1774924187:2804 [DEBUG] loadHKPortfolioRisk 开始执行
+app.js?v=1774924187:2545 [DEBUG] loadHKPortfolioRisk 调用完成
+app.js?v=1774924187:2373 市场情绪加载完成: 中性
+app.js?v=1774924187:1866 新闻加载完成: 头条2条, 题材1条, 日历3条
+app.js?v=1774924187:2806 [DEBUG] API 响应状态: 200
+app.js?v=1774924187:2813 [DEBUG] API 返回数据: {market_short: {…}, portfolio: {…}, stock_short_data: {…}, success: true, update_time: '2026-03-31 10:33:05'}
+app.js?v=1774924187:2843 [DEBUG] changes type: object keys: (4) ['1m', '1w', '2w', '3d']
+app.js?v=1774924187:2844 [DEBUG] changes[3d]: {ratio_change: 5.42, reference_date: '2026-03-27', signal: 'bearish', volume_change: 3873.26}
+app.js?v=1774924187:2845 [DEBUG] changes[1w]: {ratio_change: 6.06, reference_date: '2026-03-23', signal: 'bearish', volume_change: -6671.78}
+app.js?v=1774924187:1612 [热点板块] 已更新 6 个板块
+app.js?v=1774924187:1612 [热点板块] 已更新 6 个板块

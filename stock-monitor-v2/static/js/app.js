@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "3.0.0-" + Date.now(); // 每次加载都生成新版本号，彻底避免缓存
+const APP_VERSION = "3.0.1"; // 固定版本号
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
