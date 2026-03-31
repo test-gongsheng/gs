@@ -127,7 +127,10 @@ async function init() {
     // 【修复】先立即渲染列表（使用本地数据），再后台获取行情
     // 这样即使行情获取卡住，用户也能看到持仓列表
     console.log('[init] 立即渲染持仓列表（使用本地数据）...');
+    console.log('[init] appState.stocks 数量:', appState.stocks.length);
+    console.log('[init] 准备调用 renderStockList...');
     renderStockList();
+    console.log('[init] renderStockList 调用完成');
     updateAssetOverview();
     
     // 默认选中第一个股票
@@ -604,20 +607,19 @@ function updateAssetOverview() {
 // 渲染股票列表
 function renderStockList() {
     console.log('[renderStockList] ========== 开始执行 ==========');
-    console.log('[renderStockList] 函数已被调用，this:', this);
-    console.log('[renderStockList] appState:', typeof appState);
-    console.log('[renderStockList] appState.stocks:', appState ? (appState.stocks ? appState.stocks.length : 'stocks undefined') : 'appState undefined');
+    alert('[DEBUG] renderStockList 被调用! 股票数量: ' + (appState.stocks ? appState.stocks.length : 0));
     
     const listEl = document.getElementById('stockList');
     console.log('[renderStockList] listEl:', listEl);
     
     if (!listEl) {
         console.error('[renderStockList] 找不到 stockList 元素');
+        alert('[DEBUG] 找不到 stockList 元素!');
         return;
     }
     
     // 强制设置 stock-list 样式 - 红色边框便于调试
-    listEl.style.cssText = 'flex: 1 1 auto; overflow-y: auto; padding: 8px; min-height: 100px; background: #151b2d; border: 3px solid red !important;';
+    listEl.style.cssText = 'flex: 1 1 auto; overflow-y: auto; padding: 8px; min-height: 300px; background: #151b2d; border: 5px solid red !important;';
     listEl.innerHTML = '';
     console.log('[renderStockList] 已清空列表，准备渲染');
 
