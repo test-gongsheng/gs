@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "2.8.1";
+const APP_VERSION = "2.8.2";
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -124,21 +124,21 @@ async function init() {
     appState.hotSectors = mockHotSectors;
     appState.news = { headlines: [], themes: [], calendar: [], portfolio: [], general: mockNews };
 
-    // 显示加载中，等待行情获取后再渲染
-    const listEl = document.getElementById('stockList');
-    if (listEl) {
-        listEl.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> 加载行情中...</div>';
-    }
-    renderHotSectors();
-    renderNews();
-    updateTime();
-    updateMarketStatus();
-    // updateAssetOverview(); // 移到获取行情后调用
-
+    // 【修复】立即渲染列表（使用本地数据），不等待行情
+    // 这样用户能立即看到持仓，行情会在后台刷新
+    console.log('[init] 立即渲染持仓列表（使用本地数据）...');
+    renderStockList();
+    updateAssetOverview();
+    
     // 默认选中第一个股票
     if (appState.stocks.length > 0) {
         selectStock(0);
     }
+    
+    renderHotSectors();
+    renderNews();
+    updateTime();
+    updateMarketStatus();
 
     // 定时更新
     setInterval(updateTime, 1000);
@@ -171,10 +171,15 @@ async function init() {
     console.log('后台加载持仓股分析报告...');
     loadPortfolioAnalysis();
     
-    // 优先获取实时行情并渲染（关键路径）
+    // 【修复】后台异步获取实时行情（不阻塞列表渲染）
     if (appState.stocks.length > 0) {
-        console.log('优先获取实时行情...');
-        await updateStockPricesOnce();
+        console.log('后台获取实时行情更新...');
+        // 使用 setTimeout 让列表先渲染完成
+        setTimeout(() => {
+            updateStockPricesOnce().catch(err => {
+                console.error('[init] 行情更新失败（非阻塞）:', err);
+            });
+        }, 100);
     }
     
     // 中轴价格在后台异步刷新（不阻塞）
