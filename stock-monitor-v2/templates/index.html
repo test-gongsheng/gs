@@ -1363,6 +1363,28 @@
                     }
                     
                     console.log('[Fallback] 获取到', stocks.length, '只股票');
+                    
+                    // 【关键】同步更新 appState.stocks，确保实时行情能正确更新
+                    if (typeof appState !== 'undefined') {
+                        appState.stocks = stocks.map(function(s) {
+                            return {
+                                id: s.id,
+                                code: s.code,
+                                name: s.name,
+                                market: s.market || 'A股',
+                                price: s.current_price || 0,
+                                holdCost: s.avg_cost || 0,
+                                holdQuantity: s.shares || 0,
+                                pivotPrice: s.axis_price || 0,
+                                triggerBuy: s.next_buy_price || 0,
+                                triggerSell: s.next_sell_price || 0,
+                                change: 0,
+                                changePercent: 0
+                            };
+                        });
+                        console.log('[Fallback] 已更新 appState.stocks');
+                    }
+                    
                     list.innerHTML = '';
                     
                     stocks.forEach(function(stock, index) {
