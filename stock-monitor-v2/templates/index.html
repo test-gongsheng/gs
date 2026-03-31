@@ -1336,14 +1336,81 @@
     <script src="{{ url_for('static', filename='js/app.js') }}?v={{ now }}"></script>
     <script src="{{ url_for('static', filename='js/import.js') }}?v={{ now }}"></script>
     <script>
-        // 强制清除缓存并重新加载
-        console.log('页面加载完成，检查 stockList...');
+        // 保底渲染逻辑 - 确保持仓列表一定能显示
+        (function renderStockListFallback() {
+            console.log('[Fallback] 检查 stockList...');
+            var list = document.getElementById('stockList');
+            if (!list) {
+                console.error('[Fallback] 找不到 stockList 元素');
+                return;
+            }
+            
+            // 如果列表已经有内容，不需要保底渲染
+            if (list.children.length > 0) {
+                console.log('[Fallback] 列表已有内容，跳过保底渲染');
+                return;
+            }
+            
+            console.log('[Fallback] 列表为空，尝试从 API 获取数据并渲染...');
+            
+            // 直接从 API 获取数据并渲染
+            fetch('/api/stocks')
+                .then(function(r) { return r.json(); })
+                .then(function(stocks) {
+                    if (!stocks || stocks.length === 0) {
+                        list.innerHTML = '<div style="padding: 20px; text-align: center; color: #9ca3af;">暂无持仓数据</div>';
+                        return;
+                    }
+                    
+                    console.log('[Fallback] 获取到', stocks.length, '只股票');
+                    list.innerHTML = '';
+                    
+                    stocks.forEach(function(stock, index) {
+                        var item = document.createElement('div');
+                        item.className = 'stock-item' + (index === 0 ? ' active' : '');
+                        item.style.cssText = 'display: flex; align-items: center; padding: 12px 8px; border-radius: 8px; cursor: pointer; margin-bottom: 4px; background: #1a1f2e; color: white;';
+                        
+                        var isUp = (stock.change || 0) >= 0;
+                        var color = isUp ? '#ff4d4f' : '#52c41a';
+                        var marketValue = ((stock.current_price || 0) * (stock.shares || 0) / 10000).toFixed(1);
+                        
+                        item.innerHTML = 
+                            '<div style="flex: 1.5; text-align: left;">' +
+                                '<span style="font-weight: 600; font-size: 0.875rem; color: #e8eaed;">' + stock.code + '</span>' +
+                                '<span style="font-size: 0.75rem; color: #9ca3af; display: block;">' + stock.name + '</span>' +
+                            '</div>' +
+                            '<div style="flex: 1; text-align: right; font-weight: 600; color: ' + color + ';">' +
+                                (stock.current_price || 0).toFixed(2) +
+                            '</div>' +
+                            '<div style="flex: 1; text-align: right; font-weight: 600; color: ' + color + ';">' +
+                                (stock.change >= 0 ? '+' : '') + (stock.change_percent || 0).toFixed(2) + '%' +
+                            '</div>' +
+                            '<div style="flex: 1; text-align: right; font-size: 0.75rem; color: #e8eaed;">' +
+                                marketValue + '万' +
+                            '</div>';
+                        
+                        item.onclick = function() {
+                            document.querySelectorAll('.stock-item').forEach(function(el) { el.classList.remove('active'); });
+                            item.classList.add('active');
+                            if (typeof selectStock === 'function') selectStock(index);
+                        };
+                        
+                        list.appendChild(item);
+                    });
+                    
+                    console.log('[Fallback] 保底渲染完成，子元素数:', list.children.length);
+                })
+                .catch(function(err) {
+                    console.error('[Fallback] 获取数据失败:', err);
+                    list.innerHTML = '<div style="padding: 20px; text-align: center; color: #9ca3af;">加载失败，请刷新页面</div>';
+                });
+        })();
+        
+        // 延迟再次检查
         setTimeout(function() {
             var list = document.getElementById('stockList');
-            console.log('stockList 元素:', list);
-            console.log('stockList 子元素数:', list ? list.children.length : 'N/A');
             if (list && list.children.length === 0) {
-                console.log('列表为空，强制调用 renderStockList...');
+                console.log('列表仍为空，强制调用 renderStockList...');
                 if (typeof renderStockList === 'function') {
                     renderStockList();
                 } else {
