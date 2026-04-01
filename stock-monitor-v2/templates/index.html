@@ -454,6 +454,48 @@
                     </div>
                 </div>
 
+                <!-- 南向资金流向（仅港股显示）-->
+                <div class="southbound-section" id="southboundSection" style="display: none;">
+                    <div class="section-header">
+                        <span class="section-title"><i class="fas fa-arrow-right"></i> 南向资金流向</span>
+                        <span class="section-subtitle">港股通持股数据</span>
+                    </div>
+                    
+                    <div class="southbound-content">
+                        <!-- 统计数据 -->
+                        <div class="southbound-stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
+                            <div class="southbound-stat-item" style="padding: 12px; background: var(--bg-tertiary); border-radius: var(--border-radius); text-align: center;">
+                                <div style="font-size: 0.75rem; color: var(--text-secondary);">港股通持股比例</div>
+                                <div class="metric-value" id="stockSouthboundRatio" style="font-size: 1.25rem; margin-top: 4px;">--</div>
+                            </div>
+                            <div class="southbound-stat-item" style="padding: 12px; background: var(--bg-tertiary); border-radius: var(--border-radius); text-align: center;">
+                                <div style="font-size: 0.75rem; color: var(--text-secondary);">近30日净流入</div>
+                                <div class="metric-value" id="stockSouthbound30d" style="font-size: 1.25rem; margin-top: 4px;">--</div>
+                            </div>
+                            <div class="southbound-stat-item" style="padding: 12px; background: var(--bg-tertiary); border-radius: var(--border-radius); text-align: center;">
+                                <div style="font-size: 0.75rem; color: var(--text-secondary);">南向信号</div>
+                                <span class="signal-badge" id="stockSouthboundSignal" style="margin-top: 4px; display: inline-block;">--</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 图表 -->
+                        <div style="padding: 12px; background: var(--bg-tertiary); border-radius: var(--border-radius);">
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">
+                                <i class="fas fa-chart-area"></i> 近90日南向资金流向与持股比例变化
+                            </div>
+                            <div class="chart-container" style="height: 200px;">
+                                <canvas id="southboundStockChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- 说明 -->
+                        <div style="margin-top: 12px; padding: 10px; background: var(--bg-tertiary); border-radius: var(--border-radius); font-size: 0.8rem; color: var(--text-secondary);">
+                            <i class="fas fa-info-circle"></i> 
+                            南向资金指通过港股通流入香港市场的内地资金，反映内资对港股的态度
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 市场情绪与多空数据 -->
                 <div class="sentiment-section">
                     <div class="section-header">
@@ -654,6 +696,37 @@
                                         <span class="breadth-label">新低</span>
                                         <span class="breadth-value" id="newLow">--</span>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 南向资金流向 -->
+                        <div class="sentiment-card wide" id="southboundCard">
+                            <div class="card-header">
+                                <i class="fas fa-arrow-right"></i>
+                                <span>南向资金流向（港股通）</span>
+                                <span class="trend-badge" id="southboundSignal">--</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="southbound-stats">
+                                    <div class="metric-row">
+                                        <span class="metric-label">今日净流入</span>
+                                        <span class="metric-value" id="southboundToday">--</span>
+                                    </div>
+                                    <div class="metric-row">
+                                        <span class="metric-label">30日累计</span>
+                                        <span class="metric-value" id="southboundCumulative30">--</span>
+                                    </div>
+                                    <div class="metric-row">
+                                        <span class="metric-label">90日累计</span>
+                                        <span class="metric-value" id="southboundCumulative90">--</span>
+                                    </div>
+                                    <div class="metric-row" style="margin-top: 8px; font-size: 0.75rem; color: #94a3b8;">
+                                        <span id="southboundSignalReason">--</span>
+                                    </div>
+                                </div>
+                                <div class="chart-container" style="height: 150px; margin-top: 12px;">
+                                    <canvas id="southboundOverallChart"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -1333,6 +1406,8 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="{{ url_for('static', filename='js/southbound.js') }}?v={{ now }}"></script>
     <script src="{{ url_for('static', filename='js/app.js') }}?v={{ now }}"></script>
     <script src="{{ url_for('static', filename='js/import.js') }}?v={{ now }}"></script>
     <script>

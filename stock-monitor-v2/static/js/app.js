@@ -903,9 +903,23 @@ function renderStockDetail() {
     // 港股：显示沽空风险提示（调用完整渲染函数）
     if (isHKStock) {
         renderHKShortRiskWarning();
+        
+        // 港股：显示南向资金流向
+        const southboundEl = document.getElementById('southboundSection');
+        if (southboundEl) {
+            southboundEl.style.display = 'block';
+            // 加载南向资金数据
+            if (typeof loadSouthboundStockData === 'function') {
+                loadSouthboundStockData(stock.code);
+            }
+        }
     } else {
         const warningEl = document.getElementById('hkShortRiskWarning');
         if (warningEl) warningEl.style.display = 'none';
+        
+        // 非港股：隐藏南向资金
+        const southboundEl = document.getElementById('southboundSection');
+        if (southboundEl) southboundEl.style.display = 'none';
     }
 }
 function renderGridStrategy(stock) {
@@ -2564,6 +2578,12 @@ function renderSentiment() {
     console.log('[DEBUG] 准备调用 loadHKPortfolioRisk');
     loadHKPortfolioRisk();
     console.log('[DEBUG] loadHKPortfolioRisk 调用完成');
+    
+    // 10. 加载南向资金整体流向
+    if (typeof loadSouthboundOverallData === 'function') {
+        loadSouthboundOverallData();
+    }
+}
 }
 
 // 加载持仓股分析报告

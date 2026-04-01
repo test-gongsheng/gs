@@ -8,6 +8,7 @@ from utils.exchange_rate import get_cny_hkd_rate, get_yesterday_cny_hkd_rate, co
 from utils.sector_data import get_hot_sectors_data
 from utils.news_data import get_cls_structured_news
 from utils.market_sentiment import get_market_sentiment
+from utils.southbound_capital import get_southbound_overall_history, get_southbound_signal, get_southbound_stock_history
 
 app = Flask(__name__)
 
@@ -413,6 +414,70 @@ def get_sentiment():
         print(f"获取市场情绪失败: {e}")
         import traceback
         traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+# ========== 南向资金 API ==========
+from utils.southbound_capital import (
+    get_southbound_overall_history,
+    get_southbound_stock_history,
+    get_southbound_signal,
+    update_southbound_data
+)
+
+@app.route('/api/southbound/overall')
+def get_southbound_overall():
+    """获取南向资金整体流向（90个交易日）"""
+    try:
+        days = request.args.get('days', 90, type=int)
+        data = get_southbound_overall_history(days=days)
+        signal = get_southbound_signal()
+        
+        return jsonify({
+            'success': True,
+            'data': data,
+            'signal': signal,
+            'count': len(data)
+        })
+    except Exception as e:
+        print(f"获取南向资金整体流向失败: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+@app.route('/api/southbound/stock/<stock_code>')
+def get_southbound_stock(stock_code):
+    """获取指定港股通股票的南向资金流向（90个交易日）"""
+    try:
+        days = request.args.get('days', 90, type=int)
+        data = get_southbound_stock_history(stock_code, days=days)
+        
+        return jsonify({
+            'success': True,
+            'stock_code': stock_code,
+            'data': data,
+            'count': len(data)
+        })
+    except Exception as e:
+        print(f"获取个股南向资金数据失败 {stock_code}: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+@app.route('/api/southbound/update', methods=['POST'])
+def trigger_southbound_update():
+    """手动触发南向资金数据更新"""
+    try:
+        success = update_southbound_data()
+        return jsonify({
+            'success': success,
+            'message': '更新成功' if success else '更新失败'
+        })
+    except Exception as e:
         return jsonify({
             'success': False,
             'error': str(e)
@@ -1061,6 +1126,50 @@ def get_portfolio_analysis():
             'success': False,
             'error': str(e)
         }), 500
+
+
+# ========== 南向资金 API ==========
+
+@app.route('/api/southbound-capital')
+def get_southbound_capital_api():
+    """获取南向资金整体流向数据（90日）"""
+    try:
+        days = request.args.get('days', 90, type=int)
+        history = get_southbound_overall_history(days=days)
+        signal = get_southbound_signal()
+        
+        return jsonify({
+            'success': True,
+            'history': history,
+            'signal': signal,
+            'update_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/southbound-capital/<stock_code>')
+def get_southbound_stock_api(stock_code):
+    """获取指定港股通股票的南向资金流向（90日）"""
+    try:
+        days = request.args.get('days', 90, type=int)
+        history = get_southbound_stock_history(stock_code, days=days)
+        
+        return jsonify({
+            'success': True,
+            'stock_code': stock_code,
+            'history': history,
+            'update_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 if __name__ == '__main__':
     # 启动时预加载缓存
     preload_axis_cache()
