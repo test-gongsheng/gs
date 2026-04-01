@@ -317,7 +317,7 @@ function updateSouthboundStockStats(data) {
     
     // 近30日净流入
     const recent30d = data.slice(-30);
-    const netInflow30d = recent30d.reduce((sum, d) => sum + d.net_inflow, 0);
+    const netInflow30d = recent30d.reduce((sum, d) => sum + (parseFloat(d.net_inflow) || 0), 0);
     const netInflow30El = document.getElementById('stockSouthbound30d');
     if (netInflow30El) {
         netInflow30El.textContent = (netInflow30d >= 0 ? '+' : '') + netInflow30d.toFixed(2) + '亿';
