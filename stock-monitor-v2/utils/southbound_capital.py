@@ -104,39 +104,84 @@ def get_southbound_overall_history(days: int = 90) -> List[Dict]:
 def get_southbound_stock_history(stock_code: str, days: int = 90) -> List[Dict]:
     """
     获取指定港股通股票的南向资金流向历史
+    通过获取多日期的南向持股数据，筛选出特定股票的历史记录
     """
     try:
-        # 使用akshare获取港股通个股持股数据
-        # 需要将港股代码格式转换
-        if stock_code.startswith('0'):
-            symbol = f"0{stock_code[1:]}"
-        else:
-            symbol = stock_code
+        from datetime import datetime, timedelta
         
-        df = ak.stock_hsgt_stock_statistics_em(symbol=symbol)
+        # 转换股票代码格式（去掉前导零）
+        hk_code = stock_code.lstrip('0')
+        if len(hk_code) < 4:
+            hk_code = stock_code  # 保持原格式
+        
+        # 获取最近N个交易日的日期列表
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days + 30)  # 多取一些天数确保有足够交易日
+        
+        # 调用akshare获取南向持股数据（指定日期范围）
+        df = ak.stock_hsgt_stock_statistics_em(
+            symbol="南向持股",
+            start_date=start_date.strftime('%Y%m%d'),
+            end_date=end_date.strftime('%Y%m%d')
+        )
         
         if df is None or len(df) == 0:
             return []
         
-        # 取最近N条数据
-        df = df.tail(days).copy()
-        df = df.sort_values('日期', ascending=True)
+        # 筛选指定股票的数据
+        # 股票代码需要匹配（可能带前导零）
+        stock_data = df[df['股票代码'].astype(str).str.lstrip('0') == hk_code].copy()
+        
+        if len(stock_data) == 0:
+            # 尝试直接匹配
+            stock_data = df[df['股票代码'].astype(str) == stock_code].copy()
+        
+        if len(stock_data) == 0:
+            return []
+        
+        # 按日期排序
+        stock_data = stock_data.sort_values('持股日期', ascending=True)
+        
+        # 取最近N条
+        stock_data = stock_data.tail(days)
         
         result = []
-        for _, row in df.iterrows():
+        prev_shares = None
+        
+        for _, row in stock_data.iterrows():
+            date_str = row['持股日期']
+            if isinstance(date_str, pd.Timestamp):
+                date_str = date_str.strftime('%Y-%m-%d')
+            
+            hold_shares = float(row.get('持股数量', 0))
+            hold_ratio = float(row.get('持股数量占发行股百分比', 0))
+            
+            # 计算持股变化（与前一日比较）
+            hold_change = 0
+            if prev_shares is not None:
+                hold_change = hold_shares - prev_shares
+            prev_shares = hold_shares
+            
+            # 估算净流入（简化计算：持股变化 × 当日收盘价 / 100000000）
+            close_price = float(row.get('当日收盘价', 0))
+            net_inflow = round(hold_change * close_price / 100000000, 2)  # 转换为亿港元
+            
             result.append({
-                'date': row['日期'],
+                'date': str(date_str),
                 'stock_code': stock_code,
-                'stock_name': row.get('名称', ''),
-                'net_inflow': round(float(row.get('当日成交净买额', 0)), 2),
-                'hold_ratio': round(float(row.get('持股占比', 0)), 2),
-                'hold_shares': round(float(row.get('持股数', 0)), 2),
-                'hold_change': round(float(row.get('持股变化', 0)), 2) if '持股变化' in row else 0
+                'stock_name': row.get('股票简称', ''),
+                'net_inflow': net_inflow,
+                'hold_ratio': round(hold_ratio, 2),
+                'hold_shares': round(hold_shares, 2),
+                'hold_change': round(hold_change, 2),
+                'close_price': close_price
             })
         
         return result
     except Exception as e:
         print(f"获取个股南向资金数据失败 {stock_code}: {e}")
+        import traceback
+        traceback.print_exc()
         return []
 
 def update_southbound_data():
