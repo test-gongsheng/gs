@@ -662,8 +662,8 @@ function renderStockList() {
         
         const hkBadge = isHKStock ? '<span class="stock-item-hk">HK</span>' : '';
 
-        // 强制添加内联样式确保可见 - 绿色边框
-        item.style.cssText = 'display: flex !important; align-items: center; padding: 12px 8px; border-radius: 8px; cursor: pointer; margin-bottom: 4px; min-height: 50px; background: #1a1f2e; border: 2px solid #52c41a !important; color: white;';
+        // 移除强制内联样式，使用 CSS 类定义
+        // item.style.cssText = 'display: flex !important; align-items: center; padding: 12px 8px; border-radius: 8px; cursor: pointer; margin-bottom: 4px; min-height: 50px; background: #1a1f2e; border: 2px solid #52c41a !important; color: white;';
         
         item.innerHTML = `
             <div class="stock-info" style="flex: 1.5; text-align: left; display: flex; flex-direction: column; gap: 2px;">
