@@ -34,7 +34,8 @@ const appState = {
     sentiment: null,  // 市场情绪数据
     totalAssets: 8000000, // 800万
     marketStatus: 'closed',
-    version: APP_VERSION
+    version: APP_VERSION,
+    _updatingQuotes: false  // 行情更新锁，防止竞争条件
 };
 
 // 挂载到 window 对象，供其他脚本访问
@@ -2090,6 +2091,15 @@ async function simulatePriceUpdate() {
         return;
     }
 
+    // 检查是否有其他更新正在进行
+    if (appState._updatingQuotes) {
+        console.log('[simulatePriceUpdate] 跳过：已有更新在进行中');
+        return;
+    }
+
+    // 获取锁
+    appState._updatingQuotes = true;
+
     try {
         // 调用后端API获取真实行情
         const response = await fetch('/api/quotes', {
@@ -2134,9 +2144,9 @@ async function simulatePriceUpdate() {
                 }
             });
 
-            console.log('[updateStockPricesOnce] 开始重新渲染列表...');
+            console.log('[simulatePriceUpdate] 开始重新渲染列表...');
             renderStockList();
-            console.log('[updateStockPricesOnce] 列表重新渲染完成');
+            console.log('[simulatePriceUpdate] 列表重新渲染完成');
             if (appState.selectedStock) {
                 const selected = appState.stocks.find(s => s.code === appState.selectedStock.code);
                 if (selected) {
@@ -2148,6 +2158,10 @@ async function simulatePriceUpdate() {
         }
     } catch (error) {
         console.error('获取行情失败:', error);
+        // 获取失败时不重新渲染，避免覆盖已有数据
+    } finally {
+        // 释放锁
+        appState._updatingQuotes = false;
     }
 }
 
@@ -2160,6 +2174,15 @@ async function updateStockPricesOnce() {
         console.log('[updateStockPricesOnce] 没有股票数据，跳过');
         return;
     }
+
+    // 检查是否有其他更新正在进行
+    if (appState._updatingQuotes) {
+        console.log('[updateStockPricesOnce] 跳过：已有更新在进行中');
+        return;
+    }
+
+    // 获取锁
+    appState._updatingQuotes = true;
 
     try {
         console.log('[updateStockPricesOnce] 获取实时行情...');
@@ -2265,6 +2288,9 @@ async function updateStockPricesOnce() {
         renderStockList();
         if (appState.selectedStock) renderStockDetail();
         updateAssetOverview();
+    } finally {
+        // 释放锁
+        appState._updatingQuotes = false;
     }
 }
 

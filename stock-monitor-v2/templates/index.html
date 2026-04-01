@@ -1364,8 +1364,43 @@
                     
                     console.log('[Fallback] 获取到', stocks.length, '只股票');
                     
-                    // 【关键】同步更新 appState.stocks，确保实时行情能正确更新
-                    if (typeof appState !== 'undefined') {
+                    // 【关键】同步更新 appState.stocks，保留已有行情数据
+                    if (typeof appState !== 'undefined' && appState.stocks && appState.stocks.length > 0) {
+                        // 如果已有行情数据，合并而不是替换
+                        stocks.forEach(function(s) {
+                            var existing = appState.stocks.find(function(es) { return es.code === s.code; });
+                            if (existing) {
+                                // 保留已有价格和涨跌幅，只更新静态数据
+                                existing.id = s.id;
+                                existing.name = s.name;
+                                existing.market = s.market || 'A股';
+                                existing.holdCost = s.avg_cost || existing.holdCost;
+                                existing.holdQuantity = s.shares || existing.holdQuantity;
+                                existing.pivotPrice = s.axis_price || existing.pivotPrice;
+                                existing.triggerBuy = s.next_buy_price || existing.triggerBuy;
+                                existing.triggerSell = s.next_sell_price || existing.triggerSell;
+                                // 价格和涨跌幅保留已有值（由行情API更新）
+                                if (existing.price === 0) existing.price = s.current_price || 0;
+                            } else {
+                                appState.stocks.push({
+                                    id: s.id,
+                                    code: s.code,
+                                    name: s.name,
+                                    market: s.market || 'A股',
+                                    price: s.current_price || 0,
+                                    holdCost: s.avg_cost || 0,
+                                    holdQuantity: s.shares || 0,
+                                    pivotPrice: s.axis_price || 0,
+                                    triggerBuy: s.next_buy_price || 0,
+                                    triggerSell: s.next_sell_price || 0,
+                                    change: 0,
+                                    changePercent: 0
+                                });
+                            }
+                        });
+                        console.log('[Fallback] 已合并数据到 appState.stocks');
+                    } else if (typeof appState !== 'undefined') {
+                        // 首次初始化
                         appState.stocks = stocks.map(function(s) {
                             return {
                                 id: s.id,
@@ -1382,7 +1417,7 @@
                                 changePercent: 0
                             };
                         });
-                        console.log('[Fallback] 已更新 appState.stocks');
+                        console.log('[Fallback] 已初始化 appState.stocks');
                     }
                     
                     list.innerHTML = '';
@@ -1978,14 +2013,14 @@
         document.getElementById('portfolioAnalysisContent').innerHTML = html;
         
         // 渲染股票列表
-        renderStockList(data.stock_analyses || []);
+        renderPortfolioStockList(data.stock_analyses || []);
         
         // 渲染板块列表
         renderSectorList(data.sector_analysis || []);
     }
     
-    // 渲染股票列表
-    function renderStockList(stocks) {
+    // 渲染持仓分析中的股票列表（注意：不要与 app.js 中的 renderStockList 混淆）
+    function renderPortfolioStockList(stocks) {
         const container = document.getElementById('portfolioStockItems');
         const countEl = document.getElementById('portfolioStockCount');
         
