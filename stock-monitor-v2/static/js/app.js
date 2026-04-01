@@ -2584,7 +2584,6 @@ function renderSentiment() {
         loadSouthboundOverallData();
     }
 }
-}
 
 // 加载持仓股分析报告
 async function loadPortfolioAnalysis() {
