@@ -248,6 +248,19 @@ async function loadSouthboundOverallData() {
 // AbortController 用于真正取消旧请求
 let southboundAbortController = null;
 
+// 显示加载状态
+function showSouthboundLoading(stockCode) {
+    const ratioEl = document.getElementById('stockSouthboundRatio');
+    const inflowEl = document.getElementById('stockSouthbound30d');
+    const signalEl = document.getElementById('stockSouthboundSignal');
+    
+    if (ratioEl) ratioEl.innerHTML = '<span class="loading-spinner">⟳</span>';
+    if (inflowEl) inflowEl.innerHTML = '<span class="loading-text">加载中...</span>';
+    if (signalEl) signalEl.textContent = '加载中';
+    
+    console.log(`[Southbound] 显示加载状态: ${stockCode}`);
+}
+
 // 加载个股南向资金数据 - 改进版（使用AbortController解决竞态条件）
 async function loadSouthboundStockData(stockCode) {
     // 取消之前的请求
@@ -264,7 +277,11 @@ async function loadSouthboundStockData(stockCode) {
     southboundRequestState.currentStockCode = stockCode;
     const thisRequestStockCode = stockCode;
     
+    // 显示加载状态
+    showSouthboundLoading(stockCode);
+    
     console.log(`[Southbound] 开始加载: ${thisRequestStockCode}`);
+    const startTime = Date.now();
     
     try {
         const response = await fetch(`/api/southbound/stock/${thisRequestStockCode}?days=90`, {
@@ -276,8 +293,9 @@ async function loadSouthboundStockData(stockCode) {
         }
         
         const result = await response.json();
+        const elapsed = Date.now() - startTime;
         
-        console.log(`[Southbound] 收到响应: ${thisRequestStockCode}, success=${result.success}, count=${result.data?.length || 0}`);
+        console.log(`[Southbound] 收到响应: ${thisRequestStockCode}, 耗时${elapsed}ms, count=${result.data?.length || 0}`);
         
         // 检查是否仍然是最新请求（双重保险：AbortController + 代码比对）
         if (southboundRequestState.currentStockCode !== thisRequestStockCode) {

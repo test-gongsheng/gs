@@ -5,6 +5,7 @@
 import os
 import json
 import sqlite3
+import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 import akshare as ak
@@ -13,6 +14,29 @@ import pandas as pd
 # 数据目录
 DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
 DB_PATH = os.path.join(DATA_DIR, 'southbound.db')
+
+# 内存缓存（避免每次请求都调用akshare）
+_southbound_cache = {}
+CACHE_TTL = 300  # 缓存5分钟
+
+def _get_cache(key):
+    """获取缓存数据"""
+    if key in _southbound_cache:
+        data, timestamp = _southbound_cache[key]
+        if time.time() - timestamp < CACHE_TTL:
+            return data
+    return None
+
+def _set_cache(key, data):
+    """设置缓存数据"""
+    _southbound_cache[key] = (data, time.time())
+
+def _clear_expired_cache():
+    """清理过期缓存"""
+    now = time.time()
+    expired_keys = [k for k, (_, ts) in _southbound_cache.items() if now - ts > CACHE_TTL]
+    for k in expired_keys:
+        del _southbound_cache[k]
 
 def init_db():
     """初始化数据库"""
@@ -104,12 +128,18 @@ def get_southbound_overall_history(days: int = 90) -> List[Dict]:
 def get_southbound_stock_history(stock_code: str, days: int = 90) -> List[Dict]:
     """
     获取指定港股通股票的南向资金流向历史
+    使用内存缓存，5分钟内重复请求直接返回缓存数据
     """
+    cache_key = f"stock_{stock_code}_{days}"
+    cached = _get_cache(cache_key)
+    if cached:
+        print(f"[Southbound] 返回缓存数据: {stock_code}, {len(cached)}条")
+        return cached
+    
     try:
         # 从 stocks.json 获取正确的股票名称
         stock_name = stock_code  # 默认使用代码作为名称
         try:
-            import json
             stocks_json_path = os.path.join(DATA_DIR, 'stocks.json')
             if os.path.exists(stocks_json_path):
                 with open(stocks_json_path, 'r', encoding='utf-8') as f:
@@ -121,8 +151,10 @@ def get_southbound_stock_history(stock_code: str, days: int = 90) -> List[Dict]:
         except Exception as e:
             print(f"[Southbound] 读取stocks.json失败: {e}")
         
+        print(f"[Southbound] 从akshare获取数据: {stock_code} ({stock_name})")
+        start_time = time.time()
+        
         # 标准化股票代码：去掉前导零，用于匹配
-        # 港股代码如 00700 -> 700, 09988 -> 9988
         hk_code_normalized = stock_code.lstrip('0')
         if not hk_code_normalized:
             hk_code_normalized = stock_code
@@ -137,6 +169,9 @@ def get_southbound_stock_history(stock_code: str, days: int = 90) -> List[Dict]:
             start_date=start_date.strftime('%Y%m%d'),
             end_date=end_date.strftime('%Y%m%d')
         )
+        
+        elapsed = time.time() - start_time
+        print(f"[Southbound] akshare请求耗时: {elapsed:.2f}秒")
         
         if df is None or len(df) == 0:
             print(f"[Southbound] 无南向持股数据")
@@ -181,7 +216,6 @@ def get_southbound_stock_history(stock_code: str, days: int = 90) -> List[Dict]:
             
             hold_shares = float(row.get('持股数量', 0))
             hold_ratio = float(row.get('持股数量占发行股百分比', 0))
-            # 使用从stocks.json获取的正确名称，覆盖akshare返回的名称
             close_price = float(row.get('当日收盘价', 0))
             
             # 计算持股变化（与前一日比较）
@@ -203,29 +237,12 @@ def get_southbound_stock_history(stock_code: str, days: int = 90) -> List[Dict]:
                 'hold_change': round(hold_change, 2),
                 'close_price': close_price
             })
-            close_price = float(row.get('当日收盘价', 0))
-            
-            # 计算持股变化（与前一日比较）
-            hold_change = 0
-            if prev_shares is not None:
-                hold_change = hold_shares - prev_shares
-            prev_shares = hold_shares
-            
-            # 估算净流入（持股变化 × 当日收盘价 / 100000000）
-            net_inflow = round(hold_change * close_price / 100000000, 2)
-            
-            result.append({
-                'date': str(date_str),
-                'stock_code': stock_code,
-                'stock_name': stock_name,
-                'net_inflow': net_inflow,
-                'hold_ratio': round(hold_ratio, 2),
-                'hold_shares': round(hold_shares, 2),
-                'hold_change': round(hold_change, 2),
-                'close_price': close_price
-            })
         
         print(f"[Southbound] 股票 {stock_code} 返回 {len(result)} 条数据")
+        
+        # 保存到缓存
+        _set_cache(cache_key, result)
+        
         return result
         
     except Exception as e:
@@ -283,13 +300,8 @@ def get_southbound_overall_from_db(days: int = 90) -> List[Dict]:
         rows = cursor.fetchall()
         conn.close()
         
-        if len(rows) < days:
-            # 数据不足，重新获取
-            update_southbound_data()
-            return get_southbound_overall_history(days)
-        
         result = []
-        for row in reversed(rows):  # 按日期升序排列
+        for row in reversed(rows):  # 反转，按日期升序
             result.append({
                 'date': row[0],
                 'net_inflow': row[1],
@@ -302,58 +314,55 @@ def get_southbound_overall_from_db(days: int = 90) -> List[Dict]:
         return result
     except Exception as e:
         print(f"从数据库获取南向资金数据失败: {e}")
-        return get_southbound_overall_history(days)
+        return []
 
 def get_southbound_signal() -> Dict:
     """
-    获取南向资金情绪信号
+    获取南向资金买卖信号
+    基于近30日净流入判断
     """
     try:
         data = get_southbound_overall_from_db(days=30)
         if len(data) == 0:
-            return {'signal': 'neutral', 'score': 50, 'reason': '暂无数据'}
+            return {'signal': '暂无数据', 'score': 50, 'reason': '无法获取南向资金数据'}
         
         # 计算近30日累计净流入
-        cumulative_30d = sum(d['net_inflow'] for d in data[-30:])
-        
-        # 计算近5日趋势
-        recent_5d = sum(d['net_inflow'] for d in data[-5:])
+        total_inflow = sum(item['net_inflow'] for item in data)
+        avg_daily = total_inflow / len(data)
         
         # 判断信号
-        if cumulative_30d > 500:
-            signal = '强烈看多'
+        if total_inflow > 200:
+            signal = '强烈买入'
             score = 80
-        elif cumulative_30d > 200:
-            signal = '看多'
+            reason = f'近30日南向资金净流入{total_inflow:.0f}亿元，外资大幅增持港股'
+        elif total_inflow > 100:
+            signal = '买入'
             score = 65
-        elif cumulative_30d < -100:
-            signal = '看空'
+            reason = f'近30日南向资金净流入{total_inflow:.0f}亿元，外资持续流入'
+        elif total_inflow < -200:
+            signal = '强烈卖出'
+            score = 20
+            reason = f'近30日南向资金净流出{abs(total_inflow):.0f}亿元，外资大幅减持'
+        elif total_inflow < -100:
+            signal = '卖出'
             score = 35
+            reason = f'近30日南向资金净流出{abs(total_inflow):.0f}亿元，外资持续流出'
         else:
             signal = '中性'
             score = 50
+            reason = f'近30日南向资金净流入{total_inflow:.0f}亿元，资金流向平稳'
         
         return {
             'signal': signal,
             'score': score,
-            'cumulative_30d': round(cumulative_30d, 2),
-            'recent_5d': round(recent_5d, 2),
-            'reason': f'近30日累计净流入{cumulative_30d:.1f}亿元'
+            'reason': reason,
+            'total_30d': round(total_inflow, 2),
+            'avg_daily': round(avg_daily, 2),
+            'days_count': len(data)
         }
     except Exception as e:
         print(f"获取南向资金信号失败: {e}")
-        return {'signal': 'neutral', 'score': 50, 'reason': '数据异常'}
+        return {'signal': '错误', 'score': 50, 'reason': str(e)}
 
-if __name__ == '__main__':
-    # 测试
-    print("测试南向资金数据获取...")
-    
-    # 测试整体流向
-    overall = get_southbound_overall_history(days=10)
-    print(f"\n整体流向数据（最近10天）:")
-    for item in overall[-5:]:
-        print(f"  {item['date']}: 净买入{item['net_inflow']}亿元")
-    
-    # 测试信号
-    signal = get_southbound_signal()
-    print(f"\n情绪信号: {signal}")
+# 清理过期缓存（模块加载时执行）
+_clear_expired_cache()
