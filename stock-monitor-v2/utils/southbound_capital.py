@@ -48,6 +48,7 @@ def _init_cache_db():
 
 def _get_cache(stock_code):
     """从SQLite获取缓存数据（直接用stock_code作为key）"""
+    print(f"[Cache DEBUG] _get_cache 被调用: {stock_code}")
     try:
         _init_cache_db()
         conn = sqlite3.connect(DB_PATH)
@@ -63,23 +64,33 @@ def _get_cache(stock_code):
             data = json.loads(row[0])
             print(f"[Cache] 命中: {stock_code}, {len(data)}条, 名称={row[1]}")
             return data
+        else:
+            print(f"[Cache DEBUG] 未命中: {stock_code}")
     except Exception as e:
         print(f"[Cache] 读取失败: {e}")
+        import traceback
+        traceback.print_exc()
     return None
 
 def _set_cache(stock_code, data):
     """保存数据到SQLite缓存（简化版）"""
+    print(f"[Cache DEBUG] _set_cache 被调用: {stock_code}, 数据条数={len(data) if data else 0}")
     try:
         if not data or len(data) == 0:
+            print(f"[Cache DEBUG] 数据为空，跳过保存")
             return
         
+        print(f"[Cache DEBUG] 初始化数据库...")
         _init_cache_db()
+        
+        print(f"[Cache DEBUG] 连接数据库...")
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         now = int(time.time())
         expires_at = now + CACHE_TTL
         
         stock_name = data[0].get('stock_name', stock_code)
+        print(f"[Cache DEBUG] 股票名称: {stock_name}")
         
         # 转换为简单类型确保JSON可序列化
         clean_data = []
@@ -93,8 +104,11 @@ def _set_cache(stock_code, data):
                     clean_item[k] = v
             clean_data.append(clean_item)
         
+        print(f"[Cache DEBUG] JSON序列化...")
         json_data = json.dumps(clean_data, ensure_ascii=False)
+        print(f"[Cache DEBUG] JSON长度: {len(json_data)}")
         
+        print(f"[Cache DEBUG] 执行INSERT...")
         cursor.execute('''
             INSERT OR REPLACE INTO southbound_stock_cache 
             (stock_code, stock_name, data_json, record_count, created_at, expires_at)
