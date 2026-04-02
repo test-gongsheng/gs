@@ -1,0 +1,1005 @@
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+ [renderStockList] 创建第 11 个股票项: 00700
+ [renderStockList] 已添加第 11 个股票项到 DOM
+ [renderStockList] 创建第 12 个股票项: 09988
+ [renderStockList] 已添加第 12 个股票项到 DOM
+ [renderStockList] 渲染完成，列表子元素数量: 12
+ [renderStockList] ========== 执行结束 ==========
+ [simulatePriceUpdate] 列表重新渲染完成
+localhost/:1 Uncaught (in promise) 
+ [refreshAxisPricesInBackground] 后台刷新完成
+ [simulatePriceUpdate] 开始重新渲染列表...
+ [renderStockList] ========== 开始执行 ==========
+ [renderStockList] appState.stocks 数量: 12
+ [renderStockList] 渲染 12 只股票
+ [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+ [renderStockList] 创建第 1 个股票项: 000559
+ [renderStockList] 已添加第 1 个股票项到 DOM
+ [renderStockList] 创建第 2 个股票项: 000878
+ [renderStockList] 已添加第 2 个股票项到 DOM
+ [renderStockList] 创建第 3 个股票项: 002050
+ [renderStockList] 已添加第 3 个股票项到 DOM
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+ [renderStockList] 创建第 11 个股票项: 00700
+ [renderStockList] 已添加第 11 个股票项到 DOM
+ [renderStockList] 创建第 12 个股票项: 09988
+ [renderStockList] 已添加第 12 个股票项到 DOM
+ [renderStockList] 渲染完成，列表子元素数量: 12
+ [renderStockList] ========== 执行结束 ==========
+ [simulatePriceUpdate] 列表重新渲染完成
+ [simulatePriceUpdate] 开始重新渲染列表...
+ [renderStockList] ========== 开始执行 ==========
+ [renderStockList] appState.stocks 数量: 12
+ [renderStockList] 渲染 12 只股票
+ [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+ [renderStockList] 创建第 1 个股票项: 000559
+ [renderStockList] 已添加第 1 个股票项到 DOM
+ [renderStockList] 创建第 2 个股票项: 000878
+ [renderStockList] 已添加第 2 个股票项到 DOM
+ [renderStockList] 创建第 3 个股票项: 002050
+ [renderStockList] 已添加第 3 个股票项到 DOM
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+ [renderStockList] 创建第 11 个股票项: 00700
+ [renderStockList] 已添加第 11 个股票项到 DOM
+ [renderStockList] 创建第 12 个股票项: 09988
+ [renderStockList] 已添加第 12 个股票项到 DOM
+ [renderStockList] 渲染完成，列表子元素数量: 12
+ [renderStockList] ========== 执行结束 ==========
+ [simulatePriceUpdate] 列表重新渲染完成
+ [DEBUG] API 响应状态: 200
+ [DEBUG] API 返回数据: Object
+ [DEBUG] changes type: object keys: Array(4)
+ [DEBUG] changes[3d]: Object
+ [DEBUG] changes[1w]: Object
+ [simulatePriceUpdate] 开始重新渲染列表...
+ [renderStockList] ========== 开始执行 ==========
+ [renderStockList] appState.stocks 数量: 12
+ [renderStockList] 渲染 12 只股票
+ [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+ [renderStockList] 创建第 1 个股票项: 000559
+ [renderStockList] 已添加第 1 个股票项到 DOM
+ [renderStockList] 创建第 2 个股票项: 000878
+ [renderStockList] 已添加第 2 个股票项到 DOM
+ [renderStockList] 创建第 3 个股票项: 002050
+ [renderStockList] 已添加第 3 个股票项到 DOM
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+ [renderStockList] 创建第 11 个股票项: 00700
+ [renderStockList] 已添加第 11 个股票项到 DOM
+ [renderStockList] 创建第 12 个股票项: 09988
+ [renderStockList] 已添加第 12 个股票项到 DOM
+ [renderStockList] 渲染完成，列表子元素数量: 12
+ [renderStockList] ========== 执行结束 ==========
+ [simulatePriceUpdate] 列表重新渲染完成
+ [simulatePriceUpdate] 开始重新渲染列表...
+ [renderStockList] ========== 开始执行 ==========
+ [renderStockList] appState.stocks 数量: 12
+ [renderStockList] 渲染 12 只股票
+ [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+ [renderStockList] 创建第 1 个股票项: 000559
+ [renderStockList] 已添加第 1 个股票项到 DOM
+ [renderStockList] 创建第 2 个股票项: 000878
+ [renderStockList] 已添加第 2 个股票项到 DOM
+ [renderStockList] 创建第 3 个股票项: 002050
+ [renderStockList] 已添加第 3 个股票项到 DOM
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+ [renderStockList] 创建第 11 个股票项: 00700
+ [renderStockList] 已添加第 11 个股票项到 DOM
+ [renderStockList] 创建第 12 个股票项: 09988
+ [renderStockList] 已添加第 12 个股票项到 DOM
+ [renderStockList] 渲染完成，列表子元素数量: 12
+ [renderStockList] ========== 执行结束 ==========
+ [simulatePriceUpdate] 列表重新渲染完成
+ alertLog 元素不存在，跳过日志记录: 已忽略本次提醒
+addAlertLog @ app.js:2391
+ [simulatePriceUpdate] 开始重新渲染列表...
+ [renderStockList] ========== 开始执行 ==========
+ [renderStockList] appState.stocks 数量: 12
+ [renderStockList] 渲染 12 只股票
+ [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+ [renderStockList] 创建第 1 个股票项: 000559
+ [renderStockList] 已添加第 1 个股票项到 DOM
+ [renderStockList] 创建第 2 个股票项: 000878
+ [renderStockList] 已添加第 2 个股票项到 DOM
+ [renderStockList] 创建第 3 个股票项: 002050
+ [renderStockList] 已添加第 3 个股票项到 DOM
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+ [renderStockList] 创建第 11 个股票项: 00700
+ [renderStockList] 已添加第 11 个股票项到 DOM
+ [renderStockList] 创建第 12 个股票项: 09988
+ [renderStockList] 已添加第 12 个股票项到 DOM
+ [renderStockList] 渲染完成，列表子元素数量: 12
+ [renderStockList] ========== 执行结束 ==========
+ [simulatePriceUpdate] 列表重新渲染完成
+ [renderHKShortRiskWarning] 开始渲染港股沽空提示，股票: 00285 比亚迪电
+ [simulatePriceUpdate] 开始重新渲染列表...
+ [renderStockList] ========== 开始执行 ==========
+ [renderStockList] appState.stocks 数量: 12
+ [renderStockList] 渲染 12 只股票
+ [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+ [renderStockList] 创建第 1 个股票项: 000559
+ [renderStockList] 已添加第 1 个股票项到 DOM
+ [renderStockList] 创建第 2 个股票项: 000878
+ [renderStockList] 已添加第 2 个股票项到 DOM
+ [renderStockList] 创建第 3 个股票项: 002050
+ [renderStockList] 已添加第 3 个股票项到 DOM
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+ [renderStockList] 创建第 11 个股票项: 00700
+ [renderStockList] 已添加第 11 个股票项到 DOM
+ [renderStockList] 创建第 12 个股票项: 09988
+ [renderStockList] 已添加第 12 个股票项到 DOM
+ [renderStockList] 渲染完成，列表子元素数量: 12
+ [renderStockList] ========== 执行结束 ==========
+ [simulatePriceUpdate] 列表重新渲染完成
+ [renderHKShortRiskWarning] 开始渲染港股沽空提示，股票: 00285 比亚迪电
+ [热点板块] 已更新 6 个板块
+ [renderHKShortRiskWarning] 渲染完成
+ [simulatePriceUpdate] 开始重新渲染列表...
+ [renderStockList] ========== 开始执行 ==========
+ [renderStockList] appState.stocks 数量: 12
+ [renderStockList] 渲染 12 只股票
+ [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+ [renderStockList] 创建第 1 个股票项: 000559
+ [renderStockList] 已添加第 1 个股票项到 DOM
+ [renderStockList] 创建第 2 个股票项: 000878
+ [renderStockList] 已添加第 2 个股票项到 DOM
+ [renderStockList] 创建第 3 个股票项: 002050
+ [renderStockList] 已添加第 3 个股票项到 DOM
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+ [renderStockList] 创建第 11 个股票项: 00700
+ [renderStockList] 已添加第 11 个股票项到 DOM
+ [renderStockList] 创建第 12 个股票项: 09988
+ [renderStockList] 已添加第 12 个股票项到 DOM
+ [renderStockList] 渲染完成，列表子元素数量: 12
+ [renderStockList] ========== 执行结束 ==========
+ [simulatePriceUpdate] 列表重新渲染完成
+ [renderHKShortRiskWarning] 开始渲染港股沽空提示，股票: 00285 比亚迪电
+ [renderHKShortRiskWarning] 使用缓存数据，股票: 00285
+ [renderHKShortRiskWarning] 渲染完成
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 开始重新渲染列表...
+ [renderStockList] ========== 开始执行 ==========
+ [renderStockList] appState.stocks 数量: 12
+ [renderStockList] 渲染 12 只股票
+ [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+ [renderStockList] 创建第 1 个股票项: 000559
+ [renderStockList] 已添加第 1 个股票项到 DOM
+ [renderStockList] 创建第 2 个股票项: 000878
+ [renderStockList] 已添加第 2 个股票项到 DOM
+ [renderStockList] 创建第 3 个股票项: 002050
+ [renderStockList] 已添加第 3 个股票项到 DOM
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+ [renderStockList] 创建第 11 个股票项: 00700
+ [renderStockList] 已添加第 11 个股票项到 DOM
+ [renderStockList] 创建第 12 个股票项: 09988
+ [renderStockList] 已添加第 12 个股票项到 DOM
+ [renderStockList] 渲染完成，列表子元素数量: 12
+ [renderStockList] ========== 执行结束 ==========
+ [simulatePriceUpdate] 列表重新渲染完成
+ [renderHKShortRiskWarning] 开始渲染港股沽空提示，股票: 00285 比亚迪电
+ [renderHKShortRiskWarning] 使用缓存数据，股票: 00285
+ [simulatePriceUpdate] 开始重新渲染列表...
+ [renderStockList] ========== 开始执行 ==========
+ [renderStockList] appState.stocks 数量: 12
+ [renderStockList] 渲染 12 只股票
+ [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+ [renderStockList] 创建第 1 个股票项: 000559
+ [renderStockList] 已添加第 1 个股票项到 DOM
+ [renderStockList] 创建第 2 个股票项: 000878
+ [renderStockList] 已添加第 2 个股票项到 DOM
+ [renderStockList] 创建第 3 个股票项: 002050
+ [renderStockList] 已添加第 3 个股票项到 DOM
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+ [renderStockList] 创建第 11 个股票项: 00700
+ [renderStockList] 已添加第 11 个股票项到 DOM
+ [renderStockList] 创建第 12 个股票项: 09988
+ [renderStockList] 已添加第 12 个股票项到 DOM
+ [renderStockList] 渲染完成，列表子元素数量: 12
+ [renderStockList] ========== 执行结束 ==========
+ [simulatePriceUpdate] 列表重新渲染完成
+ [renderHKShortRiskWarning] 开始渲染港股沽空提示，股票: 00285 比亚迪电
+ [renderHKShortRiskWarning] 使用缓存数据，股票: 00285
+ [simulatePriceUpdate] 开始重新渲染列表...
+ [renderStockList] ========== 开始执行 ==========
+ [renderStockList] appState.stocks 数量: 12
+ [renderStockList] 渲染 12 只股票
+ [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+ [renderStockList] 创建第 1 个股票项: 000559
+ [renderStockList] 已添加第 1 个股票项到 DOM
+ [renderStockList] 创建第 2 个股票项: 000878
+ [renderStockList] 已添加第 2 个股票项到 DOM
+ [renderStockList] 创建第 3 个股票项: 002050
+ [renderStockList] 已添加第 3 个股票项到 DOM
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+ [renderStockList] 创建第 11 个股票项: 00700
+ [renderStockList] 已添加第 11 个股票项到 DOM
+ [renderStockList] 创建第 12 个股票项: 09988
+ [renderStockList] 已添加第 12 个股票项到 DOM
+ [renderStockList] 渲染完成，列表子元素数量: 12
+ [renderStockList] ========== 执行结束 ==========
+ [simulatePriceUpdate] 列表重新渲染完成
+ [renderHKShortRiskWarning] 开始渲染港股沽空提示，股票: 00285 比亚迪电
+ [renderHKShortRiskWarning] 使用缓存数据，股票: 00285
+ [simulatePriceUpdate] 开始重新渲染列表...
+ [renderStockList] ========== 开始执行 ==========
+ [renderStockList] appState.stocks 数量: 12
+ [renderStockList] 渲染 12 只股票
+ [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+ [renderStockList] 创建第 1 个股票项: 000559
+ [renderStockList] 已添加第 1 个股票项到 DOM
+ [renderStockList] 创建第 2 个股票项: 000878
+ [renderStockList] 已添加第 2 个股票项到 DOM
+ [renderStockList] 创建第 3 个股票项: 002050
+ [renderStockList] 已添加第 3 个股票项到 DOM
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+ [renderStockList] 创建第 11 个股票项: 00700
+ [renderStockList] 已添加第 11 个股票项到 DOM
+ [renderStockList] 创建第 12 个股票项: 09988
+ [renderStockList] 已添加第 12 个股票项到 DOM
+ [renderStockList] 渲染完成，列表子元素数量: 12
+ [renderStockList] ========== 执行结束 ==========
+ [simulatePriceUpdate] 列表重新渲染完成
+ [renderHKShortRiskWarning] 开始渲染港股沽空提示，股票: 00285 比亚迪电
+ [renderHKShortRiskWarning] 使用缓存数据，股票: 00285
+ [simulatePriceUpdate] 开始重新渲染列表...
+ [renderStockList] ========== 开始执行 ==========
+ [renderStockList] appState.stocks 数量: 12
+ [renderStockList] 渲染 12 只股票
+ [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+ [renderStockList] 创建第 1 个股票项: 000559
+ [renderStockList] 已添加第 1 个股票项到 DOM
+ [renderStockList] 创建第 2 个股票项: 000878
+ [renderStockList] 已添加第 2 个股票项到 DOM
+ [renderStockList] 创建第 3 个股票项: 002050
+ [renderStockList] 已添加第 3 个股票项到 DOM
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+ [renderStockList] 创建第 11 个股票项: 00700
+ [renderStockList] 已添加第 11 个股票项到 DOM
+ [renderStockList] 创建第 12 个股票项: 09988
+ [renderStockList] 已添加第 12 个股票项到 DOM
+ [renderStockList] 渲染完成，列表子元素数量: 12
+ [renderStockList] ========== 执行结束 ==========
+ [simulatePriceUpdate] 列表重新渲染完成
+ [renderHKShortRiskWarning] 开始渲染港股沽空提示，股票: 00285 比亚迪电
+ [renderHKShortRiskWarning] 使用缓存数据，股票: 00285
+ [simulatePriceUpdate] 开始重新渲染列表...
+ [renderStockList] ========== 开始执行 ==========
+ [renderStockList] appState.stocks 数量: 12
+ [renderStockList] 渲染 12 只股票
+ [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+ [renderStockList] 创建第 1 个股票项: 000559
+ [renderStockList] 已添加第 1 个股票项到 DOM
+ [renderStockList] 创建第 2 个股票项: 000878
+ [renderStockList] 已添加第 2 个股票项到 DOM
+ [renderStockList] 创建第 3 个股票项: 002050
+ [renderStockList] 已添加第 3 个股票项到 DOM
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+ [renderStockList] 创建第 11 个股票项: 00700
+ [renderStockList] 已添加第 11 个股票项到 DOM
+ [renderStockList] 创建第 12 个股票项: 09988
+ [renderStockList] 已添加第 12 个股票项到 DOM
+ [renderStockList] 渲染完成，列表子元素数量: 12
+ [renderStockList] ========== 执行结束 ==========
+ [simulatePriceUpdate] 列表重新渲染完成
+ [renderHKShortRiskWarning] 开始渲染港股沽空提示，股票: 00285 比亚迪电
+ [renderHKShortRiskWarning] 使用缓存数据，股票: 00285
+ 新闻加载完成: 头条2条, 题材2条, 日历3条
+ 热点板块、情绪、新闻加载完成
+ [simulatePriceUpdate] 开始重新渲染列表...
+ [renderStockList] ========== 开始执行 ==========
+ [renderStockList] appState.stocks 数量: 12
+ [renderStockList] 渲染 12 只股票
+ [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+ [renderStockList] 创建第 1 个股票项: 000559
+ [renderStockList] 已添加第 1 个股票项到 DOM
+ [renderStockList] 创建第 2 个股票项: 000878
+ [renderStockList] 已添加第 2 个股票项到 DOM
+ [renderStockList] 创建第 3 个股票项: 002050
+ [renderStockList] 已添加第 3 个股票项到 DOM
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+ [renderStockList] 创建第 11 个股票项: 00700
+ [renderStockList] 已添加第 11 个股票项到 DOM
+ [renderStockList] 创建第 12 个股票项: 09988
+ [renderStockList] 已添加第 12 个股票项到 DOM
+ [renderStockList] 渲染完成，列表子元素数量: 12
+ [renderStockList] ========== 执行结束 ==========
+ [simulatePriceUpdate] 列表重新渲染完成
+ [renderHKShortRiskWarning] 开始渲染港股沽空提示，股票: 00285 比亚迪电
+ [renderHKShortRiskWarning] 使用缓存数据，股票: 00285
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ 加载市场情绪数据...
+ 加载结构化财联社新闻...
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [热点板块] 已更新 6 个板块
+ [simulatePriceUpdate] 开始重新渲染列表...
+ [renderStockList] ========== 开始执行 ==========
+ [renderStockList] appState.stocks 数量: 12
+ [renderStockList] 渲染 12 只股票
+ [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+ [renderStockList] 创建第 1 个股票项: 000559
+ [renderStockList] 已添加第 1 个股票项到 DOM
+ [renderStockList] 创建第 2 个股票项: 000878
+ [renderStockList] 已添加第 2 个股票项到 DOM
+ [renderStockList] 创建第 3 个股票项: 002050
+ [renderStockList] 已添加第 3 个股票项到 DOM
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+ [renderStockList] 创建第 11 个股票项: 00700
+ [renderStockList] 已添加第 11 个股票项到 DOM
+ [renderStockList] 创建第 12 个股票项: 09988
+ [renderStockList] 已添加第 12 个股票项到 DOM
+ [renderStockList] 渲染完成，列表子元素数量: 12
+ [renderStockList] ========== 执行结束 ==========
+ [simulatePriceUpdate] 列表重新渲染完成
+ [renderHKShortRiskWarning] 开始渲染港股沽空提示，股票: 00285 比亚迪电
+ [renderHKShortRiskWarning] 使用缓存数据，股票: 00285
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [DEBUG] renderSentiment 开始执行, appState.sentiment: Object
+ [DEBUG] 准备调用 loadPortfolioAnalysis
+ [DEBUG] loadPortfolioAnalysis 调用完成
+ [DEBUG] 准备调用 loadHKPortfolioRisk
+ [DEBUG] loadHKPortfolioRisk 开始执行
+ [DEBUG] loadHKPortfolioRisk 调用完成
+ 市场情绪加载完成: 中性
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ 加载市场情绪数据...
+ 加载结构化财联社新闻...
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ 新闻加载完成: 头条2条, 题材2条, 日历3条
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 开始重新渲染列表...
+ [renderStockList] ========== 开始执行 ==========
+ [renderStockList] appState.stocks 数量: 12
+ [renderStockList] 渲染 12 只股票
+ [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+ [renderStockList] 创建第 1 个股票项: 000559
+ [renderStockList] 已添加第 1 个股票项到 DOM
+ [renderStockList] 创建第 2 个股票项: 000878
+ [renderStockList] 已添加第 2 个股票项到 DOM
+ [renderStockList] 创建第 3 个股票项: 002050
+ [renderStockList] 已添加第 3 个股票项到 DOM
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+ [renderStockList] 创建第 11 个股票项: 00700
+ [renderStockList] 已添加第 11 个股票项到 DOM
+ [renderStockList] 创建第 12 个股票项: 09988
+ [renderStockList] 已添加第 12 个股票项到 DOM
+ [renderStockList] 渲染完成，列表子元素数量: 12
+ [renderStockList] ========== 执行结束 ==========
+ [simulatePriceUpdate] 列表重新渲染完成
+ [renderHKShortRiskWarning] 开始渲染港股沽空提示，股票: 00285 比亚迪电
+ [renderHKShortRiskWarning] 使用缓存数据，股票: 00285
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [DEBUG] API 响应状态: 200
+ [DEBUG] API 返回数据: Object
+ [DEBUG] changes type: object keys: Array(4)
+ [DEBUG] changes[3d]: Object
+ [DEBUG] changes[1w]: Object
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ 加载市场情绪数据...
+ 加载结构化财联社新闻...
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ 加载市场情绪数据...
+ 加载结构化财联社新闻...
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [热点板块] 已更新 6 个板块
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [热点板块] 已更新 6 个板块
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [DEBUG] renderSentiment 开始执行, appState.sentiment: Object
+ [DEBUG] 准备调用 loadPortfolioAnalysis
+ [DEBUG] loadPortfolioAnalysis 调用完成
+ [DEBUG] 准备调用 loadHKPortfolioRisk
+ [DEBUG] loadHKPortfolioRisk 开始执行
+ [DEBUG] loadHKPortfolioRisk 调用完成
+ 市场情绪加载完成: 中性
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [renderHKShortRiskWarning] 开始渲染港股沽空提示，股票: 00285 比亚迪电
+ [renderHKShortRiskWarning] 使用缓存数据，股票: 00285
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 开始重新渲染列表...
+ [renderStockList] ========== 开始执行 ==========
+ [renderStockList] appState.stocks 数量: 12
+ [renderStockList] 渲染 12 只股票
+ [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+ [renderStockList] 创建第 1 个股票项: 000559
+ [renderStockList] 已添加第 1 个股票项到 DOM
+ [renderStockList] 创建第 2 个股票项: 000878
+ [renderStockList] 已添加第 2 个股票项到 DOM
+ [renderStockList] 创建第 3 个股票项: 002050
+ [renderStockList] 已添加第 3 个股票项到 DOM
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+ [renderStockList] 创建第 11 个股票项: 00700
+ [renderStockList] 已添加第 11 个股票项到 DOM
+ [renderStockList] 创建第 12 个股票项: 09988
+ [renderStockList] 已添加第 12 个股票项到 DOM
+ [renderStockList] 渲染完成，列表子元素数量: 12
+ [renderStockList] ========== 执行结束 ==========
+ [simulatePriceUpdate] 列表重新渲染完成
+ [renderHKShortRiskWarning] 开始渲染港股沽空提示，股票: 00285 比亚迪电
+ [renderHKShortRiskWarning] 使用缓存数据，股票: 00285
+ [热点板块] 已更新 6 个板块
+ [热点板块] 已更新 6 个板块
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [DEBUG] renderSentiment 开始执行, appState.sentiment: Object
+ [DEBUG] 准备调用 loadPortfolioAnalysis
+ [DEBUG] loadPortfolioAnalysis 调用完成
+ [DEBUG] 准备调用 loadHKPortfolioRisk
+ [DEBUG] loadHKPortfolioRisk 开始执行
+ [DEBUG] loadHKPortfolioRisk 调用完成
+ 市场情绪加载完成: 中性
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ 加载市场情绪数据...
+ 加载结构化财联社新闻...
+ [热点板块] 已更新 6 个板块
+ [热点板块] 已更新 6 个板块
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [DEBUG] renderSentiment 开始执行, appState.sentiment: Object
+ [DEBUG] 准备调用 loadPortfolioAnalysis
+ [DEBUG] loadPortfolioAnalysis 调用完成
+ [DEBUG] 准备调用 loadHKPortfolioRisk
+ [DEBUG] loadHKPortfolioRisk 开始执行
+ [DEBUG] loadHKPortfolioRisk 调用完成
+ 市场情绪加载完成: 中性
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [热点板块] 已更新 6 个板块
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ 新闻加载完成: 头条2条, 题材2条, 日历3条
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [DEBUG] API 响应状态: 200
+ [DEBUG] API 返回数据: Object
+ [DEBUG] changes type: object keys: Array(4)
+ [DEBUG] changes[3d]: Object
+ [DEBUG] changes[1w]: Object
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 开始重新渲染列表...
+ [renderStockList] ========== 开始执行 ==========
+ [renderStockList] appState.stocks 数量: 12
+ [renderStockList] 渲染 12 只股票
+ [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+ [renderStockList] 创建第 1 个股票项: 000559
+ [renderStockList] 已添加第 1 个股票项到 DOM
+ [renderStockList] 创建第 2 个股票项: 000878
+ [renderStockList] 已添加第 2 个股票项到 DOM
+ [renderStockList] 创建第 3 个股票项: 002050
+ [renderStockList] 已添加第 3 个股票项到 DOM
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+ [renderStockList] 创建第 11 个股票项: 00700
+ [renderStockList] 已添加第 11 个股票项到 DOM
+ [renderStockList] 创建第 12 个股票项: 09988
+ [renderStockList] 已添加第 12 个股票项到 DOM
+ [renderStockList] 渲染完成，列表子元素数量: 12
+ [renderStockList] ========== 执行结束 ==========
+ [simulatePriceUpdate] 列表重新渲染完成
+ [renderHKShortRiskWarning] 开始渲染港股沽空提示，股票: 00285 比亚迪电
+ [renderHKShortRiskWarning] 使用缓存数据，股票: 00285
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ 新闻加载完成: 头条2条, 题材2条, 日历3条
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [热点板块] 已更新 6 个板块
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [DEBUG] renderSentiment 开始执行, appState.sentiment: Object
+ [DEBUG] 准备调用 loadPortfolioAnalysis
+ [DEBUG] loadPortfolioAnalysis 调用完成
+ [DEBUG] 准备调用 loadHKPortfolioRisk
+ [DEBUG] loadHKPortfolioRisk 开始执行
+ [DEBUG] loadHKPortfolioRisk 调用完成
+ 市场情绪加载完成: 中性
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [renderHKShortRiskWarning] 开始渲染港股沽空提示，股票: 09988 阿里巴巴
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ 新闻加载完成: 头条2条, 题材2条, 日历3条
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ 加载市场情绪数据...
+ 加载结构化财联社新闻...
+ [renderHKShortRiskWarning] 开始渲染港股沽空提示，股票: 09988 阿里巴巴
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [DEBUG] API 响应状态: 200
+ [DEBUG] API 返回数据: Object
+ [DEBUG] changes type: object keys: Array(4)
+ [DEBUG] changes[3d]: Object
+ [DEBUG] changes[1w]: Object
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 开始重新渲染列表...
+ [renderStockList] ========== 开始执行 ==========
+ [renderStockList] appState.stocks 数量: 12
+ [renderStockList] 渲染 12 只股票
+ [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+ [renderStockList] 创建第 1 个股票项: 000559
+ [renderStockList] 已添加第 1 个股票项到 DOM
+ [renderStockList] 创建第 2 个股票项: 000878
+ [renderStockList] 已添加第 2 个股票项到 DOM
+ [renderStockList] 创建第 3 个股票项: 002050
+ [renderStockList] 已添加第 3 个股票项到 DOM
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+ [renderStockList] 创建第 11 个股票项: 00700
+ [renderStockList] 已添加第 11 个股票项到 DOM
+ [renderStockList] 创建第 12 个股票项: 09988
+ [renderStockList] 已添加第 12 个股票项到 DOM
+ [renderStockList] 渲染完成，列表子元素数量: 12
+ [renderStockList] ========== 执行结束 ==========
+ [simulatePriceUpdate] 列表重新渲染完成
+ [renderHKShortRiskWarning] 开始渲染港股沽空提示，股票: 09988 阿里巴巴
+ [热点板块] 已更新 6 个板块
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [DEBUG] API 响应状态: 200
+ [DEBUG] API 返回数据: Object
+ [DEBUG] changes type: object keys: Array(4)
+ [DEBUG] changes[3d]: Object
+ [DEBUG] changes[1w]: Object
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [renderHKShortRiskWarning] 渲染完成
+ [热点板块] 已更新 6 个板块
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ 新闻加载完成: 头条2条, 题材2条, 日历3条
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ 加载市场情绪数据...
+ 加载结构化财联社新闻...
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [DEBUG] API 响应状态: 200
+ [DEBUG] API 返回数据: Object
+ [DEBUG] changes type: object keys: Array(4)
+ [DEBUG] changes[3d]: Object
+ [DEBUG] changes[1w]: Object
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 跳过：已有更新在进行中
+ [simulatePriceUpdate] 开始重新渲染列表...
+ [renderStockList] ========== 开始执行 ==========
+ [renderStockList] appState.stocks 数量: 12
+ [renderStockList] 渲染 12 只股票
+ [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+ [renderStockList] 创建第 1 个股票项: 000559
+ [renderStockList] 已添加第 1 个股票项到 DOM
+ [renderStockList] 创建第 2 个股票项: 000878
+ [renderStockList] 已添加第 2 个股票项到 DOM
+ [renderStockList] 创建第 3 个股票项: 002050
+ [renderStockList] 已添加第 3 个股票项到 DOM
+ [renderStockList] 创建第 4 个股票项: 002594
+ [renderStockList] 已添加第 4 个股票项到 DOM
+ [renderStockList] 创建第 5 个股票项: 300229
+ [renderStockList] 已添加第 5 个股票项到 DOM
+ [renderStockList] 创建第 6 个股票项: 300316
+ [renderStockList] 已添加第 6 个股票项到 DOM
+ [renderStockList] 创建第 7 个股票项: 300442
+ [renderStockList] 已添加第 7 个股票项到 DOM
+ [renderStockList] 创建第 8 个股票项: 601600
+ [renderStockList] 已添加第 8 个股票项到 DOM
+ [renderStockList] 创建第 9 个股票项: 688795
+ [renderStockList] 已添加第 9 个股票项到 DOM
+ [renderStockList] 创建第 10 个股票项: 00285
+ [renderStockList] 已添加第 10 个股票项到 DOM
+app.js?v=1775095720:631 [renderStockList] 创建第 11 个股票项: 00700
+app.js?v=1775095720:685 [renderStockList] 已添加第 11 个股票项到 DOM
+app.js?v=1775095720:631 [renderStockList] 创建第 12 个股票项: 09988
+app.js?v=1775095720:685 [renderStockList] 已添加第 12 个股票项到 DOM
+app.js?v=1775095720:688 [renderStockList] 渲染完成，列表子元素数量: 12
+app.js?v=1775095720:689 [renderStockList] ========== 执行结束 ==========
+app.js?v=1775095720:2163 [simulatePriceUpdate] 列表重新渲染完成
+app.js?v=1775095720:1026 [renderHKShortRiskWarning] 开始渲染港股沽空提示，股票: 09988 阿里巴巴
+app.js?v=1775095720:1035 [renderHKShortRiskWarning] 使用缓存数据，股票: 09988
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
+app.js?v=1775095720:2419 [DEBUG] renderSentiment 开始执行, appState.sentiment: Object
+app.js?v=1775095720:2573 [DEBUG] 准备调用 loadPortfolioAnalysis
+app.js?v=1775095720:2575 [DEBUG] loadPortfolioAnalysis 调用完成
+app.js?v=1775095720:2578 [DEBUG] 准备调用 loadHKPortfolioRisk
+app.js?v=1775095720:2844 [DEBUG] loadHKPortfolioRisk 开始执行
+app.js?v=1775095720:2580 [DEBUG] loadHKPortfolioRisk 调用完成
+app.js?v=1775095720:2408 市场情绪加载完成: 中性
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
+southbound.js?v=1775095720:266 [Southbound] 忽略过期数据: 00285
+southbound.js?v=1775095720:266 [Southbound] 忽略过期数据: 00285
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
+app.js?v=1775095720:1623 [热点板块] 已更新 6 个板块
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
+app.js?v=1775095720:1071 [renderHKShortRiskWarning] 渲染完成
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
+app.js?v=1775095720:1071 [renderHKShortRiskWarning] 渲染完成
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
+app.js?v=1775095720:1877 新闻加载完成: 头条2条, 题材2条, 日历3条
+southbound.js?v=1775095720:266 [Southbound] 忽略过期数据: 00285
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
+app.js?v=1775095720:1623 [热点板块] 已更新 6 个板块
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
+app.js?v=1775095720:2419 [DEBUG] renderSentiment 开始执行, appState.sentiment: Object
+app.js?v=1775095720:2573 [DEBUG] 准备调用 loadPortfolioAnalysis
+app.js?v=1775095720:2575 [DEBUG] loadPortfolioAnalysis 调用完成
+app.js?v=1775095720:2578 [DEBUG] 准备调用 loadHKPortfolioRisk
+app.js?v=1775095720:2844 [DEBUG] loadHKPortfolioRisk 开始执行
+app.js?v=1775095720:2580 [DEBUG] loadHKPortfolioRisk 调用完成
+app.js?v=1775095720:2408 市场情绪加载完成: 中性
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
+app.js?v=1775095720:2161 [simulatePriceUpdate] 开始重新渲染列表...
+app.js?v=1775095720:610 [renderStockList] ========== 开始执行 ==========
+app.js?v=1775095720:619 [renderStockList] appState.stocks 数量: 12
+app.js?v=1775095720:627 [renderStockList] 渲染 12 只股票
+app.js?v=1775095720:628 [renderStockList] 股票代码: 000559, 000878, 002050, 002594, 300229, 300316, 300442, 601600, 688795, 00285, 00700, 09988
+app.js?v=1775095720:631 [renderStockList] 创建第 1 个股票项: 000559
+app.js?v=1775095720:685 [renderStockList] 已添加第 1 个股票项到 DOM
+app.js?v=1775095720:631 [renderStockList] 创建第 2 个股票项: 000878
+app.js?v=1775095720:685 [renderStockList] 已添加第 2 个股票项到 DOM
+app.js?v=1775095720:631 [renderStockList] 创建第 3 个股票项: 002050
+app.js?v=1775095720:685 [renderStockList] 已添加第 3 个股票项到 DOM
+app.js?v=1775095720:631 [renderStockList] 创建第 4 个股票项: 002594
+app.js?v=1775095720:685 [renderStockList] 已添加第 4 个股票项到 DOM
+app.js?v=1775095720:631 [renderStockList] 创建第 5 个股票项: 300229
+app.js?v=1775095720:685 [renderStockList] 已添加第 5 个股票项到 DOM
+app.js?v=1775095720:631 [renderStockList] 创建第 6 个股票项: 300316
+app.js?v=1775095720:685 [renderStockList] 已添加第 6 个股票项到 DOM
+app.js?v=1775095720:631 [renderStockList] 创建第 7 个股票项: 300442
+app.js?v=1775095720:685 [renderStockList] 已添加第 7 个股票项到 DOM
+app.js?v=1775095720:631 [renderStockList] 创建第 8 个股票项: 601600
+app.js?v=1775095720:685 [renderStockList] 已添加第 8 个股票项到 DOM
+app.js?v=1775095720:631 [renderStockList] 创建第 9 个股票项: 688795
+app.js?v=1775095720:685 [renderStockList] 已添加第 9 个股票项到 DOM
+app.js?v=1775095720:631 [renderStockList] 创建第 10 个股票项: 00285
+app.js?v=1775095720:685 [renderStockList] 已添加第 10 个股票项到 DOM
+app.js?v=1775095720:631 [renderStockList] 创建第 11 个股票项: 00700
+app.js?v=1775095720:685 [renderStockList] 已添加第 11 个股票项到 DOM
+app.js?v=1775095720:631 [renderStockList] 创建第 12 个股票项: 09988
+app.js?v=1775095720:685 [renderStockList] 已添加第 12 个股票项到 DOM
+app.js?v=1775095720:688 [renderStockList] 渲染完成，列表子元素数量: 12
+app.js?v=1775095720:689 [renderStockList] ========== 执行结束 ==========
+app.js?v=1775095720:2163 [simulatePriceUpdate] 列表重新渲染完成
+app.js?v=1775095720:1026 [renderHKShortRiskWarning] 开始渲染港股沽空提示，股票: 09988 阿里巴巴
+app.js?v=1775095720:1035 [renderHKShortRiskWarning] 使用缓存数据，股票: 09988
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
+app.js?v=1775095720:2401 加载市场情绪数据...
+app.js?v=1775095720:1870 加载结构化财联社新闻...
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
+app.js?v=1775095720:1623 [热点板块] 已更新 6 个板块
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
+app.js?v=1775095720:2846 [DEBUG] API 响应状态: 200
+app.js?v=1775095720:2853 [DEBUG] API 返回数据: Object
+app.js?v=1775095720:2883 [DEBUG] changes type: object keys: Array(4)
+app.js?v=1775095720:2884 [DEBUG] changes[3d]: Object
+app.js?v=1775095720:2885 [DEBUG] changes[1w]: Object
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
+app.js?v=1775095720:2110 [simulatePriceUpdate] 跳过：已有更新在进行中
