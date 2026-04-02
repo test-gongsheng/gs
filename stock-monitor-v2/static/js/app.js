@@ -35,7 +35,8 @@ const appState = {
     totalAssets: 8000000, // 800万
     marketStatus: 'closed',
     version: APP_VERSION,
-    _updatingQuotes: false  // 行情更新锁，防止竞争条件
+    _updatingQuotes: false,  // 行情更新锁，防止竞争条件
+    lastSouthboundStockCode: null  // 上次加载南向资金的股票代码
 };
 
 // 挂载到 window 对象，供其他脚本访问
@@ -909,10 +910,14 @@ function renderStockDetail() {
         if (southboundEl) {
             southboundEl.style.display = 'block';
             // 只在股票代码变化时才加载南向资金数据，避免重复请求
+            console.log(`[Southbound] 检查加载: stock.code=${stock.code}, last=${appState.lastSouthboundStockCode}, 相同=${appState.lastSouthboundStockCode === stock.code}`);
             if (typeof loadSouthboundStockData === 'function' && 
                 appState.lastSouthboundStockCode !== stock.code) {
                 appState.lastSouthboundStockCode = stock.code;
+                console.log(`[Southbound] 调用加载: ${stock.code}`);
                 loadSouthboundStockData(stock.code);
+            } else {
+                console.log(`[Southbound] 跳过加载: ${stock.code} (已加载或函数不存在)`);
             }
         }
     } else {
