@@ -309,8 +309,15 @@ def get_southbound_stock_history(stock_code: str, days: int = 90) -> List[Dict]:
         
         print(f"[Southbound] 股票 {stock_code} 返回 {len(result)} 条数据")
         
-        # 保存到缓存
-        _set_cache(stock_code, result)
+        # 保存到缓存 - 强制调试
+        print(f"[Southbound DEBUG] 准备保存缓存: {stock_code}, 数据条数={len(result)}")
+        try:
+            _set_cache(stock_code, result)
+            print(f"[Southbound DEBUG] 缓存保存完成: {stock_code}")
+        except Exception as cache_err:
+            print(f"[Southbound DEBUG] 缓存保存失败: {cache_err}")
+            import traceback
+            traceback.print_exc()
         
         return result
         
