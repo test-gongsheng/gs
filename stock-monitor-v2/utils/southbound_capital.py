@@ -62,14 +62,26 @@ def _set_cache(key, data, stock_code=''):
         cursor = conn.cursor()
         now = int(time.time())
         expires_at = now + CACHE_TTL
+        
+        # 确保数据可以JSON序列化
+        try:
+            json_data = json.dumps(data, ensure_ascii=False, default=str)
+        except Exception as json_err:
+            print(f"[Cache] JSON序列化失败: {json_err}")
+            conn.close()
+            return
+        
         cursor.execute('''
             INSERT OR REPLACE INTO southbound_cache (cache_key, stock_code, data, created_at, expires_at)
             VALUES (?, ?, ?, ?, ?)
-        ''', (key, stock_code, json.dumps(data), now, expires_at))
+        ''', (key, stock_code, json_data, now, expires_at))
         conn.commit()
         conn.close()
+        print(f"[Cache] 已保存: {key}, {len(data)}条")
     except Exception as e:
         print(f"[Cache] 写入缓存失败: {e}")
+        import traceback
+        traceback.print_exc()
 
 def init_db():
     """初始化数据库"""
