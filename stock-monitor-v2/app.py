@@ -455,7 +455,12 @@ def get_southbound_stock(stock_code):
         days = request.args.get('days', 90, type=int)
         print(f"[API] 请求南向资金数据: {stock_code}, days={days}")
         data = get_southbound_stock_history(stock_code, days=days)
-        print(f"[API] 返回南向资金数据: {stock_code}, count={len(data)}")
+        
+        # 打印第一条和最后一条数据的股票名称，用于调试
+        if data:
+            print(f"[API] 返回数据: {stock_code}, count={len(data)}, name={data[0].get('stock_name', 'N/A')}")
+        else:
+            print(f"[API] 返回数据: {stock_code}, count=0, 无数据")
         
         return jsonify({
             'success': True,

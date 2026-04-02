@@ -269,7 +269,7 @@ async function loadSouthboundStockData(stockCode) {
         }
         
         if (result.success && result.data && result.data.length > 0) {
-            console.log(`[Southbound] 渲染数据: ${thisRequestStockCode}, ${result.data.length}条`);
+            console.log(`[Southbound] 渲染数据: ${thisRequestStockCode}, ${result.data.length}条, 股票名: ${result.data[0]?.stock_name || 'N/A'}`);
             renderSouthboundStockChart(result.data, thisRequestStockCode);
             updateSouthboundStockStats(result.data, thisRequestStockCode);
         } else {
