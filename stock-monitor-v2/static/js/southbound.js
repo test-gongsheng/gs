@@ -4,8 +4,6 @@
 
 // 当前正在显示南向资金的股票代码（用于防止竞态条件）
 let currentSouthboundStockCode = null;
-// 当前请求的 AbortController（用于取消之前的请求）
-let southboundAbortController = null;
 
 // 渲染南向资金整体流向图表
 function renderSouthboundOverallChart(data) {
@@ -116,6 +114,12 @@ function renderSouthboundStockChart(data, stockCode) {
     
     const ctx = document.getElementById('southboundStockChart');
     if (!ctx) return;
+    
+    // 验证是否仍然是当前选中的股票
+    if (currentSouthboundStockCode !== stockCode) {
+        console.log(`[Southbound] 忽略过期图表数据: ${stockCode}`);
+        return;
+    }
     
     // 准备数据
     const dates = data.map(d => d.date);
@@ -248,24 +252,16 @@ async function loadSouthboundOverallData() {
 
 // 加载个股南向资金数据
 async function loadSouthboundStockData(stockCode) {
-    // 取消之前的请求
-    if (southboundAbortController) {
-        southboundAbortController.abort();
-    }
-    
-    // 创建新的 AbortController
-    southboundAbortController = new AbortController();
-    const signal = southboundAbortController.signal;
-    
     // 记录当前请求的股票代码
     currentSouthboundStockCode = stockCode;
     
     try {
-        const response = await fetch(`/api/southbound/stock/${stockCode}?days=90`, { signal });
+        const response = await fetch(`/api/southbound/stock/${stockCode}?days=90`);
         const result = await response.json();
         
         // 检查返回的数据是否对应当前选中的股票（防止竞态条件）
         if (result.success && result.data) {
+            // 如果用户已经切换了股票，就丢弃这次数据
             if (currentSouthboundStockCode !== stockCode) {
                 console.log(`[Southbound] 忽略过期数据: ${stockCode}`);
                 return;
@@ -275,11 +271,7 @@ async function loadSouthboundStockData(stockCode) {
             updateSouthboundStockStats(result.data, stockCode);
         }
     } catch (error) {
-        if (error.name === 'AbortError') {
-            console.log(`[Southbound] 请求已取消: ${stockCode}`);
-        } else {
-            console.error('加载个股南向资金数据失败:', error);
-        }
+        console.error('加载个股南向资金数据失败:', error);
     }
 }
 
@@ -335,7 +327,7 @@ function updateSouthboundStockStats(data, stockCode) {
     if (data.length === 0) return;
     
     // 验证是否仍然是当前选中的股票
-    if (stockCode && currentSouthboundStockCode !== stockCode) {
+    if (currentSouthboundStockCode !== stockCode) {
         console.log(`[Southbound] 忽略过期统计数据: ${stockCode}`);
         return;
     }
