@@ -706,6 +706,8 @@ function selectStock(index) {
 function renderStockDetail() {
     const stock = appState.selectedStock;
     if (!stock) return;
+    
+    console.log(`[renderStockDetail] 被调用, stock.code=${stock.code}, name=${stock.name}`);
 
     // 给所有数值字段加默认值，防止后端数据缺失导致报错
     const safeStock = {
