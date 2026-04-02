@@ -2,6 +2,11 @@
  * 南向资金图表模块
  */
 
+// 当前正在显示南向资金的股票代码（用于防止竞态条件）
+let currentSouthboundStockCode = null;
+// 当前请求的 AbortController（用于取消之前的请求）
+let southboundAbortController = null;
+
 // 渲染南向资金整体流向图表
 function renderSouthboundOverallChart(data) {
     // 检查 Chart.js 是否已加载
@@ -243,16 +248,38 @@ async function loadSouthboundOverallData() {
 
 // 加载个股南向资金数据
 async function loadSouthboundStockData(stockCode) {
+    // 取消之前的请求
+    if (southboundAbortController) {
+        southboundAbortController.abort();
+    }
+    
+    // 创建新的 AbortController
+    southboundAbortController = new AbortController();
+    const signal = southboundAbortController.signal;
+    
+    // 记录当前请求的股票代码
+    currentSouthboundStockCode = stockCode;
+    
     try {
-        const response = await fetch(`/api/southbound/stock/${stockCode}?days=90`);
+        const response = await fetch(`/api/southbound/stock/${stockCode}?days=90`, { signal });
         const result = await response.json();
         
+        // 检查返回的数据是否对应当前选中的股票（防止竞态条件）
         if (result.success && result.data) {
+            if (currentSouthboundStockCode !== stockCode) {
+                console.log(`[Southbound] 忽略过期数据: ${stockCode}`);
+                return;
+            }
+            
             renderSouthboundStockChart(result.data, stockCode);
-            updateSouthboundStockStats(result.data);
+            updateSouthboundStockStats(result.data, stockCode);
         }
     } catch (error) {
-        console.error('加载个股南向资金数据失败:', error);
+        if (error.name === 'AbortError') {
+            console.log(`[Southbound] 请求已取消: ${stockCode}`);
+        } else {
+            console.error('加载个股南向资金数据失败:', error);
+        }
     }
 }
 
@@ -304,8 +331,14 @@ function updateSouthboundStats(data) {
 }
 
 // 更新个股统计数据
-function updateSouthboundStockStats(data) {
+function updateSouthboundStockStats(data, stockCode) {
     if (data.length === 0) return;
+    
+    // 验证是否仍然是当前选中的股票
+    if (stockCode && currentSouthboundStockCode !== stockCode) {
+        console.log(`[Southbound] 忽略过期统计数据: ${stockCode}`);
+        return;
+    }
     
     const latest = data[data.length - 1];
     
