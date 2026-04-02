@@ -1180,6 +1180,27 @@ def get_southbound_stock_api(stock_code):
 if __name__ == '__main__':
     # 启动时预加载缓存
     preload_axis_cache()
+    
+    # 后台线程预加载南向资金数据（持仓港股）
+    def preload_southbound_in_background():
+        import threading
+        def _preload():
+            import time
+            time.sleep(3)  # 等待Flask完全启动
+            print("[Preload] 开始后台预加载南向资金数据...")
+            hk_stocks = ['00285', '00700', '09988']
+            for code in hk_stocks:
+                try:
+                    get_southbound_stock_history(code, days=90)
+                    print(f"[Preload] ✅ {code} 预加载完成")
+                except Exception as e:
+                    print(f"[Preload] ❌ {code} 预加载失败: {e}")
+            print("[Preload] 南向资金预加载完成，现在访问港股将秒出数据")
+        
+        thread = threading.Thread(target=_preload, daemon=True)
+        thread.start()
+    
+    preload_southbound_in_background()
     app.run(debug=False, host='0.0.0.0', port=8888, use_reloader=False)
 
 
