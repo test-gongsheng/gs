@@ -106,6 +106,21 @@ def get_southbound_stock_history(stock_code: str, days: int = 90) -> List[Dict]:
     获取指定港股通股票的南向资金流向历史
     """
     try:
+        # 从 stocks.json 获取正确的股票名称
+        stock_name = stock_code  # 默认使用代码作为名称
+        try:
+            import json
+            stocks_json_path = os.path.join(DATA_DIR, 'stocks.json')
+            if os.path.exists(stocks_json_path):
+                with open(stocks_json_path, 'r', encoding='utf-8') as f:
+                    stocks_data = json.load(f)
+                    for stock in stocks_data.get('stocks', []):
+                        if stock.get('code') == stock_code:
+                            stock_name = stock.get('name', stock_code)
+                            break
+        except Exception as e:
+            print(f"[Southbound] 读取stocks.json失败: {e}")
+        
         # 标准化股票代码：去掉前导零，用于匹配
         # 港股代码如 00700 -> 700, 09988 -> 9988
         hk_code_normalized = stock_code.lstrip('0')
@@ -152,13 +167,6 @@ def get_southbound_stock_history(stock_code: str, days: int = 90) -> List[Dict]:
             print(f"[Southbound] 可用代码样例: {list(available_codes)}")
             return []
         
-        # DEBUG: 打印筛选后的数据，检查股票名称
-        print(f"[Southbound DEBUG] 股票 {stock_code} 筛选后数据:")
-        print(f"[Southbound DEBUG] 列名: {list(stock_data.columns)}")
-        print(f"[Southbound DEBUG] 前3行股票代码和名称:")
-        for idx, row in stock_data.head(3).iterrows():
-            print(f"  代码={row.get('股票代码', 'N/A')}, 名称={row.get('股票简称', 'N/A')}")
-        
         # 按日期排序
         stock_data = stock_data.sort_values('持股日期', ascending=True)
         stock_data = stock_data.tail(days)
@@ -173,7 +181,28 @@ def get_southbound_stock_history(stock_code: str, days: int = 90) -> List[Dict]:
             
             hold_shares = float(row.get('持股数量', 0))
             hold_ratio = float(row.get('持股数量占发行股百分比', 0))
-            stock_name = row.get('股票简称', '')
+            # 使用从stocks.json获取的正确名称，覆盖akshare返回的名称
+            close_price = float(row.get('当日收盘价', 0))
+            
+            # 计算持股变化（与前一日比较）
+            hold_change = 0
+            if prev_shares is not None:
+                hold_change = hold_shares - prev_shares
+            prev_shares = hold_shares
+            
+            # 估算净流入（持股变化 × 当日收盘价 / 100000000）
+            net_inflow = round(hold_change * close_price / 100000000, 2)
+            
+            result.append({
+                'date': str(date_str),
+                'stock_code': stock_code,
+                'stock_name': stock_name,  # 使用正确的名称
+                'net_inflow': net_inflow,
+                'hold_ratio': round(hold_ratio, 2),
+                'hold_shares': round(hold_shares, 2),
+                'hold_change': round(hold_change, 2),
+                'close_price': close_price
+            })
             close_price = float(row.get('当日收盘价', 0))
             
             # 计算持股变化（与前一日比较）
