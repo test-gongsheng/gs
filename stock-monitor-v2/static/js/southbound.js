@@ -284,7 +284,7 @@ async function loadSouthboundStockData(stockCode) {
     const startTime = Date.now();
     
     try {
-        const response = await fetch(`/api/southbound/stock/${thisRequestStockCode}?days=90`, {
+        const response = await fetch(`/api/southbound-capital/${thisRequestStockCode}?days=90`, {
             signal: signal
         });
         
