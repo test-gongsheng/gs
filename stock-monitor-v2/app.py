@@ -50,6 +50,44 @@ def add_header(response):
 axis_price_cache = {}
 CACHE_TTL = 1800  # 缓存30分钟
 
+# 南向资金预加载标志
+_southbound_preload_started = False
+
+def start_southbound_preload():
+    """启动后台线程预加载南向资金数据"""
+    global _southbound_preload_started
+    if _southbound_preload_started:
+        return
+    _southbound_preload_started = True
+    
+    import threading
+    def _preload():
+        import time
+        time.sleep(5)  # 等待Flask完全启动
+        print("\n" + "="*50)
+        print("[Preload] 开始后台预加载南向资金数据...")
+        print("="*50)
+        hk_stocks = ['00285', '00700', '09988']
+        for code in hk_stocks:
+            try:
+                print(f"[Preload] 正在加载 {code}...")
+                result = get_southbound_stock_history(code, days=90)
+                print(f"[Preload] ✅ {code} 预加载完成，{len(result)}条数据")
+            except Exception as e:
+                print(f"[Preload] ❌ {code} 预加载失败: {e}")
+                import traceback
+                traceback.print_exc()
+        print("="*50)
+        print("[Preload] 南向资金预加载完成，现在访问港股将秒出数据")
+        print("="*50 + "\n")
+    
+    thread = threading.Thread(target=_preload, daemon=True)
+    thread.start()
+    print("[Preload] 南向资金预加载线程已启动，5秒后开始...")
+
+# 启动时自动开始预加载
+start_southbound_preload()
+
 def get_cached_axis_price(code, market, days=90):
     """从缓存获取中轴价格，如果不存在或过期则重新计算（失败时返回默认值）"""
     cache_key = f"{code}:{market}"
@@ -1178,29 +1216,8 @@ def get_southbound_stock_api(stock_code):
 
 
 if __name__ == '__main__':
-    # 启动时预加载缓存
+    # 启动时预加载中轴价格缓存
     preload_axis_cache()
-    
-    # 后台线程预加载南向资金数据（持仓港股）
-    def preload_southbound_in_background():
-        import threading
-        def _preload():
-            import time
-            time.sleep(3)  # 等待Flask完全启动
-            print("[Preload] 开始后台预加载南向资金数据...")
-            hk_stocks = ['00285', '00700', '09988']
-            for code in hk_stocks:
-                try:
-                    get_southbound_stock_history(code, days=90)
-                    print(f"[Preload] ✅ {code} 预加载完成")
-                except Exception as e:
-                    print(f"[Preload] ❌ {code} 预加载失败: {e}")
-            print("[Preload] 南向资金预加载完成，现在访问港股将秒出数据")
-        
-        thread = threading.Thread(target=_preload, daemon=True)
-        thread.start()
-    
-    preload_southbound_in_background()
     app.run(debug=False, host='0.0.0.0', port=8888, use_reloader=False)
 
 
