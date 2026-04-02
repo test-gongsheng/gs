@@ -1,0 +1,286 @@
+[CACHE] 启动后台线程预加载中轴价格缓存...
+[CACHE] 发现 0 只持仓股票
+[CACHE] 预加载完成，缓存条目: 0
+ * Serving Flask app 'app'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8888
+ * Running on http://192.168.101.7:8888
+Press CTRL+C to quit
+127.0.0.1 - - [02/Apr/2026 22:51:00] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [02/Apr/2026 22:51:01] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:01] "GET /static/css/style.css?v=1775141460 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:01] "GET /static/js/southbound.js?v=1775141460 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:01] "GET /static/js/modules/state.js?v=1775141460 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:01] "GET /static/css/ib-analysis.css?v=1775141460 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:01] "GET /static/js/modules/utils.js?v=1775141460 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:01] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:01] "GET /static/js/modules/api.js?v=1775141460 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:01] "GET /static/js/app.js?v=1775141460 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:02] "GET /static/css/style.css?v=1775141461 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:02] "GET /static/js/modules/state.js?v=1775141461 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:02] "GET /static/js/modules/api.js?v=1775141461 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:02] "GET /static/js/modules/utils.js?v=1775141461 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:02] "GET /static/css/ib-analysis.css?v=1775141461 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:02] "GET /static/js/southbound.js?v=1775141461 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:02] "GET /static/js/app.js?v=1775141461 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:02] "GET /static/js/import.js?v=1775141461 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:03] "GET /api/stocks HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:03] "GET /api/stocks HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:03] "GET /api/portfolio-analysis HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:03] "GET /api/market/hot-sectors HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:05] "GET /api/ib-analysis?t=1775141464765 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:06] "GET /api/portfolio-analysis HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:12] "GET /api/market/sentiment HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:12] "GET /api/portfolio-analysis HTTP/1.1" 200 -
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+获取主力资金流向失败: stock_individual_fund_flow() got an unexpected keyword argument 'symbol'
+获取市场宽度失败: '涨停类型'
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+  0%|          | 0/3 [00:00<?, ?it/s]127.0.0.1 - - [02/Apr/2026 22:51:14] "GET /api/portfolio/hk-short-analysis HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:14] "GET /api/stocks HTTP/1.1" 200 -
+ 33%|███▎      | 1/3 [00:01<00:02,  1.05s/it]127.0.0.1 - - [02/Apr/2026 22:51:15] "POST /api/stocks/clear HTTP/1.1" 200 -
+ 67%|██████▋   | 2/3 [00:02<00:01,  1.11s/it]127.0.0.1 - - [02/Apr/2026 22:51:17] "GET /api/exchange-rate HTTP/1.1" 200 -
+100%|██████████| 3/3 [00:03<00:00,  1.06s/it]                                             127.0.0.1 - - [02/Apr/2026 22:51:17] "GET /api/southbound/overall?days=90 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:19] "POST /api/stocks/batch HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:20] "GET /api/stocks HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:21] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:22] "GET /static/js/modules/utils.js?v=1775141481 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:22] "GET /static/js/modules/state.js?v=1775141481 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:22] "GET /static/js/modules/api.js?v=1775141481 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:22] "GET /static/css/style.css?v=1775141481 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:22] "GET /static/css/ib-analysis.css?v=1775141481 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:22] "GET /static/js/southbound.js?v=1775141481 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:22] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:22] "GET /static/js/app.js?v=1775141481 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:22] "GET /static/css/style.css?v=1775141482 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:22] "GET /static/css/ib-analysis.css?v=1775141482 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:22] "GET /static/js/modules/utils.js?v=1775141482 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:22] "GET /static/js/modules/api.js?v=1775141482 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:22] "GET /static/js/modules/state.js?v=1775141482 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:22] "GET /static/js/southbound.js?v=1775141482 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:22] "GET /static/js/app.js?v=1775141482 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:23] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:23] "GET /static/css/style.css?v=1775141483 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:23] "GET /static/css/ib-analysis.css?v=1775141483 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:23] "GET /static/js/modules/utils.js?v=1775141483 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:23] "GET /static/js/modules/api.js?v=1775141483 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:23] "GET /static/js/modules/state.js?v=1775141483 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:23] "GET /static/js/southbound.js?v=1775141483 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:23] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:23] "GET /static/css/style.css?v=1775141483 HTTP/1.1" 304 -
+127.0.0.1 - - [02/Apr/2026 22:51:23] "GET /static/css/ib-analysis.css?v=1775141483 HTTP/1.1" 304 -
+127.0.0.1 - - [02/Apr/2026 22:51:24] "GET /static/js/app.js?v=1775141483 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:24] "GET /static/js/modules/api.js?v=1775141483 HTTP/1.1" 304 -
+127.0.0.1 - - [02/Apr/2026 22:51:24] "GET /static/js/modules/utils.js?v=1775141483 HTTP/1.1" 304 -
+127.0.0.1 - - [02/Apr/2026 22:51:24] "GET /static/js/import.js?v=1775141483 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:24] "GET /static/js/modules/state.js?v=1775141483 HTTP/1.1" 304 -
+127.0.0.1 - - [02/Apr/2026 22:51:24] "GET /static/js/southbound.js?v=1775141483 HTTP/1.1" 304 -
+127.0.0.1 - - [02/Apr/2026 22:51:24] "GET /api/stocks HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:24] "GET /api/stocks HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:25] "GET /api/portfolio-analysis HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:26] "GET /api/market/hot-sectors HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:26] "GET /api/ib-analysis?t=1775141486319 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:27] "POST /api/quotes HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:27] "GET /api/portfolio-analysis HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:27] "POST /api/axis-price HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:29] "POST /api/axis-price HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:30] "POST /api/quotes HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:30] "POST /api/axis-price HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:31] "GET /api/market/sentiment HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:31] "GET /api/portfolio-analysis HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:32] "POST /api/axis-price HTTP/1.1" 200 -
+[clear_all_stocks] 已清空 0 只股票
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[batch_add_stocks] 批量添加 12 只股票
+[batch_add_stocks] 添加: 000559 -> ID 1775141477249
+[batch_add_stocks] 添加: 000878 -> ID 1775141477215
+[batch_add_stocks] 添加: 002050 -> ID 1775141477155
+[batch_add_stocks] 添加: 002594 -> ID 1775141477630
+[batch_add_stocks] 添加: 300229 -> ID 1775141477888
+[batch_add_stocks] 添加: 300316 -> ID 1775141477793
+[batch_add_stocks] 添加: 300442 -> ID 1775141477782
+[batch_add_stocks] 添加: 601600 -> ID 1775141477537
+[batch_add_stocks] 添加: 688795 -> ID 1775141477682
+[batch_add_stocks] 添加: 00285 -> ID 1775141477100
+[batch_add_stocks] 添加: 00700 -> ID 1775141478781
+[batch_add_stocks] 添加: 09988 -> ID 1775141478390
+[batch_add_stocks] 成功添加 12 只股票
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[API] 获取中轴价格: 000559, 市场: A股, 天数: 90
+[CACHE MISS] 000559 重新计算中轴价格...
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[新闻模块] 用户持仓板块: ['其他', 'AI人工智能', '锂电池', '计算机', '有色金属']
+[akshare] K线获取失败 000559 (尝试1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[API] 获取中轴价格成功: 000559 = 16.56
+[API] 获取中轴价格: 000878, 市场: A股, 天数: 90
+[CACHE MISS] 000878 重新计算中轴价格...
+[akshare] K线获取失败 000878 (尝试1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[API] 获取中轴价格成功: 000878 = 21.07
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[API] 获取中轴价格: 002050, 市场: A股, 天数: 90
+[CACHE MISS] 002050 重新计算中轴价格...
+获取主力资金流向失败: stock_individual_fund_flow() got an unexpected keyword argument 'symbol'
+[akshare] K线获取失败 002050 (尝试1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[API] 获取中轴价格成功: 002050 = 48.57
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[API] 获取中轴价格: 002594, 市场: A股, 天数: 90
+[CACHE MISS] 002594 重新计算中轴价格...
+获取市场宽度失败: '涨停类型'
+[akshare] K线获取失败 002594 (尝试1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[API] 获取中轴价格成功: 002594 = 96.61
+  0%|          | 0/3 [00:00<?, ?it/s] 33%|███▎      | 1/3 [00:01<00:02,  1.17s/it]127.0.0.1 - - [02/Apr/2026 22:51:34] "POST /api/quotes HTTP/1.1" 200 -
+ 67%|██████▋   | 2/3 [00:02<00:01,  1.08s/it]127.0.0.1 - - [02/Apr/2026 22:51:35] "POST /api/axis-price HTTP/1.1" 200 -
+100%|██████████| 3/3 [00:03<00:00,  1.01it/s]                                             127.0.0.1 - - [02/Apr/2026 22:51:35] "GET /api/southbound/overall?days=90 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:36] "POST /api/quotes HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:37] "POST /api/axis-price HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:38] "POST /api/axis-price HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:38] "POST /api/quotes HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:39] "POST /api/axis-price HTTP/1.1" 200 -
+[API] 获取中轴价格: 300229, 市场: A股, 天数: 90
+[CACHE MISS] 300229 重新计算中轴价格...
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[akshare] K线获取失败 300229 (尝试1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[API] 获取中轴价格成功: 300229 = 21.73
+[API] 获取中轴价格: 300316, 市场: A股, 天数: 90
+[CACHE MISS] 300316 重新计算中轴价格...
+[akshare] K线获取失败 300316 (尝试1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[API] 获取中轴价格成功: 300316 = 43.82
+[API] 获取中轴价格: 300442, 市场: A股, 天数: 90
+[CACHE MISS] 300442 重新计算中轴价格...
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[akshare] K线获取失败 300442 (尝试1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[API] 获取中轴价格成功: 300442 = 75.01
+[API] 获取中轴价格: 601600, 市场: A股, 天数: 90
+[CACHE MISS] 601600 重新计算中轴价格...
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[API] 请求南向资金数据: 00700, days=90
+[Cache DEBUG] _get_cache 被调用: 00700
+[Cache DEBUG] 未命中: 00700
+[Southbound] 从akshare获取数据: 00700 (腾讯控股)
+[akshare] K线获取失败 601600 (尝试1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[API] 获取中轴价格成功: 601600 = 12.61
+[API] 获取中轴价格: 688795, 市场: A股, 天数: 90
+[CACHE MISS] 688795 重新计算中轴价格...
+  0%|          | 0/91 [00:00<?, ?it/s]127.0.0.1 - - [02/Apr/2026 22:51:40] "POST /api/axis-price HTTP/1.1" 200 -
+  1%|          | 1/91 [00:00<01:11,  1.27it/s]  2%|▏         | 2/91 [00:01<01:29,  1.00s/it]127.0.0.1 - - [02/Apr/2026 22:51:42] "POST /api/quotes HTTP/1.1" 200 -
+  3%|▎         | 3/91 [00:02<01:25,  1.03it/s]127.0.0.1 - - [02/Apr/2026 22:51:43] "GET /api/market/sentiment HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:43] "POST /api/axis-price HTTP/1.1" 200 -
+  4%|▍         | 4/91 [00:03<01:19,  1.09it/s]127.0.0.1 - - [02/Apr/2026 22:51:45] "POST /api/quotes HTTP/1.1" 200 -
+  5%|▌         | 5/91 [00:04<01:21,  1.06it/s]127.0.0.1 - - [02/Apr/2026 22:51:45] "GET /api/hk-stock/00700/short-selling HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:46] "POST /api/axis-price HTTP/1.1" 200 -
+  7%|▋         | 6/91 [00:05<01:19,  1.07it/s]  8%|▊         | 7/91 [00:06<01:23,  1.00it/s]  9%|▉         | 8/91 [00:07<01:19,  1.04it/s] 10%|▉         | 9/91 [00:08<01:18,  1.05it/s]127.0.0.1 - - [02/Apr/2026 22:51:49] "GET /api/market/sentiment HTTP/1.1" 200 -
+ 11%|█         | 10/91 [00:09<01:19,  1.03it/s]127.0.0.1 - - [02/Apr/2026 22:51:50] "GET /api/portfolio/hk-short-analysis HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:50] "GET /api/hk-stock/00700/short-selling HTTP/1.1" 200 -
+ 12%|█▏        | 11/91 [00:10<01:17,  1.03it/s]127.0.0.1 - - [02/Apr/2026 22:51:51] "POST /api/axis-price HTTP/1.1" 200 -
+ 13%|█▎        | 12/91 [00:11<01:15,  1.05it/s]127.0.0.1 - - [02/Apr/2026 22:51:52] "POST /api/quotes HTTP/1.1" 200 -
+ 14%|█▍        | 13/91 [00:12<01:27,  1.12s/it] 15%|█▌        | 14/91 [00:14<01:28,  1.15s/it] 16%|█▋        | 15/91 [00:15<01:30,  1.19s/it]127.0.0.1 - - [02/Apr/2026 22:51:56] "GET /api/market/sentiment HTTP/1.1" 200 -
+ 18%|█▊        | 16/91 [00:16<01:35,  1.27s/it]127.0.0.1 - - [02/Apr/2026 22:51:58] "GET /api/hk-stock/00700/short-selling HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:51:58] "POST /api/quotes HTTP/1.1" 200 -
+ 19%|█▊        | 17/91 [00:18<01:30,  1.22s/it]127.0.0.1 - - [02/Apr/2026 22:51:59] "GET /api/market/hot-sectors HTTP/1.1" 200 -
+ 20%|█▉        | 18/91 [00:18<01:23,  1.14s/it] 21%|██        | 19/91 [00:20<01:23,  1.16s/it] 22%|██▏       | 20/91 [00:21<01:21,  1.15s/it]127.0.0.1 - - [02/Apr/2026 22:52:03] "GET /api/market/sentiment HTTP/1.1" 200 -
+ 23%|██▎       | 21/91 [00:22<01:27,  1.25s/it]127.0.0.1 - - [02/Apr/2026 22:52:04] "GET /api/hk-stock/00700/short-selling HTTP/1.1" 200 -
+ 24%|██▍       | 22/91 [00:24<01:25,  1.24s/it]127.0.0.1 - - [02/Apr/2026 22:52:04] "POST /api/quotes HTTP/1.1" 200 -
+ 25%|██▌       | 23/91 [00:25<01:19,  1.17s/it]127.0.0.1 - - [02/Apr/2026 22:52:06] "POST /api/quotes HTTP/1.1" 200 -
+ 26%|██▋       | 24/91 [00:26<01:26,  1.29s/it] 27%|██▋       | 25/91 [00:27<01:23,  1.27s/it]127.0.0.1 - - [02/Apr/2026 22:52:09] "POST /api/quotes HTTP/1.1" 200 -
+ 29%|██▊       | 26/91 [00:29<01:24,  1.30s/it]127.0.0.1 - - [02/Apr/2026 22:52:09] "GET /api/news HTTP/1.1" 200 -
+ 30%|██▉       | 27/91 [00:30<01:26,  1.34s/it]127.0.0.1 - - [02/Apr/2026 22:52:11] "POST /api/quotes HTTP/1.1" 200 -
+ 31%|███       | 28/91 [00:31<01:22,  1.31s/it] 32%|███▏      | 29/91 [00:33<01:18,  1.27s/it]127.0.0.1 - - [02/Apr/2026 22:52:13] "GET /api/hk-stock/00700/short-selling-history?days=90 HTTP/1.1" 200 -
+ 33%|███▎      | 30/91 [00:34<01:16,  1.25s/it]127.0.0.1 - - [02/Apr/2026 22:52:15] "GET /api/hk-short-selling-history?days=90 HTTP/1.1" 200 -
+ 34%|███▍      | 31/91 [00:35<01:15,  1.25s/it] 35%|███▌      | 32/91 [00:37<01:18,  1.34s/it] 36%|███▋      | 33/91 [00:38<01:23,  1.43s/it] 37%|███▋      | 34/91 [00:40<01:25,  1.49s/it] 38%|███▊      | 35/91 [00:41<01:22,  1.48s/it] 40%|███▉      | 36/91 [00:43<01:26,  1.56s/it] 41%|████      | 37/91 [00:44<01:20,  1.48s/it] 42%|████▏     | 38/91 [00:46<01:15,  1.42s/it] 43%|████▎     | 39/91 [00:47<01:12,  1.39s/it] 44%|████▍     | 40/91 [00:48<01:06,  1.31s/it] 45%|████▌     | 41/91 [00:49<01:05,  1.31s/it] 46%|████▌     | 42/91 [00:51<01:07,  1.38s/it] 47%|████▋     | 43/91 [00:52<01:07,  1.41s/it] 48%|████▊     | 44/91 [00:54<01:06,  1.41s/it]127.0.0.1 - - [02/Apr/2026 22:52:35] "GET /api/news HTTP/1.1" 200 -
+ 49%|████▉     | 45/91 [00:55<01:08,  1.48s/it]127.0.0.1 - - [02/Apr/2026 22:52:37] "POST /api/quotes HTTP/1.1" 200 -
+ 51%|█████     | 46/91 [00:57<01:05,  1.46s/it] 52%|█████▏    | 47/91 [00:58<01:04,  1.46s/it]127.0.0.1 - - [02/Apr/2026 22:52:39] "GET /api/hk-stock/00700/short-selling-history?days=90 HTTP/1.1" 200 -
+ 53%|█████▎    | 48/91 [01:00<01:02,  1.45s/it]127.0.0.1 - - [02/Apr/2026 22:52:41] "GET /api/hk-short-selling-history?days=90 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:52:42] "GET /api/market/hot-sectors HTTP/1.1" 200 -
+ 54%|█████▍    | 49/91 [01:01<01:04,  1.53s/it]127.0.0.1 - - [02/Apr/2026 22:52:42] "GET /api/hk-stock/00700/short-selling-history?days=90 HTTP/1.1" 200 -
+ 55%|█████▍    | 50/91 [01:03<01:03,  1.56s/it] 56%|█████▌    | 51/91 [01:05<01:03,  1.59s/it]127.0.0.1 - - [02/Apr/2026 22:52:46] "GET /api/hk-short-selling-history?days=90 HTTP/1.1" 200 -
+ 57%|█████▋    | 52/91 [01:06<01:02,  1.60s/it]127.0.0.1 - - [02/Apr/2026 22:52:48] "GET /api/market/sentiment HTTP/1.1" 200 -
+ 58%|█████▊    | 53/91 [01:08<01:05,  1.72s/it] 59%|█████▉    | 54/91 [01:10<00:59,  1.62s/it] 60%|██████    | 55/91 [01:12<01:03,  1.76s/it] 62%|██████▏   | 56/91 [01:13<00:59,  1.70s/it] 63%|██████▎   | 57/91 [01:15<00:56,  1.66s/it] 64%|██████▎   | 58/91 [01:16<00:52,  1.60s/it] 65%|██████▍   | 59/91 [01:18<00:55,  1.72s/it] 66%|██████▌   | 60/91 [01:20<00:54,  1.75s/it] 67%|██████▋   | 61/91 [01:22<00:51,  1.73s/it] 68%|██████▊   | 62/91 [01:24<00:50,  1.73s/it] 69%|██████▉   | 63/91 [01:25<00:46,  1.66s/it] 70%|███████   | 64/91 [01:27<00:44,  1.66s/it] 71%|███████▏  | 65/91 [01:28<00:41,  1.59s/it]127.0.0.1 - - [02/Apr/2026 22:53:10] "GET /api/hk-stock/00700/short-selling-history?days=90 HTTP/1.1" 200 -
+ 73%|███████▎  | 66/91 [01:30<00:39,  1.58s/it]127.0.0.1 - - [02/Apr/2026 22:53:12] "GET /api/hk-short-selling-history?days=90 HTTP/1.1" 200 -
+ 74%|███████▎  | 67/91 [01:31<00:38,  1.59s/it] 75%|███████▍  | 68/91 [01:33<00:37,  1.63s/it] 76%|███████▌  | 69/91 [01:35<00:34,  1.59s/it]127.0.0.1 - - [02/Apr/2026 22:53:15] "GET /api/hk-stock/00700/short-selling-history?days=90 HTTP/1.1" 200 -
+ 77%|███████▋  | 70/91 [01:36<00:34,  1.64s/it]127.0.0.1 - - [02/Apr/2026 22:53:18] "GET /api/hk-stock/00700/short-selling-history?days=90 HTTP/1.1" 200 -
+ 78%|███████▊  | 71/91 [01:38<00:31,  1.58s/it] 79%|███████▉  | 72/91 [01:39<00:28,  1.51s/it]127.0.0.1 - - [02/Apr/2026 22:53:20] "GET /api/hk-stock/00700/short-selling-history?days=90 HTTP/1.1" 200 -
+ 80%|████████  | 73/91 [01:41<00:26,  1.48s/it] 81%|████████▏ | 74/91 [01:42<00:23,  1.41s/it] 82%|████████▏ | 75/91 [01:43<00:23,  1.45s/it] 84%|████████▎ | 76/91 [01:45<00:22,  1.49s/it] 85%|████████▍ | 77/91 [01:46<00:21,  1.51s/it] 86%|████████▌ | 78/91 [01:48<00:20,  1.57s/it] 87%|████████▋ | 79/91 [01:50<00:20,  1.71s/it] 88%|████████▊ | 80/91 [01:52<00:17,  1.63s/it] 89%|████████▉ | 81/91 [01:53<00:15,  1.55s/it] 90%|█████████ | 82/91 [01:55<00:13,  1.55s/it] 91%|█████████ | 83/91 [01:56<00:12,  1.51s/it] 92%|█████████▏| 84/91 [01:58<00:10,  1.52s/it] 93%|█████████▎| 85/91 [01:59<00:09,  1.52s/it]127.0.0.1 - - [02/Apr/2026 22:53:41] "GET /api/hk-stock/00700/short-selling-history?days=90 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:53:41] "GET /api/hk-stock/00700/short-selling-history?days=90 HTTP/1.1" 200 -
+ 95%|█████████▍| 86/91 [02:01<00:07,  1.57s/it] 96%|█████████▌| 87/91 [02:02<00:06,  1.52s/it] 97%|█████████▋| 88/91 [02:04<00:04,  1.49s/it]127.0.0.1 - - [02/Apr/2026 22:53:45] "GET /api/hk-stock/00700/short-selling-history?days=90 HTTP/1.1" 200 -
+ 98%|█████████▊| 89/91 [02:05<00:02,  1.48s/it] 99%|█████████▉| 90/91 [02:06<00:01,  1.39s/it]127.0.0.1 - - [02/Apr/2026 22:53:47] "GET /api/hk-stock/00700/short-selling-history?days=90 HTTP/1.1" 200 -
+100%|██████████| 91/91 [02:07<00:00,  1.28s/it]                                               127.0.0.1 - - [02/Apr/2026 22:53:48] "GET /api/southbound/stock/00700?days=90 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:54:12] "GET /api/hk-short-selling-history?days=90 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:54:14] "GET /api/hk-short-selling-history?days=90 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:54:19] "GET /api/hk-short-selling-history?days=90 HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:54:22] "POST /api/quotes HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:54:23] "GET /api/portfolio-analysis HTTP/1.1" 200 -
+127.0.0.1 - - [02/Apr/2026 22:54:23] "GET /api/hk-short-selling-history?days=90 HTTP/1.1" 200 -
+[akshare] K线获取失败 688795 (尝试1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[API] 获取中轴价格成功: 688795 = 618.67
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[API] 获取中轴价格: 00285, 市场: 港股, 天数: 90
+[CACHE MISS] 00285 重新计算中轴价格...
+获取主力资金流向失败: stock_individual_fund_flow() got an unexpected keyword argument 'symbol'
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+获取市场宽度失败: '涨停类型'
+[akshare] K线获取失败 00285 (尝试1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[API] 获取中轴价格成功: 00285 = 32.85
+[API] 获取中轴价格: 00700, 市场: 港股, 天数: 90
+[CACHE MISS] 00700 重新计算中轴价格...
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[akshare] K线获取失败 00700 (尝试1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[API] 获取中轴价格成功: 00700 = 579.98
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+获取主力资金流向失败: stock_individual_fund_flow() got an unexpected keyword argument 'symbol'
+获取市场宽度失败: '涨停类型'
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[API] 获取中轴价格: 09988, 市场: 港股, 天数: 90
+[CACHE MISS] 09988 重新计算中轴价格...
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[akshare] K线获取失败 09988 (尝试1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[API] 获取中轴价格成功: 09988 = 148.27
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+获取主力资金流向失败: stock_individual_fund_flow() got an unexpected keyword argument 'symbol'
+获取市场宽度失败: '涨停类型'
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+获取主力资金流向失败: stock_individual_fund_flow() got an unexpected keyword argument 'symbol'
+获取市场宽度失败: '涨停类型'
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[热门题材] 获取实时数据失败: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[热门题材] 获取实时数据失败: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+获取主力资金流向失败: stock_individual_fund_flow() got an unexpected keyword argument 'symbol'
+获取市场宽度失败: '涨停类型'
+[新闻模块] 用户持仓板块: ['其他', 'AI人工智能', '锂电池', '计算机', '有色金属']
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[Southbound] akshare请求耗时: 129.37秒
+[Southbound] 股票 00700 返回 84 条数据
+[Southbound DEBUG] 准备保存缓存: 00700, 数据条数=84
+[Cache DEBUG] _set_cache 被调用: 00700, 数据条数=84
+[Cache DEBUG] 初始化数据库...
+[Cache DEBUG] 连接数据库...
+[Cache DEBUG] 股票名称: 腾讯控股
+[Cache DEBUG] JSON序列化...
+[Cache DEBUG] JSON长度: 15610
+[Cache DEBUG] 执行INSERT...
+[Cache] 已保存: 00700, 84条
+[Southbound DEBUG] 缓存保存完成: 00700
+[API] 返回数据: 00700, count=84, name=腾讯控股
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+[情绪分析] LLM失败: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+  0%|          | 0/3 [00:00<?, ?it/s]127.0.0.1 - - [02/Apr/2026 22:54:25] "GET /api/hk-short-selling-history?days=90 HTTP/1.1" 200 -
+ 33%|███▎      | 1/3 [00:01<00:02,  1.15s/it]127.0.0.1 - - [02/Apr/2026 22:54:26] "GET /api/market/hot-sectors HTTP/1.1" 200 -
