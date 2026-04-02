@@ -152,6 +152,13 @@ def get_southbound_stock_history(stock_code: str, days: int = 90) -> List[Dict]:
             print(f"[Southbound] 可用代码样例: {list(available_codes)}")
             return []
         
+        # DEBUG: 打印筛选后的数据，检查股票名称
+        print(f"[Southbound DEBUG] 股票 {stock_code} 筛选后数据:")
+        print(f"[Southbound DEBUG] 列名: {list(stock_data.columns)}")
+        print(f"[Southbound DEBUG] 前3行股票代码和名称:")
+        for idx, row in stock_data.head(3).iterrows():
+            print(f"  代码={row.get('股票代码', 'N/A')}, 名称={row.get('股票简称', 'N/A')}")
+        
         # 按日期排序
         stock_data = stock_data.sort_values('持股日期', ascending=True)
         stock_data = stock_data.tail(days)
