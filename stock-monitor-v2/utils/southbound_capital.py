@@ -86,8 +86,17 @@ def _set_cache(stock_code, data):
         print(f"[Cache DEBUG] 初始化数据库...")
         _init_cache_db()
         
-        print(f"[Cache DEBUG] 连接数据库: {DB_PATH}")
-        conn = sqlite3.connect(DB_PATH)
+        # 使用绝对路径避免路径问题
+        db_path = os.path.abspath(DB_PATH)
+        print(f"[Cache DEBUG] 连接数据库: {db_path}")
+        
+        # 检查数据库文件是否存在
+        if os.path.exists(db_path):
+            print(f"[Cache DEBUG] 数据库文件存在, 大小={os.path.getsize(db_path)} bytes")
+        else:
+            print(f"[Cache DEBUG] 数据库文件不存在, 将创建新文件")
+        
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         now = int(time.time())
         expires_at = now + CACHE_TTL
@@ -118,6 +127,13 @@ def _set_cache(stock_code, data):
             VALUES (?, ?, ?, ?, ?, ?)
         ''', (stock_code, stock_name, json_data, len(clean_data), now, expires_at))
         conn.commit()
+        
+        # 验证写入
+        cursor.execute('SELECT record_count FROM southbound_stock_cache WHERE stock_code = ?', (stock_code,))
+        row = cursor.fetchone()
+        if row:
+            print(f"[Cache DEBUG] 验证写入成功: {stock_code} 有 {row[0]} 条数据")
+        
         conn.close()
         print(f"[Cache] 已保存: {stock_code}, {len(clean_data)}条")
     except Exception as e:
