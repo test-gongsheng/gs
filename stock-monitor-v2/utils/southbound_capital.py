@@ -433,5 +433,5 @@ def get_southbound_signal() -> Dict:
         print(f"获取南向资金信号失败: {e}")
         return {'signal': '错误', 'score': 50, 'reason': str(e)}
 
-# 清理过期缓存（模块加载时执行）
-_clear_expired_cache()
+# 模块加载时初始化
+_init_cache_db()
