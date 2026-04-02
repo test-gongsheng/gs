@@ -134,7 +134,7 @@ const Storage = {
     }
 };
 
-// 导出
+// 挂载到全局
 window.Utils = {
     formatNumber,
     formatMoney,
@@ -149,16 +149,4 @@ window.Utils = {
     Storage
 };
 
-export {
-    formatNumber,
-    formatMoney,
-    formatChange,
-    formatDate,
-    debounce,
-    throttle,
-    isHKStock,
-    isAStock,
-    deepClone,
-    merge,
-    Storage
-};
+console.log('[Utils] 模块加载完成');
