@@ -2,17 +2,14 @@
  * 南向资金图表模块
  */
 
-// 当前正在显示南向资金的股票代码（用于防止竞态条件）
+// 当前正在显示南向资金的股票代码
 let currentSouthboundStockCode = null;
-// 正在处理的请求计数器
-let southboundRequestId = 0;
 
 // 渲染南向资金整体流向图表
 function renderSouthboundOverallChart(data) {
     // 检查 Chart.js 是否已加载
     if (typeof Chart === 'undefined') {
         console.warn('[Southbound] Chart.js 未加载，跳过图表渲染');
-        // 只更新统计数据，不渲染图表
         updateSouthboundStats(data);
         return;
     }
@@ -107,7 +104,7 @@ function renderSouthboundOverallChart(data) {
 }
 
 // 渲染个股南向资金图表
-function renderSouthboundStockChart(data, stockCode, requestId) {
+function renderSouthboundStockChart(data, stockCode) {
     // 检查 Chart.js 是否已加载
     if (typeof Chart === 'undefined') {
         console.warn('[Southbound] Chart.js 未加载，跳过图表渲染');
@@ -116,12 +113,6 @@ function renderSouthboundStockChart(data, stockCode, requestId) {
     
     const ctx = document.getElementById('southboundStockChart');
     if (!ctx) return;
-    
-    // 验证请求是否仍然有效（防止竞态条件）
-    if (requestId !== southboundRequestId) {
-        console.log(`[Southbound] 忽略过期图表数据: ${stockCode} (请求ID: ${requestId}, 当前: ${southboundRequestId})`);
-        return;
-    }
     
     // 准备数据
     const dates = data.map(d => d.date);
@@ -254,28 +245,27 @@ async function loadSouthboundOverallData() {
 
 // 加载个股南向资金数据
 async function loadSouthboundStockData(stockCode) {
-    // 增加请求ID，用于竞态条件防护
-    const requestId = ++southboundRequestId;
+    // 记录当前请求的股票代码
     currentSouthboundStockCode = stockCode;
     
-    console.log(`[Southbound] 开始加载: ${stockCode} (请求ID: ${requestId})`);
+    console.log(`[Southbound] 开始加载: ${stockCode}`);
     
     try {
         const response = await fetch(`/api/southbound/stock/${stockCode}?days=90`);
         const result = await response.json();
         
-        console.log(`[Southbound] 收到响应: ${stockCode} (请求ID: ${requestId}, 当前: ${southboundRequestId})`);
+        console.log(`[Southbound] 收到响应: ${stockCode}, success=${result.success}, count=${result.count || 0}`);
         
-        // 检查请求是否仍然有效
-        if (requestId !== southboundRequestId) {
-            console.log(`[Southbound] 丢弃过期响应: ${stockCode}`);
+        // 检查是否仍然是当前选中的股票
+        if (currentSouthboundStockCode !== stockCode) {
+            console.log(`[Southbound] 已切换到其他股票，忽略 ${stockCode} 的数据`);
             return;
         }
         
         if (result.success && result.data && result.data.length > 0) {
             console.log(`[Southbound] 渲染数据: ${stockCode}, ${result.data.length}条`);
-            renderSouthboundStockChart(result.data, stockCode, requestId);
-            updateSouthboundStockStats(result.data, stockCode, requestId);
+            renderSouthboundStockChart(result.data, stockCode);
+            updateSouthboundStockStats(result.data);
         } else {
             console.warn(`[Southbound] 无数据: ${stockCode}`, result);
             // 清空显示
@@ -352,14 +342,8 @@ function updateSouthboundStats(data) {
 }
 
 // 更新个股统计数据
-function updateSouthboundStockStats(data, stockCode, requestId) {
+function updateSouthboundStockStats(data) {
     if (data.length === 0) return;
-    
-    // 验证请求是否仍然有效
-    if (requestId !== southboundRequestId) {
-        console.log(`[Southbound] 忽略过期统计数据: ${stockCode}`);
-        return;
-    }
     
     const latest = data[data.length - 1];
     

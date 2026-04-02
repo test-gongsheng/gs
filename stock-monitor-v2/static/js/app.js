@@ -908,8 +908,10 @@ function renderStockDetail() {
         const southboundEl = document.getElementById('southboundSection');
         if (southboundEl) {
             southboundEl.style.display = 'block';
-            // 加载南向资金数据
-            if (typeof loadSouthboundStockData === 'function') {
+            // 只在股票代码变化时才加载南向资金数据，避免重复请求
+            if (typeof loadSouthboundStockData === 'function' && 
+                appState.lastSouthboundStockCode !== stock.code) {
+                appState.lastSouthboundStockCode = stock.code;
                 loadSouthboundStockData(stock.code);
             }
         }
