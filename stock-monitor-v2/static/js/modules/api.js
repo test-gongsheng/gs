@@ -149,7 +149,7 @@ const HKShortAPI = {
     }
 };
 
-// 导出所有API
+// 挂载到全局
 window.API = {
     fetch: apiFetch,
     Stock: StockAPI,
@@ -161,5 +161,4 @@ window.API = {
     HKShort: HKShortAPI
 };
 
-export { apiFetch, StockAPI, QuoteAPI, SouthboundAPI, SentimentAPI, NewsAPI, PortfolioAPI, HKShortAPI };
-export default window.API;
+console.log('[API] 模块加载完成');
