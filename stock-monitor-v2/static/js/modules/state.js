@@ -167,11 +167,11 @@ class StateManager {
     }
 }
 
-// 单例模式
-const stateManager = new StateManager();
+// 单例模式 - 使用V2命名避免与现有代码冲突
+const stateManagerV2 = new StateManager();
 
-// 兼容旧代码的全局访问
+// 挂载到全局供测试
 window.StateManager = StateManager;
-window.stateManager = stateManager;
+window.stateManagerV2 = stateManagerV2;
 
-export default stateManager;
+console.log('[StateManager] 模块加载完成 (V2)');

@@ -13,7 +13,7 @@
     <script>
         // 自动缓存清除机制 - 使用固定版本号
         (function() {
-            const APP_VERSION = '20250402-step2-api';  // Step 2: 添加api模块
+            const APP_VERSION = '20250402-step3-state';  // Step 3: 添加state模块
             const storedVersion = localStorage.getItem('app_version');
             
             if (storedVersion !== APP_VERSION) {
@@ -1411,6 +1411,8 @@
     <script src="{{ url_for('static', filename='js/modules/utils.js') }}?v={{ now }}"></script>
     <!-- 新模块: API层 (Step 2) -->
     <script src="{{ url_for('static', filename='js/modules/api.js') }}?v={{ now }}"></script>
+    <!-- 新模块: 状态管理 (Step 3) -->
+    <script src="{{ url_for('static', filename='js/modules/state.js') }}?v={{ now }}"></script>
     <script src="{{ url_for('static', filename='js/southbound.js') }}?v={{ now }}"></script>
     <script src="{{ url_for('static', filename='js/app.js') }}?v={{ now }}"></script>
     <script src="{{ url_for('static', filename='js/import.js') }}?v={{ now }}"></script>
