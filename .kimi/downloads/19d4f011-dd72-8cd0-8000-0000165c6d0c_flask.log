@@ -1,0 +1,299 @@
+[CACHE] Æô¶¯ºóÌ¨Ïß³ÌÔ¤¼ÓÔØÖĞÖá¼Û¸ñ»º´æ...
+[CACHE] ·¢ÏÖ 12 Ö»³Ö²Ö¹ÉÆ±
+[CACHE MISS] 000559 ÖØĞÂ¼ÆËãÖĞÖá¼Û¸ñ...
+ * Serving Flask app 'app'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8888
+ * Running on http://192.168.101.7:8888
+Press CTRL+C to quit
+[akshare] KÏß»ñÈ¡Ê§°Ü 000559 (³¢ÊÔ1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[CACHE] [1/12] Ô¤¼ÓÔØÍê³É: 000559
+[CACHE MISS] 000878 ÖØĞÂ¼ÆËãÖĞÖá¼Û¸ñ...
+[akshare] KÏß»ñÈ¡Ê§°Ü 000878 (³¢ÊÔ1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[CACHE] [2/12] Ô¤¼ÓÔØÍê³É: 000878
+[CACHE MISS] 002050 ÖØĞÂ¼ÆËãÖĞÖá¼Û¸ñ...
+[akshare] KÏß»ñÈ¡Ê§°Ü 002050 (³¢ÊÔ1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[CACHE] [3/12] Ô¤¼ÓÔØÍê³É: 002050
+[CACHE MISS] 002594 ÖØĞÂ¼ÆËãÖĞÖá¼Û¸ñ...
+[akshare] KÏß»ñÈ¡Ê§°Ü 002594 (³¢ÊÔ1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[CACHE] [4/12] Ô¤¼ÓÔØÍê³É: 002594
+[CACHE MISS] 300229 ÖØĞÂ¼ÆËãÖĞÖá¼Û¸ñ...
+[Preload] ¿ªÊ¼ºóÌ¨Ô¤¼ÓÔØÄÏÏò×Ê½ğÊı¾İ...
+[Cache DEBUG] _get_cache ±»µ÷ÓÃ: 00285
+[Cache DEBUG] Î´ÃüÖĞ: 00285
+[Southbound] ´Óakshare»ñÈ¡Êı¾İ: 00285 (±ÈÑÇµÏµç)
+[akshare] KÏß»ñÈ¡Ê§°Ü 300229 (³¢ÊÔ1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[CACHE] [5/12] Ô¤¼ÓÔØÍê³É: 300229
+[CACHE MISS] 300316 ÖØĞÂ¼ÆËãÖĞÖá¼Û¸ñ...
+  0%|          | 0/89 [00:00<?, ?it/s]  1%|          | 1/89 [00:00<01:01,  1.43it/s]127.0.0.1 - - [03/Apr/2026 00:20:37] "POST /api/quotes HTTP/1.1" 200 -
+  2%|¨‡         | 2/89 [00:01<01:25,  1.02it/s]  3%|¨†         | 3/89 [00:02<01:19,  1.08it/s]127.0.0.1 - - [03/Apr/2026 00:20:39] "POST /api/quotes HTTP/1.1" 200 -
+  4%|¨…         | 4/89 [00:03<01:18,  1.09it/s]  6%|¨„         | 5/89 [00:04<01:15,  1.11it/s]  7%|¨ƒ         | 6/89 [00:05<01:10,  1.17it/s]127.0.0.1 - - [03/Apr/2026 00:20:41] "POST /api/quotes HTTP/1.1" 200 -
+  8%|¨‚         | 7/89 [00:06<01:09,  1.18it/s]  9%|¨         | 8/89 [00:06<01:06,  1.22it/s] 10%|¨€         | 9/89 [00:07<01:02,  1.27it/s] 11%|¨€         | 10/89 [00:08<01:02,  1.27it/s]127.0.0.1 - - [03/Apr/2026 00:20:44] "POST /api/quotes HTTP/1.1" 200 -
+ 12%|¨€¨‡        | 11/89 [00:09<01:02,  1.26it/s] 13%|¨€¨†        | 12/89 [00:09<00:59,  1.29it/s]127.0.0.1 - - [03/Apr/2026 00:20:46] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:46] "GET /static/css/style.css?v=1775146846 HTTP/1.1" 200 -
+ 15%|¨€¨…        | 13/89 [00:10<01:01,  1.23it/s]127.0.0.1 - - [03/Apr/2026 00:20:46] "GET /static/js/modules/state.js?v=1775146846 HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:47] "GET /static/css/ib-analysis.css?v=1775146846 HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:47] "GET /static/js/southbound.js?v=1775146846 HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:47] "GET /static/js/modules/api.js?v=1775146846 HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:47] "GET /static/js/modules/utils.js?v=1775146846 HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:47] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:47] "GET /static/css/style.css?v=1775146847 HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:47] "GET /static/css/ib-analysis.css?v=1775146847 HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:47] "GET /static/js/modules/utils.js?v=1775146847 HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:47] "GET /static/js/modules/api.js?v=1775146847 HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:47] "GET /static/js/modules/state.js?v=1775146847 HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:47] "GET /static/js/southbound.js?v=1775146847 HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:47] "GET /static/js/app.js?v=1775146847 HTTP/1.1" 200 -
+ 16%|¨€¨„        | 14/89 [00:11<01:02,  1.21it/s]127.0.0.1 - - [03/Apr/2026 00:20:47] "GET /static/js/import.js?v=1775146847 HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:48] "GET /api/stocks HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:48] "GET /api/stocks HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:48] "POST /api/axis-price HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:48] "GET /api/portfolio-analysis HTTP/1.1" 200 -
+ 17%|¨€¨ƒ        | 15/89 [00:12<01:09,  1.07it/s]127.0.0.1 - - [03/Apr/2026 00:20:49] "GET /api/market/hot-sectors HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:49] "POST /api/axis-price HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:49] "POST /api/axis-price HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:49] "POST /api/axis-price HTTP/1.1" 200 -
+ 18%|¨€¨‚        | 16/89 [00:13<01:11,  1.03it/s]127.0.0.1 - - [03/Apr/2026 00:20:50] "POST /api/axis-price HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:50] "GET /api/ib-analysis?t=1775146849728 HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:50] "POST /api/quotes HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:50] "POST /api/axis-price HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:50] "POST /api/axis-price HTTP/1.1" 200 -
+ 19%|¨€¨        | 17/89 [00:14<01:08,  1.05it/s]127.0.0.1 - - [03/Apr/2026 00:20:51] "POST /api/axis-price HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:51] "GET /api/portfolio-analysis HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:51] "POST /api/axis-price HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:51] "POST /api/axis-price HTTP/1.1" 200 -
+ 20%|¨€¨€        | 18/89 [00:15<01:06,  1.07it/s]127.0.0.1 - - [03/Apr/2026 00:20:52] "POST /api/axis-price HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:52] "POST /api/axis-price HTTP/1.1" 200 -
+ 21%|¨€¨€¨‡       | 19/89 [00:16<01:05,  1.06it/s]127.0.0.1 - - [03/Apr/2026 00:20:52] "POST /api/quotes HTTP/1.1" 200 -
+ 22%|¨€¨€¨‡       | 20/89 [00:17<01:05,  1.05it/s]127.0.0.1 - - [03/Apr/2026 00:20:53] "GET /api/market/sentiment HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:54] "GET /api/portfolio-analysis HTTP/1.1" 200 -
+ 24%|¨€¨€¨†       | 21/89 [00:18<01:04,  1.06it/s][akshare] KÏß»ñÈ¡Ê§°Ü 300316 (³¢ÊÔ1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[CACHE] [6/12] Ô¤¼ÓÔØÍê³É: 300316
+[CACHE MISS] 300442 ÖØĞÂ¼ÆËãÖĞÖá¼Û¸ñ...
+[akshare] KÏß»ñÈ¡Ê§°Ü 300442 (³¢ÊÔ1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[CACHE] [7/12] Ô¤¼ÓÔØÍê³É: 300442
+[CACHE MISS] 601600 ÖØĞÂ¼ÆËãÖĞÖá¼Û¸ñ...
+[akshare] KÏß»ñÈ¡Ê§°Ü 601600 (³¢ÊÔ1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[CACHE] [8/12] Ô¤¼ÓÔØÍê³É: 601600
+[CACHE MISS] 688795 ÖØĞÂ¼ÆËãÖĞÖá¼Û¸ñ...
+[akshare] KÏß»ñÈ¡Ê§°Ü 688795 (³¢ÊÔ1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[CACHE] [9/12] Ô¤¼ÓÔØÍê³É: 688795
+[CACHE MISS] 00285 ÖØĞÂ¼ÆËãÖĞÖá¼Û¸ñ...
+[akshare] KÏß»ñÈ¡Ê§°Ü 00285 (³¢ÊÔ1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[CACHE] [10/12] Ô¤¼ÓÔØÍê³É: 00285
+[CACHE MISS] 00700 ÖØĞÂ¼ÆËãÖĞÖá¼Û¸ñ...
+[akshare] KÏß»ñÈ¡Ê§°Ü 00700 (³¢ÊÔ1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[CACHE] [11/12] Ô¤¼ÓÔØÍê³É: 00700
+[CACHE MISS] 09988 ÖØĞÂ¼ÆËãÖĞÖá¼Û¸ñ...
+[akshare] KÏß»ñÈ¡Ê§°Ü 09988 (³¢ÊÔ1/1): ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[CACHE] [12/12] Ô¤¼ÓÔØÍê³É: 09988
+[CACHE] Ô¤¼ÓÔØÍê³É£¬»º´æÌõÄ¿: 12
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ: 000559, ÊĞ³¡: A¹É, ÌìÊı: 90
+[CACHE HIT] 000559 »º´æ17ÃëÇ°¸üĞÂ
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ³É¹¦: 000559 = 16.6
+[ĞÂÎÅÄ£¿é] ÓÃ»§³Ö²Ö°å¿é: ['ï®µç³Ø', 'ÆäËû', 'AIÈË¹¤ÖÇÄÜ', 'ÓĞÉ«½ğÊô', '¼ÆËã»ú']
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ: 000878, ÊĞ³¡: A¹É, ÌìÊı: 90
+[CACHE HIT] 000878 »º´æ16ÃëÇ°¸üĞÂ
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ³É¹¦: 000878 = 21.07
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ: 002050, ÊĞ³¡: A¹É, ÌìÊı: 90
+[CACHE HIT] 002050 »º´æ15ÃëÇ°¸üĞÂ
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ³É¹¦: 002050 = 48.57
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ: 002594, ÊĞ³¡: A¹É, ÌìÊı: 90
+[CACHE HIT] 002594 »º´æ15ÃëÇ°¸üĞÂ
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ³É¹¦: 002594 = 96.58
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ: 300229, ÊĞ³¡: A¹É, ÌìÊı: 90
+[CACHE HIT] 300229 »º´æ15ÃëÇ°¸üĞÂ
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ³É¹¦: 300229 = 21.73
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ: 300316, ÊĞ³¡: A¹É, ÌìÊı: 90
+[CACHE HIT] 300316 »º´æ15ÃëÇ°¸üĞÂ
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ³É¹¦: 300316 = 43.82
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ: 300442, ÊĞ³¡: A¹É, ÌìÊı: 90
+[CACHE HIT] 300442 »º´æ14ÃëÇ°¸üĞÂ
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ³É¹¦: 300442 = 75.25
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ: 601600, ÊĞ³¡: A¹É, ÌìÊı: 90
+[CACHE HIT] 601600 »º´æ14ÃëÇ°¸üĞÂ
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ³É¹¦: 601600 = 12.63
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ: 688795, ÊĞ³¡: A¹É, ÌìÊı: 90
+[CACHE HIT] 688795 »º´æ14ÃëÇ°¸üĞÂ
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ³É¹¦: 688795 = 618.67
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ: 00285, ÊĞ³¡: ¸Û¹É, ÌìÊı: 90
+[CACHE HIT] 00285 »º´æ13ÃëÇ°¸üĞÂ
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ³É¹¦: 00285 = 32.85
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ: 00700, ÊĞ³¡: ¸Û¹É, ÌìÊı: 90
+[CACHE HIT] 00700 »º´æ13ÃëÇ°¸üĞÂ
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ³É¹¦: 00700 = 579.98
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ: 09988, ÊĞ³¡: ¸Û¹É, ÌìÊı: 90
+[CACHE HIT] 09988 »º´æ12ÃëÇ°¸üĞÂ
+[API] »ñÈ¡ÖĞÖá¼Û¸ñ³É¹¦: 09988 = 148.27
+»ñÈ¡Ö÷Á¦×Ê½ğÁ÷ÏòÊ§°Ü: stock_individual_fund_flow() got an unexpected keyword argument 'symbol'
+[ÇéĞ÷·ÖÎö] LLMÊ§°Ü: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] ÓÉÓÚÄ¿±ê¼ÆËã»ú»ı¼«¾Ü¾ø£¬ÎŞ·¨Á¬½Ó¡£"))
+»ñÈ¡ÊĞ³¡¿í¶ÈÊ§°Ü: 'ÕÇÍ£ÀàĞÍ'
+
+  0%|          | 0/3 [00:00<?, ?it/s][A 25%|¨€¨€¨…       | 22/89 [00:19<01:04,  1.04it/s]
+ 33%|¨€¨€¨€¨†      | 1/3 [00:00<00:01,  1.35it/s][A127.0.0.1 - - [03/Apr/2026 00:20:56] "POST /api/quotes HTTP/1.1" 200 -
+
+ 67%|¨€¨€¨€¨€¨€¨€¨ƒ   | 2/3 [00:01<00:00,  1.24it/s][A 26%|¨€¨€¨„       | 23/89 [00:20<01:10,  1.07s/it]
+100%|¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€| 3/3 [00:02<00:00,  1.41it/s][A
+                                             [A127.0.0.1 - - [03/Apr/2026 00:20:57] "GET /api/southbound/overall?days=90 HTTP/1.1" 200 -
+ 27%|¨€¨€¨ƒ       | 24/89 [00:22<01:11,  1.09s/it]127.0.0.1 - - [03/Apr/2026 00:20:58] "GET /api/hk-stock/00700/short-selling-history?days=90 HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:20:58] "POST /api/quotes HTTP/1.1" 200 -
+ 28%|¨€¨€¨‚       | 25/89 [00:23<01:10,  1.11s/it]127.0.0.1 - - [03/Apr/2026 00:20:59] "GET /api/hk-short-selling-history?days=90 HTTP/1.1" 200 -
+ 29%|¨€¨€¨       | 26/89 [00:24<01:06,  1.05s/it] 30%|¨€¨€¨€       | 27/89 [00:25<01:02,  1.01s/it]127.0.0.1 - - [03/Apr/2026 00:21:01] "POST /api/quotes HTTP/1.1" 200 -
+ 31%|¨€¨€¨€¨‡      | 28/89 [00:25<00:59,  1.03it/s] 33%|¨€¨€¨€¨†      | 29/89 [00:26<00:59,  1.00it/s] 34%|¨€¨€¨€¨†      | 30/89 [00:27<00:56,  1.04it/s]127.0.0.1 - - [03/Apr/2026 00:21:04] "POST /api/quotes HTTP/1.1" 200 -
+ 35%|¨€¨€¨€¨…      | 31/89 [00:28<00:58,  1.01s/it]127.0.0.1 - - [03/Apr/2026 00:21:05] "GET /api/portfolio/hk-short-analysis HTTP/1.1" 200 -
+ 36%|¨€¨€¨€¨„      | 32/89 [00:29<00:55,  1.03it/s] 37%|¨€¨€¨€¨ƒ      | 33/89 [00:30<00:51,  1.08it/s] 38%|¨€¨€¨€¨‚      | 34/89 [00:31<00:51,  1.08it/s]127.0.0.1 - - [03/Apr/2026 00:21:07] "POST /api/quotes HTTP/1.1" 200 -
+ 39%|¨€¨€¨€¨      | 35/89 [00:32<00:50,  1.08it/s] 40%|¨€¨€¨€¨€      | 36/89 [00:33<00:48,  1.10it/s] 42%|¨€¨€¨€¨€¨‡     | 37/89 [00:34<00:47,  1.09it/s]127.0.0.1 - - [03/Apr/2026 00:21:10] "POST /api/quotes HTTP/1.1" 200 -
+ 43%|¨€¨€¨€¨€¨†     | 38/89 [00:35<00:49,  1.04it/s] 44%|¨€¨€¨€¨€¨…     | 39/89 [00:36<00:47,  1.06it/s] 45%|¨€¨€¨€¨€¨…     | 40/89 [00:37<00:49,  1.01s/it]127.0.0.1 - - [03/Apr/2026 00:21:13] "POST /api/quotes HTTP/1.1" 200 -
+ 46%|¨€¨€¨€¨€¨„     | 41/89 [00:38<00:47,  1.01it/s] 47%|¨€¨€¨€¨€¨ƒ     | 42/89 [00:39<00:50,  1.07s/it] 48%|¨€¨€¨€¨€¨‚     | 43/89 [00:40<00:49,  1.07s/it]127.0.0.1 - - [03/Apr/2026 00:21:16] "POST /api/quotes HTTP/1.1" 200 -
+ 49%|¨€¨€¨€¨€¨     | 44/89 [00:41<00:47,  1.06s/it] 51%|¨€¨€¨€¨€¨€     | 45/89 [00:42<00:44,  1.02s/it]127.0.0.1 - - [03/Apr/2026 00:21:19] "GET /api/market/hot-sectors HTTP/1.1" 200 -
+ 52%|¨€¨€¨€¨€¨€¨‡    | 46/89 [00:43<00:43,  1.00s/it]127.0.0.1 - - [03/Apr/2026 00:21:19] "POST /api/quotes HTTP/1.1" 200 -
+ 53%|¨€¨€¨€¨€¨€¨†    | 47/89 [00:44<00:40,  1.04it/s] 54%|¨€¨€¨€¨€¨€¨…    | 48/89 [00:45<00:38,  1.06it/s] 55%|¨€¨€¨€¨€¨€¨„    | 49/89 [00:46<00:35,  1.13it/s]127.0.0.1 - - [03/Apr/2026 00:21:22] "POST /api/quotes HTTP/1.1" 200 -
+ 56%|¨€¨€¨€¨€¨€¨„    | 50/89 [00:47<00:37,  1.05it/s] 57%|¨€¨€¨€¨€¨€¨ƒ    | 51/89 [00:48<00:38,  1.01s/it] 58%|¨€¨€¨€¨€¨€¨‚    | 52/89 [00:49<00:37,  1.03s/it]127.0.0.1 - - [03/Apr/2026 00:21:25] "POST /api/quotes HTTP/1.1" 200 -
+ 60%|¨€¨€¨€¨€¨€¨    | 53/89 [00:50<00:36,  1.01s/it] 61%|¨€¨€¨€¨€¨€¨€    | 54/89 [00:51<00:34,  1.01it/s] 62%|¨€¨€¨€¨€¨€¨€¨‡   | 55/89 [00:52<00:33,  1.01it/s]127.0.0.1 - - [03/Apr/2026 00:21:28] "POST /api/quotes HTTP/1.1" 200 -
+ 63%|¨€¨€¨€¨€¨€¨€¨†   | 56/89 [00:53<00:31,  1.03it/s] 64%|¨€¨€¨€¨€¨€¨€¨…   | 57/89 [00:54<00:29,  1.07it/s] 65%|¨€¨€¨€¨€¨€¨€¨„   | 58/89 [00:55<00:27,  1.11it/s]127.0.0.1 - - [03/Apr/2026 00:21:31] "POST /api/quotes HTTP/1.1" 200 -
+ 66%|¨€¨€¨€¨€¨€¨€¨ƒ   | 59/89 [00:56<00:30,  1.01s/it] 67%|¨€¨€¨€¨€¨€¨€¨ƒ   | 60/89 [00:57<00:28,  1.03it/s] 69%|¨€¨€¨€¨€¨€¨€¨‚   | 61/89 [00:58<00:27,  1.02it/s]127.0.0.1 - - [03/Apr/2026 00:21:34] "POST /api/quotes HTTP/1.1" 200 -
+ 70%|¨€¨€¨€¨€¨€¨€¨   | 62/89 [00:59<00:25,  1.05it/s] 71%|¨€¨€¨€¨€¨€¨€¨€   | 63/89 [00:59<00:23,  1.08it/s] 72%|¨€¨€¨€¨€¨€¨€¨€¨‡  | 64/89 [01:01<00:25,  1.01s/it]127.0.0.1 - - [03/Apr/2026 00:21:37] "POST /api/quotes HTTP/1.1" 200 -
+ 73%|¨€¨€¨€¨€¨€¨€¨€¨†  | 65/89 [01:02<00:23,  1.02it/s] 74%|¨€¨€¨€¨€¨€¨€¨€¨…  | 66/89 [01:02<00:21,  1.06it/s] 75%|¨€¨€¨€¨€¨€¨€¨€¨„  | 67/89 [01:03<00:20,  1.05it/s]127.0.0.1 - - [03/Apr/2026 00:21:40] "POST /api/quotes HTTP/1.1" 200 -
+ 76%|¨€¨€¨€¨€¨€¨€¨€¨ƒ  | 68/89 [01:04<00:20,  1.00it/s] 78%|¨€¨€¨€¨€¨€¨€¨€¨‚  | 69/89 [01:05<00:19,  1.02it/s] 79%|¨€¨€¨€¨€¨€¨€¨€¨‚  | 70/89 [01:07<00:19,  1.03s/it]127.0.0.1 - - [03/Apr/2026 00:21:43] "POST /api/quotes HTTP/1.1" 200 -
+ 80%|¨€¨€¨€¨€¨€¨€¨€¨  | 71/89 [01:07<00:18,  1.00s/it] 81%|¨€¨€¨€¨€¨€¨€¨€¨€  | 72/89 [01:08<00:16,  1.01it/s] 82%|¨€¨€¨€¨€¨€¨€¨€¨€¨‡ | 73/89 [01:10<00:16,  1.04s/it]127.0.0.1 - - [03/Apr/2026 00:21:46] "POST /api/quotes HTTP/1.1" 200 -
+ 83%|¨€¨€¨€¨€¨€¨€¨€¨€¨† | 74/89 [01:11<00:15,  1.05s/it] 84%|¨€¨€¨€¨€¨€¨€¨€¨€¨… | 75/89 [01:12<00:15,  1.12s/it] 85%|¨€¨€¨€¨€¨€¨€¨€¨€¨„ | 76/89 [01:13<00:15,  1.21s/it]127.0.0.1 - - [03/Apr/2026 00:21:49] "GET /api/news HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:21:51] "GET /api/market/hot-sectors HTTP/1.1" 200 -
+ 87%|¨€¨€¨€¨€¨€¨€¨€¨€¨ƒ | 77/89 [01:15<00:15,  1.25s/it]127.0.0.1 - - [03/Apr/2026 00:21:51] "POST /api/quotes HTTP/1.1" 200 -
+ 88%|¨€¨€¨€¨€¨€¨€¨€¨€¨‚ | 78/89 [01:16<00:12,  1.18s/it]127.0.0.1 - - [03/Apr/2026 00:21:52] "POST /api/quotes HTTP/1.1" 200 -
+ 89%|¨€¨€¨€¨€¨€¨€¨€¨€¨ | 79/89 [01:17<00:11,  1.14s/it] 90%|¨€¨€¨€¨€¨€¨€¨€¨€¨ | 80/89 [01:18<00:10,  1.17s/it]127.0.0.1 - - [03/Apr/2026 00:21:54] "GET /api/market/sentiment HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:21:55] "GET /api/portfolio-analysis HTTP/1.1" 200 -
+ 91%|¨€¨€¨€¨€¨€¨€¨€¨€¨€ | 81/89 [01:19<00:09,  1.13s/it][ÇéĞ÷·ÖÎö] LLMÊ§°Ü: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] ÓÉÓÚÄ¿±ê¼ÆËã»ú»ı¼«¾Ü¾ø£¬ÎŞ·¨Á¬½Ó¡£"))
+[ÇéĞ÷·ÖÎö] LLMÊ§°Ü: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] ÓÉÓÚÄ¿±ê¼ÆËã»ú»ı¼«¾Ü¾ø£¬ÎŞ·¨Á¬½Ó¡£"))
+[ÇéĞ÷·ÖÎö] LLMÊ§°Ü: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] ÓÉÓÚÄ¿±ê¼ÆËã»ú»ı¼«¾Ü¾ø£¬ÎŞ·¨Á¬½Ó¡£"))
+[ÇéĞ÷·ÖÎö] LLMÊ§°Ü: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] ÓÉÓÚÄ¿±ê¼ÆËã»ú»ı¼«¾Ü¾ø£¬ÎŞ·¨Á¬½Ó¡£"))
+[ÇéĞ÷·ÖÎö] LLMÊ§°Ü: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] ÓÉÓÚÄ¿±ê¼ÆËã»ú»ı¼«¾Ü¾ø£¬ÎŞ·¨Á¬½Ó¡£"))
+[ÇéĞ÷·ÖÎö] LLMÊ§°Ü: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] ÓÉÓÚÄ¿±ê¼ÆËã»ú»ı¼«¾Ü¾ø£¬ÎŞ·¨Á¬½Ó¡£"))
+[ÇéĞ÷·ÖÎö] LLMÊ§°Ü: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] ÓÉÓÚÄ¿±ê¼ÆËã»ú»ı¼«¾Ü¾ø£¬ÎŞ·¨Á¬½Ó¡£"))
+[ÇéĞ÷·ÖÎö] LLMÊ§°Ü: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] ÓÉÓÚÄ¿±ê¼ÆËã»ú»ı¼«¾Ü¾ø£¬ÎŞ·¨Á¬½Ó¡£"))
+[ÇéĞ÷·ÖÎö] LLMÊ§°Ü: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] ÓÉÓÚÄ¿±ê¼ÆËã»ú»ı¼«¾Ü¾ø£¬ÎŞ·¨Á¬½Ó¡£"))
+[ÇéĞ÷·ÖÎö] LLMÊ§°Ü: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] ÓÉÓÚÄ¿±ê¼ÆËã»ú»ı¼«¾Ü¾ø£¬ÎŞ·¨Á¬½Ó¡£"))
+[ÇéĞ÷·ÖÎö] LLMÊ§°Ü: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] ÓÉÓÚÄ¿±ê¼ÆËã»ú»ı¼«¾Ü¾ø£¬ÎŞ·¨Á¬½Ó¡£"))
+[ÈÈÃÅÌâ²Ä] »ñÈ¡ÊµÊ±Êı¾İÊ§°Ü: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[ĞÂÎÅÄ£¿é] ÓÃ»§³Ö²Ö°å¿é: ['ï®µç³Ø', 'ÆäËû', 'AIÈË¹¤ÖÇÄÜ', 'ÓĞÉ«½ğÊô', '¼ÆËã»ú']
+»ñÈ¡Ö÷Á¦×Ê½ğÁ÷ÏòÊ§°Ü: stock_individual_fund_flow() got an unexpected keyword argument 'symbol'
+»ñÈ¡ÊĞ³¡¿í¶ÈÊ§°Ü: 'ÕÇÍ£ÀàĞÍ'
+[ÇéĞ÷·ÖÎö] LLMÊ§°Ü: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] ÓÉÓÚÄ¿±ê¼ÆËã»ú»ı¼«¾Ü¾ø£¬ÎŞ·¨Á¬½Ó¡£"))
+
+  0%|          | 0/3 [00:00<?, ?it/s][A127.0.0.1 - - [03/Apr/2026 00:21:55] "POST /api/quotes HTTP/1.1" 200 -
+ 92%|¨€¨€¨€¨€¨€¨€¨€¨€¨€¨‡| 82/89 [01:20<00:07,  1.09s/it]
+ 33%|¨€¨€¨€¨†      | 1/3 [00:00<00:01,  1.12it/s][A
+ 67%|¨€¨€¨€¨€¨€¨€¨ƒ   | 2/3 [00:01<00:00,  1.18it/s][A 93%|¨€¨€¨€¨€¨€¨€¨€¨€¨€¨†| 83/89 [01:21<00:06,  1.08s/it]
+100%|¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€| 3/3 [00:02<00:00,  1.26it/s][A
+                                             [A127.0.0.1 - - [03/Apr/2026 00:21:58] "GET /api/southbound/overall?days=90 HTTP/1.1" 200 -
+ 94%|¨€¨€¨€¨€¨€¨€¨€¨€¨€¨…| 84/89 [01:22<00:05,  1.09s/it]127.0.0.1 - - [03/Apr/2026 00:21:58] "POST /api/quotes HTTP/1.1" 200 -
+ 96%|¨€¨€¨€¨€¨€¨€¨€¨€¨€¨„| 85/89 [01:23<00:04,  1.11s/it] 97%|¨€¨€¨€¨€¨€¨€¨€¨€¨€¨ƒ| 86/89 [01:24<00:03,  1.05s/it][ÇéĞ÷·ÖÎö] LLMÊ§°Ü: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8000): Failed to establish a new connection: [WinError 10061] ÓÉÓÚÄ¿±ê¼ÆËã»ú»ı¼«¾Ü¾ø£¬ÎŞ·¨Á¬½Ó¡£"))
+[API] ÇëÇóÄÏÏò×Ê½ğÊı¾İ: 09988, days=90
+[Cache DEBUG] _get_cache ±»µ÷ÓÃ: 09988
+[Cache DEBUG] Î´ÃüÖĞ: 09988
+[Southbound] ´Óakshare»ñÈ¡Êı¾İ: 09988 (°¢Àï°Í°Í)
+
+  0%|          | 0/89 [00:00<?, ?it/s][A127.0.0.1 - - [03/Apr/2026 00:22:02] "POST /api/quotes HTTP/1.1" 200 -
+ 98%|¨€¨€¨€¨€¨€¨€¨€¨€¨€¨‚| 87/89 [01:26<00:02,  1.25s/it]
+  1%|          | 1/89 [00:01<01:44,  1.19s/it][A 99%|¨€¨€¨€¨€¨€¨€¨€¨€¨€¨| 88/89 [01:27<00:01,  1.18s/it]
+  2%|¨‡         | 2/89 [00:02<01:30,  1.04s/it][A100%|¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€| 89/89 [01:28<00:00,  1.10s/it]                                               Exception in thread Thread-2 (_preload):
+Traceback (most recent call last):
+  File "C:\test\stock-monitor-v2\app.py", line 1195, in _preload
+    print(f"[Preload] \u2705 {code} Ô¤¼ÓÔØÍê³É")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'gbk' codec can't encode character '\u2705' in position 10: illegal multibyte sequence
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\GS\AppData\Local\Python\pythoncore-3.14-64\Lib\threading.py", line 1082, in _bootstrap_inner
+    self._context.run(self.run)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\GS\AppData\Local\Python\pythoncore-3.14-64\Lib\threading.py", line 1024, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\test\stock-monitor-v2\app.py", line 1197, in _preload
+    print(f"[Preload] \u274c {code} Ô¤¼ÓÔØÊ§°Ü: {e}")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'gbk' codec can't encode character '\u274c' in position 10: illegal multibyte sequence
+
+  3%|¨†         | 3/89 [00:03<01:24,  1.02it/s][A127.0.0.1 - - [03/Apr/2026 00:22:05] "GET /api/hk-stock/09988/short-selling HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:22:05] "POST /api/quotes HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:22:05] "GET /api/market/sentiment HTTP/1.1" 200 -
+
+  4%|¨…         | 4/89 [00:03<01:16,  1.12it/s][A
+  6%|¨„         | 5/89 [00:04<01:10,  1.19it/s][A
+  7%|¨ƒ         | 6/89 [00:05<01:06,  1.25it/s][A
+  8%|¨‚         | 7/89 [00:06<01:04,  1.28it/s][A127.0.0.1 - - [03/Apr/2026 00:22:08] "GET /api/portfolio/hk-short-analysis HTTP/1.1" 200 -
+
+  9%|¨         | 8/89 [00:07<01:10,  1.15it/s][A127.0.0.1 - - [03/Apr/2026 00:22:09] "GET /api/hk-stock/09988/short-selling HTTP/1.1" 200 -
+
+ 10%|¨€         | 9/89 [00:07<01:06,  1.21it/s][A
+ 11%|¨€         | 10/89 [00:08<01:02,  1.27it/s][A127.0.0.1 - - [03/Apr/2026 00:22:10] "POST /api/quotes HTTP/1.1" 200 -
+127.0.0.1 - - [03/Apr/2026 00:22:10] "GET /api/market/sentiment HTTP/1.1" 200 -
+
+ 12%|¨€¨‡        | 11/89 [00:09<00:57,  1.35it/s][A
+ 13%|¨€¨†        | 12/89 [00:09<00:55,  1.38it/s][A
+ 15%|¨€¨…        | 13/89 [00:10<00:53,  1.43it/s][A
+ 16%|¨€¨„        | 14/89 [00:11<00:59,  1.27it/s][A
+ 17%|¨€¨ƒ        | 15/89 [00:12<00:55,  1.33it/s][A127.0.0.1 - - [03/Apr/2026 00:22:14] "GET /api/hk-stock/09988/short-selling HTTP/1.1" 200 -
+
+ 18%|¨€¨‚        | 16/89 [00:12<00:53,  1.36it/s][A127.0.0.1 - - [03/Apr/2026 00:22:15] "GET /api/market/sentiment HTTP/1.1" 200 -
+
+ 19%|¨€¨        | 17/89 [00:13<00:54,  1.31it/s][A127.0.0.1 - - [03/Apr/2026 00:22:15] "POST /api/quotes HTTP/1.1" 200 -
+
+ 20%|¨€¨€        | 18/89 [00:14<00:51,  1.38it/s][A
+ 21%|¨€¨€¨‡       | 19/89 [00:14<00:48,  1.44it/s][A127.0.0.1 - - [03/Apr/2026 00:22:17] "POST /api/quotes HTTP/1.1" 200 -
+
+ 22%|¨€¨€¨‡       | 20/89 [00:15<00:47,  1.45it/s][A
+ 24%|¨€¨€¨†       | 21/89 [00:16<00:49,  1.37it/s][A
+ 25%|¨€¨€¨…       | 22/89 [00:17<00:47,  1.41it/s][A
+ 26%|¨€¨€¨„       | 23/89 [00:17<00:44,  1.49it/s][A127.0.0.1 - - [03/Apr/2026 00:22:19] "GET /api/market/hot-sectors HTTP/1.1" 200 -
+
+ 27%|¨€¨€¨ƒ       | 24/89 [00:18<00:45,  1.43it/s][A127.0.0.1 - - [03/Apr/2026 00:22:20] "POST /api/quotes HTTP/1.1" 200 -
+
+ 28%|¨€¨€¨‚       | 25/89 [00:19<00:44,  1.45it/s][A
+ 29%|¨€¨€¨       | 26/89 [00:19<00:46,  1.35it/s][A
+ 30%|¨€¨€¨€       | 27/89 [00:20<00:44,  1.41it/s][A
+ 31%|¨€¨€¨€¨‡      | 28/89 [00:21<00:43,  1.39it/s][A127.0.0.1 - - [03/Apr/2026 00:22:23] "POST /api/quotes HTTP/1.1" 200 -
+
+ 33%|¨€¨€¨€¨†      | 29/89 [00:22<00:43,  1.38it/s][A
+ 34%|¨€¨€¨€¨†      | 30/89 [00:22<00:41,  1.42it/s][A
+ 35%|¨€¨€¨€¨…      | 31/89 [00:23<00:43,  1.34it/s][A
+ 36%|¨€¨€¨€¨„      | 32/89 [00:24<00:44,  1.29it/s][A127.0.0.1 - - [03/Apr/2026 00:22:26] "POST /api/quotes HTTP/1.1" 200 -
+
+ 37%|¨€¨€¨€¨ƒ      | 33/89 [00:25<00:41,  1.36it/s][A
+ 38%|¨€¨€¨€¨‚      | 34/89 [00:25<00:40,  1.34it/s][A
+ 39%|¨€¨€¨€¨      | 35/89 [00:26<00:39,  1.38it/s][A127.0.0.1 - - [03/Apr/2026 00:22:28] "GET /api/hk-stock/09988/short-selling-history?days=90 HTTP/1.1" 200 -
+
+ 40%|¨€¨€¨€¨€      | 36/89 [00:27<00:37,  1.40it/s][A127.0.0.1 - - [03/Apr/2026 00:22:29] "POST /api/quotes HTTP/1.1" 200 -
+
+ 42%|¨€¨€¨€¨€¨‡     | 37/89 [00:27<00:36,  1.42it/s][A127.0.0.1 - - [03/Apr/2026 00:22:30] "GET /api/hk-short-selling-history?days=90 HTTP/1.1" 200 -
+
+ 43%|¨€¨€¨€¨€¨†     | 38/89 [00:28<00:38,  1.32it/s][A
+ 44%|¨€¨€¨€¨€¨…     | 39/89 [00:29<00:36,  1.38it/s][A
+ 45%|¨€¨€¨€¨€¨…     | 40/89 [00:29<00:33,  1.45it/s][A127.0.0.1 - - [03/Apr/2026 00:22:32] "POST /api/quotes HTTP/1.1" 200 -
+
+ 46%|¨€¨€¨€¨€¨„     | 41/89 [00:30<00:33,  1.43it/s][A
+ 47%|¨€¨€¨€¨€¨ƒ     | 42/89 [00:31<00:32,  1.44it/s][A
+ 48%|¨€¨€¨€¨€¨‚     | 43/89 [00:31<00:29,  1.55it/s][A
+ 49%|¨€¨€¨€¨€¨     | 44/89 [00:32<00:29,  1.53it/s][A
+ 51%|¨€¨€¨€¨€¨€     | 45/89 [00:33<00:29,  1.48it/s][A127.0.0.1 - - [03/Apr/2026 00:22:35] "POST /api/quotes HTTP/1.1" 200 -
+
+ 52%|¨€¨€¨€¨€¨€¨‡    | 46/89 [00:33<00:28,  1.49it/s][A
+ 53%|¨€¨€¨€¨€¨€¨†    | 47/89 [00:34<00:28,  1.47it/s][A
+ 54%|¨€¨€¨€¨€¨€¨…    | 48/89 [00:35<00:27,  1.47it/s][A
+ 55%|¨€¨€¨€¨€¨€¨„    | 49/89 [00:36<00:27,  1.45it/s][A127.0.0.1 - - [03/Apr/2026 00:22:38] "POST /api/quotes HTTP/1.1" 200 -
+
+ 56%|¨€¨€¨€¨€¨€¨„    | 50/89 [00:36<00:28,  1.39it/s][A
+ 57%|¨€¨€¨€¨€¨€¨ƒ    | 51/89 [00:37<00:27,  1.40it/s][A
+ 58%|¨€¨€¨€¨€¨€¨‚    | 52/89 [00:38<00:27,  1.32it/s][A
+ 60%|¨€¨€¨€¨€¨€¨    | 53/89 [00:39<00:26,  1.35it/s][A127.0.0.1 - - [03/Apr/2026 00:22:41] "POST /api/quotes HTTP/1.1" 200 -
+
+ 61%|¨€¨€¨€¨€¨€¨€    | 54/89 [00:39<00:25,  1.35it/s][A
+ 62%|¨€¨€¨€¨€¨€¨€¨‡   | 55/89 [00:41<00:30,  1.13it/s][A
+ 63%|¨€¨€¨€¨€¨€¨€¨†   | 56/89 [00:42<00:32,  1.02it/s][A
+ 64%|¨€¨€¨€¨€¨€¨€¨…   | 57/89 [00:43<00:32,  1.01s/it][A127.0.0.1 - - [03/Apr/2026 00:22:45] "POST /api/quotes HTTP/1.1" 200 -
+
+ 65%|¨€¨€¨€¨€¨€¨€¨„   | 58/89 [00:44<00:30,  1.01it/s][A

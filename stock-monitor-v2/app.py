@@ -72,9 +72,9 @@ def start_southbound_preload():
             try:
                 print(f"[Preload] 正在加载 {code}...")
                 result = get_southbound_stock_history(code, days=90)
-                print(f"[Preload] ✅ {code} 预加载完成，{len(result)}条数据")
+                print(f"[Preload] [OK] {code} 预加载完成，{len(result)}条数据")
             except Exception as e:
-                print(f"[Preload] ❌ {code} 预加载失败: {e}")
+                print(f"[Preload] [FAIL] {code} 预加载失败: {e}")
                 import traceback
                 traceback.print_exc()
         print("="*50)
