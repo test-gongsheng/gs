@@ -15,28 +15,61 @@ import pandas as pd
 DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
 DB_PATH = os.path.join(DATA_DIR, 'southbound.db')
 
-# 内存缓存（避免每次请求都调用akshare）
-_southbound_cache = {}
+# SQLite缓存（多进程共享，避免每次请求都调用akshare）
 CACHE_TTL = 300  # 缓存5分钟
 
+def _init_cache_db():
+    """初始化缓存数据库"""
+    os.makedirs(DATA_DIR, exist_ok=True)
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS southbound_cache (
+            cache_key TEXT PRIMARY KEY,
+            stock_code TEXT,
+            data TEXT,  -- JSON格式
+            created_at INTEGER,
+            expires_at INTEGER
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
 def _get_cache(key):
-    """获取缓存数据"""
-    if key in _southbound_cache:
-        data, timestamp = _southbound_cache[key]
-        if time.time() - timestamp < CACHE_TTL:
-            return data
+    """从SQLite获取缓存数据"""
+    try:
+        _init_cache_db()
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        now = int(time.time())
+        cursor.execute('''
+            SELECT data FROM southbound_cache 
+            WHERE cache_key = ? AND expires_at > ?
+        ''', (key, now))
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            return json.loads(row[0])
+    except Exception as e:
+        print(f"[Cache] 读取缓存失败: {e}")
     return None
 
-def _set_cache(key, data):
-    """设置缓存数据"""
-    _southbound_cache[key] = (data, time.time())
-
-def _clear_expired_cache():
-    """清理过期缓存"""
-    now = time.time()
-    expired_keys = [k for k, (_, ts) in _southbound_cache.items() if now - ts > CACHE_TTL]
-    for k in expired_keys:
-        del _southbound_cache[k]
+def _set_cache(key, data, stock_code=''):
+    """保存数据到SQLite缓存"""
+    try:
+        _init_cache_db()
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        now = int(time.time())
+        expires_at = now + CACHE_TTL
+        cursor.execute('''
+            INSERT OR REPLACE INTO southbound_cache (cache_key, stock_code, data, created_at, expires_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (key, stock_code, json.dumps(data), now, expires_at))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[Cache] 写入缓存失败: {e}")
 
 def init_db():
     """初始化数据库"""
@@ -241,7 +274,7 @@ def get_southbound_stock_history(stock_code: str, days: int = 90) -> List[Dict]:
         print(f"[Southbound] 股票 {stock_code} 返回 {len(result)} 条数据")
         
         # 保存到缓存
-        _set_cache(cache_key, result)
+        _set_cache(cache_key, result, stock_code)
         
         return result
         
