@@ -74,7 +74,10 @@ def _get_cache(stock_code):
 
 def _set_cache(stock_code, data):
     """保存数据到SQLite缓存（简化版）"""
-    print(f"[Cache DEBUG] _set_cache 被调用: {stock_code}, 数据条数={len(data) if data else 0}")
+    import threading
+    thread_name = threading.current_thread().name
+    print(f"[Cache DEBUG] _set_cache 被调用: {stock_code}, 数据条数={len(data) if data else 0}, 线程={thread_name}")
+    
     try:
         if not data or len(data) == 0:
             print(f"[Cache DEBUG] 数据为空，跳过保存")
@@ -83,7 +86,7 @@ def _set_cache(stock_code, data):
         print(f"[Cache DEBUG] 初始化数据库...")
         _init_cache_db()
         
-        print(f"[Cache DEBUG] 连接数据库...")
+        print(f"[Cache DEBUG] 连接数据库: {DB_PATH}")
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         now = int(time.time())
@@ -325,6 +328,8 @@ def get_southbound_stock_history(stock_code: str, days: int = 90) -> List[Dict]:
         
         # 保存到缓存 - 强制调试
         print(f"[Southbound DEBUG] 准备保存缓存: {stock_code}, 数据条数={len(result)}")
+        import threading
+        print(f"[Southbound DEBUG] 当前线程: {threading.current_thread().name}")
         try:
             _set_cache(stock_code, result)
             print(f"[Southbound DEBUG] 缓存保存完成: {stock_code}")
