@@ -106,10 +106,11 @@ def get_southbound_stock_history(stock_code: str, days: int = 90) -> List[Dict]:
     获取指定港股通股票的南向资金流向历史
     """
     try:
-        # 转换股票代码格式（去掉前导零，用于匹配）
-        hk_code = stock_code.lstrip('0')
-        if len(hk_code) < 4:
-            hk_code = stock_code
+        # 标准化股票代码：去掉前导零，用于匹配
+        # 港股代码如 00700 -> 700, 09988 -> 9988
+        hk_code_normalized = stock_code.lstrip('0')
+        if not hk_code_normalized:
+            hk_code_normalized = stock_code
         
         # 获取最近N个交易日的日期范围
         end_date = datetime.now()
@@ -123,16 +124,32 @@ def get_southbound_stock_history(stock_code: str, days: int = 90) -> List[Dict]:
         )
         
         if df is None or len(df) == 0:
+            print(f"[Southbound] 无南向持股数据")
             return []
         
-        # 筛选指定股票的数据
-        stock_data = df[df['股票代码'].astype(str).str.lstrip('0') == hk_code].copy()
+        # 将 DataFrame 中的代码标准化为字符串并去掉前导零
+        df['code_normalized'] = df['股票代码'].astype(str).str.lstrip('0')
         
+        # 筛选指定股票的数据（使用标准化后的代码匹配）
+        stock_data = df[df['code_normalized'] == hk_code_normalized].copy()
+        
+        # 如果匹配不到，尝试原始代码匹配
         if len(stock_data) == 0:
-            # 尝试直接匹配
             stock_data = df[df['股票代码'].astype(str) == stock_code].copy()
         
+        # 如果还匹配不到，尝试用原始代码去掉前导零后的各种变体
         if len(stock_data) == 0:
+            # 可能是带 .HK 后缀的情况
+            stock_code_clean = stock_code.replace('.HK', '').replace('.hk', '')
+            if stock_code_clean != stock_code:
+                hk_code_normalized = stock_code_clean.lstrip('0')
+                stock_data = df[df['code_normalized'] == hk_code_normalized].copy()
+        
+        if len(stock_data) == 0:
+            # 打印调试信息
+            available_codes = df['股票代码'].astype(str).unique()[:10]
+            print(f"[Southbound] 未找到股票 {stock_code} (标准化: {hk_code_normalized})")
+            print(f"[Southbound] 可用代码样例: {list(available_codes)}")
             return []
         
         # 按日期排序
@@ -172,6 +189,7 @@ def get_southbound_stock_history(stock_code: str, days: int = 90) -> List[Dict]:
                 'close_price': close_price
             })
         
+        print(f"[Southbound] 股票 {stock_code} 返回 {len(result)} 条数据")
         return result
         
     except Exception as e:
