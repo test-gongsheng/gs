@@ -32,54 +32,79 @@ def _init_cache_db():
             expires_at INTEGER
         )
     ''')
+    # 南向资金个股数据缓存表（原生表结构，更可靠）
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS southbound_stock_cache (
+            stock_code TEXT PRIMARY KEY,
+            stock_name TEXT,
+            data_json TEXT,  -- 整组数据的JSON
+            record_count INTEGER,
+            created_at INTEGER,
+            expires_at INTEGER
+        )
+    ''')
     conn.commit()
     conn.close()
 
-def _get_cache(key):
-    """从SQLite获取缓存数据"""
+def _get_cache(stock_code):
+    """从SQLite获取缓存数据（直接用stock_code作为key）"""
     try:
         _init_cache_db()
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         now = int(time.time())
         cursor.execute('''
-            SELECT data FROM southbound_cache 
-            WHERE cache_key = ? AND expires_at > ?
-        ''', (key, now))
+            SELECT data_json, stock_name FROM southbound_stock_cache 
+            WHERE stock_code = ? AND expires_at > ?
+        ''', (stock_code, now))
         row = cursor.fetchone()
         conn.close()
         if row:
-            return json.loads(row[0])
+            data = json.loads(row[0])
+            print(f"[Cache] 命中: {stock_code}, {len(data)}条, 名称={row[1]}")
+            return data
     except Exception as e:
-        print(f"[Cache] 读取缓存失败: {e}")
+        print(f"[Cache] 读取失败: {e}")
     return None
 
-def _set_cache(key, data, stock_code=''):
-    """保存数据到SQLite缓存"""
+def _set_cache(stock_code, data):
+    """保存数据到SQLite缓存（简化版）"""
     try:
+        if not data or len(data) == 0:
+            return
+        
         _init_cache_db()
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         now = int(time.time())
         expires_at = now + CACHE_TTL
         
-        # 确保数据可以JSON序列化
-        try:
-            json_data = json.dumps(data, ensure_ascii=False, default=str)
-        except Exception as json_err:
-            print(f"[Cache] JSON序列化失败: {json_err}")
-            conn.close()
-            return
+        stock_name = data[0].get('stock_name', stock_code)
+        
+        # 转换为简单类型确保JSON可序列化
+        clean_data = []
+        for item in data:
+            clean_item = {}
+            for k, v in item.items():
+                # 转换numpy类型和普通类型
+                if hasattr(v, 'item'):  # numpy类型
+                    clean_item[k] = v.item()
+                else:
+                    clean_item[k] = v
+            clean_data.append(clean_item)
+        
+        json_data = json.dumps(clean_data, ensure_ascii=False)
         
         cursor.execute('''
-            INSERT OR REPLACE INTO southbound_cache (cache_key, stock_code, data, created_at, expires_at)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (key, stock_code, json_data, now, expires_at))
+            INSERT OR REPLACE INTO southbound_stock_cache 
+            (stock_code, stock_name, data_json, record_count, created_at, expires_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (stock_code, stock_name, json_data, len(clean_data), now, expires_at))
         conn.commit()
         conn.close()
-        print(f"[Cache] 已保存: {key}, {len(data)}条")
+        print(f"[Cache] 已保存: {stock_code}, {len(clean_data)}条")
     except Exception as e:
-        print(f"[Cache] 写入缓存失败: {e}")
+        print(f"[Cache] 写入失败: {e}")
         import traceback
         traceback.print_exc()
 
@@ -173,12 +198,11 @@ def get_southbound_overall_history(days: int = 90) -> List[Dict]:
 def get_southbound_stock_history(stock_code: str, days: int = 90) -> List[Dict]:
     """
     获取指定港股通股票的南向资金流向历史
-    使用内存缓存，5分钟内重复请求直接返回缓存数据
+    使用SQLite缓存，5分钟内重复请求直接返回缓存数据
     """
-    cache_key = f"stock_{stock_code}_{days}"
-    cached = _get_cache(cache_key)
+    # 先尝试从缓存读取
+    cached = _get_cache(stock_code)
     if cached:
-        print(f"[Southbound] 返回缓存数据: {stock_code}, {len(cached)}条")
         return cached
     
     try:
@@ -286,7 +310,7 @@ def get_southbound_stock_history(stock_code: str, days: int = 90) -> List[Dict]:
         print(f"[Southbound] 股票 {stock_code} 返回 {len(result)} 条数据")
         
         # 保存到缓存
-        _set_cache(cache_key, result, stock_code)
+        _set_cache(stock_code, result)
         
         return result
         
