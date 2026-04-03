@@ -280,7 +280,7 @@ function showSouthboundLoading(stockCode) {
     console.log(`[Southbound] 显示加载状态: ${stockCode}`);
 }
 
-// 加载个股南向资金数据 - 简化版（前端缓存 + AbortController）
+// 加载个股南向资金数据 - 修复版（避免快速切换时请求被取消）
 async function loadSouthboundStockData(stockCode) {
     console.log(`[Southbound] === 加载: ${stockCode} ===`);
     
@@ -293,13 +293,19 @@ async function loadSouthboundStockData(stockCode) {
         return;
     }
     
-    // 取消之前的请求
-    if (southboundAbortController) {
-        southboundAbortController.abort();
+    // 取消之前的请求（如果存在且不是当前股票的请求）
+    if (southboundAbortController && southboundAbortController.stockCode !== stockCode) {
+        console.log(`[Southbound] 取消旧请求: ${southboundAbortController.stockCode}`);
+        southboundAbortController.controller.abort();
     }
     
-    southboundAbortController = new AbortController();
-    const signal = southboundAbortController.signal;
+    // 创建新的 AbortController，并标记所属股票
+    const controller = new AbortController();
+    southboundAbortController = {
+        controller: controller,
+        stockCode: stockCode
+    };
+    const signal = controller.signal;
     
     // 显示加载状态
     showSouthboundLoading(stockCode);
@@ -335,7 +341,7 @@ async function loadSouthboundStockData(stockCode) {
         }
     } catch (error) {
         if (error.name === 'AbortError') {
-            console.log(`[Southbound] 请求被取消: ${stockCode}`);
+            console.log(`[Southbound] 请求被主动取消: ${stockCode}`);
             return;
         }
         console.error(`[Southbound] 失败: ${stockCode}`, error.message);
