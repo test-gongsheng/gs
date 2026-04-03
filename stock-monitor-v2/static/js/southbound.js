@@ -261,14 +261,17 @@ function renderSouthboundMarketCapChart(data, stockCode) {
     
     // 准备数据
     const dates = sixMonthsData.map(d => d.date);
-    const holdShares = sixMonthsData.map(d => d.hold_shares || 0); // 万股
+    const holdShares = sixMonthsData.map(d => d.hold_shares || 0);
     const closePrices = sixMonthsData.map(d => d.close_price || 0);
     
-    // 计算持股市值（亿港元）= 持股数量(万股) × 收盘价 / 10000
+    // 计算持股市值（亿港元）= 持股数量(股) × 收盘价(港元) / 100000000
+    // 后端 hold_shares 单位是"股"，需要转换为亿港元
     const marketCaps = sixMonthsData.map(d => {
-        const shares = d.hold_shares || 0; // 万股
+        const shares = d.hold_shares || 0; // 股
         const price = d.close_price || 0;  // 港元
-        return (shares * price / 10000).toFixed(2); // 亿港元
+        // 1亿股 = 1亿港元（当股价为1港元时）
+        // 市值(亿港元) = 持股数量(股) × 股价(港元) / 100000000
+        return (shares * price / 100000000).toFixed(2);
     });
     
     // 销毁旧图表
