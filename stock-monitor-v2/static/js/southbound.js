@@ -7,6 +7,30 @@ const southboundRequestState = {
     currentStockCode: null
 };
 
+// 前端缓存（内存中，页面刷新后清空）
+const southboundCache = {
+    data: new Map(),
+    TTL: 5 * 60 * 1000, // 5分钟
+    
+    get(stockCode) {
+        const cached = this.data.get(stockCode);
+        if (!cached) return null;
+        if (Date.now() - cached.timestamp > this.TTL) {
+            this.data.delete(stockCode);
+            return null;
+        }
+        return cached.data;
+    },
+    
+    set(stockCode, data) {
+        this.data.set(stockCode, { data, timestamp: Date.now() });
+    },
+    
+    clear() {
+        this.data.clear();
+    }
+};
+
 // 渲染南向资金整体流向图表
 function renderSouthboundOverallChart(data) {
     // 检查 Chart.js 是否已加载
@@ -261,8 +285,17 @@ function showSouthboundLoading(stockCode) {
     console.log(`[Southbound] 显示加载状态: ${stockCode}`);
 }
 
-// 加载个股南向资金数据 - 改进版（使用AbortController解决竞态条件）
+// 加载个股南向资金数据 - 改进版（使用AbortController解决竞态条件 + 前端缓存）
 async function loadSouthboundStockData(stockCode) {
+    // 检查前端缓存（5分钟内直接返回，不请求后端）
+    const cached = southboundCache.get(stockCode);
+    if (cached) {
+        console.log(`[Southbound] 前端缓存命中: ${stockCode}, 直接渲染`);
+        renderSouthboundStockChart(cached, stockCode);
+        updateSouthboundStockStats(cached, stockCode);
+        return { success: true, data: cached, fromCache: true };
+    }
+    
     // 取消之前的请求
     if (southboundAbortController) {
         southboundAbortController.abort();
@@ -305,6 +338,9 @@ async function loadSouthboundStockData(stockCode) {
         
         if (result.success && result.data && result.data.length > 0) {
             console.log(`[Southbound] 渲染数据: ${thisRequestStockCode}, ${result.data.length}条, 股票名: ${result.data[0]?.stock_name || 'N/A'}`);
+            // 保存到前端缓存
+            southboundCache.set(thisRequestStockCode, result.data);
+            console.log(`[Southbound] 已缓存: ${thisRequestStockCode}`);
             renderSouthboundStockChart(result.data, thisRequestStockCode);
             updateSouthboundStockStats(result.data, thisRequestStockCode);
         } else {
