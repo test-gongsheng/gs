@@ -1176,6 +1176,16 @@ def get_portfolio_analysis():
 if __name__ == '__main__':
     # 启动时预加载中轴价格缓存
     preload_axis_cache()
+    
+    # 启动南向资金预加载定时任务
+    try:
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'utils'))
+        from southbound_scheduler import init_preload_scheduler
+        init_preload_scheduler()
+    except Exception as e:
+        print(f"[Startup] 南向资金预加载调度器启动失败: {e}")
+    
     app.run(debug=False, host='0.0.0.0', port=8888, use_reloader=False)
 
 

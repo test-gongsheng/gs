@@ -231,12 +231,25 @@ def get_southbound_overall_history(days: int = 90) -> List[Dict]:
 def get_southbound_stock_history(stock_code: str, days: int = 90) -> List[Dict]:
     """
     获取指定港股通股票的南向资金流向历史
-    使用SQLite缓存，5分钟内重复请求直接返回缓存数据
+    优先级：预加载缓存 > SQLite缓存 > 实时获取
     """
-    # 先尝试从缓存读取
+    # 1. 先尝试预加载缓存（最快，Flask启动时加载到内存）
+    try:
+        from southbound_preload import get_preload_cache
+        preloaded = get_preload_cache(stock_code)
+        if preloaded:
+            print(f"[Southbound] 预加载缓存命中: {stock_code}, {len(preloaded)}条")
+            return preloaded
+    except Exception as e:
+        print(f"[Southbound] 预加载缓存读取失败: {e}")
+    
+    # 2. 尝试旧版SQLite缓存（兼容）
     cached = _get_cache(stock_code)
     if cached:
         return cached
+    
+    # 3. 实时获取（最慢）
+    print(f"[Southbound] 缓存未命中，实时获取: {stock_code}")
     
     try:
         # 从 stocks.json 获取正确的股票名称
