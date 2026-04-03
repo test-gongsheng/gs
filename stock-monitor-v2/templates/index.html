@@ -478,13 +478,23 @@
                             </div>
                         </div>
                         
-                        <!-- 图表 -->
-                        <div style="padding: 12px; background: var(--bg-tertiary); border-radius: var(--border-radius);">
+                        <!-- 图表1：资金流向与持股比例 -->
+                        <div style="padding: 12px; background: var(--bg-tertiary); border-radius: var(--border-radius); margin-bottom: 16px;">
                             <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">
                                 <i class="fas fa-chart-area"></i> 近90日南向资金流向与持股比例变化
                             </div>
                             <div class="chart-container" style="height: 200px;">
                                 <canvas id="southboundStockChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- 图表2：持股市值与收盘价（双Y轴，6个月） -->
+                        <div style="padding: 12px; background: var(--bg-tertiary); border-radius: var(--border-radius);">
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">
+                                <i class="fas fa-chart-line"></i> 近6个月持股市值变化（亿港元）
+                            </div>
+                            <div class="chart-container" style="height: 200px;">
+                                <canvas id="southboundMarketCapChart"></canvas>
                             </div>
                         </div>
                         

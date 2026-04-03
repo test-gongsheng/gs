@@ -240,6 +240,167 @@ function renderSouthboundStockChart(data, stockCode) {
             }
         }
     });
+    
+    // 同时渲染持股市值变化图
+    renderSouthboundMarketCapChart(data, stockCode);
+}
+
+// 渲染持股市值变化图（双Y轴，6个月）
+function renderSouthboundMarketCapChart(data, stockCode) {
+    // 检查 Chart.js 是否已加载
+    if (typeof Chart === 'undefined') {
+        console.warn('[Southbound] Chart.js 未加载，跳过市值图表渲染');
+        return;
+    }
+    
+    const ctx = document.getElementById('southboundMarketCapChart');
+    if (!ctx) return;
+    
+    // 取最近6个月数据（约120个交易日）
+    const sixMonthsData = data.slice(-120);
+    
+    // 准备数据
+    const dates = sixMonthsData.map(d => d.date);
+    const holdShares = sixMonthsData.map(d => d.hold_shares || 0); // 万股
+    const closePrices = sixMonthsData.map(d => d.close_price || 0);
+    
+    // 计算持股市值（亿港元）= 持股数量(万股) × 收盘价 / 10000
+    const marketCaps = sixMonthsData.map(d => {
+        const shares = d.hold_shares || 0; // 万股
+        const price = d.close_price || 0;  // 港元
+        return (shares * price / 10000).toFixed(2); // 亿港元
+    });
+    
+    // 销毁旧图表
+    if (window.southboundMarketCapChartInstance) {
+        window.southboundMarketCapChartInstance.destroy();
+    }
+    
+    window.southboundMarketCapChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [
+                {
+                    label: '持股市值（亿港元）',
+                    data: marketCaps,
+                    borderColor: '#3b82f6', // 蓝色
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    yAxisID: 'y',
+                    order: 1
+                },
+                {
+                    label: '收盘价（港元）',
+                    data: closePrices,
+                    borderColor: '#ef4444', // 红色
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    borderDash: [5, 5], // 虚线
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    yAxisID: 'y1',
+                    order: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        color: '#e2e8f0',
+                        font: { size: 11 },
+                        usePointStyle: true,
+                        boxWidth: 8
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    titleColor: '#e2e8f0',
+                    bodyColor: '#e2e8f0',
+                    borderColor: '#334155',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.dataset.yAxisID === 'y') {
+                                label += context.raw + '亿';
+                            } else {
+                                label += context.raw + '港元';
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: 'rgba(148, 163, 184, 0.1)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: '#94a3b8',
+                        maxTicksLimit: 6,
+                        maxRotation: 0
+                    }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    grid: {
+                        color: 'rgba(148, 163, 184, 0.1)'
+                    },
+                    ticks: {
+                        color: '#3b82f6',
+                        callback: function(value) {
+                            return value + '亿';
+                        }
+                    },
+                    title: {
+                        display: false
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    grid: {
+                        drawOnChartArea: false // 不显示右Y轴的网格线
+                    },
+                    ticks: {
+                        color: '#ef4444',
+                        callback: function(value) {
+                            return value + '港元';
+                        }
+                    },
+                    title: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+    
+    console.log(`[Southbound] 市值图表渲染完成: ${stockCode}, ${sixMonthsData.length}条数据`);
 }
 
 // 加载南向资金整体数据
@@ -289,6 +450,7 @@ async function loadSouthboundStockData(stockCode) {
     if (cached) {
         console.log(`[Southbound] 缓存命中，直接渲染: ${stockCode}`);
         renderSouthboundStockChart(cached, stockCode);
+        renderSouthboundMarketCapChart(cached, stockCode);
         updateSouthboundStockStats(cached, stockCode);
         return;
     }
