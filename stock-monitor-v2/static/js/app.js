@@ -909,14 +909,16 @@ function renderStockDetail() {
         
         // 港股：显示南向资金流向
         const southboundEl = document.getElementById('southboundSection');
+        console.log(`[Southbound] 检查元素: southboundEl=${!!southboundEl}, isHKStock=${isHKStock}`);
         if (southboundEl) {
             southboundEl.style.display = 'block';
+            console.log(`[Southbound] 显示南向区域: ${safeStock.code}`);
             // 加载南向资金数据（有前端缓存，重复加载也很快）
             if (typeof loadSouthboundStockData === 'function') {
-                console.log(`[Southbound] 加载: ${stock.code}`);
-                loadSouthboundStockData(stock.code);
+                console.log(`[Southbound] 准备调用函数: ${safeStock.code}`);
+                loadSouthboundStockData(safeStock.code);
             } else {
-                console.log(`[Southbound] 函数不存在`);
+                console.log(`[Southbound] 错误: loadSouthboundStockData 函数不存在`);
             }
         }
     } else {
