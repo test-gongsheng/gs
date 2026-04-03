@@ -1173,48 +1173,6 @@ def get_portfolio_analysis():
         }), 500
 
 
-# ========== 南向资金 API ==========
-
-@app.route('/api/southbound-capital')
-def get_southbound_capital_api():
-    """获取南向资金整体流向数据（90日）"""
-    try:
-        days = request.args.get('days', 90, type=int)
-        history = get_southbound_overall_history(days=days)
-        signal = get_southbound_signal()
-        
-        return jsonify({
-            'success': True,
-            'history': history,
-            'signal': signal,
-            'update_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-@app.route('/api/southbound-capital/<stock_code>')
-def get_southbound_stock_api(stock_code):
-    """获取指定港股通股票的南向资金流向（90日）"""
-    try:
-        days = request.args.get('days', 90, type=int)
-        history = get_southbound_stock_history(stock_code, days=days)
-        
-        return jsonify({
-            'success': True,
-            'stock_code': stock_code,
-            'history': history,
-            'update_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-
 if __name__ == '__main__':
     # 启动时预加载中轴价格缓存
     preload_axis_cache()
