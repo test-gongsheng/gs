@@ -320,6 +320,13 @@ async function loadSouthboundStockData(stockCode) {
         
         console.log(`[Southbound] 响应: HTTP ${response.status}`);
         
+        // 关键修复：请求完成后检查是否仍然是当前选中的股票
+        // 如果用户已经切换到其他股票，忽略这次响应
+        if (southboundAbortController && southboundAbortController.stockCode !== stockCode) {
+            console.log(`[Southbound] 请求完成但已切换股票，忽略: ${stockCode} -> ${southboundAbortController.stockCode}`);
+            return;
+        }
+        
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
@@ -328,6 +335,12 @@ async function loadSouthboundStockData(stockCode) {
         const elapsed = Date.now() - startTime;
         
         console.log(`[Southbound] 数据: success=${result.success}, count=${result.data?.length || 0}, 耗时${elapsed}ms`);
+        
+        // 再次检查：解析完数据后，确认还是当前股票
+        if (southboundAbortController && southboundAbortController.stockCode !== stockCode) {
+            console.log(`[Southbound] 数据解析完成但已切换股票，忽略: ${stockCode}`);
+            return;
+        }
         
         if (result.success && result.data && result.data.length > 0) {
             // 保存到缓存并渲染
