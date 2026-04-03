@@ -137,7 +137,9 @@ class SouthboundModule {
 
     // 处理原始数据
     _processData(rawData) {
-        const { history = [], realtime = {}, stock_name = '' } = rawData;
+        // 后端返回的是数组，直接使用
+        const history = Array.isArray(rawData) ? rawData : (rawData.history || []);
+        const stockName = history.length > 0 ? history[0].stock_name : '';
         
         // 按日期排序
         const sorted = [...history].sort((a, b) => 
@@ -149,8 +151,7 @@ class SouthboundModule {
         
         return {
             history: sorted,
-            realtime,
-            stockName: stock_name,
+            stockName: stockName,
             stats,
             updateTime: new Date().toISOString()
         };

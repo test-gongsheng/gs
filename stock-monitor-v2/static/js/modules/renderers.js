@@ -154,7 +154,8 @@ function renderSouthbound(data, stockCode) {
     if (net30dEl) {
         const net30d = stats?.total30d || 0;
         const isInflow = net30d >= 0;
-        net30dEl.textContent = `${isInflow ? '+' : ''}${(net30d / 100000000).toFixed(2)}亿`;
+        // 后端返回的已经是亿港元单位
+        net30dEl.textContent = `${isInflow ? '+' : ''}${net30d.toFixed(2)}亿港元`;
         net30dEl.className = isInflow ? 'up' : 'down';
     }
     if (signalEl) {

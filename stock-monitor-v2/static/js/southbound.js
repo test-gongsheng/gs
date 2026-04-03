@@ -303,8 +303,13 @@ async function loadSouthboundStockData(stockCode) {
             return;
         }
         
-        if (result.success && result.data && result.data.length > 0) {
-            console.log(`[Southbound] 渲染数据: ${thisRequestStockCode}, ${result.data.length}条, 股票名: ${result.data[0]?.stock_name || 'N/A'}`);
+        if (result.success && result.history && result.history.length > 0) {
+            console.log(`[Southbound] 渲染数据: ${thisRequestStockCode}, ${result.history.length}条, 股票名: ${result.history[0]?.stock_name || 'N/A'}`);
+            renderSouthboundStockChart(result.history, thisRequestStockCode);
+            updateSouthboundStockStats(result.history, thisRequestStockCode);
+        } else if (result.success && result.data && result.data.length > 0) {
+            // 兼容旧格式（使用 data 字段）
+            console.log(`[Southbound] 渲染数据(兼容模式): ${thisRequestStockCode}, ${result.data.length}条`);
             renderSouthboundStockChart(result.data, thisRequestStockCode);
             updateSouthboundStockStats(result.data, thisRequestStockCode);
         } else {
