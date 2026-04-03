@@ -409,27 +409,38 @@ function updateSouthboundStats(data) {
 
 // 更新个股统计数据
 function updateSouthboundStockStats(data, stockCode) {
-    if (data.length === 0) return;
+    console.log(`[Southbound] 更新统计数据: ${stockCode}, ${data.length}条数据`);
+    
+    if (data.length === 0) {
+        console.warn(`[Southbound] 数据为空，跳过更新`);
+        return;
+    }
     
     const latest = data[data.length - 1];
+    console.log(`[Southbound] 最新数据:`, latest);
     
     // 最新持股占比
     const ratioEl = document.getElementById('stockSouthboundRatio');
+    console.log(`[Southbound] ratioEl找到: ${!!ratioEl}`);
     if (ratioEl) {
         ratioEl.textContent = latest.hold_ratio + '%';
+        console.log(`[Southbound] 已更新持股比例: ${latest.hold_ratio}%`);
     }
     
     // 近30日净流入
     const recent30d = data.slice(-30);
     const netInflow30d = recent30d.reduce((sum, d) => sum + (parseFloat(d.net_inflow) || 0), 0);
     const netInflow30El = document.getElementById('stockSouthbound30d');
+    console.log(`[Southbound] netInflow30El找到: ${!!netInflow30El}, 30日净流入: ${netInflow30d}`);
     if (netInflow30El) {
         netInflow30El.textContent = (netInflow30d >= 0 ? '+' : '') + netInflow30d.toFixed(2) + '亿港元';
         netInflow30El.className = `metric-value ${netInflow30d >= 0 ? 'up' : 'down'}`;
+        console.log(`[Southbound] 已更新30日净流入`);
     }
     
     // 判断信号
     const signalEl = document.getElementById('stockSouthboundSignal');
+    console.log(`[Southbound] signalEl找到: ${!!signalEl}`);
     if (signalEl) {
         let signal = '中性';
         if (netInflow30d > 5) signal = '增持';
@@ -439,5 +450,6 @@ function updateSouthboundStockStats(data, stockCode) {
         
         signalEl.textContent = signal;
         signalEl.className = `signal-badge ${netInflow30d > 0 ? 'bull' : netInflow30d < 0 ? 'bear' : 'neutral'}`;
+        console.log(`[Southbound] 已更新信号: ${signal}`);
     }
 }
