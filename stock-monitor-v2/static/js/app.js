@@ -911,15 +911,12 @@ function renderStockDetail() {
         const southboundEl = document.getElementById('southboundSection');
         if (southboundEl) {
             southboundEl.style.display = 'block';
-            // 只在股票代码变化时才加载南向资金数据，避免重复请求
-            console.log(`[Southbound] 检查加载: stock.code=${stock.code}, last=${appState.lastSouthboundStockCode}, 相同=${appState.lastSouthboundStockCode === stock.code}`);
-            if (typeof loadSouthboundStockData === 'function' && 
-                appState.lastSouthboundStockCode !== stock.code) {
-                appState.lastSouthboundStockCode = stock.code;
-                console.log(`[Southbound] 调用加载: ${stock.code}`);
+            // 加载南向资金数据（有前端缓存，重复加载也很快）
+            if (typeof loadSouthboundStockData === 'function') {
+                console.log(`[Southbound] 加载: ${stock.code}`);
                 loadSouthboundStockData(stock.code);
             } else {
-                console.log(`[Southbound] 跳过加载: ${stock.code} (已加载或函数不存在)`);
+                console.log(`[Southbound] 函数不存在`);
             }
         }
     } else {
@@ -929,6 +926,9 @@ function renderStockDetail() {
         // 非港股：隐藏南向资金
         const southboundEl = document.getElementById('southboundSection');
         if (southboundEl) southboundEl.style.display = 'none';
+        
+        // 重置南向资金记录，这样切回港股时会重新加载
+        appState.lastSouthboundStockCode = null;
     }
 }
 function renderGridStrategy(stock) {
