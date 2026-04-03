@@ -2,11 +2,6 @@
  * 南向资金图表模块
  */
 
-// 南向资金请求状态管理
-const southboundRequestState = {
-    currentStockCode: null
-};
-
 // 前端缓存（内存中，页面刷新后清空）
 const southboundCache = {
     data: new Map(),
@@ -285,47 +280,39 @@ function showSouthboundLoading(stockCode) {
     console.log(`[Southbound] 显示加载状态: ${stockCode}`);
 }
 
-// 加载个股南向资金数据 - 改进版（使用AbortController解决竞态条件 + 前端缓存）
+// 加载个股南向资金数据 - 简化版（前端缓存 + AbortController）
 async function loadSouthboundStockData(stockCode) {
-    console.log(`[Southbound] === loadSouthboundStockData 被调用: ${stockCode} ===`);
+    console.log(`[Southbound] === 加载: ${stockCode} ===`);
     
-    // 检查前端缓存（5分钟内直接返回，不请求后端）
+    // 检查前端缓存
     const cached = southboundCache.get(stockCode);
     if (cached) {
-        console.log(`[Southbound] 前端缓存命中: ${stockCode}, 直接渲染`);
+        console.log(`[Southbound] 缓存命中，直接渲染: ${stockCode}`);
         renderSouthboundStockChart(cached, stockCode);
         updateSouthboundStockStats(cached, stockCode);
-        return { success: true, data: cached, fromCache: true };
+        return;
     }
-    
-    console.log(`[Southbound] 缓存未命中，开始请求后端: ${stockCode}`);
     
     // 取消之前的请求
     if (southboundAbortController) {
         southboundAbortController.abort();
-        console.log(`[Southbound] 取消旧请求`);
     }
     
-    // 创建新的 AbortController
     southboundAbortController = new AbortController();
     const signal = southboundAbortController.signal;
-    
-    // 更新当前股票代码
-    southboundRequestState.currentStockCode = stockCode;
-    const thisRequestStockCode = stockCode;
     
     // 显示加载状态
     showSouthboundLoading(stockCode);
     
-    console.log(`[Southbound] 请求API: /api/southbound/stock/${thisRequestStockCode}?days=90`);
+    console.log(`[Southbound] 请求API: /api/southbound/stock/${stockCode}`);
     const startTime = Date.now();
     
     try {
-        const response = await fetch(`/api/southbound/stock/${thisRequestStockCode}?days=90`, {
+        const response = await fetch(`/api/southbound/stock/${stockCode}?days=90`, {
             signal: signal
         });
         
-        console.log(`[Southbound] 收到响应: HTTP ${response.status}`);
+        console.log(`[Southbound] 响应: HTTP ${response.status}`);
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
@@ -334,44 +321,25 @@ async function loadSouthboundStockData(stockCode) {
         const result = await response.json();
         const elapsed = Date.now() - startTime;
         
-        console.log(`[Southbound] 解析JSON完成, 耗时${elapsed}ms, success=${result.success}, count=${result.data?.length || 0}`);
-        
-        // 检查是否仍然是最新请求（双重保险：AbortController + 代码比对）
-        if (southboundRequestState.currentStockCode !== thisRequestStockCode) {
-            console.log(`[Southbound] 已切换到 ${southboundRequestState.currentStockCode}，忽略 ${thisRequestStockCode} 的过期数据`);
-            return;
-        }
+        console.log(`[Southbound] 数据: success=${result.success}, count=${result.data?.length || 0}, 耗时${elapsed}ms`);
         
         if (result.success && result.data && result.data.length > 0) {
-            console.log(`[Southbound] 数据有效，开始渲染: ${thisRequestStockCode}, ${result.data.length}条`);
-            // 保存到前端缓存
-            southboundCache.set(thisRequestStockCode, result.data);
-            console.log(`[Southbound] 已缓存: ${thisRequestStockCode}`);
-            renderSouthboundStockChart(result.data, thisRequestStockCode);
-            updateSouthboundStockStats(result.data, thisRequestStockCode);
-            console.log(`[Southbound] 渲染完成: ${thisRequestStockCode}`);
+            // 保存到缓存并渲染
+            southboundCache.set(stockCode, result.data);
+            renderSouthboundStockChart(result.data, stockCode);
+            updateSouthboundStockStats(result.data, stockCode);
+            console.log(`[Southbound] 渲染完成: ${stockCode}`);
         } else {
-            console.warn(`[Southbound] 无数据或格式错误: ${thisRequestStockCode}`, result);
+            console.warn(`[Southbound] 无数据: ${stockCode}`);
             clearSouthboundStockDisplay();
         }
     } catch (error) {
-        // 忽略 AbortError（这是正常的取消）
         if (error.name === 'AbortError') {
-            console.log(`[Southbound] 请求 ${thisRequestStockCode} 被取消（正常）`);
+            console.log(`[Southbound] 请求被取消: ${stockCode}`);
             return;
         }
-        
-        console.error(`[Southbound] 请求失败 ${thisRequestStockCode}:`, error.message);
-        
-        // 只有当仍然是当前股票时才清空显示
-        if (southboundRequestState.currentStockCode === thisRequestStockCode) {
-            clearSouthboundStockDisplay();
-        }
-    } finally {
-        // 清理 controller（如果是当前请求的）
-        if (southboundAbortController && !southboundAbortController.signal.aborted) {
-            southboundAbortController = null;
-        }
+        console.error(`[Southbound] 失败: ${stockCode}`, error.message);
+        clearSouthboundStockDisplay();
     }
 }
 
@@ -443,12 +411,6 @@ function updateSouthboundStats(data) {
 function updateSouthboundStockStats(data, stockCode) {
     if (data.length === 0) return;
     
-    // 验证是否仍然是当前选中的股票（通过闭包传入的stockCode）
-    if (stockCode && southboundRequestState.currentStockCode !== stockCode) {
-        console.log(`[Southbound] 忽略过期统计数据: ${stockCode}，当前: ${southboundRequestState.currentStockCode}`);
-        return;
-    }
-    
     const latest = data[data.length - 1];
     
     // 最新持股占比
@@ -462,7 +424,7 @@ function updateSouthboundStockStats(data, stockCode) {
     const netInflow30d = recent30d.reduce((sum, d) => sum + (parseFloat(d.net_inflow) || 0), 0);
     const netInflow30El = document.getElementById('stockSouthbound30d');
     if (netInflow30El) {
-        netInflow30El.textContent = (netInflow30d >= 0 ? '+' : '') + netInflow30d.toFixed(2) + '亿';
+        netInflow30El.textContent = (netInflow30d >= 0 ? '+' : '') + netInflow30d.toFixed(2) + '亿港元';
         netInflow30El.className = `metric-value ${netInflow30d >= 0 ? 'up' : 'down'}`;
     }
     
