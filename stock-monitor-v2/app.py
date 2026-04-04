@@ -71,7 +71,7 @@ def start_southbound_preload():
         for code in hk_stocks:
             try:
                 print(f"[Preload] 正在加载 {code}...")
-                result = get_southbound_stock_history(code, days=90)
+                result = get_southbound_stock_history(code, days=120)
                 print(f"[Preload] [OK] {code} 预加载完成，{len(result)}条数据")
             except Exception as e:
                 print(f"[Preload] [FAIL] {code} 预加载失败: {e}")
@@ -467,9 +467,9 @@ from utils.southbound_capital import (
 
 @app.route('/api/southbound/overall')
 def get_southbound_overall():
-    """获取南向资金整体流向（90个交易日）"""
+    """获取南向资金整体流向（120个交易日）"""
     try:
-        days = request.args.get('days', 90, type=int)
+        days = request.args.get('days', 120, type=int)
         data = get_southbound_overall_history(days=days)
         signal = get_southbound_signal()
         
@@ -488,9 +488,9 @@ def get_southbound_overall():
 
 @app.route('/api/southbound/stock/<stock_code>')
 def get_southbound_stock(stock_code):
-    """获取指定港股通股票的南向资金流向（90个交易日）"""
+    """获取指定港股通股票的南向资金流向（120个交易日）"""
     try:
-        days = request.args.get('days', 90, type=int)
+        days = request.args.get('days', 120, type=int)
         print(f"[API] 请求南向资金数据: {stock_code}, days={days}")
         data = get_southbound_stock_history(stock_code, days=days)
         
