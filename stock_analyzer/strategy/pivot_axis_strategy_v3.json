@@ -1,0 +1,157 @@
+{
+  "strategy_name": "中轴价格仓位控制策略",
+  "version": "3.0",
+  "version_name": "智能自适应",
+  "created_at": "2026-04-05",
+  
+  "base_params": {
+    "invest_limit": 1000000,
+    "trigger_pct": 0.08,
+    "base_adjust_pct": 0.20,
+    "base_pct": 0.50,
+    "float_max_pct": 1.00,
+    "entry_day": 90,
+    "axis_calc_days": 90
+  },
+  
+  "stock_classification": {
+    "description": "建仓日自动判定股票类型",
+    "calculation": {
+      "volatility_period": [60, 89],
+      "atr_day": 89,
+      "formula": "vol_score = min(100, annual_vol * 50 + atr_pct * 10)"
+    },
+    "thresholds": {
+      "high_vol": {
+        "condition": "vol_score > 60",
+        "description": "高波动股"
+      },
+      "normal": {
+        "condition": "vol_score <= 60",
+        "description": "普通股"
+      }
+    }
+  },
+  
+  "strategies": {
+    "high_vol": {
+      "name": "分级冷却",
+      "description": "适合高波动震荡股，交易更频繁",
+      "cooldown_rules": {
+        "after_sell": 15,
+        "after_buy": {
+          "deep_drop": {
+            "threshold": -0.12,
+            "cooldown": 10,
+            "description": "深度下跌(≤-12%)，加速抄底"
+          },
+          "moderate_drop": {
+            "threshold": -0.10,
+            "cooldown": 15,
+            "description": "中度下跌(-10%到-12%)"
+          },
+          "light_drop": {
+            "threshold": -0.08,
+            "cooldown": 20,
+            "description": "轻度下跌(-8%到-10%)"
+          }
+        }
+      }
+    },
+    "normal": {
+      "name": "自适应冷却",
+      "description": "适合趋势股，根据波动率动态调整",
+      "cooldown_rules": {
+        "base_cooldown": 20,
+        "adaptive": {
+          "very_low": {
+            "vol_score_range": [0, 20],
+            "cooldown": 10,
+            "description": "低波动，多交易"
+          },
+          "low": {
+            "vol_score_range": [20, 40],
+            "cooldown": 15,
+            "description": "中低波动"
+          },
+          "medium": {
+            "vol_score_range": [40, 60],
+            "cooldown": 20,
+            "description": "中等波动（默认）"
+          },
+          "high": {
+            "vol_score_range": [60, 80],
+            "cooldown": 25,
+            "description": "中高波动"
+          },
+          "very_high": {
+            "vol_score_range": [80, 100],
+            "cooldown": 30,
+            "description": "高波动，少交易"
+          }
+        }
+      }
+    }
+  },
+  
+  "trading_rules": {
+    "buy": {
+      "condition": "price <= axis * (1 - trigger_pct)",
+      "cooldown_check": true,
+      "position_limit": "float_value < invest_limit * float_max_pct",
+      "amount": "invest_limit * base_adjust_pct"
+    },
+    "sell": {
+      "condition": "price >= axis * (1 + trigger_pct)",
+      "cooldown_check": true,
+      "position_check": "float_position > 0",
+      "amount": "invest_limit * base_adjust_pct"
+    },
+    "after_trade": {
+      "update_axis": "execution_price",
+      "record_time": true
+    }
+  },
+  
+  "risk_control": {
+    "stop_loss": null,
+    "max_total_position": 1.5,
+    "max_float_position": 1.0,
+    "notes": [
+      "策略依赖中轴回归，不设止损",
+      "总仓位不超过投资上限的150%",
+      "冷却机制避免过度交易"
+    ]
+  },
+  
+  "backtest_results": {
+    "period": "2022-01-01 to 2026-04-05",
+    "avg_total_return": 50.6,
+    "avg_annual_return": 10.7,
+    "avg_max_drawdown": -39.8,
+    "win_rate": 81.8,
+    "avg_trades": 14,
+    "stocks_tested": [
+      {"code": "559", "name": "万向钱潮", "type": "normal", "return": 108.3},
+      {"code": "700", "name": "腾讯控股", "type": "normal", "return": 61.5},
+      {"code": "878", "name": "云南铜业", "type": "normal", "return": 54.5},
+      {"code": "300229", "name": "拓尔思", "type": "high_vol", "return": 71.6},
+      {"code": "9988", "name": "阿里巴巴", "type": "high_vol", "return": 50.9},
+      {"code": "300442", "name": "润泽科技", "type": "high_vol", "return": 73.4},
+      {"code": "601600", "name": "中国铝业", "type": "high_vol", "return": 64.0}
+    ]
+  },
+  
+  "files": {
+    "code": "/root/.openclaw/workspace/stock_analyzer/backtest_comparison.py",
+    "config": "/root/.openclaw/workspace/stock_analyzer/strategy/pivot_axis_strategy_v3.json",
+    "docs": "/root/.openclaw/workspace/stock_analyzer/strategy/README.md"
+  },
+  
+  "notes": [
+    "策略在建仓日（第90天）自动判定股票类型",
+    "新增持仓无需人工干预，系统自动计算并匹配策略",
+    "建议定期（每季度）review策略有效性",
+    "极端行情可能导致策略失效"
+  ]
+}
