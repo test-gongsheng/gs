@@ -88,6 +88,76 @@ def start_southbound_preload():
 # 启动时自动开始预加载
 start_southbound_preload()
 
+
+def calculate_stock_type(code, market):
+    """
+    计算股票类型（高波动/普通）
+    基于90天历史数据的波动率评分
+    
+    Returns:
+        dict: {
+            'stockType': 'high_vol' | 'normal',
+            'volScore': float,
+            'annualVol': float,
+            'atrPct': float
+        }
+    """
+    try:
+        from utils.stock_quote import get_stock_history
+        
+        # 获取90天历史数据
+        hist = get_stock_history(code, market, days=90)
+        if len(hist) < 60:
+            return {'stockType': 'normal', 'volScore': 30, 'annualVol': 0.3, 'atrPct': 2.5}
+        
+        # 计算收盘价序列
+        closes = [h['close'] for h in hist[-60:]]  # 使用后60天数据
+        
+        # 计算日收益率
+        returns = []
+        for i in range(1, len(closes)):
+            if closes[i-1] > 0:
+                returns.append((closes[i] - closes[i-1]) / closes[i-1])
+        
+        if len(returns) < 10:
+            return {'stockType': 'normal', 'volScore': 30, 'annualVol': 0.3, 'atrPct': 2.5}
+        
+        # 计算年化波动率
+        import statistics
+        daily_vol = statistics.stdev(returns) if len(returns) > 1 else 0
+        annual_vol = daily_vol * (252 ** 0.5)
+        
+        # 计算ATR%
+        atr_values = []
+        for i in range(1, len(hist[-20:])):  # 使用最近20天
+            h = hist[-20:][i]
+            h_prev = hist[-20:][i-1]
+            tr = max(
+                h['high'] - h['low'],
+                abs(h['high'] - h_prev['close']),
+                abs(h['low'] - h_prev['close'])
+            )
+            atr_values.append(tr)
+        
+        avg_atr = sum(atr_values) / len(atr_values) if atr_values else 0
+        current_price = closes[-1] if closes else 1
+        atr_pct = (avg_atr / current_price) * 100 if current_price > 0 else 2.5
+        
+        # 综合波动率评分
+        vol_score = min(100, annual_vol * 50 + atr_pct * 10)
+        
+        return {
+            'stockType': 'high_vol' if vol_score > 60 else 'normal',
+            'volScore': round(vol_score, 1),
+            'annualVol': round(annual_vol, 2),
+            'atrPct': round(atr_pct, 2)
+        }
+        
+    except Exception as e:
+        print(f"[calculate_stock_type] 计算失败 {code}: {e}")
+        return {'stockType': 'normal', 'volScore': 30, 'annualVol': 0.3, 'atrPct': 2.5}
+
+
 def get_cached_axis_price(code, market, days=90):
     """从缓存获取中轴价格，如果不存在或过期则重新计算（失败时返回默认值）"""
     cache_key = f"{code}:{market}"
@@ -215,9 +285,33 @@ def get_portfolio():
 
 @app.route('/api/stocks')
 def get_stocks():
-    """获取所有股票"""
+    """获取所有股票，包含股票类型和执行数据"""
     data = load_data()
-    return jsonify(data['stocks'])
+    stocks = data['stocks']
+    
+    # 为每只股票添加类型和执行数据
+    for stock in stocks:
+        # 如果还没有计算过股票类型，或者需要重新计算
+        if 'stock_type' not in stock or 'vol_score' not in stock:
+            type_info = calculate_stock_type(stock.get('code'), stock.get('market', 'A股'))
+            stock['stock_type'] = type_info['stockType']
+            stock['vol_score'] = type_info['volScore']
+            stock['annual_vol'] = type_info['annualVol']
+            stock['atr_pct'] = type_info['atrPct']
+        
+        # 添加执行策略数据（如果没有）
+        if 'last_trade_time' not in stock:
+            stock['last_trade_time'] = None
+        if 'last_trade_type' not in stock:
+            stock['last_trade_type'] = None
+        if 'cooldown_days' not in stock:
+            # 根据股票类型设置默认冷却期
+            stock['cooldown_days'] = 15 if stock.get('stock_type') == 'high_vol' else 20
+    
+    # 保存更新后的数据
+    save_data(data)
+    
+    return jsonify(stocks)
 
 @app.route('/api/stocks', methods=['POST'])
 def add_stock():

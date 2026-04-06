@@ -91,7 +91,15 @@ async function init() {
                 gridLevels: s.grid_levels || [],
                 change: 0,
                 changePercent: 0,
-                exchangeRate: s.exchange_rate  // 从后端获取汇率
+                exchangeRate: s.exchange_rate,  // 从后端获取汇率
+                // 股票类型和执行数据
+                stock_type: s.stock_type || 'normal',
+                vol_score: s.vol_score || 0,
+                annual_vol: s.annual_vol || 0,
+                atr_pct: s.atr_pct || 0,
+                last_trade_time: s.last_trade_time,
+                last_trade_type: s.last_trade_type,
+                cooldown_days: s.cooldown_days || 20
             }));
             loadedFromBackend = true;
             console.log('已从后端 API 加载', appState.stocks.length, '只股票');
@@ -662,13 +670,19 @@ function renderStockList() {
         }
         
         const hkBadge = isHKStock ? '<span class="stock-item-hk">HK</span>' : '';
+        
+        // 股票类型标签（高波动/普通）
+        const stockType = stock.stock_type || stock.stockType || 'normal';
+        const stockTypeBadge = stockType === 'high_vol' 
+            ? '<span class="stock-item-type high-vol">高波</span>' 
+            : '<span class="stock-item-type normal">普通</span>';
 
         // 移除强制内联样式，使用 CSS 类定义
         // item.style.cssText = 'display: flex !important; align-items: center; padding: 12px 8px; border-radius: 8px; cursor: pointer; margin-bottom: 4px; min-height: 50px; background: #1a1f2e; border: 2px solid #52c41a !important; color: white;';
         
         item.innerHTML = `
             <div class="stock-info" style="flex: 1.5; text-align: left; display: flex; flex-direction: column; gap: 2px;">
-                <span class="code" style="font-weight: 600; font-size: 0.875rem; color: #e8eaed;">${stock.code}${hkBadge}${alertBadge}</span>
+                <span class="code" style="font-weight: 600; font-size: 0.875rem; color: #e8eaed;">${stock.code}${hkBadge}${alertBadge}${stockTypeBadge}</span>
                 <span class="name" style="font-size: 0.75rem; color: #9ca3af;">${stock.name}</span>
             </div>
             <div class="stock-price ${isUp ? 'up' : 'down'}" style="flex: 1; text-align: right; font-weight: 600; color: ${isUp ? '#ff4d4f' : '#52c41a'};">
@@ -763,7 +777,40 @@ function renderStockDetail() {
     // 基础信息
     setText('detailName', safeStock.name);
     setText('detailCode', safeStock.code);
-    setText('detailStrategy', safeStock.strategy + '策略');
+    
+    // 股票类型和执行策略显示
+    const stockType = safeStock.stock_type || safeStock.stockType || 'normal';
+    const stockTypeText = stockType === 'high_vol' ? '高波动股' : '普通股';
+    const strategyLogicText = stockType === 'high_vol' 
+        ? '分级冷却：卖出15天/深度-12%/中度-10%' 
+        : '自适应冷却：基于实时波动率动态调整(10-30天)';
+    setText('detailStrategy', `${safeStock.strategy}策略 · ${stockTypeText}`);
+    
+    // 添加策略逻辑说明
+    const strategyLogicEl = document.getElementById('strategyLogic');
+    if (strategyLogicEl) {
+        strategyLogicEl.innerHTML = `<i class="fas fa-cogs"></i><span>${strategyLogicText}</span>`;
+        strategyLogicEl.style.display = 'flex';
+    }
+    
+    // 添加冷却期信息
+    const cooldownInfoEl = document.getElementById('cooldownInfo');
+    if (cooldownInfoEl) {
+        const lastTradeTime = safeStock.last_trade_time || safeStock.lastTradeTime;
+        const cooldownDays = safeStock.cooldown_days || safeStock.cooldownDays || (stockType === 'high_vol' ? 15 : 20);
+        
+        if (lastTradeTime) {
+            const lastTrade = new Date(lastTradeTime);
+            const now = new Date();
+            const daysSince = Math.floor((now - lastTrade) / (1000 * 60 * 60 * 24));
+            const remainingDays = Math.max(0, cooldownDays - daysSince);
+            
+            cooldownInfoEl.innerHTML = `<i class="fas fa-clock"></i><span>上次交易: ${daysSince}天前 · 冷却期: ${remainingDays > 0 ? remainingDays + '天剩余' : '已结束'} (${cooldownDays}天)</span>`;
+        } else {
+            cooldownInfoEl.innerHTML = `<i class="fas fa-clock"></i><span>冷却期: ${cooldownDays}天 · 暂无交易记录</span>`;
+        }
+        cooldownInfoEl.style.display = 'flex';
+    }
 
     // 价格
     if (isHKStock) {

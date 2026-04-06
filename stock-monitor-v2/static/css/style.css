@@ -3892,3 +3892,63 @@ body {
   background: rgba(59, 130, 246, 0.1);
   padding-left: 4px;
 }
+
+
+/* ========== 股票类型标签样式 ========== */
+.stock-item-type {
+    display: inline-block;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
+.stock-item-type.high-vol {
+    background: rgba(255, 77, 79, 0.2);
+    color: #ff6b6b;
+    border: 1px solid rgba(255, 77, 79, 0.3);
+}
+
+.stock-item-type.normal {
+    background: rgba(24, 144, 255, 0.2);
+    color: #4dabf7;
+    border: 1px solid rgba(24, 144, 255, 0.3);
+}
+
+/* ========== 策略执行逻辑显示 ========== */
+.strategy-logic-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: rgba(114, 46, 209, 0.1);
+    border: 1px solid rgba(114, 46, 209, 0.2);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: #b794f6;
+}
+
+.strategy-logic-info i {
+    color: var(--accent-purple);
+}
+
+/* ========== 冷却期信息显示 ========== */
+.cooldown-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    padding: 6px 12px;
+    background: rgba(250, 173, 20, 0.1);
+    border: 1px solid rgba(250, 173, 20, 0.2);
+    border-radius: 6px;
+    font-size: 0.75rem;
+    color: #ffc107;
+}
+
+.cooldown-info i {
+    color: var(--accent-gold);
+}
