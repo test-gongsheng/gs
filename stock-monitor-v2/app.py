@@ -99,19 +99,28 @@ def calculate_stock_type(code, market):
             'stockType': 'high_vol' | 'normal',
             'volScore': float,
             'annualVol': float,
-            'atrPct': float
+            'atrPct': float,
+            'calculated': bool  # 是否成功计算（True=真的算出来的，False=失败用的默认值）
         }
     """
     try:
-        from utils.stock_quote import get_stock_history
+        from utils.stock_quote import get_stock_kline
         
-        # 获取90天历史数据
-        hist = get_stock_history(code, market, days=90)
-        if len(hist) < 60:
-            return {'stockType': 'normal', 'volScore': 30, 'annualVol': 0.3, 'atrPct': 2.5}
+        print(f"[calculate_stock_type] 开始计算 {code} ({market})...")
+        
+        # 获取90天历史数据（使用腾讯K线作为备选）
+        hist = get_stock_kline(code, market, days=90, max_retries=2)
+        
+        if len(hist) < 30:  # 降低要求，至少30天数据就能算
+            print(f"[calculate_stock_type] {code} 数据不足: {len(hist)}天")
+            return {'stockType': 'normal', 'volScore': 30, 'annualVol': 0.3, 'atrPct': 2.5, 'calculated': False}
         
         # 计算收盘价序列
-        closes = [h['close'] for h in hist[-60:]]  # 使用后60天数据
+        closes = [h['close'] for h in hist[-60:] if h['close'] > 0]  # 使用后60天有效数据
+        
+        if len(closes) < 20:
+            print(f"[calculate_stock_type] {code} 有效收盘价不足: {len(closes)}")
+            return {'stockType': 'normal', 'volScore': 30, 'annualVol': 0.3, 'atrPct': 2.5, 'calculated': False}
         
         # 计算日收益率
         returns = []
@@ -120,7 +129,8 @@ def calculate_stock_type(code, market):
                 returns.append((closes[i] - closes[i-1]) / closes[i-1])
         
         if len(returns) < 10:
-            return {'stockType': 'normal', 'volScore': 30, 'annualVol': 0.3, 'atrPct': 2.5}
+            print(f"[calculate_stock_type] {code} 收益率数据不足: {len(returns)}")
+            return {'stockType': 'normal', 'volScore': 30, 'annualVol': 0.3, 'atrPct': 2.5, 'calculated': False}
         
         # 计算年化波动率
         import statistics
@@ -129,9 +139,10 @@ def calculate_stock_type(code, market):
         
         # 计算ATR%
         atr_values = []
-        for i in range(1, len(hist[-20:])):  # 使用最近20天
-            h = hist[-20:][i]
-            h_prev = hist[-20:][i-1]
+        hist_for_atr = hist[-20:] if len(hist) >= 20 else hist
+        for i in range(1, len(hist_for_atr)):
+            h = hist_for_atr[i]
+            h_prev = hist_for_atr[i-1]
             tr = max(
                 h['high'] - h['low'],
                 abs(h['high'] - h_prev['close']),
@@ -145,17 +156,21 @@ def calculate_stock_type(code, market):
         
         # 综合波动率评分
         vol_score = min(100, annual_vol * 50 + atr_pct * 10)
+        stock_type = 'high_vol' if vol_score > 60 else 'normal'
+        
+        print(f"[calculate_stock_type] {code} 计算完成: type={stock_type}, score={vol_score:.1f}, vol={annual_vol:.2f}")
         
         return {
-            'stockType': 'high_vol' if vol_score > 60 else 'normal',
+            'stockType': stock_type,
             'volScore': round(vol_score, 1),
             'annualVol': round(annual_vol, 2),
-            'atrPct': round(atr_pct, 2)
+            'atrPct': round(atr_pct, 2),
+            'calculated': True
         }
         
     except Exception as e:
         print(f"[calculate_stock_type] 计算失败 {code}: {e}")
-        return {'stockType': 'normal', 'volScore': 30, 'annualVol': 0.3, 'atrPct': 2.5}
+        return {'stockType': 'normal', 'volScore': 30, 'annualVol': 0.3, 'atrPct': 2.5, 'calculated': False}
 
 
 def get_cached_axis_price(code, market, days=90):
@@ -285,19 +300,33 @@ def get_portfolio():
 
 @app.route('/api/stocks')
 def get_stocks():
-    """获取所有股票，包含股票类型和执行数据"""
+    """获取所有股票，包含股票类型和方案3C买卖点"""
     data = load_data()
     stocks = data['stocks']
     
     # 为每只股票添加类型和执行数据
     for stock in stocks:
-        # 如果还没有计算过股票类型，或者需要重新计算
-        if 'stock_type' not in stock or 'vol_score' not in stock:
+        # 如果还没有计算过股票类型，或者需要重新计算（之前失败了）
+        need_calc = 'stock_type' not in stock or stock.get('stock_type_calculated') == False
+        
+        if need_calc:
             type_info = calculate_stock_type(stock.get('code'), stock.get('market', 'A股'))
-            stock['stock_type'] = type_info['stockType']
-            stock['vol_score'] = type_info['volScore']
-            stock['annual_vol'] = type_info['annualVol']
-            stock['atr_pct'] = type_info['atrPct']
+            
+            # 只有成功计算才保存到文件
+            if type_info.get('calculated', False):
+                stock['stock_type'] = type_info['stockType']
+                stock['vol_score'] = type_info['volScore']
+                stock['annual_vol'] = type_info['annualVol']
+                stock['atr_pct'] = type_info['atrPct']
+                stock['stock_type_calculated'] = True
+                stock['stock_type_calc_time'] = datetime.now().isoformat()
+                print(f"[get_stocks] {stock.get('code')} 股票类型计算成功: {type_info['stockType']}")
+            else:
+                # 计算失败，使用临时值但不保存
+                stock['stock_type'] = 'normal'  # 临时显示普通
+                stock['vol_score'] = type_info['volScore']
+                stock['stock_type_calculated'] = False  # 标记为未计算成功
+                print(f"[get_stocks] {stock.get('code')} 股票类型计算失败，下次重试")
         
         # 添加执行策略数据（如果没有）
         if 'last_trade_time' not in stock:
@@ -307,6 +336,17 @@ def get_stocks():
         if 'cooldown_days' not in stock:
             # 根据股票类型设置默认冷却期
             stock['cooldown_days'] = 15 if stock.get('stock_type') == 'high_vol' else 20
+        
+        # 【新增】使用方案3C计算买点和卖点
+        buy_info = calculate_3c_buy_points(stock)
+        sell_info = calculate_3c_sell_point(stock)
+        
+        stock['next_buy_price'] = buy_info['buy_price'] if buy_info['can_buy'] else 0
+        stock['next_sell_price'] = sell_info['sell_price']
+        stock['can_buy'] = buy_info['can_buy']
+        stock['buy_type'] = buy_info['buy_type']
+        stock['cooldown_remaining'] = buy_info['cooldown_remaining']
+        stock['strategy_reason'] = buy_info['reason']
     
     # 保存更新后的数据
     save_data(data)
@@ -668,6 +708,398 @@ def delete_alert(alert_id):
     if save_data(data):
         return jsonify({'success': True})
     return jsonify({'success': False, 'error': '保存失败'}), 500
+
+
+# ========== 方案3C：智能自适应冷却策略 ==========
+
+def calculate_3c_buy_points(stock):
+    """
+    根据方案3C计算买入点
+    
+    规则：
+    - 高波动股(high_vol): 卖出后15天冷却期
+      - 冷却期内：-12%(深度) 或 -10%(中度) 可买入
+      - 冷却期后：按中轴价格正常买入
+    - 普通股(normal): 动态冷却期10-30天
+      - 冷却期内：不能买入
+      - 冷却期后：按中轴价格正常买入
+    
+    Returns:
+        {
+            'can_buy': bool,           # 是否可以买入
+            'buy_price': float,        # 建议买入价格
+            'buy_type': str,           # '深度回调'/'中度回调'/'正常'
+            'cooldown_remaining': int, # 冷却期剩余天数
+            'reason': str              # 说明
+        }
+    """
+    try:
+        code = stock.get('code', '')
+        name = stock.get('name', '')
+        current_price = stock.get('current_price', 0)
+        axis_price = stock.get('axis_price', 0)
+        stock_type = stock.get('stock_type', 'normal')
+        last_trade_time = stock.get('last_trade_time')
+        last_trade_type = stock.get('last_trade_type')
+        
+        # 如果没有中轴价格，用当前价格
+        base_price = axis_price if axis_price > 0 else current_price
+        
+        now = datetime.now()
+        
+        # 计算冷却期
+        if stock_type == 'high_vol':
+            cooldown_days = 15
+        else:
+            # 普通股：基于波动率评分动态计算
+            vol_score = stock.get('vol_score', 30)
+            cooldown_days = max(10, min(30, int(30 - vol_score / 2)))
+        
+        # 如果没有卖出记录，按正常买入逻辑
+        if not last_trade_time or last_trade_type != 'sell':
+            # 正常买入点：中轴价格附近
+            buy_price = base_price * 0.93  # 中轴下方7%作为正常买入点
+            return {
+                'can_buy': True,
+                'buy_price': round(buy_price, 2),
+                'buy_type': '正常',
+                'cooldown_remaining': 0,
+                'reason': '无卖出记录，按正常策略买入'
+            }
+        
+        # 计算上次卖出后的天数
+        try:
+            last_trade = datetime.fromisoformat(last_trade_time)
+            days_since_sell = (now - last_trade).days
+        except:
+            days_since_sell = 999  # 解析失败，视为已过期
+        
+        remaining = max(0, cooldown_days - days_since_sell)
+        
+        # 冷却期内特殊逻辑
+        if remaining > 0:
+            if stock_type == 'high_vol':
+                # 高波动股：深度回调-12% 或 中度回调-10%
+                last_sell_price = stock.get('last_trade_price', base_price)
+                if last_sell_price <= 0:
+                    last_sell_price = base_price
+                
+                deep_buy = last_sell_price * 0.88  # -12%
+                mid_buy = last_sell_price * 0.90    # -10%
+                
+                # 优先深度回调
+                if current_price <= deep_buy:
+                    return {
+                        'can_buy': True,
+                        'buy_price': round(deep_buy, 2),
+                        'buy_type': '深度回调(-12%)',
+                        'cooldown_remaining': remaining,
+                        'reason': f'冷却期内({remaining}天剩余)，触发深度回调买入条件'
+                    }
+                # 次选中度回调
+                elif current_price <= mid_buy:
+                    return {
+                        'can_buy': True,
+                        'buy_price': round(mid_buy, 2),
+                        'buy_type': '中度回调(-10%)',
+                        'cooldown_remaining': remaining,
+                        'reason': f'冷却期内({remaining}天剩余)，触发中度回调买入条件'
+                    }
+                else:
+                    return {
+                        'can_buy': False,
+                        'buy_price': round(mid_buy, 2),
+                        'buy_type': None,
+                        'cooldown_remaining': remaining,
+                        'reason': f'冷却期内({remaining}天剩余)，需跌-10%或-12%才能买入'
+                    }
+            else:
+                # 普通股：冷却期内不能买入
+                return {
+                    'can_buy': False,
+                    'buy_price': round(base_price * 0.93, 2),
+                    'buy_type': None,
+                    'cooldown_remaining': remaining,
+                    'reason': f'冷却期内({remaining}天剩余)，普通股需等冷却结束'
+                }
+        
+        # 冷却期结束，正常买入
+        buy_price = base_price * 0.93
+        return {
+            'can_buy': True,
+            'buy_price': round(buy_price, 2),
+            'buy_type': '正常',
+            'cooldown_remaining': 0,
+            'reason': '冷却期已结束，可按正常策略买入'
+        }
+        
+    except Exception as e:
+        print(f"[calculate_3c_buy_points] 计算失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            'can_buy': False,
+            'buy_price': 0,
+            'buy_type': None,
+            'cooldown_remaining': 0,
+            'reason': f'计算错误: {str(e)}'
+        }
+
+
+def calculate_3c_sell_point(stock):
+    """
+    根据方案3C计算卖出点
+    
+    规则：
+    - 高波动股：中轴价格+10%
+    - 普通股：中轴价格+7%
+    
+    Returns:
+        {
+            'sell_price': float,
+            'reason': str
+        }
+    """
+    try:
+        axis_price = stock.get('axis_price', 0)
+        stock_type = stock.get('stock_type', 'normal')
+        current_price = stock.get('current_price', axis_price)
+        
+        base_price = axis_price if axis_price > 0 else current_price
+        
+        if stock_type == 'high_vol':
+            sell_price = base_price * 1.10  # +10%
+            return {
+                'sell_price': round(sell_price, 2),
+                'reason': '高波动股卖点：中轴上方+10%'
+            }
+        else:
+            sell_price = base_price * 1.07  # +7%
+            return {
+                'sell_price': round(sell_price, 2),
+                'reason': '普通股卖点：中轴上方+7%'
+            }
+    except Exception as e:
+        print(f"[calculate_3c_sell_point] 计算失败: {e}")
+        return {
+            'sell_price': 0,
+            'reason': f'计算错误: {str(e)}'
+        }
+
+
+@app.route('/api/3c/strategy/<stock_code>')
+def get_3c_strategy(stock_code):
+    """获取指定股票的方案3C策略详情"""
+    try:
+        data = load_data()
+        stock = next((s for s in data.get('stocks', []) if s.get('code') == stock_code), None)
+        
+        if not stock:
+            return jsonify({'success': False, 'error': '股票不存在'}), 404
+        
+        buy_info = calculate_3c_buy_points(stock)
+        sell_info = calculate_3c_sell_point(stock)
+        
+        return jsonify({
+            'success': True,
+            'stock_code': stock_code,
+            'stock_name': stock.get('name'),
+            'stock_type': stock.get('stock_type', 'normal'),
+            'current_price': stock.get('current_price', 0),
+            'axis_price': stock.get('axis_price', 0),
+            'last_trade': {
+                'time': stock.get('last_trade_time'),
+                'type': stock.get('last_trade_type'),
+                'price': stock.get('last_trade_price', 0)
+            },
+            'buy_strategy': buy_info,
+            'sell_strategy': sell_info
+        })
+        
+    except Exception as e:
+        print(f"[get_3c_strategy] 异常: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/trade/log', methods=['POST'])
+def log_trade():
+    """记录交易"""
+    try:
+        data = load_data()
+        trade = request.json
+        
+        # 必填字段检查
+        required = ['stock_code', 'trade_type', 'price', 'shares']
+        for field in required:
+            if field not in trade:
+                return jsonify({'success': False, 'error': f'缺少字段: {field}'}), 400
+        
+        # 记录交易
+        trade_record = {
+            'id': f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{trade['stock_code']}",
+            'time': datetime.now().isoformat(),
+            'stock_code': trade['stock_code'],
+            'stock_name': trade.get('stock_name', ''),
+            'trade_type': trade['trade_type'],  # 'buy' or 'sell'
+            'price': trade['price'],
+            'shares': trade['shares'],
+            'amount': trade['price'] * trade['shares'],
+            'note': trade.get('note', '')
+        }
+        
+        # 添加到交易日志
+        if 'trade_logs' not in data:
+            data['trade_logs'] = []
+        data['trade_logs'].append(trade_record)
+        
+        # 更新股票的 last_trade 信息
+        stock = next((s for s in data.get('stocks', []) if s.get('code') == trade['stock_code']), None)
+        if stock:
+            stock['last_trade_time'] = trade_record['time']
+            stock['last_trade_type'] = trade['trade_type']
+            stock['last_trade_price'] = trade['price']
+            # 更新持仓数量
+            if trade['trade_type'] == 'buy':
+                stock['shares'] = stock.get('shares', 0) + trade['shares']
+            elif trade['trade_type'] == 'sell':
+                stock['shares'] = max(0, stock.get('shares', 0) - trade['shares'])
+        
+        if save_data(data):
+            return jsonify({'success': True, 'trade': trade_record})
+        return jsonify({'success': False, 'error': '保存失败'}), 500
+        
+    except Exception as e:
+        print(f"[log_trade] 异常: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/trade/logs/<stock_code>')
+def get_trade_logs(stock_code):
+    """获取指定股票的交易记录"""
+    try:
+        data = load_data()
+        logs = data.get('trade_logs', [])
+        stock_logs = [log for log in logs if log.get('stock_code') == stock_code]
+        # 按时间倒序
+        stock_logs.sort(key=lambda x: x.get('time', ''), reverse=True)
+        return jsonify({'success': True, 'logs': stock_logs[:20]})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ========== 买卖点实时监控 API (方案3C版本) ==========
+# 用于前端轮询获取触发的买卖点
+_price_alert_cache = {
+    'last_check_time': None,
+    'triggered_alerts': [],  # 当前触发的警报
+    'alert_history': [],     # 历史警报（去重用）
+}
+
+@app.route('/api/price-alerts')
+def get_price_alerts():
+    """
+    获取当前触发的买卖点警报 (方案3C版本)
+    前端每30秒轮询一次
+    
+    Returns:
+        {
+            'alerts': [{'stock_code', 'stock_name', 'type': 'buy'|'sell', 'price', 'trigger_price', 'time'}],
+            'has_new': bool  # 是否有新的触发
+        }
+    """
+    try:
+        data = load_data()
+        stocks = data.get('stocks', [])
+        
+        now = datetime.now()
+        current_time_str = now.strftime('%Y-%m-%d %H:%M:%S')
+        
+        triggered = []
+        new_alerts = []
+        
+        for stock in stocks:
+            code = stock.get('code', '')
+            name = stock.get('name', '')
+            price = stock.get('current_price', 0)
+            
+            if price <= 0:
+                continue
+            
+            # 使用方案3C计算买点
+            buy_info = calculate_3c_buy_points(stock)
+            sell_info = calculate_3c_sell_point(stock)
+            
+            # 检查买点触发 (can_buy为True且价格触及买入价)
+            if buy_info['can_buy'] and buy_info['buy_price'] > 0 and price <= buy_info['buy_price']:
+                alert_key = f"{code}:3cbuy:{now.strftime('%Y%m%d')}"
+                alert = {
+                    'stock_code': code,
+                    'stock_name': name,
+                    'type': 'buy',
+                    'subtype': buy_info['buy_type'],  # 正常/深度回调/中度回调
+                    'price': price,
+                    'trigger_price': buy_info['buy_price'],
+                    'time': current_time_str,
+                    'key': alert_key,
+                    'diff_pct': round((price - buy_info['buy_price']) / buy_info['buy_price'] * 100, 2),
+                    'reason': buy_info['reason']
+                }
+                triggered.append(alert)
+                
+                # 检查是否是新触发
+                if alert_key not in [a.get('key') for a in _price_alert_cache['alert_history']]:
+                    new_alerts.append(alert)
+                    _price_alert_cache['alert_history'].append(alert)
+            
+            # 检查卖点触发
+            sell_price = sell_info['sell_price']
+            if sell_price > 0 and price >= sell_price:
+                alert_key = f"{code}:3csell:{now.strftime('%Y%m%d')}"
+                alert = {
+                    'stock_code': code,
+                    'stock_name': name,
+                    'type': 'sell',
+                    'subtype': '方案3C卖点',
+                    'price': price,
+                    'trigger_price': sell_price,
+                    'time': current_time_str,
+                    'key': alert_key,
+                    'diff_pct': round((price - sell_price) / sell_price * 100, 2),
+                    'reason': sell_info['reason']
+                }
+                triggered.append(alert)
+                
+                if alert_key not in [a.get('key') for a in _price_alert_cache['alert_history']]:
+                    new_alerts.append(alert)
+                    _price_alert_cache['alert_history'].append(alert)
+        
+        # 清理历史（保留最近3天的）
+        cutoff_date = (now - timedelta(days=3)).strftime('%Y%m%d')
+        _price_alert_cache['alert_history'] = [
+            a for a in _price_alert_cache['alert_history'] 
+            if not a.get('key', '').endswith(f':{cutoff_date}')
+        ]
+        
+        _price_alert_cache['last_check_time'] = current_time_str
+        _price_alert_cache['triggered_alerts'] = triggered
+        
+        return jsonify({
+            'success': True,
+            'alerts': triggered,
+            'new_alerts': new_alerts,
+            'has_new': len(new_alerts) > 0,
+            'check_time': current_time_str
+        })
+        
+    except Exception as e:
+        print(f"[price-alerts] 获取警报失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/risk/control')
 def get_risk_control():

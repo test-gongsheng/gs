@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "3.0.3"; // 添加调试日志，确认渲染执行 // 修复：确保行情更新后重新渲染列表 // 固定版本号
+const APP_VERSION = "3.2.0"; // 新增：方案3C完整实现 - 冷却期+分级买卖点
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -203,6 +203,10 @@ async function init() {
     
     // 恢复用户折叠偏好
     restoreCollapsedState();
+    
+    // 启动方案3C买卖点实时监控
+    console.log('[init] 启动方案3C买卖点监控...');
+    startPriceAlertMonitor();
 }
 
 /**
@@ -791,6 +795,48 @@ function renderStockDetail() {
     if (strategyLogicEl) {
         strategyLogicEl.innerHTML = `<i class="fas fa-cogs"></i><span>${strategyLogicText}</span>`;
         strategyLogicEl.style.display = 'flex';
+    }
+    
+    // 添加方案3C买卖点信息
+    const strategy3cEl = document.getElementById('strategy3cInfo');
+    if (strategy3cEl) {
+        const canBuy = safeStock.can_buy;
+        const buyPrice = safeStock.next_buy_price || 0;
+        const sellPrice = safeStock.next_sell_price || 0;
+        const buyType = safeStock.buy_type || '';
+        const cooldownRemaining = safeStock.cooldown_remaining || 0;
+        const reason = safeStock.strategy_reason || '';
+        
+        let html = '<div class="strategy-3c-box">';
+        
+        // 买点
+        if (canBuy && buyPrice > 0) {
+            html += `<div class="strategy-3c-item buy">
+                <span class="label">🟢 买点</span>
+                <span class="price">¥${buyPrice.toFixed(2)}</span>
+                ${buyType ? `<span class="type">${buyType}</span>` : ''}
+            </div>`;
+        } else if (buyPrice > 0) {
+            html += `<div class="strategy-3c-item buy disabled">
+                <span class="label">🔒 买点</span>
+                <span class="price">¥${buyPrice.toFixed(2)}</span>
+                <span class="type">冷却中(${cooldownRemaining}天)</span>
+            </div>`;
+        }
+        
+        // 卖点
+        if (sellPrice > 0) {
+            html += `<div class="strategy-3c-item sell">
+                <span class="label">🔴 卖点</span>
+                <span class="price">¥${sellPrice.toFixed(2)}</span>
+            </div>`;
+        }
+        
+        html += `<div class="strategy-3c-reason">${reason}</div>`;
+        html += '</div>';
+        
+        strategy3cEl.innerHTML = html;
+        strategy3cEl.style.display = 'block';
     }
     
     // 添加冷却期信息
@@ -3152,4 +3198,230 @@ function restoreCollapsedState() {
     } catch (e) {
         console.warn('[restoreCollapsedState] 恢复失败:', e);
     }
+}
+
+// ========== 买卖点实时监控 ==========
+
+/**
+ * 买卖点监控状态
+ */
+const priceAlertState = {
+    enabled: true,
+    intervalId: null,
+    lastAlerts: [],  // 上次检查的警报（用于去重）
+    alertSound: null,
+    checkInterval: 30000  // 30秒检查一次
+};
+
+/**
+ * 启动买卖点实时监控
+ */
+function startPriceAlertMonitor() {
+    if (priceAlertState.intervalId) {
+        console.log('[PriceAlert] 监控已运行');
+        return;
+    }
+    
+    console.log('[PriceAlert] 启动买卖点监控...');
+    
+    // 立即检查一次
+    checkPriceAlerts();
+    
+    // 每30秒检查一次
+    priceAlertState.intervalId = setInterval(checkPriceAlerts, priceAlertState.checkInterval);
+    
+    // 创建开关按钮
+    createPriceAlertToggle();
+}
+
+/**
+ * 停止买卖点监控
+ */
+function stopPriceAlertMonitor() {
+    if (priceAlertState.intervalId) {
+        clearInterval(priceAlertState.intervalId);
+        priceAlertState.intervalId = null;
+        console.log('[PriceAlert] 监控已停止');
+    }
+}
+
+/**
+ * 检查买卖点触发情况
+ */
+async function checkPriceAlerts() {
+    if (!priceAlertState.enabled) return;
+    
+    try {
+        const response = await fetch('/api/price-alerts');
+        const data = await response.json();
+        
+        if (!data.success) {
+            console.warn('[PriceAlert] 获取警报失败:', data.error);
+            return;
+        }
+        
+        const alerts = data.alerts || [];
+        const hasNew = data.has_new;
+        const newAlerts = data.new_alerts || [];
+        
+        // 更新股票卡片高亮
+        updateStockCardHighlights(alerts);
+        
+        // 如果有新触发，显示弹窗提醒
+        if (hasNew && newAlerts.length > 0) {
+            console.log('[PriceAlert] 发现新触发:', newAlerts);
+            showPriceAlertPopup(newAlerts);
+            playAlertSound();
+        }
+        
+        priceAlertState.lastAlerts = alerts;
+        
+    } catch (error) {
+        console.error('[PriceAlert] 检查失败:', error);
+    }
+}
+
+/**
+ * 更新股票卡片高亮显示
+ */
+function updateStockCardHighlights(alerts) {
+    // 清除所有高亮
+    document.querySelectorAll('.stock-item').forEach(item => {
+        item.classList.remove('alert-buy', 'alert-sell');
+    });
+    
+    // 添加新的高亮
+    alerts.forEach(alert => {
+        const stockItems = document.querySelectorAll('.stock-item');
+        stockItems.forEach(item => {
+            const codeEl = item.querySelector('.stock-code');
+            if (codeEl && codeEl.textContent.includes(alert.stock_code)) {
+                item.classList.add(alert.type === 'buy' ? 'alert-buy' : 'alert-sell');
+            }
+        });
+    });
+}
+
+/**
+ * 显示买卖点触发弹窗
+ */
+function showPriceAlertPopup(alerts) {
+    // 创建弹窗容器
+    let popup = document.getElementById('priceAlertPopup');
+    if (!popup) {
+        popup = document.createElement('div');
+        popup.id = 'priceAlertPopup';
+        popup.className = 'price-alert-popup';
+        document.body.appendChild(popup);
+    }
+    
+    // 构建弹窗内容
+    let html = `
+        <div class="alert-popup-header">
+            <span>⚠️ 买卖点触发提醒</span>
+            <button onclick="closePriceAlertPopup()">✕</button>
+        </div>
+        <div class="alert-popup-body">
+    `;
+    
+    alerts.forEach(alert => {
+        const emoji = alert.type === 'buy' ? '🟢 买点' : '🔴 卖点';
+        const diffText = alert.diff_pct >= 0 ? `+${alert.diff_pct}%` : `${alert.diff_pct}%`;
+        const subtypeText = alert.subtype ? `[${alert.subtype}]` : '';
+        html += `
+            <div class="alert-item alert-${alert.type}">
+                <div class="alert-title">${emoji} ${alert.stock_name} (${alert.stock_code}) ${subtypeText}</div>
+                <div class="alert-detail">
+                    当前价: ¥${alert.price.toFixed(2)} 
+                    | 触发价: ¥${alert.trigger_price.toFixed(2)}
+                    <span class="alert-diff">${diffText}</span>
+                </div>
+                <div class="alert-reason" style="font-size:11px;color:#888;margin-top:4px;">${alert.reason || ''}</div>
+                <div class="alert-time">${alert.time}</div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    popup.innerHTML = html;
+    popup.style.display = 'block';
+    
+    // 5秒后自动关闭
+    setTimeout(() => {
+        closePriceAlertPopup();
+    }, 5000);
+}
+
+/**
+ * 关闭买卖点弹窗
+ */
+function closePriceAlertPopup() {
+    const popup = document.getElementById('priceAlertPopup');
+    if (popup) {
+        popup.style.display = 'none';
+    }
+}
+window.closePriceAlertPopup = closePriceAlertPopup;
+
+/**
+ * 播放提醒声音
+ */
+function playAlertSound() {
+    try {
+        if (!priceAlertState.alertSound) {
+            // 创建简单的提示音
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            priceAlertState.alertSound = audioContext;
+        }
+        
+        const ctx = priceAlertState.alertSound;
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+        
+        oscillator.start(ctx.currentTime);
+        oscillator.stop(ctx.currentTime + 0.5);
+        
+    } catch (e) {
+        console.warn('[PriceAlert] 播放声音失败:', e);
+    }
+}
+
+/**
+ * 创建买卖点监控开关按钮
+ */
+function createPriceAlertToggle() {
+    // 检查是否已存在
+    if (document.getElementById('priceAlertToggle')) return;
+    
+    const toggle = document.createElement('div');
+    toggle.id = 'priceAlertToggle';
+    toggle.className = 'price-alert-toggle enabled';
+    toggle.innerHTML = `
+        <span class="toggle-icon">🔔</span>
+        <span class="toggle-text">买卖点监控</span>
+        <span class="toggle-status">开启</span>
+    `;
+    
+    toggle.addEventListener('click', () => {
+        priceAlertState.enabled = !priceAlertState.enabled;
+        toggle.classList.toggle('enabled', priceAlertState.enabled);
+        const statusText = toggle.querySelector('.toggle-status');
+        const iconText = toggle.querySelector('.toggle-icon');
+        statusText.textContent = priceAlertState.enabled ? '开启' : '关闭';
+        iconText.textContent = priceAlertState.enabled ? '🔔' : '🔕';
+        console.log('[PriceAlert] 监控', priceAlertState.enabled ? '开启' : '关闭');
+    });
+    
+    // 添加到页面右上角
+    const header = document.querySelector('.header') || document.body;
+    header.appendChild(toggle);
 }
