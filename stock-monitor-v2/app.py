@@ -300,9 +300,55 @@ def get_portfolio():
 
 @app.route('/api/stocks')
 def get_stocks():
-    """获取所有股票，包含股票类型和方案3C买卖点"""
+    """获取所有股票，包含股票类型和方案3C买卖点，实时刷新价格"""
     data = load_data()
     stocks = data['stocks']
+    
+    # 【新增】批量获取实时行情
+    try:
+        stock_list = [{'code': s.get('code', ''), 'market': s.get('market', 'A股')} for s in stocks]
+        realtime_quotes = get_stock_quotes(stock_list)
+        
+        # 更新每只股票的价格
+        for stock in stocks:
+            code = stock.get('code', '')
+            market = stock.get('market', 'A股')
+            
+            # 构造匹配的code key
+            if market == '港股' or len(code) == 5:
+                quote_key = f"hk{code}"
+            elif code.startswith(('6', '688')):
+                quote_key = f"sh{code}"
+            else:
+                quote_key = f"sz{code}"
+            
+            # 更新实时价格
+            if quote_key in realtime_quotes:
+                quote = realtime_quotes[quote_key]
+                if quote and quote.get('price', 0) > 0:
+                    old_price = stock.get('current_price', 0)
+                    new_price = quote['price']
+                    stock['current_price'] = new_price
+                    stock['price_update_time'] = datetime.now().isoformat()
+                    
+                    # 如果有涨跌额/涨跌幅也更新
+                    if 'change' in quote:
+                        stock['change'] = quote['change']
+                    if 'change_percent' in quote:
+                        stock['change_percent'] = quote['change_percent']
+                    
+                    # 计算市值
+                    shares = stock.get('shares', 0)
+                    if shares > 0:
+                        stock['market_value'] = new_price * shares
+                    
+                    # 打印更新日志（只打印价格变化超过1%的）
+                    if old_price > 0 and abs(new_price - old_price) / old_price > 0.01:
+                        print(f"[get_stocks] {code} 价格更新: ¥{old_price:.2f} → ¥{new_price:.2f}")
+    except Exception as e:
+        print(f"[get_stocks] 实时行情刷新失败: {e}")
+        import traceback
+        traceback.print_exc()
     
     # 为每只股票添加类型和执行数据
     for stock in stocks:
