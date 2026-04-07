@@ -391,15 +391,43 @@ def add_stock():
 
 @app.route('/api/stocks/batch', methods=['POST'])
 def batch_add_stocks():
-    """批量添加股票（避免并发冲突）"""
+    """批量添加股票（避免并发冲突），支持自动记录交易"""
     try:
         data = load_data()
-        stocks_to_add = request.json.get('stocks', [])
+        request_data = request.json
+        stocks_to_add = request_data.get('stocks', [])
+        trades = request_data.get('trades', [])  # 【新增】获取交易记录
         
         if not stocks_to_add:
             return jsonify({'success': False, 'error': '股票列表为空'}), 400
         
         print(f"[batch_add_stocks] 批量添加 {len(stocks_to_add)} 只股票")
+        print(f"[batch_add_stocks] 接收到的交易记录: {len(trades)} 笔")
+        
+        # 【新增】处理交易记录，更新股票的 last_trade 信息
+        trade_map = {}
+        for trade in trades:
+            code = trade.get('stock_code')
+            if code:
+                if code not in trade_map:
+                    trade_map[code] = []
+                trade_map[code].append(trade)
+                
+                # 同时保存到全局交易日志
+                if 'trade_logs' not in data:
+                    data['trade_logs'] = []
+                trade_record = {
+                    'id': f"{int(time.time())}_{code}_{trade.get('trade_type')}",
+                    'time': trade.get('time', datetime.now().isoformat()),
+                    'stock_code': code,
+                    'stock_name': trade.get('stock_name', ''),
+                    'trade_type': trade.get('trade_type'),
+                    'price': trade.get('price', 0),
+                    'shares': trade.get('shares', 0),
+                    'amount': trade.get('price', 0) * trade.get('shares', 0),
+                    'note': trade.get('note', '')
+                }
+                data['trade_logs'].append(trade_record)
         
         added_stocks = []
         for new_stock in stocks_to_add:
@@ -410,6 +438,29 @@ def batch_add_stocks():
             new_stock['id'] = stock_id
             new_stock['status'] = '监控中'
             new_stock['market_value'] = new_stock.get('current_price', 0) * new_stock.get('shares', 0)
+            
+            # 【新增】如果有该股票的交易记录，更新 last_trade 信息
+            code = new_stock.get('code', '')
+            if code in trade_map:
+                # 找到最新的交易（通常是卖出）
+                sell_trades = [t for t in trade_map[code] if t.get('trade_type') == 'sell']
+                buy_trades = [t for t in trade_map[code] if t.get('trade_type') == 'buy']
+                
+                if sell_trades:
+                    # 有卖出交易，更新卖出记录（用于计算冷却期）
+                    latest_sell = max(sell_trades, key=lambda x: x.get('time', ''))
+                    new_stock['last_trade_time'] = latest_sell.get('time')
+                    new_stock['last_trade_type'] = 'sell'
+                    new_stock['last_trade_price'] = latest_sell.get('price', 0)
+                    new_stock['last_trade_shares'] = latest_sell.get('shares', 0)
+                    print(f"[batch_add_stocks] {code} 更新卖出记录: {latest_sell.get('time')}")
+                elif buy_trades:
+                    # 只有买入交易
+                    latest_buy = max(buy_trades, key=lambda x: x.get('time', ''))
+                    new_stock['last_trade_time'] = latest_buy.get('time')
+                    new_stock['last_trade_type'] = 'buy'
+                    new_stock['last_trade_price'] = latest_buy.get('price', 0)
+                    new_stock['last_trade_shares'] = latest_buy.get('shares', 0)
             
             # 港股添加汇率字段（使用实时汇率）
             if new_stock.get('market') == '港股':
@@ -424,8 +475,13 @@ def batch_add_stocks():
         update_risk_control(data)
         
         if save_data(data):
-            print(f"[batch_add_stocks] 成功添加 {len(added_stocks)} 只股票")
-            return jsonify({'success': True, 'stocks': added_stocks, 'count': len(added_stocks)})
+            print(f"[batch_add_stocks] 成功添加 {len(added_stocks)} 只股票，记录 {len(trades)} 笔交易")
+            return jsonify({
+                'success': True, 
+                'stocks': added_stocks, 
+                'count': len(added_stocks),
+                'trades_recorded': len(trades)
+            })
         else:
             return jsonify({'success': False, 'error': '保存失败'}), 500
             

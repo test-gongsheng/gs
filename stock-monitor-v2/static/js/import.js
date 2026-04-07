@@ -623,7 +623,7 @@ function restoreFromHistory(index) {
 }
 
 /**
- * 确认导入 - 新版：直接调用后端 API，不依赖前端 appState
+ * 确认导入 - 新版：支持自动检测交易并记录冷却期
  */
 async function confirmImport() {
     console.log('确认导入被调用', pendingImportData);
@@ -648,6 +648,11 @@ async function confirmImport() {
 
         const stocks = pendingImportData.stocks;
         console.log('旧持仓数据:', oldStocks.map(s => ({ code: s.code, shares: s.shares || s.holdQuantity || 0 })));
+        console.log('新持仓数据:', stocks.map(s => ({ code: s.code, shares: s.shares })));
+
+        // 【新增】对比持仓变化，自动检测交易
+        const trades = detectTrades(oldStocks, stocks);
+        console.log('[confirmImport] 检测到的交易:', trades);
 
         // 清除旧缓存
         localStorage.removeItem('import_data_last');
@@ -696,12 +701,15 @@ async function confirmImport() {
 
         console.log(`[confirmImport] 批量导入 ${stocksToAdd.length} 只股票`);
         
-        // 调用批量导入 API
+        // 调用批量导入 API（传递交易记录）
         console.log('[confirmImport] 发送批量导入请求...', stocksToAdd.length, '只股票');
         const batchResponse = await fetch('/api/stocks/batch', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ stocks: stocksToAdd })
+            body: JSON.stringify({ 
+                stocks: stocksToAdd,
+                trades: trades  // 【新增】传递检测到的交易记录
+            })
         });
 
         let added = 0;
@@ -712,6 +720,14 @@ async function confirmImport() {
             if (result.success) {
                 added = result.count;
                 console.log(`[confirmImport] 批量导入成功: ${added} 只`);
+                
+                // 显示交易记录提示
+                if (trades.length > 0) {
+                    const buyCount = trades.filter(t => t.trade_type === 'buy').length;
+                    const sellCount = trades.filter(t => t.trade_type === 'sell').length;
+                    showNotification(`自动记录: ${buyCount} 笔买入, ${sellCount} 笔卖出`, 'info');
+                }
+                
                 // 立即验证后端数据
                 const verifyResp = await fetch('/api/stocks');
                 const verifyData = await verifyResp.json();
@@ -737,7 +753,8 @@ async function confirmImport() {
                 profitCount: stocks.filter(s => s.pnl >= 0).length,
                 lossCount: stocks.filter(s => s.pnl < 0).length
             },
-            stocks: stocks.map(s => ({ code: s.code, name: s.name, shares: s.shares }))
+            stocks: stocks.map(s => ({ code: s.code, name: s.name, shares: s.shares })),
+            trades: trades  // 【新增】保存交易记录到历史
         });
 
         // 清空待导入数据
@@ -750,12 +767,117 @@ async function confirmImport() {
         setTimeout(() => {
             console.log('[导入完成] 刷新页面...');
             window.location.reload();
-        }, 1000);
+        }, 1500);
 
     } catch (error) {
         console.error('导入失败:', error);
         showNotification('导入失败: ' + error.message, 'error');
     }
+}
+
+/**
+ * 【新增】检测持仓变化，生成交易记录
+ * @param {Array} oldStocks - 旧持仓
+ * @param {Array} newStocks - 新持仓
+ * @returns {Array} 交易记录数组
+ */
+function detectTrades(oldStocks, newStocks) {
+    const trades = [];
+    const now = new Date().toISOString();
+    
+    // 创建旧持仓映射（按代码）
+    const oldMap = {};
+    oldStocks.forEach(s => {
+        const code = s.code || s.stock_code;
+        if (code) {
+            oldMap[code] = {
+                shares: parseFloat(s.shares || s.holdQuantity || 0),
+                avg_cost: parseFloat(s.avg_cost || s.costPrice || s.cost || 0),
+                name: s.name || s.stock_name || ''
+            };
+        }
+    });
+    
+    // 创建新持仓映射
+    const newMap = {};
+    newStocks.forEach(s => {
+        if (s.code) {
+            newMap[s.code] = {
+                shares: parseFloat(s.shares || 0),
+                costPrice: parseFloat(s.costPrice || s.avg_cost || 0),
+                name: s.name || '',
+                currentPrice: parseFloat(s.currentPrice || 0)
+            };
+        }
+    });
+    
+    // 1. 检测买入（新股票或股数增加）
+    Object.keys(newMap).forEach(code => {
+        const newStock = newMap[code];
+        const oldStock = oldMap[code];
+        
+        if (!oldStock) {
+            // 全新买入
+            trades.push({
+                stock_code: code,
+                stock_name: newStock.name,
+                trade_type: 'buy',
+                price: newStock.costPrice,
+                shares: newStock.shares,
+                time: now,
+                note: '导入时检测：新增持仓'
+            });
+        } else if (newStock.shares > oldStock.shares) {
+            // 加仓
+            const addedShares = newStock.shares - oldStock.shares;
+            trades.push({
+                stock_code: code,
+                stock_name: newStock.name,
+                trade_type: 'buy',
+                price: newStock.costPrice,
+                shares: addedShares,
+                time: now,
+                note: '导入时检测：加仓'
+            });
+        }
+    });
+    
+    // 2. 检测卖出（股票消失或股数减少）
+    Object.keys(oldMap).forEach(code => {
+        const oldStock = oldMap[code];
+        const newStock = newMap[code];
+        
+        if (!newStock) {
+            // 完全清仓
+            trades.push({
+                stock_code: code,
+                stock_name: oldStock.name,
+                trade_type: 'sell',
+                price: oldStock.avg_cost, // 使用成本价作为卖出参考
+                shares: oldStock.shares,
+                time: now,
+                note: '导入时检测：清仓卖出'
+            });
+        } else if (oldStock.shares > newStock.shares) {
+            // 减仓卖出
+            const soldShares = oldStock.shares - newStock.shares;
+            trades.push({
+                stock_code: code,
+                stock_name: newStock.name,
+                trade_type: 'sell',
+                price: newStock.currentPrice || oldStock.avg_cost,
+                shares: soldShares,
+                time: now,
+                note: '导入时检测：减仓卖出'
+            });
+        }
+    });
+    
+    console.log(`[detectTrades] 检测到 ${trades.length} 笔交易:`, trades.map(t => 
+        `${t.stock_code} ${t.trade_type} ${t.shares}股 @ ¥${t.price}`
+    ));
+    
+    return trades;
 }
 
 /**
