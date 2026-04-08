@@ -1,12 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <script>
-        // 【强制防缓存】如果URL没有随机参数，立即跳转加参数
-        if (!location.search.includes('_=')) {
-            location.href = location.pathname + '?_=' + Date.now();
-        }
-    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -17,134 +11,24 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/ib-analysis.css') }}?v={{ now }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
-        // 【终极终极清除】动态改写所有脚本URL，强制加载最新
+        // 自动缓存清除机制 - 使用固定版本号
         (function() {
-            const CACHE_BUSTER = Date.now();
-            
-            // 1. 注销 Service Worker
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(regs => {
-                    regs.forEach(reg => reg.unregister());
-                });
-            }
-            
-            // 2. 清理 caches API
-            if ('caches' in window) {
-                caches.keys().then(names => {
-                    names.forEach(name => caches.delete(name));
-                });
-            }
-            
-            // 3. 版本检测 - 变化则强制刷新
-            const APP_VERSION = '20250408-9-fix-syntax';
+            const APP_VERSION = '20250408-stable';  // 稳定版本
             const storedVersion = localStorage.getItem('app_version');
             
             if (storedVersion !== APP_VERSION) {
-                console.log('[Cache] 版本更新:', storedVersion, '->', APP_VERSION);
-                localStorage.clear();
-                sessionStorage.clear();
+                console.log('[Cache Clear] 版本变化:', storedVersion, '->', APP_VERSION);
+                localStorage.removeItem('import_data_last');
+                localStorage.removeItem('alertedStocks');
+                localStorage.removeItem('trade_alert_date');
                 localStorage.setItem('app_version', APP_VERSION);
-                // 带随机参数强制刷新
-                window.location.href = window.location.pathname + '?_=' + CACHE_BUSTER;
-                return;
+                // 强制刷新
+                window.location.reload(true);
             }
-            
-            // 4. 【关键】动态改写所有脚本标签的src，添加缓存破坏参数
-            document.addEventListener('DOMContentLoaded', function() {
-                const scripts = document.querySelectorAll('script[src*="{{ url_for('static', filename='js/') }}"]');
-                scripts.forEach(script => {
-                    const originalSrc = script.src;
-                    if (!originalSrc.includes('_cb=')) {
-                        script.src = originalSrc + (originalSrc.includes('?') ? '&' : '?') + '_cb=' + CACHE_BUSTER;
-                        console.log('[Cache] 更新脚本:', script.src);
-                    }
-                });
-            });
         })();
     </script>
 </head>
 <body>
-    <!-- 【内联紧急数据加载】确保即使JS被缓存也能显示数据 -->
-    <script>
-        (function() {
-            console.log('[Emergency] 开始紧急数据加载...');
-            window.appState = window.appState || {};
-            window.appState.stocks = [];
-            
-            // 立即尝试从API加载（强制不缓存）
-            fetch('/api/stocks', {
-                cache: 'no-store',
-                headers: { 'Cache-Control': 'no-cache' }
-            })
-                .then(r => {
-                    console.log('[Emergency] 响应状态:', r.status);
-                    if (!r.ok) throw new Error('HTTP ' + r.status);
-                    return r.text(); // 先拿文本看原始内容
-                })
-                .then(text => {
-                    console.log('[Emergency] 原始响应长度:', text.length);
-                    try {
-                        const data = JSON.parse(text);
-                        console.log('[Emergency] 解析后:', Array.isArray(data) ? data.length + '只' : typeof data);
-                        if (Array.isArray(data) && data.length > 0) {
-                            window.appState.stocks = data.map(s => ({
-                                id: s.id, code: s.code, name: s.name,
-                                market: s.market || 'A股', price: s.current_price || 0,
-                                holdCost: s.avg_cost || 0, holdQuantity: s.shares || 0,
-                                pivotPrice: s.axis_price || 0,
-                                triggerBuy: s.next_buy_price || 0,
-                                triggerSell: s.next_sell_price || 0,
-                                investLimit: s.market === '港股' ? 1500000 : 500000,
-                                baseRatio: s.base_position_pct || 50,
-                                floatRatio: s.float_position_pct || 50,
-                                strategy: s.strategy_mode || '基础',
-                                change: s.change || 0, changePercent: s.change_percent || 0,
-                                stock_type: s.stock_type || 'normal', vol_score: s.vol_score || 0
-                            }));
-                            localStorage.setItem('import_data_last', JSON.stringify(window.appState.stocks));
-                            console.log('[Emergency] 数据已加载:', window.appState.stocks.length);
-                            
-                            // 【关键】立即触发渲染 - 直接操作DOM，不依赖外部JS
-                            setTimeout(function() {
-                                const listEl = document.getElementById('stockList');
-                                if (listEl && window.appState.stocks.length > 0) {
-                                    console.log('[Emergency] 直接渲染持仓列表:', window.appState.stocks.length);
-                                    listEl.innerHTML = '';
-                                    window.appState.stocks.forEach((stock, index) => {
-                                        const item = document.createElement('div');
-                                        item.className = 'stock-item' + (index === 0 ? ' active' : '');
-                                        item.innerHTML = `
-                                            <div class="stock-info">
-                                                <div class="stock-name">${stock.name}</div>
-                                                <div class="stock-code">${stock.code}</div>
-                                            </div>
-                                            <div class="stock-price">
-                                                <div class="price">¥${stock.price.toFixed(2)}</div>
-                                                <div class="hold">${stock.holdQuantity}股</div>
-                                            </div>
-                                        `;
-                                        listEl.appendChild(item);
-                                    });
-                                }
-                            }, 100);
-                        }
-                    } catch(e) {
-                        console.error('[Emergency] JSON解析失败:', e);
-                    }
-                })
-                .catch(e => {
-                    console.error('[Emergency] 加载失败:', e);
-                    // 尝试从localStorage恢复
-                    const saved = localStorage.getItem('import_data_last');
-                    if (saved) {
-                        try {
-                            window.appState.stocks = JSON.parse(saved);
-                            console.log('[Emergency] 从localStorage恢复:', window.appState.stocks.length);
-                        } catch(ee) {}
-                    }
-                });
-        })();
-    </script>
     <!-- 顶部导航栏 -->
     <header class="header">
         <div class="header-left">
@@ -1547,28 +1431,16 @@
         </div>
     </div>
 
-    <!-- 【动态脚本加载】绕过浏览器缓存 -->
-    <script>
-        (function() {
-            const CB = Date.now();
-            const scripts = [
-                'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
-                '/static/js/modules/utils.js?_=' + CB,
-                '/static/js/modules/api.js?_=' + CB,
-                '/static/js/modules/state.js?_=' + CB,
-                '/static/js/southbound.js?_=' + CB,
-                '/static/js/import.js?_=' + CB,
-                '/static/js/app.js?_=' + CB
-            ];
-            
-            scripts.forEach(src => {
-                const s = document.createElement('script');
-                s.src = src;
-                s.async = false; // 保持顺序
-                document.head.appendChild(s);
-            });
-        })();
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- 新模块: 工具函数 (Step 1) -->
+    <script src="{{ url_for('static', filename='js/modules/utils.js') }}?v={{ now }}"></script>
+    <!-- 新模块: API层 (Step 2) -->
+    <script src="{{ url_for('static', filename='js/modules/api.js') }}?v={{ now }}"></script>
+    <!-- 新模块: 状态管理 (Step 3) -->
+    <script src="{{ url_for('static', filename='js/modules/state.js') }}?v={{ now }}"></script>
+    <script src="{{ url_for('static', filename='js/southbound.js') }}?v={{ now }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v={{ now }}"></script>
+    <script src="{{ url_for('static', filename='js/import.js') }}?v={{ now }}"></script>
     <script>
         // 保底渲染逻辑 - 确保持仓列表一定能显示
         (function renderStockListFallback() {

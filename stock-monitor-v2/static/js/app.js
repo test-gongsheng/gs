@@ -54,50 +54,33 @@ const mockNews = [
 ];
 
 // 初始化
-async function init() {
-    console.log('[init] 开始初始化...');
+// 初始化标记，防止重复初始化
+let isInitialized = false;
 
-    console.log('[init] 开始初始化...');
+async function init() {
+    if (isInitialized) {
+        console.log('[init] 已经初始化过，跳过');
+        return;
+    }
+    isInitialized = true;
+
+    // 清空现有数据，避免重复
+    appState.stocks = [];
     let loadedFromBackend = false;
-    
-    // 【修复1】优先使用内联脚本已加载的数据
-    if (window.appState && window.appState.stocks && window.appState.stocks.length > 0) {
-        console.log('[init] 使用内联脚本已加载的数据:', window.appState.stocks.length);
-        appState.stocks = window.appState.stocks;
-        loadedFromBackend = true;
-        renderStockList();
-    }
-    
-    // 【修复2】尝试从 localStorage 加载
-    if (!loadedFromBackend) {
-        const savedStocks = localStorage.getItem('import_data_last');
-        if (savedStocks) {
-            try {
-                const stocks = JSON.parse(savedStocks);
-                if (stocks && stocks.length > 0) {
-                    appState.stocks = stocks;
-                    console.log('[init] 已从 localStorage 加载', stocks.length, '只');
-                    loadedFromBackend = true;
-                    renderStockList();
-                }
-            } catch (e) {
-                console.error('[init] localStorage加载失败:', e);
-            }
-        }
-    }
-    
-    // 【修复3】异步刷新最新数据
-    console.log('[init] 异步刷新数据...');
+    console.log('[init] 开始初始化，已清空股票列表');
     try {
-        const response = await fetch('/api/stocks?_=' + Date.now());
-        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const response = await fetch('/api/stocks');
         const stocks = await response.json();
-        
         if (Array.isArray(stocks) && stocks.length > 0) {
+            // 转换后端数据格式为前端格式
             appState.stocks = stocks.map(s => ({
-                id: s.id, code: s.code, name: s.name,
-                market: s.market || 'A股', price: s.current_price || 0,
-                holdCost: s.avg_cost || 0, holdQuantity: s.shares || 0,
+                id: s.id,
+                code: s.code,
+                name: s.name,
+                market: s.market || 'A股',
+                price: s.current_price || 0,
+                holdCost: s.avg_cost || 0,
+                holdQuantity: s.shares || 0,
                 pivotPrice: s.axis_price || 0,
                 triggerBuy: s.next_buy_price || 0,
                 triggerSell: s.next_sell_price || 0,
@@ -106,31 +89,58 @@ async function init() {
                 floatRatio: s.float_position_pct || 50,
                 strategy: s.strategy_mode || '基础',
                 gridLevels: s.grid_levels || [],
-                change: s.change || 0, changePercent: s.change_percent || 0,
-                exchangeRate: s.exchange_rate,
+                change: 0,
+                changePercent: 0,
+                exchangeRate: s.exchange_rate,  // 从后端获取汇率
+                // 股票类型和执行数据
                 stock_type: s.stock_type || 'normal',
-                vol_score: s.vol_score || 0, annual_vol: s.annual_vol || 0,
+                vol_score: s.vol_score || 0,
+                annual_vol: s.annual_vol || 0,
                 atr_pct: s.atr_pct || 0,
                 last_trade_time: s.last_trade_time,
                 last_trade_type: s.last_trade_type,
                 cooldown_days: s.cooldown_days || 20
             }));
+            loadedFromBackend = true;
+            console.log('已从后端 API 加载', appState.stocks.length, '只股票');
+            // 同时保存到 localStorage 作为备份
             localStorage.setItem('import_data_last', JSON.stringify(appState.stocks));
-            renderStockList();
-            console.log('[init] 数据已刷新:', appState.stocks.length);
         }
     } catch (e) {
-        console.error('[init] 刷新失败:', e);
+        console.error('从后端加载数据失败:', e);
+    }
+    
+    // 如果后端没有数据，尝试从 localStorage 读取
+    if (!loadedFromBackend) {
+        const savedStocks = localStorage.getItem('import_data_last');
+        if (savedStocks) {
+            try {
+                const stocks = JSON.parse(savedStocks);
+                if (stocks && stocks.length > 0) {
+                    appState.stocks = stocks;
+                    console.log('已从 localStorage 恢复', stocks.length, '只股票');
+                } else {
+                    appState.stocks = mockStocks;
+                }
+            } catch (e) {
+                console.error('读取本地数据失败:', e);
+                appState.stocks = mockStocks;
+            }
+        } else {
+            appState.stocks = mockStocks;
+        }
     }
     
     appState.hotSectors = mockHotSectors;
     appState.news = { headlines: [], themes: [], calendar: [], portfolio: [], general: mockNews };
 
-    // 确保渲染
-    if (appState.stocks.length === 0) {
-        console.log('[init] 没有数据，显示空状态');
-    }
+    // 【修复】先立即渲染列表（使用本地数据），再后台获取行情
+    // 这样即使行情获取卡住，用户也能看到持仓列表
+    console.log('[init] 立即渲染持仓列表（使用本地数据）...');
+    console.log('[init] appState.stocks 数量:', appState.stocks.length);
+    console.log('[init] 准备调用 renderStockList...');
     renderStockList();
+    console.log('[init] renderStockList 调用完成');
     updateAssetOverview();
     
     // 默认选中第一个股票
