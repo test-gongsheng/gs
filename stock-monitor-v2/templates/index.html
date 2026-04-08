@@ -104,10 +104,29 @@
                             localStorage.setItem('import_data_last', JSON.stringify(window.appState.stocks));
                             console.log('[Emergency] 数据已加载:', window.appState.stocks.length);
                             
-                            // 【关键】立即触发渲染
-                            if (typeof renderStockList === 'function') {
-                                renderStockList();
-                            }
+                            // 【关键】立即触发渲染 - 直接操作DOM，不依赖外部JS
+                            setTimeout(function() {
+                                const listEl = document.getElementById('stockList');
+                                if (listEl && window.appState.stocks.length > 0) {
+                                    console.log('[Emergency] 直接渲染持仓列表:', window.appState.stocks.length);
+                                    listEl.innerHTML = '';
+                                    window.appState.stocks.forEach((stock, index) => {
+                                        const item = document.createElement('div');
+                                        item.className = 'stock-item' + (index === 0 ? ' active' : '');
+                                        item.innerHTML = `
+                                            <div class="stock-info">
+                                                <div class="stock-name">${stock.name}</div>
+                                                <div class="stock-code">${stock.code}</div>
+                                            </div>
+                                            <div class="stock-price">
+                                                <div class="price">¥${stock.price.toFixed(2)}</div>
+                                                <div class="hold">${stock.holdQuantity}股</div>
+                                            </div>
+                                        `;
+                                        listEl.appendChild(item);
+                                    });
+                                }
+                            }, 100);
                         }
                     } catch(e) {
                         console.error('[Emergency] JSON解析失败:', e);
