@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    <script>
+        // 【强制防缓存】如果URL没有随机参数，立即跳转加参数
+        if (!location.search.includes('_=')) {
+            location.href = location.pathname + '?_=' + Date.now();
+        }
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
