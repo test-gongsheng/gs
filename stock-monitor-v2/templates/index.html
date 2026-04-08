@@ -11,27 +11,41 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/ib-analysis.css') }}?v={{ now }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
-        // 【强制缓存清除】策略：版本号 + 时间戳双重检查
+        // 【终极清除】注销 Service Worker 并清理所有缓存
         (function() {
-            const BUILD_TIMESTAMP = '{{ now }}';
-            const APP_VERSION = '20250408-5-emergency';
+            // 1. 注销 Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(regs => {
+                    regs.forEach(reg => {
+                        console.log('[SW] 注销:', reg.scope);
+                        reg.unregister();
+                    });
+                });
+            }
             
-            const storedBuild = sessionStorage.getItem('app_build_timestamp');
+            // 2. 清理 caches API
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        console.log('[Cache] 删除:', name);
+                        caches.delete(name);
+                    });
+                });
+            }
+            
+            // 3. 版本检测刷新
+            const BUILD_TIMESTAMP = '{{ now }}';
+            const APP_VERSION = '20250408-6-clear-all';
             const storedVersion = localStorage.getItem('app_version');
             
             if (storedVersion !== APP_VERSION) {
                 console.log('[Auto] 版本更新:', storedVersion, '->', APP_VERSION);
                 localStorage.clear();
                 localStorage.setItem('app_version', APP_VERSION);
+                sessionStorage.clear();
+                // 强制从服务器重新加载
+                window.location.href = window.location.pathname + '?_=' + Date.now();
             }
-            
-            if (storedBuild && storedBuild !== BUILD_TIMESTAMP) {
-                console.log('[Auto] 代码已更新，强制刷新...');
-                sessionStorage.setItem('app_build_timestamp', BUILD_TIMESTAMP);
-                window.location.href = window.location.href.split('?')[0] + '?_t=' + Date.now();
-                return;
-            }
-            
             sessionStorage.setItem('app_build_timestamp', BUILD_TIMESTAMP);
         })();
     </script>
