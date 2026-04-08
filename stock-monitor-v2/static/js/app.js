@@ -54,15 +54,8 @@ const mockNews = [
 ];
 
 // 初始化
-// 初始化标记，防止重复初始化
-let isInitialized = false;
-
 async function init() {
-    if (isInitialized) {
-        console.log('[init] 已经初始化过，跳过');
-        return;
-    }
-    isInitialized = true;
+    console.log('[init] 开始初始化...');
 
     console.log('[init] 开始初始化...');
     let loadedFromBackend = false;
