@@ -11,23 +11,35 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/ib-analysis.css') }}?v={{ now }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
-        // 自动缓存清除机制 - 使用固定版本号
+        // 【强制缓存清除】策略：版本号 + 时间戳双重检查
         (function() {
-            const APP_VERSION = '20250408-fix-init';  // 修复初始化数据加载问题
+            const BUILD_TIMESTAMP = '{{ now }}';  // 服务端生成的时间戳
+            const APP_VERSION = '20250408-2';     // 每次发版更新
+            
+            const storedBuild = sessionStorage.getItem('app_build_timestamp');
             const storedVersion = localStorage.getItem('app_version');
             
+            // 情况1：版本号变了，清除所有持久数据
             if (storedVersion !== APP_VERSION) {
-                console.log('[Cache Clear] 版本变化:', storedVersion, '->', APP_VERSION);
-                localStorage.removeItem('import_data_last');
-                localStorage.removeItem('alertedStocks');
-                localStorage.removeItem('trade_alert_date');
+                console.log('[Auto] 版本更新:', storedVersion, '->', APP_VERSION);
+                localStorage.clear();  // 清空所有localStorage
                 localStorage.setItem('app_version', APP_VERSION);
-                // 只刷新一次
-                if (storedVersion) {
-                    window.location.reload(true);
-                }
+                // 不在这里刷新，让情况2处理
             }
+            
+            // 情况2：构建时间戳变了，强制刷新页面（从服务器重新加载）
+            if (storedBuild && storedBuild !== BUILD_TIMESTAMP) {
+                console.log('[Auto] 代码已更新，强制刷新...');
+                sessionStorage.setItem('app_build_timestamp', BUILD_TIMESTAMP);
+                // 用 location.href 而不是 reload(true)，更彻底
+                window.location.href = window.location.href.split('?')[0] + '?_t=' + Date.now();
+                return;  // 阻止后续代码执行
+            }
+            
+            // 首次加载或已最新，记录时间戳
+            sessionStorage.setItem('app_build_timestamp', BUILD_TIMESTAMP);
         })();
+    </script>
     </script>
 </head>
 <body>
