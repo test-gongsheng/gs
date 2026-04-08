@@ -11,42 +11,49 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/ib-analysis.css') }}?v={{ now }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
-        // 【终极清除】注销 Service Worker 并清理所有缓存
+        // 【终极终极清除】动态改写所有脚本URL，强制加载最新
         (function() {
+            const CACHE_BUSTER = Date.now();
+            
             // 1. 注销 Service Worker
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(regs => {
-                    regs.forEach(reg => {
-                        console.log('[SW] 注销:', reg.scope);
-                        reg.unregister();
-                    });
+                    regs.forEach(reg => reg.unregister());
                 });
             }
             
             // 2. 清理 caches API
             if ('caches' in window) {
                 caches.keys().then(names => {
-                    names.forEach(name => {
-                        console.log('[Cache] 删除:', name);
-                        caches.delete(name);
-                    });
+                    names.forEach(name => caches.delete(name));
                 });
             }
             
-            // 3. 版本检测刷新
-            const BUILD_TIMESTAMP = '{{ now }}';
-            const APP_VERSION = '20250408-6-clear-all';
+            // 3. 版本检测 - 变化则强制刷新
+            const APP_VERSION = '20250408-8-dynamic-load';
             const storedVersion = localStorage.getItem('app_version');
             
             if (storedVersion !== APP_VERSION) {
-                console.log('[Auto] 版本更新:', storedVersion, '->', APP_VERSION);
+                console.log('[Cache] 版本更新:', storedVersion, '->', APP_VERSION);
                 localStorage.clear();
-                localStorage.setItem('app_version', APP_VERSION);
                 sessionStorage.clear();
-                // 强制从服务器重新加载
-                window.location.href = window.location.pathname + '?_=' + Date.now();
+                localStorage.setItem('app_version', APP_VERSION);
+                // 带随机参数强制刷新
+                window.location.href = window.location.pathname + '?_=' + CACHE_BUSTER;
+                return;
             }
-            sessionStorage.setItem('app_build_timestamp', BUILD_TIMESTAMP);
+            
+            // 4. 【关键】动态改写所有脚本标签的src，添加缓存破坏参数
+            document.addEventListener('DOMContentLoaded', function() {
+                const scripts = document.querySelectorAll('script[src*="{{ url_for('static', filename='js/') }}"]');
+                scripts.forEach(script => {
+                    const originalSrc = script.src;
+                    if (!originalSrc.includes('_cb=')) {
+                        script.src = originalSrc + (originalSrc.includes('?') ? '&' : '?') + '_cb=' + CACHE_BUSTER;
+                        console.log('[Cache] 更新脚本:', script.src);
+                    }
+                });
+            });
         })();
     </script>
 </head>
@@ -1517,30 +1524,28 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <!-- 新模块: 工具函数 (Step 1) -->
-    <script src="{{ url_for('static', filename='js/modules/utils.js') }}?v={{ now }}"></script>
-    <!-- 新模块: API层 (Step 2) -->
-    <script src="{{ url_for('static', filename='js/modules/api.js') }}?v={{ now }}"></script>
-    <!-- 新模块: 状态管理 (Step 3) -->
-    <script src="{{ url_for('static', filename='js/modules/state.js') }}?v={{ now }}"></script>
-    <script src="{{ url_for('static', filename='js/southbound.js') }}?v={{ now }}"></script>
-    <script src="{{ url_for('static', filename='js/import.js') }}?v={{ now }}"></script>
+    <!-- 【动态脚本加载】绕过浏览器缓存 -->
     <script>
-        // 【终极缓存清除】客户端强制刷新 - 不依赖服务端时间戳
         (function() {
-            const CLIENT_BUILD_TIME = '202504081640'; // 每次发版更新这个值
-            const savedBuild = localStorage.getItem('client_build_time');
+            const CB = Date.now();
+            const scripts = [
+                'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
+                '/static/js/modules/utils.js?_=' + CB,
+                '/static/js/modules/api.js?_=' + CB,
+                '/static/js/modules/state.js?_=' + CB,
+                '/static/js/southbound.js?_=' + CB,
+                '/static/js/import.js?_=' + CB,
+                '/static/js/app.js?_=' + CB
+            ];
             
-            if (savedBuild !== CLIENT_BUILD_TIME) {
-                console.log('[Client Cache] 检测到新版本，强制刷新...');
-                localStorage.setItem('client_build_time', CLIENT_BUILD_TIME);
-                // 使用随机参数强制从服务器重新加载
-                window.location.href = window.location.pathname + '?_=' + Date.now();
-            }
+            scripts.forEach(src => {
+                const s = document.createElement('script');
+                s.src = src;
+                s.async = false; // 保持顺序
+                document.head.appendChild(s);
+            });
         })();
     </script>
-    <script src="{{ url_for('static', filename='js/app.js') }}?v={{ now }}"></script>
     <script>
         // 保底渲染逻辑 - 确保持仓列表一定能显示
         (function renderStockListFallback() {
