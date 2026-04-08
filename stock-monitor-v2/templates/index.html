@@ -14,7 +14,7 @@
         // 【强制缓存清除】策略：版本号 + 时间戳双重检查
         (function() {
             const BUILD_TIMESTAMP = '{{ now }}';
-            const APP_VERSION = '20250408-4';
+            const APP_VERSION = '20250408-5-emergency';
             
             const storedBuild = sessionStorage.getItem('app_build_timestamp');
             const storedVersion = localStorage.getItem('app_version');
@@ -44,34 +44,48 @@
             window.appState = window.appState || {};
             window.appState.stocks = [];
             
-            // 立即尝试从API加载
-            fetch('/api/stocks?_=' + Date.now())
-                .then(r => r.json())
-                .then(data => {
-                    console.log('[Emergency] API返回:', Array.isArray(data) ? data.length + '只' : typeof data);
-                    if (Array.isArray(data) && data.length > 0) {
-                        window.appState.stocks = data.map(s => ({
-                            id: s.id,
-                            code: s.code,
-                            name: s.name,
-                            market: s.market || 'A股',
-                            price: s.current_price || 0,
-                            holdCost: s.avg_cost || 0,
-                            holdQuantity: s.shares || 0,
-                            pivotPrice: s.axis_price || 0,
-                            triggerBuy: s.next_buy_price || 0,
-                            triggerSell: s.next_sell_price || 0,
-                            investLimit: s.market === '港股' ? 1500000 : 500000,
-                            baseRatio: s.base_position_pct || 50,
-                            floatRatio: s.float_position_pct || 50,
-                            strategy: s.strategy_mode || '基础',
-                            change: s.change || 0,
-                            changePercent: s.change_percent || 0,
-                            stock_type: s.stock_type || 'normal',
-                            vol_score: s.vol_score || 0
-                        }));
-                        localStorage.setItem('import_data_last', JSON.stringify(window.appState.stocks));
-                        console.log('[Emergency] 数据已加载:', window.appState.stocks.length);
+            // 立即尝试从API加载（强制不缓存）
+            fetch('/api/stocks', {
+                cache: 'no-store',
+                headers: { 'Cache-Control': 'no-cache' }
+            })
+                .then(r => {
+                    console.log('[Emergency] 响应状态:', r.status);
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.text(); // 先拿文本看原始内容
+                })
+                .then(text => {
+                    console.log('[Emergency] 原始响应长度:', text.length);
+                    try {
+                        const data = JSON.parse(text);
+                        console.log('[Emergency] 解析后:', Array.isArray(data) ? data.length + '只' : typeof data);
+                        if (Array.isArray(data) && data.length > 0) {
+                            window.appState.stocks = data.map(s => ({
+                                id: s.id, code: s.code, name: s.name,
+                                market: s.market || 'A股', price: s.current_price || 0,
+                                holdCost: s.avg_cost || 0, holdQuantity: s.shares || 0,
+                                pivotPrice: s.axis_price || 0,
+                                triggerBuy: s.next_buy_price || 0,
+                                triggerSell: s.next_sell_price || 0,
+                                investLimit: s.market === '港股' ? 1500000 : 500000,
+                                baseRatio: s.base_position_pct || 50,
+                                floatRatio: s.float_position_pct || 50,
+                                strategy: s.strategy_mode || '基础',
+                                change: s.change || 0, changePercent: s.change_percent || 0,
+                                stock_type: s.stock_type || 'normal', vol_score: s.vol_score || 0
+                            }));
+                            localStorage.setItem('import_data_last', JSON.stringify(window.appState.stocks));
+                            console.log('[Emergency] 数据已加载:', window.appState.stocks.length);
+                            
+                            // 【关键】立即触发渲染
+                            if (typeof renderStockList === 'function') {
+                                renderStockList();
+                            }
+                        }
+                    } catch(e) {
+                        console.error('[Emergency] JSON解析失败:', e);
+                    }
+                })
                     }
                 })
                 .catch(e => {
