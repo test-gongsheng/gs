@@ -20,8 +20,24 @@ function initDataImport() {
     initManualInput();
     initImportHistory();
     initTemplateDownload();
+    initImportTabs(); // 【新增】初始化标签页点击事件
     
     console.log('数据导入模块初始化完成');
+}
+
+/**
+ * 【新增】初始化标签页点击事件
+ */
+function initImportTabs() {
+    const tabs = document.querySelectorAll('.import-tab');
+    tabs.forEach(tab => {
+        tab.onclick = function() {
+            const tabName = this.dataset.tab;
+            console.log('切换到标签页:', tabName);
+            switchImportTab(tabName);
+        };
+    });
+    console.log('标签页事件绑定完成:', tabs.length, '个标签');
 }
 
 /**
