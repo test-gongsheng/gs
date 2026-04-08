@@ -1454,6 +1454,20 @@
     <script src="{{ url_for('static', filename='js/modules/state.js') }}?v={{ now }}"></script>
     <script src="{{ url_for('static', filename='js/southbound.js') }}?v={{ now }}"></script>
     <script src="{{ url_for('static', filename='js/import.js') }}?v={{ now }}"></script>
+    <script>
+        // 【终极缓存清除】客户端强制刷新 - 不依赖服务端时间戳
+        (function() {
+            const CLIENT_BUILD_TIME = '202504081640'; // 每次发版更新这个值
+            const savedBuild = localStorage.getItem('client_build_time');
+            
+            if (savedBuild !== CLIENT_BUILD_TIME) {
+                console.log('[Client Cache] 检测到新版本，强制刷新...');
+                localStorage.setItem('client_build_time', CLIENT_BUILD_TIME);
+                // 使用随机参数强制从服务器重新加载
+                window.location.href = window.location.pathname + '?_=' + Date.now();
+            }
+        })();
+    </script>
     <script src="{{ url_for('static', filename='js/app.js') }}?v={{ now }}"></script>
     <script>
         // 保底渲染逻辑 - 确保持仓列表一定能显示
