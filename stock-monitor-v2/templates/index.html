@@ -13,36 +13,80 @@
     <script>
         // 【强制缓存清除】策略：版本号 + 时间戳双重检查
         (function() {
-            const BUILD_TIMESTAMP = '{{ now }}';  // 服务端生成的时间戳
-            const APP_VERSION = '20250408-3-debug';     // 每次发版更新
+            const BUILD_TIMESTAMP = '{{ now }}';
+            const APP_VERSION = '20250408-4';
             
             const storedBuild = sessionStorage.getItem('app_build_timestamp');
             const storedVersion = localStorage.getItem('app_version');
             
-            // 情况1：版本号变了，清除所有持久数据
             if (storedVersion !== APP_VERSION) {
                 console.log('[Auto] 版本更新:', storedVersion, '->', APP_VERSION);
-                localStorage.clear();  // 清空所有localStorage
+                localStorage.clear();
                 localStorage.setItem('app_version', APP_VERSION);
-                // 不在这里刷新，让情况2处理
             }
             
-            // 情况2：构建时间戳变了，强制刷新页面（从服务器重新加载）
             if (storedBuild && storedBuild !== BUILD_TIMESTAMP) {
                 console.log('[Auto] 代码已更新，强制刷新...');
                 sessionStorage.setItem('app_build_timestamp', BUILD_TIMESTAMP);
-                // 用 location.href 而不是 reload(true)，更彻底
                 window.location.href = window.location.href.split('?')[0] + '?_t=' + Date.now();
-                return;  // 阻止后续代码执行
+                return;
             }
             
-            // 首次加载或已最新，记录时间戳
             sessionStorage.setItem('app_build_timestamp', BUILD_TIMESTAMP);
         })();
     </script>
-    </script>
 </head>
 <body>
+    <!-- 【内联紧急数据加载】确保即使JS被缓存也能显示数据 -->
+    <script>
+        (function() {
+            console.log('[Emergency] 开始紧急数据加载...');
+            window.appState = window.appState || {};
+            window.appState.stocks = [];
+            
+            // 立即尝试从API加载
+            fetch('/api/stocks?_=' + Date.now())
+                .then(r => r.json())
+                .then(data => {
+                    console.log('[Emergency] API返回:', Array.isArray(data) ? data.length + '只' : typeof data);
+                    if (Array.isArray(data) && data.length > 0) {
+                        window.appState.stocks = data.map(s => ({
+                            id: s.id,
+                            code: s.code,
+                            name: s.name,
+                            market: s.market || 'A股',
+                            price: s.current_price || 0,
+                            holdCost: s.avg_cost || 0,
+                            holdQuantity: s.shares || 0,
+                            pivotPrice: s.axis_price || 0,
+                            triggerBuy: s.next_buy_price || 0,
+                            triggerSell: s.next_sell_price || 0,
+                            investLimit: s.market === '港股' ? 1500000 : 500000,
+                            baseRatio: s.base_position_pct || 50,
+                            floatRatio: s.float_position_pct || 50,
+                            strategy: s.strategy_mode || '基础',
+                            change: s.change || 0,
+                            changePercent: s.change_percent || 0,
+                            stock_type: s.stock_type || 'normal',
+                            vol_score: s.vol_score || 0
+                        }));
+                        localStorage.setItem('import_data_last', JSON.stringify(window.appState.stocks));
+                        console.log('[Emergency] 数据已加载:', window.appState.stocks.length);
+                    }
+                })
+                .catch(e => {
+                    console.error('[Emergency] 加载失败:', e);
+                    // 尝试从localStorage恢复
+                    const saved = localStorage.getItem('import_data_last');
+                    if (saved) {
+                        try {
+                            window.appState.stocks = JSON.parse(saved);
+                            console.log('[Emergency] 从localStorage恢复:', window.appState.stocks.length);
+                        } catch(ee) {}
+                    }
+                });
+        })();
+    </script>
     <!-- 顶部导航栏 -->
     <header class="header">
         <div class="header-left">
