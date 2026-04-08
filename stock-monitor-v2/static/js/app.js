@@ -91,8 +91,23 @@ async function init() {
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        const stocks = await response.json();
-        console.log('[init] API 返回数据类型:', typeof stocks, '长度:', Array.isArray(stocks) ? stocks.length : 'N/A');
+        
+        // 【调试】先获取原始文本
+        const responseText = await response.text();
+        console.log('[init] API 原始响应长度:', responseText.length);
+        console.log('[init] API 原始响应前200字符:', responseText.substring(0, 200));
+        
+        // 解析JSON
+        let stocks;
+        try {
+            stocks = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('[init] JSON解析失败:', parseError);
+            throw new Error('JSON解析失败');
+        }
+        
+        console.log('[init] API 返回数据类型:', typeof stocks, '是否数组:', Array.isArray(stocks));
+        console.log('[init] API 返回数据长度:', Array.isArray(stocks) ? stocks.length : Object.keys(stocks).length);
         
         if (Array.isArray(stocks) && stocks.length > 0) {
             // 转换后端数据格式为前端格式
@@ -126,16 +141,13 @@ async function init() {
             loadedFromBackend = true;
             console.log('[init] 已从后端 API 加载', appState.stocks.length, '只股票');
             localStorage.setItem('import_data_last', JSON.stringify(appState.stocks));
+        } else if (Array.isArray(stocks) && stocks.length === 0) {
+            console.warn('[init] API 返回空数组');
         } else {
-            console.warn('[init] API 返回数据为空或格式错误');
+            console.warn('[init] API 返回数据格式错误:', stocks);
         }
     } catch (e) {
         console.error('[init] 从后端加载数据失败:', e);
-        // 如果后端失败且 localStorage 也没有数据，使用 mock
-        if (appState.stocks.length === 0) {
-            console.log('[init] 使用 mock 数据');
-            appState.stocks = mockStocks;
-        }
     }
     
     appState.hotSectors = mockHotSectors;

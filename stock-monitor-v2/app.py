@@ -412,6 +412,7 @@ def get_stocks():
     # 保存更新后的数据
     save_data(data)
     
+    print(f"[get_stocks] 返回 {len(stocks)} 只股票")
     return jsonify(stocks)
 
 @app.route('/api/stocks', methods=['POST'])

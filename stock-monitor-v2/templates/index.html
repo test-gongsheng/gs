@@ -14,7 +14,7 @@
         // 【强制缓存清除】策略：版本号 + 时间戳双重检查
         (function() {
             const BUILD_TIMESTAMP = '{{ now }}';  // 服务端生成的时间戳
-            const APP_VERSION = '20250408-2';     // 每次发版更新
+            const APP_VERSION = '20250408-3-debug';     // 每次发版更新
             
             const storedBuild = sessionStorage.getItem('app_build_timestamp');
             const storedVersion = localStorage.getItem('app_version');
