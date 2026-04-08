@@ -1,3 +1,15 @@
+#!/usr/bin/env python3
+import sys
+import os
+
+# 自动检测并使用虚拟环境（如果存在venv但当前不是venv解释器）
+venv_path = os.path.join(os.path.dirname(__file__), 'venv')
+if os.path.exists(venv_path) and 'VIRTUAL_ENV' not in os.environ:
+    venv_python = os.path.join(venv_path, 'bin', 'python')
+    if os.path.exists(venv_python):
+        print(f"[Auto] 切换到虚拟环境: {venv_python}")
+        os.execv(venv_python, [venv_python] + sys.argv)
+
 from flask import Flask, render_template, jsonify, request, make_response
 import json
 import os
