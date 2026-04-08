@@ -30,7 +30,7 @@
             }
             
             // 3. 版本检测 - 变化则强制刷新
-            const APP_VERSION = '20250408-8-dynamic-load';
+            const APP_VERSION = '20250408-9-fix-syntax';
             const storedVersion = localStorage.getItem('app_version');
             
             if (storedVersion !== APP_VERSION) {
@@ -105,8 +105,6 @@
                         }
                     } catch(e) {
                         console.error('[Emergency] JSON解析失败:', e);
-                    }
-                })
                     }
                 })
                 .catch(e => {
