@@ -289,12 +289,35 @@ def load_data():
 def save_data(data):
     """保存股票数据"""
     try:
+        print(f"[save_data] 开始保存到: {DATA_FILE}")
+        print(f"[save_data] 数据包含: {len(data.get('stocks', []))} 只股票")
+        
+        # 确保目录存在
+        data_dir = os.path.dirname(DATA_FILE)
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+            print(f"[save_data] 创建目录: {data_dir}")
+        
+        # 写入文件
         with open(DATA_FILE, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
-        return True
+        
+        # 验证写入
+        if os.path.exists(DATA_FILE):
+            file_size = os.path.getsize(DATA_FILE)
+            print(f"[save_data] 保存成功，文件大小: {file_size} 字节")
+            return True
+        else:
+            print(f"[save_data] 错误: 文件未创建")
+            return False
+            
+    except PermissionError as e:
+        print(f"[save_data] 权限错误: {e}")
+        print(f"[save_data] 请检查文件是否被其他程序占用")
+        return False
     except Exception as e:
         import traceback
-        print(f"Error saving data: {e}")
+        print(f"[save_data] 保存失败: {e}")
         traceback.print_exc()
         return False
 
