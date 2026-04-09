@@ -29,6 +29,30 @@
     </script>
 </head>
 <body>
+    <!-- 【关键修复】内联紧急数据加载 - 确保持仓列表能立即显示 -->
+    <script>
+        (function() {
+            console.log('[Emergency] 开始紧急数据加载...');
+            window.appState = window.appState || {};
+            window.appState.stocks = [];
+            
+            // 立即尝试从API加载（强制不缓存）
+            fetch('/api/stocks', { cache: 'no-store' })
+                .then(r => r.json())
+                .then(data => {
+                    if (Array.isArray(data) && data.length > 0) {
+                        window.appState.stocks = data.map(s => ({
+                            id: s.id, code: s.code, name: s.name,
+                            market: s.market || 'A股', price: s.current_price || 0,
+                            holdCost: s.avg_cost || 0, holdQuantity: s.shares || 0
+                        }));
+                        localStorage.setItem('import_data_last', JSON.stringify(window.appState.stocks));
+                        console.log('[Emergency] 数据已加载:', window.appState.stocks.length);
+                    }
+                })
+                .catch(e => console.error('[Emergency] 加载失败:', e));
+        })();
+    </script>
     <!-- 顶部导航栏 -->
     <header class="header">
         <div class="header-left">
