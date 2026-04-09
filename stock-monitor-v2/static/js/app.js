@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "3.2.0"; // 新增：方案3C完整实现 - 冷却期+分级买卖点
+const APP_VERSION = "3.2.1"; // 【强制刷新】修复API加载问题
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -68,9 +68,23 @@ async function init() {
     appState.stocks = [];
     let loadedFromBackend = false;
     console.log('[init] 开始初始化，已清空股票列表');
+    
+    // 【调试】先测试 API 是否可访问
     try {
+        console.log('[init] 正在请求 /api/stocks ...');
         const response = await fetch('/api/stocks');
+        console.log('[init] API 响应状态:', response.status, response.statusText);
+        
         const stocks = await response.json();
+        console.log('[init] API 返回数据类型:', typeof stocks);
+        console.log('[init] API 返回是否为数组:', Array.isArray(stocks));
+        console.log('[init] API 返回数组长度:', stocks ? stocks.length : 'null');
+        
+        // 打印第一只股票的数据结构
+        if (stocks && stocks.length > 0) {
+            console.log('[init] 第一只股票原始数据:', JSON.stringify(stocks[0], null, 2));
+        }
+        
         if (Array.isArray(stocks) && stocks.length > 0) {
             // 转换后端数据格式为前端格式
             appState.stocks = stocks.map(s => ({
@@ -89,10 +103,9 @@ async function init() {
                 floatRatio: s.float_position_pct || 50,
                 strategy: s.strategy_mode || '基础',
                 gridLevels: s.grid_levels || [],
-                change: 0,
-                changePercent: 0,
-                exchangeRate: s.exchange_rate,  // 从后端获取汇率
-                // 股票类型和执行数据
+                change: s.change || 0,
+                changePercent: s.change_percent || 0,
+                exchangeRate: s.exchange_rate,
                 stock_type: s.stock_type || 'normal',
                 vol_score: s.vol_score || 0,
                 annual_vol: s.annual_vol || 0,
@@ -102,12 +115,14 @@ async function init() {
                 cooldown_days: s.cooldown_days || 20
             }));
             loadedFromBackend = true;
-            console.log('已从后端 API 加载', appState.stocks.length, '只股票');
-            // 同时保存到 localStorage 作为备份
+            console.log('[init] 已从后端 API 加载', appState.stocks.length, '只股票');
             localStorage.setItem('import_data_last', JSON.stringify(appState.stocks));
+        } else {
+            console.warn('[init] API 返回空数组或无效数据');
         }
     } catch (e) {
-        console.error('从后端加载数据失败:', e);
+        console.error('[init] 从后端加载数据失败:', e);
+        console.error('[init] 错误详情:', e.stack);
     }
     
     // 如果后端没有数据，尝试从 localStorage 读取

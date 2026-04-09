@@ -14,6 +14,7 @@ if (os.path.exists(venv_path) and
     os.execv(venv_python, [venv_python] + sys.argv)
 
 from flask import Flask, render_template, jsonify, request, make_response
+from flask_cors import CORS
 import json
 import os
 import time
@@ -26,6 +27,7 @@ from utils.market_sentiment import get_market_sentiment
 from utils.southbound_capital import get_southbound_overall_history, get_southbound_signal, get_southbound_stock_history
 
 app = Flask(__name__)
+CORS(app)  # 启用 CORS 支持
 
 # 彻底禁用静态文件缓存
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -307,6 +309,11 @@ def index():
     response.headers['Expires'] = '0'
     return response
 
+@app.route('/debug')
+def debug():
+    """API调试页面"""
+    return render_template('test_api.html')
+
 @app.route('/api/portfolio')
 def get_portfolio():
     """获取投资组合配置"""
@@ -316,8 +323,10 @@ def get_portfolio():
 @app.route('/api/stocks')
 def get_stocks():
     """获取所有股票，包含股票类型和方案3C买卖点，实时刷新价格"""
+    print(f"[DEBUG] /api/stocks called from {request.remote_addr}")
     data = load_data()
     stocks = data['stocks']
+    print(f"[DEBUG] Loaded {len(stocks)} stocks from data file")
     
     # 【新增】批量获取实时行情
     try:
@@ -412,7 +421,7 @@ def get_stocks():
     # 保存更新后的数据
     save_data(data)
     
-    print(f"[get_stocks] 返回 {len(stocks)} 只股票")
+    print(f"[DEBUG] Returning {len(stocks)} stocks to {request.remote_addr} (User-Agent: {request.headers.get('User-Agent', 'unknown')[:50]}...)")
     return jsonify(stocks)
 
 @app.route('/api/stocks', methods=['POST'])
@@ -453,18 +462,27 @@ def add_stock():
 
 @app.route('/api/stocks/batch', methods=['POST'])
 def batch_add_stocks():
-    """批量添加股票（避免并发冲突），支持自动记录交易"""
+    """批量添加股票（避免并发冲突），支持自动记录交易 - 【修复】失败时自动恢复备份"""
+    import tempfile
+    backup_file = None
+    
     try:
         data = load_data()
         request_data = request.json
         stocks_to_add = request_data.get('stocks', [])
-        trades = request_data.get('trades', [])  # 【新增】获取交易记录
+        trades = request_data.get('trades', [])
         
         if not stocks_to_add:
             return jsonify({'success': False, 'error': '股票列表为空'}), 400
         
         print(f"[batch_add_stocks] 批量添加 {len(stocks_to_add)} 只股票")
         print(f"[batch_add_stocks] 接收到的交易记录: {len(trades)} 笔")
+        
+        # 【修复】先备份当前数据，失败时可恢复
+        backup_file = os.path.join(tempfile.gettempdir(), f'stock_backup_{int(time.time())}.json')
+        with open(backup_file, 'w', encoding='utf-8') as f:
+            json.dump(data['stocks'], f, ensure_ascii=False, indent=2)
+        print(f"[batch_add_stocks] 已备份现有数据到 {backup_file}")
         
         # 【新增】处理交易记录，更新股票的 last_trade 信息
         trade_map = {}
@@ -524,10 +542,14 @@ def batch_add_stocks():
                     new_stock['last_trade_price'] = latest_buy.get('price', 0)
                     new_stock['last_trade_shares'] = latest_buy.get('shares', 0)
             
-            # 港股添加汇率字段（使用实时汇率）
+            # 【修复】港股汇率获取失败时不影响整个导入
             if new_stock.get('market') == '港股':
-                from utils.exchange_rate import get_cny_hkd_rate
-                new_stock['exchange_rate'] = get_cny_hkd_rate() or 1.0836
+                try:
+                    from utils.exchange_rate import get_cny_hkd_rate
+                    new_stock['exchange_rate'] = get_cny_hkd_rate() or 1.0836
+                except Exception as e:
+                    print(f"[batch_add_stocks] 获取汇率失败，使用默认值: {e}")
+                    new_stock['exchange_rate'] = 1.0836
             
             data['stocks'].append(new_stock)
             added_stocks.append(new_stock)
@@ -538,6 +560,9 @@ def batch_add_stocks():
         
         if save_data(data):
             print(f"[batch_add_stocks] 成功添加 {len(added_stocks)} 只股票，记录 {len(trades)} 笔交易")
+            # 成功导入后删除备份文件
+            if backup_file and os.path.exists(backup_file):
+                os.remove(backup_file)
             return jsonify({
                 'success': True, 
                 'stocks': added_stocks, 
@@ -545,27 +570,53 @@ def batch_add_stocks():
                 'trades_recorded': len(trades)
             })
         else:
-            return jsonify({'success': False, 'error': '保存失败'}), 500
+            raise Exception('保存数据失败')
             
     except Exception as e:
         import traceback
         print(f"[batch_add_stocks] 异常: {e}")
         traceback.print_exc()
+        
+        # 【修复】导入失败时尝试恢复备份数据
+        if backup_file and os.path.exists(backup_file):
+            try:
+                print(f"[batch_add_stocks] 尝试从备份恢复数据...")
+                data = load_data()
+                with open(backup_file, 'r', encoding='utf-8') as f:
+                    data['stocks'] = json.load(f)
+                save_data(data)
+                print(f"[batch_add_stocks] 数据已从备份恢复")
+                return jsonify({
+                    'success': False, 
+                    'error': f'导入失败: {str(e)}，数据已自动恢复',
+                    'backup_restored': True
+                }), 500
+            except Exception as restore_error:
+                print(f"[batch_add_stocks] 恢复备份也失败了: {restore_error}")
+        
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/api/stocks/clear', methods=['POST'])
 def clear_all_stocks():
-    """清空所有股票"""
+    """清空所有股票 - 现在会先备份，导入失败可恢复"""
     try:
         data = load_data()
         deleted_count = len(data['stocks'])
+        
+        # 【修复】先备份数据到临时存储
+        import tempfile
+        backup_file = os.path.join(tempfile.gettempdir(), 'stock_backup.json')
+        with open(backup_file, 'w', encoding='utf-8') as f:
+            json.dump(data['stocks'], f, ensure_ascii=False, indent=2)
+        print(f"[clear_all_stocks] 已备份 {deleted_count} 只股票到 {backup_file}")
+        
         data['stocks'] = []
         update_risk_control(data)
         
         if save_data(data):
             print(f"[clear_all_stocks] 已清空 {deleted_count} 只股票")
-            return jsonify({'success': True, 'deleted_count': deleted_count})
+            return jsonify({'success': True, 'deleted_count': deleted_count, 'backup_file': backup_file})
         return jsonify({'success': False, 'error': '保存失败'}), 500
     except Exception as e:
         import traceback
