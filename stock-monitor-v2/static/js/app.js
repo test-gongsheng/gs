@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "3.2.1"; // 【强制刷新】修复API加载问题
+const APP_VERSION = "3.2.0"; // 新增：方案3C完整实现 - 冷却期+分级买卖点
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -54,47 +54,50 @@ const mockNews = [
 ];
 
 // 初始化
-// 初始化标记，防止重复初始化
-let isInitialized = false;
-
 async function init() {
-    if (isInitialized) {
-        console.log('[init] 已经初始化过，跳过');
-        return;
-    }
-    isInitialized = true;
+    console.log('[init] 开始初始化...');
 
-    // 清空现有数据，避免重复
-    appState.stocks = [];
+    console.log('[init] 开始初始化...');
     let loadedFromBackend = false;
-    console.log('[init] 开始初始化，已清空股票列表');
     
-    // 【调试】先测试 API 是否可访问
-    try {
-        console.log('[init] 正在请求 /api/stocks ...');
-        const response = await fetch('/api/stocks');
-        console.log('[init] API 响应状态:', response.status, response.statusText);
-        
-        const stocks = await response.json();
-        console.log('[init] API 返回数据类型:', typeof stocks);
-        console.log('[init] API 返回是否为数组:', Array.isArray(stocks));
-        console.log('[init] API 返回数组长度:', stocks ? stocks.length : 'null');
-        
-        // 打印第一只股票的数据结构
-        if (stocks && stocks.length > 0) {
-            console.log('[init] 第一只股票原始数据:', JSON.stringify(stocks[0], null, 2));
+    // 【修复1】优先使用内联脚本已加载的数据
+    if (window.appState && window.appState.stocks && window.appState.stocks.length > 0) {
+        console.log('[init] 使用内联脚本已加载的数据:', window.appState.stocks.length);
+        appState.stocks = window.appState.stocks;
+        loadedFromBackend = true;
+        renderStockList();
+    }
+    
+    // 【修复2】尝试从 localStorage 加载
+    if (!loadedFromBackend) {
+        const savedStocks = localStorage.getItem('import_data_last');
+        if (savedStocks) {
+            try {
+                const stocks = JSON.parse(savedStocks);
+                if (stocks && stocks.length > 0) {
+                    appState.stocks = stocks;
+                    console.log('[init] 已从 localStorage 加载', stocks.length, '只');
+                    loadedFromBackend = true;
+                    renderStockList();
+                }
+            } catch (e) {
+                console.error('[init] localStorage加载失败:', e);
+            }
         }
+    }
+    
+    // 【修复3】异步刷新最新数据
+    console.log('[init] 异步刷新数据...');
+    try {
+        const response = await fetch('/api/stocks?_=' + Date.now());
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const stocks = await response.json();
         
         if (Array.isArray(stocks) && stocks.length > 0) {
-            // 转换后端数据格式为前端格式
             appState.stocks = stocks.map(s => ({
-                id: s.id,
-                code: s.code,
-                name: s.name,
-                market: s.market || 'A股',
-                price: s.current_price || 0,
-                holdCost: s.avg_cost || 0,
-                holdQuantity: s.shares || 0,
+                id: s.id, code: s.code, name: s.name,
+                market: s.market || 'A股', price: s.current_price || 0,
+                holdCost: s.avg_cost || 0, holdQuantity: s.shares || 0,
                 pivotPrice: s.axis_price || 0,
                 triggerBuy: s.next_buy_price || 0,
                 triggerSell: s.next_sell_price || 0,
@@ -103,59 +106,31 @@ async function init() {
                 floatRatio: s.float_position_pct || 50,
                 strategy: s.strategy_mode || '基础',
                 gridLevels: s.grid_levels || [],
-                change: s.change || 0,
-                changePercent: s.change_percent || 0,
+                change: s.change || 0, changePercent: s.change_percent || 0,
                 exchangeRate: s.exchange_rate,
                 stock_type: s.stock_type || 'normal',
-                vol_score: s.vol_score || 0,
-                annual_vol: s.annual_vol || 0,
+                vol_score: s.vol_score || 0, annual_vol: s.annual_vol || 0,
                 atr_pct: s.atr_pct || 0,
                 last_trade_time: s.last_trade_time,
                 last_trade_type: s.last_trade_type,
                 cooldown_days: s.cooldown_days || 20
             }));
-            loadedFromBackend = true;
-            console.log('[init] 已从后端 API 加载', appState.stocks.length, '只股票');
             localStorage.setItem('import_data_last', JSON.stringify(appState.stocks));
-        } else {
-            console.warn('[init] API 返回空数组或无效数据');
+            renderStockList();
+            console.log('[init] 数据已刷新:', appState.stocks.length);
         }
     } catch (e) {
-        console.error('[init] 从后端加载数据失败:', e);
-        console.error('[init] 错误详情:', e.stack);
-    }
-    
-    // 如果后端没有数据，尝试从 localStorage 读取
-    if (!loadedFromBackend) {
-        const savedStocks = localStorage.getItem('import_data_last');
-        if (savedStocks) {
-            try {
-                const stocks = JSON.parse(savedStocks);
-                if (stocks && stocks.length > 0) {
-                    appState.stocks = stocks;
-                    console.log('已从 localStorage 恢复', stocks.length, '只股票');
-                } else {
-                    appState.stocks = mockStocks;
-                }
-            } catch (e) {
-                console.error('读取本地数据失败:', e);
-                appState.stocks = mockStocks;
-            }
-        } else {
-            appState.stocks = mockStocks;
-        }
+        console.error('[init] 刷新失败:', e);
     }
     
     appState.hotSectors = mockHotSectors;
     appState.news = { headlines: [], themes: [], calendar: [], portfolio: [], general: mockNews };
 
-    // 【修复】先立即渲染列表（使用本地数据），再后台获取行情
-    // 这样即使行情获取卡住，用户也能看到持仓列表
-    console.log('[init] 立即渲染持仓列表（使用本地数据）...');
-    console.log('[init] appState.stocks 数量:', appState.stocks.length);
-    console.log('[init] 准备调用 renderStockList...');
+    // 确保渲染
+    if (appState.stocks.length === 0) {
+        console.log('[init] 没有数据，显示空状态');
+    }
     renderStockList();
-    console.log('[init] renderStockList 调用完成');
     updateAssetOverview();
     
     // 默认选中第一个股票
