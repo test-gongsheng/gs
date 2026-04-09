@@ -2693,7 +2693,17 @@ async function loadPortfolioAnalysis() {
         const response = await fetch('/api/portfolio-analysis');
         console.log('[DEBUG] 持仓分析 API 响应状态:', response.status);
         if (!response.ok) {
-            console.log('[DEBUG] 持仓分析 API 响应不成功, 返回');
+            console.log('[DEBUG] 持仓分析 API 响应不成功, 显示暂无数据');
+            // 显示暂无数据提示，而不是一直显示"加载中"
+            const scoreEl = document.getElementById('portfolioHealthScore');
+            if (scoreEl) {
+                scoreEl.textContent = '--';
+                scoreEl.style.color = '#999';
+            }
+            const contentEl = document.getElementById('portfolioAnalysisContent');
+            if (contentEl) {
+                contentEl.innerHTML = '<div style="text-align:center;padding:20px;color:#999;font-size:12px;">暂无分析报告<br><span style="font-size:11px;">每日收盘后自动生成</span></div>';
+            }
             return;
         }
         
