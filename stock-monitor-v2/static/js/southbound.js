@@ -627,10 +627,10 @@ function updateSouthboundStockStats(data, stockCode) {
     console.log(`[Southbound] signalEl找到: ${!!signalEl}`);
     if (signalEl) {
         let signal = '中性';
-        if (netInflow30d > 5) signal = '增持';
-        else if (netInflow30d > 10) signal = '大幅增持';
-        else if (netInflow30d < -5) signal = '减持';
+        if (netInflow30d > 10) signal = '大幅增持';
+        else if (netInflow30d > 5) signal = '增持';
         else if (netInflow30d < -10) signal = '大幅减持';
+        else if (netInflow30d < -5) signal = '减持';
         
         signalEl.textContent = signal;
         signalEl.className = `signal-badge ${netInflow30d > 0 ? 'bull' : netInflow30d < 0 ? 'bear' : 'neutral'}`;

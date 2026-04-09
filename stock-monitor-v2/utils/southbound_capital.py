@@ -458,19 +458,19 @@ def get_southbound_signal() -> Dict:
         if total_inflow > 200:
             signal = '强烈买入'
             score = 80
-            reason = f'近30日南向资金净流入{total_inflow:.0f}亿元，外资大幅增持港股'
+            reason = f'近30日南向资金净流入{total_inflow:.0f}亿元，内地资金大幅增持港股'
         elif total_inflow > 100:
             signal = '买入'
             score = 65
-            reason = f'近30日南向资金净流入{total_inflow:.0f}亿元，外资持续流入'
+            reason = f'近30日南向资金净流入{total_inflow:.0f}亿元，内地资金持续流入'
         elif total_inflow < -200:
             signal = '强烈卖出'
             score = 20
-            reason = f'近30日南向资金净流出{abs(total_inflow):.0f}亿元，外资大幅减持'
+            reason = f'近30日南向资金净流出{abs(total_inflow):.0f}亿元，内地资金大幅减持'
         elif total_inflow < -100:
             signal = '卖出'
             score = 35
-            reason = f'近30日南向资金净流出{abs(total_inflow):.0f}亿元，外资持续流出'
+            reason = f'近30日南向资金净流出{abs(total_inflow):.0f}亿元，内地资金持续流出'
         else:
             signal = '中性'
             score = 50
