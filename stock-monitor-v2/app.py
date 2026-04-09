@@ -492,51 +492,47 @@ def batch_add_stocks():
                 data['trade_logs'].append(trade_record)
         
         added_stocks = []
-        for new_stock in stocks_to_add:
-            import time
-            import random
-            
-            stock_id = f"{int(time.time())}{random.randint(100, 999)}"
-            new_stock['id'] = stock_id
-            new_stock['status'] = '监控中'
-            new_stock['market_value'] = new_stock.get('current_price', 0) * new_stock.get('shares', 0)
-            
-            # 【新增】如果有该股票的交易记录，更新 last_trade 信息
-            code = new_stock.get('code', '')
-            if code in trade_map:
-                # 找到最新的交易（通常是卖出）
-                sell_trades = [t for t in trade_map[code] if t.get('trade_type') == 'sell']
-                buy_trades = [t for t in trade_map[code] if t.get('trade_type') == 'buy']
+        print(f"[batch_add_stocks] 开始处理 {len(stocks_to_add)} 只股票")
+        for idx, new_stock in enumerate(stocks_to_add):
+            try:
+                import time
+                import random
                 
-                if sell_trades:
-                    # 有卖出交易，更新卖出记录（用于计算冷却期）
-                    latest_sell = max(sell_trades, key=lambda x: x.get('time', ''))
-                    new_stock['last_trade_time'] = latest_sell.get('time')
-                    new_stock['last_trade_type'] = 'sell'
-                    new_stock['last_trade_price'] = latest_sell.get('price', 0)
-                    new_stock['last_trade_shares'] = latest_sell.get('shares', 0)
-                    print(f"[batch_add_stocks] {code} 更新卖出记录: {latest_sell.get('time')}")
-                elif buy_trades:
-                    # 只有买入交易
-                    latest_buy = max(buy_trades, key=lambda x: x.get('time', ''))
-                    new_stock['last_trade_time'] = latest_buy.get('time')
-                    new_stock['last_trade_type'] = 'buy'
-                    new_stock['last_trade_price'] = latest_buy.get('price', 0)
-                    new_stock['last_trade_shares'] = latest_buy.get('shares', 0)
-            
-            # 港股添加汇率字段（使用固定值，避免网络问题）
-            if new_stock.get('market') == '港股':
-                new_stock['exchange_rate'] = 1.0836  # 固定汇率，不依赖网络
-            
-            data['stocks'].append(new_stock)
-            added_stocks.append(new_stock)
-            print(f"[batch_add_stocks] 添加: {new_stock.get('code')} -> ID {stock_id}")
+                code = new_stock.get('code', '')
+                print(f"[batch_add_stocks] [{idx+1}/{len(stocks_to_add)}] 处理: {code}")
+                
+                stock_id = f"{int(time.time())}{random.randint(100, 999)}"
+                new_stock['id'] = stock_id
+                new_stock['status'] = '监控中'
+                new_stock['market_value'] = new_stock.get('current_price', 0) * new_stock.get('shares', 0)
+                
+                # 港股添加汇率字段（使用实时汇率）
+                if new_stock.get('market') == '港股':
+                    print(f"[batch_add_stocks]   获取港股汇率...")
+                    from utils.exchange_rate import get_cny_hkd_rate
+                    new_stock['exchange_rate'] = get_cny_hkd_rate() or 1.0836
+                    print(f"[batch_add_stocks]   汇率: {new_stock['exchange_rate']}")
+                
+                data['stocks'].append(new_stock)
+                added_stocks.append(new_stock)
+                print(f"[batch_add_stocks]   成功: {code} -> ID {stock_id}")
+            except Exception as loop_e:
+                print(f"[batch_add_stocks]   错误: {new_stock.get('code')} - {loop_e}")
+        
+        print(f"[batch_add_stocks] 循环完成，共添加 {len(added_stocks)} 只")
+        print(f"[batch_add_stocks] data['stocks'] 现在有 {len(data['stocks'])} 只")
         
         # 更新风险控制
+        print(f"[batch_add_stocks] 更新风险控制...")
         update_risk_control(data)
         
-        if save_data(data):
-            print(f"[batch_add_stocks] 成功添加 {len(added_stocks)} 只股票，记录 {len(trades)} 笔交易")
+        # 保存
+        print(f"[batch_add_stocks] 保存数据...")
+        save_result = save_data(data)
+        print(f"[batch_add_stocks] 保存结果: {save_result}")
+        
+        if save_result:
+            print(f"[batch_add_stocks] 成功添加 {len(added_stocks)} 只股票")
             return jsonify({
                 'success': True, 
                 'stocks': added_stocks, 
