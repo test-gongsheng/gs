@@ -2695,15 +2695,35 @@ async function loadPortfolioAnalysis() {
         console.log('[DEBUG] loadPortfolioAnalysis 开始执行');
         const response = await fetch('/api/portfolio-analysis');
         console.log('[DEBUG] 持仓分析 API 响应状态:', response.status);
+        
+        // 获取DOM元素
+        const scoreEl = document.getElementById('portfolioHealthScore');
+        const contentEl = document.getElementById('portfolioAnalysisContent');
+        
         if (!response.ok) {
-            console.log('[DEBUG] 持仓分析 API 响应不成功, 返回');
+            console.log('[DEBUG] 持仓分析 API 响应不成功, 显示暂无数据');
+            // 显示暂无数据提示
+            if (scoreEl) {
+                scoreEl.textContent = '--';
+                scoreEl.style.color = '#999';
+            }
+            if (contentEl) {
+                contentEl.innerHTML = '<div style="text-align:center;padding:20px;color:#999;font-size:12px;">暂无分析报告<br><span style="font-size:11px;">每日收盘后自动生成</span></div>';
+            }
             return;
         }
         
         const result = await response.json();
         console.log('[DEBUG] 持仓分析 API 返回:', result);
         if (!result.success || !result.data) {
-            console.log('[DEBUG] 持仓分析数据无效, 返回');
+            console.log('[DEBUG] 持仓分析数据无效, 显示暂无数据');
+            if (scoreEl) {
+                scoreEl.textContent = '--';
+                scoreEl.style.color = '#999';
+            }
+            if (contentEl) {
+                contentEl.innerHTML = '<div style="text-align:center;padding:20px;color:#999;font-size:12px;">暂无分析报告<br><span style="font-size:11px;">每日收盘后自动生成</span></div>';
+            }
             return;
         }
         
@@ -2711,6 +2731,16 @@ async function loadPortfolioAnalysis() {
         renderPortfolioAnalysis();
     } catch (error) {
         console.error('[DEBUG] 加载持仓分析出错:', error);
+        // 出错时也显示暂无数据
+        const scoreEl = document.getElementById('portfolioHealthScore');
+        const contentEl = document.getElementById('portfolioAnalysisContent');
+        if (scoreEl) {
+            scoreEl.textContent = '--';
+            scoreEl.style.color = '#999';
+        }
+        if (contentEl) {
+            contentEl.innerHTML = '<div style="text-align:center;padding:20px;color:#999;font-size:12px;">暂无分析报告<br><span style="font-size:11px;">每日收盘后自动生成</span></div>';
+        }
     }
 }
 
