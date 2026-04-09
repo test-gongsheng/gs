@@ -510,14 +510,17 @@ def batch_add_stocks():
                 data['trade_logs'].append(trade_record)
         
         added_stocks = []
-        for new_stock in stocks_to_add:
+        print(f"[batch_add_stocks] 开始循环处理 {len(stocks_to_add)} 只股票")
+        for idx, new_stock in enumerate(stocks_to_add):
             import time
             import random
             
+            print(f"[batch_add_stocks] 处理第 {idx+1} 只: {new_stock.get('code')}")
             stock_id = f"{int(time.time())}{random.randint(100, 999)}"
             new_stock['id'] = stock_id
             new_stock['status'] = '监控中'
             new_stock['market_value'] = new_stock.get('current_price', 0) * new_stock.get('shares', 0)
+            print(f"[batch_add_stocks] 设置 stock_id={stock_id}, market_value={new_stock['market_value']}")
             
             # 【新增】如果有该股票的交易记录，更新 last_trade 信息
             code = new_stock.get('code', '')
