@@ -2877,13 +2877,35 @@ function renderPortfolioAnalysis() {
 // 显示个股分析详情弹窗
 function showStockAnalysisDetail(code) {
     const data = appState.portfolioAnalysis;
-    if (!data || !data.stock_analyses) return;
     
-    const stockAnalysis = data.stock_analyses.find(s => s.code === code);
-    if (!stockAnalysis) return;
+    // 先从 stocks 中获取股票基本信息
+    const stock = appState.stocks.find(s => s.code === code);
+    if (!stock) {
+        showNotification('股票数据不存在', 'error');
+        return;
+    }
+    
+    // 如果有分析报告，使用报告数据；否则使用基本信息
+    let stockAnalysis = null;
+    if (data && data.stock_analyses) {
+        stockAnalysis = data.stock_analyses.find(s => s.code === code);
+    }
+    
+    // 如果没有分析报告，创建一个基本的分析对象
+    if (!stockAnalysis) {
+        stockAnalysis = {
+            code: stock.code,
+            name: stock.name,
+            current_price: stock.price || stock.current_price || 0,
+            axis_price: stock.pivotPrice || stock.axis_price || 0,
+            axis_deviation: stock.axisDeviation || 0,
+            health_score: null,
+            analysis: null,
+            technical_status: stock.technicalStatus || 'neutral'
+        };
+    }
     
     // 从 stocks 中获取完整的股票数据（包括价格、市场等）
-    const stock = appState.stocks.find(s => s.code === code) || {};
     const isHK = stock.market === '港股';
     const currency = isHK ? 'HK$' : '¥';
     
@@ -2916,8 +2938,16 @@ function showStockAnalysisDetail(code) {
                 
                 <div style="margin-bottom: 16px;">
                     <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">健康度评分</div>
-                    <div style="font-size: 1.5rem; font-weight: 700; color: ${stockAnalysis.health_score >= 80 ? '#10b981' : stockAnalysis.health_score >= 60 ? '#f59e0b' : '#ef4444'};">${stockAnalysis.health_score || '--'}/100</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: ${stockAnalysis.health_score ? (stockAnalysis.health_score >= 80 ? '#10b981' : stockAnalysis.health_score >= 60 ? '#f59e0b' : '#ef4444') : '#999'};">${stockAnalysis.health_score || '待生成'}</div>
+                    ${!stockAnalysis.health_score ? '<div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">每日收盘后自动生成分析报告</div>' : ''}
                 </div>
+                
+                ${!stockAnalysis.analysis ? `
+                <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 6px;">📊 分析结论</div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">分析报告暂未生成，将在每日收盘后自动更新</div>
+                </div>
+                ` : ''}
                 
                 ${stockAnalysis.analysis ? `
                 <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
