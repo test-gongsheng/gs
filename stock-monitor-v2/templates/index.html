@@ -36,7 +36,8 @@
             }
             
             // 3. 版本检测 - 变化则强制刷新
-            const APP_VERSION = '20250408-9-fix-syntax';
+            // 使用后端传递的时间戳作为版本号，确保每次部署都自动刷新
+            const APP_VERSION = '{{ now }}';
             const storedVersion = localStorage.getItem('app_version');
             
             if (storedVersion !== APP_VERSION) {
