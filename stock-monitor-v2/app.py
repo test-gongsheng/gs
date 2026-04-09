@@ -524,14 +524,9 @@ def batch_add_stocks():
                     new_stock['last_trade_price'] = latest_buy.get('price', 0)
                     new_stock['last_trade_shares'] = latest_buy.get('shares', 0)
             
-            # 港股添加汇率字段（使用实时汇率）
+            # 港股添加汇率字段（使用固定值，避免网络问题）
             if new_stock.get('market') == '港股':
-                try:
-                    from utils.exchange_rate import get_cny_hkd_rate
-                    new_stock['exchange_rate'] = get_cny_hkd_rate() or 1.0836
-                except Exception as e:
-                    print(f"[batch_add_stocks] 获取汇率失败，使用默认值: {e}")
-                    new_stock['exchange_rate'] = 1.0836
+                new_stock['exchange_rate'] = 1.0836  # 固定汇率，不依赖网络
             
             data['stocks'].append(new_stock)
             added_stocks.append(new_stock)
