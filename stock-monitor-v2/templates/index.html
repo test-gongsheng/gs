@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    <script>
+        // 【强制防缓存】如果URL没有随机参数，立即跳转加参数
+        if (!location.search.includes('_=')) {
+            location.href = location.pathname + '?_=' + Date.now();
+        }
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -11,35 +17,51 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/ib-analysis.css') }}?v={{ now }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
-        // 自动缓存清除机制 - 使用固定版本号
+        // 【终极清除】动态改写所有脚本URL，强制加载最新
         (function() {
-            const APP_VERSION = '20250408-stable';  // 稳定版本
+            const CACHE_BUSTER = Date.now();
+            
+            // 1. 注销 Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(regs => {
+                    regs.forEach(reg => reg.unregister());
+                });
+            }
+            
+            // 2. 清理 caches API
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => caches.delete(name));
+                });
+            }
+            
+            // 3. 版本检测 - 变化则强制刷新
+            const APP_VERSION = '20250409-fix';
             const storedVersion = localStorage.getItem('app_version');
             
             if (storedVersion !== APP_VERSION) {
-                console.log('[Cache Clear] 版本变化:', storedVersion, '->', APP_VERSION);
-                localStorage.removeItem('import_data_last');
-                localStorage.removeItem('alertedStocks');
-                localStorage.removeItem('trade_alert_date');
+                console.log('[Cache] 版本更新:', storedVersion, '->', APP_VERSION);
+                localStorage.clear();
+                sessionStorage.clear();
                 localStorage.setItem('app_version', APP_VERSION);
-                // 强制刷新
-                window.location.reload(true);
+                window.location.href = window.location.pathname + '?_=' + CACHE_BUSTER;
+                return;
             }
         })();
     </script>
 </head>
 <body>
-    <!-- 【关键修复】内联紧急数据加载 - 确保持仓列表能立即显示 -->
+    <!-- 【内联紧急数据加载】确保即使JS被缓存也能显示数据 -->
     <script>
         (function() {
             console.log('[Emergency] 开始紧急数据加载...');
             window.appState = window.appState || {};
             window.appState.stocks = [];
             
-            // 立即尝试从API加载（强制不缓存）
             fetch('/api/stocks', { cache: 'no-store' })
                 .then(r => r.json())
                 .then(data => {
+                    console.log('[Emergency] API返回:', Array.isArray(data) ? data.length + '只' : typeof data);
                     if (Array.isArray(data) && data.length > 0) {
                         window.appState.stocks = data.map(s => ({
                             id: s.id, code: s.code, name: s.name,
@@ -48,6 +70,32 @@
                         }));
                         localStorage.setItem('import_data_last', JSON.stringify(window.appState.stocks));
                         console.log('[Emergency] 数据已加载:', window.appState.stocks.length);
+                        
+                        // 【关键】立即触发渲染 - 直接操作DOM，不依赖外部JS
+                        setTimeout(function() {
+                            const listEl = document.getElementById('stockList');
+                            if (listEl && window.appState.stocks.length > 0) {
+                                console.log('[Emergency] 直接渲染持仓列表:', window.appState.stocks.length);
+                                listEl.innerHTML = '';
+                                window.appState.stocks.forEach((stock, index) => {
+                                    const item = document.createElement('div');
+                                    item.className = 'stock-item' + (index === 0 ? ' active' : '');
+                                    item.innerHTML = `
+                                        <div class="stock-info" style="flex: 1.5; text-align: left;">
+                                            <span class="code" style="font-weight: 600; font-size: 0.875rem; color: #e8eaed;">${stock.code}</span>
+                                            <span class="name" style="font-size: 0.75rem; color: #9ca3af; display: block;">${stock.name}</span>
+                                        </div>
+                                        <div class="stock-price" style="flex: 1; text-align: right; font-weight: 600;">
+                                            ${stock.price.toFixed(2)}
+                                        </div>
+                                        <div class="stock-pnl" style="flex: 1; text-align: right; font-size: 0.75rem; color: #e8eaed;">
+                                            ${stock.holdQuantity}股
+                                        </div>
+                                    `;
+                                    listEl.appendChild(item);
+                                });
+                            }
+                        }, 100);
                     }
                 })
                 .catch(e => console.error('[Emergency] 加载失败:', e));
@@ -126,2356 +174,296 @@
                 <i class="fas fa-chart-line"></i>
             </div>
             <div class="asset-info">
-                <div class="asset-label">当日盈亏</div>
-                <div class="asset-value">
-                    <span id="todayPnLValue">--</span>
-                    <span class="pnl-percent" id="todayPnLPercent">--</span>
-                </div>
-            </div>
-        </div>
-        <div class="asset-card ratio">
-            <div class="asset-icon">
-                <i class="fas fa-percentage"></i>
-            </div>
-            <div class="asset-info">
-                <div class="asset-label">仓位比例</div>
-                <div class="position-ring-container">
-                    <svg class="position-ring" viewBox="0 0 36 36">
-                        <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        <path class="ring-fill" id="positionRing" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                    </svg>
-                    <span class="ring-text" id="positionRatio">--</span>
-                </div>
+                <div class="asset-label">今日盈亏</div>
+                <div class="asset-value" id="todayPnL">--</div>
             </div>
         </div>
     </section>
 
-    <!-- 主内容区 -->
-    <main class="main-container">
-        <!-- 左侧：股票列表 -->
+    <!-- 主内容区域 -->
+    <div class="main-container">
+        <!-- 左侧持仓列表 -->
         <aside class="sidebar-left">
-            <div class="panel-header">
-                <h3><i class="fas fa-list-ul"></i> 持仓股</h3>
-                <button class="btn-add" onclick="showAddStockModal()">
-                    <i class="fas fa-plus"></i>
-                </button>
-            </div>
-            <div class="stock-list-header">
-                <span class="col-code">代码/名称</span>
-                <span class="col-price">现价</span>
-                <span class="col-change">涨跌</span>
-                <span class="col-pnl">盈亏</span>
-            </div>
-            <div class="stock-list" id="stockList">
-                <!-- 动态生成 -->
-            </div>
-
-            <!-- 国际投行观点分析 -->
-            <div class="ib-analysis-section collapsible-section" id="ibAnalysisSection" style="padding: 16px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%); border: 2px solid #3b82f6; border-radius: 8px; margin-top: 12px;">
-                <div class="ib-section-header collapsible-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleSection('ibAnalysisSection')">
-                    <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; pointer-events: none;">
-                        <i class="fas fa-globe"></i> 国际投行观点
-                    </h3>
-                    <div style="display: flex; align-items: center; gap: 8px; pointer-events: none;">
-                        <button class="btn-text" onclick="event.stopPropagation(); showIBDetailModal()" style="font-size: 0.75rem; pointer-events: auto;">详情 <i class="fas fa-arrow-right"></i></button>
-                        <span style="font-size: 0.7rem; color: var(--text-secondary); background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px;" id="ibUpdateTime">--</span>
-                        <i class="fas fa-chevron-down collapse-icon" style="transition: transform 0.3s;"></i>
+            <div class="panel stocks-panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-list"></i> 持仓列表</h3>
+                    <div class="header-actions">
+                        <button class="btn-icon" onclick="refreshStockPrices(true)" title="刷新价格">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button class="btn-icon" onclick="showAddStockModal()" title="添加股票">
+                            <i class="fas fa-plus"></i>
+                        </button>
                     </div>
                 </div>
-                <div class="collapsible-content">
-                    <div class="ib-analysis-content" id="ibAnalysisContent" style="margin-top: 12px;">
-                        <div class="ib-loading" style="display: flex; align-items: center; justify-content: center; padding: 12px; color: var(--text-secondary); gap: 8px; font-size: 0.8rem;">
-                            <i class="fas fa-spinner fa-spin"></i>
-                            <span>加载中...</span>
+                <div class="panel-body">
+                    <div class="stock-list" id="stockList">
+                        <!-- 持仓列表将由紧急脚本渲染 -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 资金流向分析模块 -->
+            <div class="panel capital-flow-panel" style="margin-top: 16px;">
+                <div class="panel-header">
+                    <h3><i class="fas fa-exchange-alt"></i> 资金流向分析</h3>
+                </div>
+                <div class="panel-body">
+                    <div id="capitalFlowContent" style="padding: 12px;">
+                        <div style="text-align: center; color: #6b7280; padding: 20px;">
+                            加载中...
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 持仓健康度分析 -->
-            <div class="portfolio-analysis-section collapsible-section" id="portfolioAnalysisSection" style="padding: 16px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%); border: 2px solid #10b981; border-radius: 8px; margin-top: 12px;">
-                <div class="portfolio-section-header collapsible-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleSection('portfolioAnalysisSection')">
-                    <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-                        <i class="fas fa-heartbeat"></i> 持仓健康度
-                    </h3>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span id="portfolioHealthScore" style="font-size: 1rem; font-weight: 700; color: #10b981;">--</span>
-                        <span style="font-size: 0.7rem; color: var(--text-secondary); background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px;" id="portfolioReportDate">--</span>
-                        <i class="fas fa-chevron-down collapse-icon" style="transition: transform 0.3s;"></i>
-                    </div>
+            <!-- 国际市场观点 -->
+            <div class="panel ib-analysis-panel" id="ibAnalysisPanel" style="margin-top: 16px;">
+                <div class="panel-header" onclick="toggleIBPanel()">
+                    <h3><i class="fas fa-globe"></i> 国际投行观点</h3>
+                    <i class="fas fa-chevron-down toggle-icon" id="ibToggleIcon"></i>
                 </div>
-                <div class="collapsible-content">
-                    <!-- 总体概况 -->
-                    <div class="portfolio-analysis-content" id="portfolioAnalysisContent" style="margin-top: 12px;">
-                        <div class="portfolio-loading" style="display: flex; align-items: center; justify-content: center; padding: 12px; color: var(--text-secondary); gap: 8px; font-size: 0.8rem;">
-                            <i class="fas fa-spinner fa-spin"></i>
-                            <span>加载分析...</span>
-                        </div>
-                    </div>
-                    
-                    <!-- 股票列表 -->
-                    <div id="portfolioStockList" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
-                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px; display: flex; justify-content: space-between;">
-                            <span>📋 个股分析 (点击看详情)</span>
-                            <span id="portfolioStockCount">--</span>
-                        </div>
-                        <div id="portfolioStockItems" style="display: flex; flex-direction: column; gap: 6px;">
-                            <!-- 股票项将在这里动态生成 -->
-                        </div>
-                    </div>
-                    
-                    <!-- 板块分析 -->
-                    <div id="portfolioSectorList" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
-                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px; display: flex; justify-content: space-between;">
-                            <span>🏭 板块分布</span>
-                            <span id="portfolioSectorCount">--</span>
-                        </div>
-                        <div id="portfolioSectorItems" style="display: flex; flex-direction: column; gap: 4px;">
-                            <!-- 板块项将在这里动态生成 -->
-                        </div>
+                <div class="panel-body" id="ibAnalysisContent" style="max-height: 400px; overflow-y: auto;">
+                    <div style="padding: 12px; text-align: center; color: #6b7280;">
+                        正在加载国际投行分析...
                     </div>
                 </div>
             </div>
         </aside>
 
-        <!-- 中间：股票详情 -->
-        <section class="main-content">
-            <div class="stock-detail" id="stockDetail">
-                <!-- 股票标题栏 -->
-                <div class="detail-header">
-                    <div class="stock-title">
-                        <div class="title-main">
-                            <span class="stock-name" id="detailName">--</span>
-                            <span class="stock-code" id="detailCode">--</span>
-                            <span class="market-tag" id="detailMarket">--</span>
-                        </div>
-                        <span class="strategy-badge" id="detailStrategy">--</span>
-                    </div>
-                    
-                    <!-- 策略执行逻辑显示 -->
-                    <div class="strategy-logic-info" id="strategyLogic" style="display: none;">
-                        <i class="fas fa-cogs"></i>
-                        <span></span>
-                    </div>
-                    
-                    <!-- 方案3C买卖点信息 -->
-                    <div class="strategy-3c-info" id="strategy3cInfo" style="display: none;">
-                    </div>
-                    
-                    <!-- 冷却期信息显示 -->
-                    <div class="cooldown-info" id="cooldownInfo" style="display: none;">
-                        <i class="fas fa-clock"></i>
-                        <span></span>
-                    </div>
-                    
-                    <div class="stock-price-section">
-                        <span class="current-price" id="detailPrice">--</span>
-                        <div class="price-change-group">
-                            <span class="price-change" id="detailChange">--</span>
-                            <span class="price-change-percent" id="detailChangePercent">--</span>
-                        </div>
+        <!-- 中间内容区域 -->
+        <main class="main-content">
+            <!-- 股票详情 -->
+            <div class="panel stock-detail-panel" id="stockDetailPanel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-chart-area"></i> 股票详情</h3>
+                    <div class="header-actions">
+                        <button class="btn-icon" onclick="refreshCurrentStockData()" title="刷新数据">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
                     </div>
                 </div>
-
-                <!-- 策略信息卡片网格 -->
-                <div class="strategy-grid">
-                    <div class="strategy-card">
-                        <div class="card-header-mini">
-                            <i class="fas fa-money-bill-wave"></i>
-                            <span>投资上限</span>
-                        </div>
-                        <div class="card-value" id="detailLimit">--</div>
-                    </div>
-                    <div class="strategy-card">
-                        <div class="card-header-mini">
-                            <i class="fas fa-database"></i>
-                            <span>当前持仓</span>
-                        </div>
-                        <div class="card-value" id="detailPosition">--</div>
-                    </div>
-                    <div class="strategy-card">
-                        <div class="card-header-mini">
-                            <i class="fas fa-coins"></i>
-                            <span>持仓成本</span>
-                        </div>
-                        <div class="card-value" id="detailCost">--</div>
-                    </div>
-                    <div class="strategy-card highlight">
-                        <div class="card-header-mini">
-                            <i class="fas fa-percentage"></i>
-                            <span>持仓比例</span>
-                        </div>
-                        <div class="card-value" id="detailPivot">--</div>
-                    </div>
-                    <div class="strategy-card">
-                        <div class="card-header-mini">
-                            <i class="fas fa-chart-bar"></i>
-                            <span>浮动盈亏</span>
-                        </div>
-                        <div class="card-value" id="detailPnL">--</div>
-                    </div>
-                    <div class="strategy-card">
-                        <div class="card-header-mini">
-                            <i class="fas fa-percent"></i>
-                            <span>盈亏比例</span>
-                        </div>
-                        <div class="card-value" id="detailPnLPercent">--</div>
-                    </div>
-                </div>
-
-                <!-- 中轴价格可视化 -->
-                <div class="pivot-visualization">
-                    <div class="pivot-header">
-                        <span class="pivot-title"><i class="fas fa-ruler-horizontal"></i> 中轴价格区间</span>
-                        <span class="pivot-range">-8% ~ +8%</span>
-                    </div>
-                    <div class="pivot-progress-container">
-                        <div class="pivot-labels">
-                            <span class="label-left">
-                                <span class="label-title">买入触发</span>
-                                <span class="label-price" id="triggerBuy">--</span>
-                            </span>
-                            <span class="label-center">
-                                <span class="label-title">中轴价格</span>
-                                <span class="label-price" id="pivotCenter">--</span>
-                            </span>
-                            <span class="label-right">
-                                <span class="label-title">卖出触发</span>
-                                <span class="label-price" id="triggerSell">--</span>
-                            </span>
-                        </div>
-                        <div class="pivot-progress">
-                            <div class="progress-bg"></div>
-                            <div class="progress-fill" id="pivotProgressFill"></div>
-                            <div class="progress-markers">
-                                <div class="marker current" id="markerCurrent">
-                                    <div class="marker-label" id="currentPriceLabel">--</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="pivot-percent-labels">
-                            <span>-8%</span>
-                            <span>0%</span>
-                            <span>+8%</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 网格策略表格 -->
-                <div class="grid-strategy-section">
-                    <div class="section-header">
-                        <span class="section-title"><i class="fas fa-th"></i> 网格策略</span>
-                        <span class="section-subtitle" id="gridStrategyInfo">--</span>
-                    </div>
-                    <div class="grid-table-container">
-                        <table class="grid-table">
-                            <thead>
-                                <tr>
-                                    <th>档位</th>
-                                    <th>触发价格</th>
-                                    <th>操作</th>
-                                    <th>数量</th>
-                                    <th>状态</th>
-                                </tr>
-                            </thead>
-                            <tbody id="gridTableBody">
-                                <!-- 动态生成 -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- 操作建议 -->
-                <div class="action-suggestion" id="actionSuggestion">
-                    <div class="suggestion-header">
-                        <i class="fas fa-lightbulb"></i>
-                        <span>操作建议</span>
-                    </div>
-                    <div class="suggestion-content" id="suggestionContent">
-                        <div class="suggestion-empty">请选择股票查看建议</div>
-                    </div>
-                </div>
-
-                <!-- 港股沽空风险提示（仅港股显示）-->
-                <div class="hk-short-risk-warning" id="hkShortRiskWarning" style="display: none;">
-                    <div class="section-header">
-                        <span class="section-title"><i class="fas fa-exclamation-triangle"></i> 港股沽空风险提示</span>
-                        <span class="section-subtitle" id="hkShortUpdateTime">--</span>
-                    </div>
-                    <!-- 个股沽空数据 -->
-                    <div class="hk-stock-short-section" style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
-                        <div class="hk-section-title" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
-                            <i class="fas fa-chart-bar"></i> 个股昨日沽空数据
-                        </div>
-                        <div class="hk-short-metrics" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                            <div class="hk-metric-item">
-                                <span class="hk-metric-label">沽空股数</span>
-                                <span class="hk-metric-value" id="hkIndividualShortAmount">--</span>
-                            </div>
-                            <div class="hk-metric-item">
-                                <span class="hk-metric-label">沽空比率</span>
-                                <span class="hk-metric-value" id="hkIndividualShortRatio">--</span>
-                            </div>
-                        </div>
-                        <!-- 个股沽空趋势图表 -->
-                        <div style="margin: 12px 0; padding: 12px; background: var(--bg-tertiary); border-radius: var(--border-radius);">
-                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">
-                                <i class="fas fa-chart-area"></i> 近90日沽空股数趋势
-                            </div>
-                            <canvas id="hkIndividualHistoryChart" width="600" height="150" style="width: 100%; height: 150px;"></canvas>
-                        </div>
-                        <!-- 个股沽空趋势 -->
-                        <div class="hk-individual-trends" style="display: flex; gap: 8px; flex-wrap: wrap;">
-                            <div class="hk-trend-mini" style="flex: 1; min-width: 70px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--border-radius); text-align: center;">
-                                <div style="font-size: 0.7rem; color: var(--text-secondary);">3天变化</div>
-                                <div id="hkIndividualChange3D" style="font-size: 0.95rem; font-weight: 600; margin-top: 4px;">--</div>
-                            </div>
-                            <div class="hk-trend-mini" style="flex: 1; min-width: 70px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--border-radius); text-align: center;">
-                                <div style="font-size: 0.7rem; color: var(--text-secondary);">1周变化</div>
-                                <div id="hkIndividualChange1W" style="font-size: 0.95rem; font-weight: 600; margin-top: 4px;">--</div>
-                            </div>
-                            <div class="hk-trend-mini" style="flex: 1; min-width: 70px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--border-radius); text-align: center;">
-                                <div style="font-size: 0.7rem; color: var(--text-secondary);">2周变化</div>
-                                <div id="hkIndividualChange2W" style="font-size: 0.95rem; font-weight: 600; margin-top: 4px;">--</div>
-                            </div>
-                            <div class="hk-trend-mini" style="flex: 1; min-width: 70px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--border-radius); text-align: center;">
-                                <div style="font-size: 0.7rem; color: var(--text-secondary);">1月变化</div>
-                                <div id="hkIndividualChange1M" style="font-size: 0.95rem; font-weight: 600; margin-top: 4px;">--</div>
-                            </div>
-                        </div>
-                        <div class="hk-individual-advice" id="hkIndividualAdvice" style="margin-top: 12px; padding: 10px; background: var(--bg-tertiary); border-radius: var(--border-radius); font-size: 0.85rem;">
-                            --
-                        </div>
-                    </div>
-                    <!-- 恒生科技指数整体沽空数据 -->
-                    <div class="hk-market-short-section">
-                        <div class="hk-section-title" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
-                            <i class="fas fa-globe-asia"></i> 港股恒生科技指数整体沽空
-                        </div>
-                        <div class="hk-short-metrics" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                            <div class="hk-metric-item">
-                                <span class="hk-metric-label">指数沽空股数</span>
-                                <span class="hk-metric-value" id="hkStockShortAmount">--</span>
-                            </div>
-                            <div class="hk-metric-item">
-                                <span class="hk-metric-label">指数沽空比率</span>
-                                <span class="hk-metric-value" id="hkStockShortRatio">--</span>
-                            </div>
-                        </div>
-                        <div class="hk-short-trends" style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
-                            <div class="hk-trend-mini" style="flex: 1; min-width: 70px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--border-radius); text-align: center;">
-                                <div style="font-size: 0.7rem; color: var(--text-secondary);">3天变化</div>
-                                <div id="hkStockChange3D" style="font-size: 0.95rem; font-weight: 600; margin-top: 4px;">--</div>
-                            </div>
-                            <div class="hk-trend-mini" style="flex: 1; min-width: 70px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--border-radius); text-align: center;">
-                                <div style="font-size: 0.7rem; color: var(--text-secondary);">1周变化</div>
-                                <div id="hkStockChange1W" style="font-size: 0.95rem; font-weight: 600; margin-top: 4px;">--</div>
-                            </div>
-                            <div class="hk-trend-mini" style="flex: 1; min-width: 70px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--border-radius); text-align: center;">
-                                <div style="font-size: 0.7rem; color: var(--text-secondary);">2周变化</div>
-                                <div id="hkStockChange2W" style="font-size: 0.95rem; font-weight: 600; margin-top: 4px;">--</div>
-                            </div>
-                            <div class="hk-trend-mini" style="flex: 1; min-width: 70px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--border-radius); text-align: center;">
-                                <div style="font-size: 0.7rem; color: var(--text-secondary);">1月变化</div>
-                                <div id="hkStockChange1M" style="font-size: 0.95rem; font-weight: 600; margin-top: 4px;">--</div>
-                            </div>
-                        </div>
-                        <!-- 恒生科技指数沽空趋势图表 -->
-                        <div style="margin: 12px 0; padding: 12px; background: var(--bg-tertiary); border-radius: var(--border-radius);">
-                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">
-                                <i class="fas fa-chart-area"></i> 近90日指数沽空股数趋势
-                            </div>
-                            <canvas id="hkMarketHistoryChart" width="600" height="150" style="width: 100%; height: 150px;"></canvas>
-                        </div>
-                        <div class="hk-risk-advice" id="hkStockRiskAdvice" style="margin-top: 12px;">
-                            --
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 南向资金流向（仅港股显示）-->
-                <div class="southbound-section" id="southboundSection" style="display: none;">
-                    <div class="section-header">
-                        <span class="section-title"><i class="fas fa-arrow-right"></i> 南向资金流向</span>
-                        <span class="section-subtitle">港股通持股数据</span>
-                    </div>
-                    
-                    <div class="southbound-content">
-                        <!-- 统计数据 -->
-                        <div class="southbound-stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
-                            <div class="southbound-stat-item" style="padding: 12px; background: var(--bg-tertiary); border-radius: var(--border-radius); text-align: center;">
-                                <div style="font-size: 0.75rem; color: var(--text-secondary);">港股通持股比例</div>
-                                <div class="metric-value" id="stockSouthboundRatio" style="font-size: 1.25rem; margin-top: 4px;">--</div>
-                            </div>
-                            <div class="southbound-stat-item" style="padding: 12px; background: var(--bg-tertiary); border-radius: var(--border-radius); text-align: center;">
-                                <div style="font-size: 0.75rem; color: var(--text-secondary);">近30日净流入</div>
-                                <div class="metric-value" id="stockSouthbound30d" style="font-size: 1.25rem; margin-top: 4px;">--</div>
-                            </div>
-                            <div class="southbound-stat-item" style="padding: 12px; background: var(--bg-tertiary); border-radius: var(--border-radius); text-align: center;">
-                                <div style="font-size: 0.75rem; color: var(--text-secondary);">南向信号</div>
-                                <span class="signal-badge" id="stockSouthboundSignal" style="margin-top: 4px; display: inline-block;">--</span>
-                            </div>
-                        </div>
-                        
-                        <!-- 图表1：资金流向与持股比例 -->
-                        <div style="padding: 12px; background: var(--bg-tertiary); border-radius: var(--border-radius); margin-bottom: 16px;">
-                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">
-                                <i class="fas fa-chart-area"></i> 近90日南向资金流向与持股比例变化
-                            </div>
-                            <div class="chart-container" style="height: 200px;">
-                                <canvas id="southboundStockChart"></canvas>
-                            </div>
-                        </div>
-                        
-                        <!-- 图表2：持股市值与收盘价（双Y轴，6个月） -->
-                        <div style="padding: 12px; background: var(--bg-tertiary); border-radius: var(--border-radius);">
-                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">
-                                <i class="fas fa-chart-line"></i> 近6个月持股市值变化（亿港元）
-                            </div>
-                            <div class="chart-container" style="height: 200px;">
-                                <canvas id="southboundMarketCapChart"></canvas>
-                            </div>
-                        </div>
-                        
-                        <!-- 说明 -->
-                        <div style="margin-top: 12px; padding: 10px; background: var(--bg-tertiary); border-radius: var(--border-radius); font-size: 0.8rem; color: var(--text-secondary);">
-                            <i class="fas fa-info-circle"></i> 
-                            南向资金指通过港股通流入香港市场的内地资金，反映内资对港股的态度
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 市场情绪与多空数据 -->
-                <div class="sentiment-section">
-                    <div class="section-header">
-                        <span class="section-title"><i class="fas fa-balance-scale"></i> 市场情绪与多空力量</span>
-                        <span class="section-subtitle" id="sentimentUpdateTime">更新中...</span>
-                    </div>
-                    
-                    <!-- 情绪指数仪表盘 -->
-                    <div class="sentiment-dashboard">
-                        <div class="sentiment-gauge">
-                            <div class="gauge-container">
-                                <svg class="gauge-svg" viewBox="0 0 200 120">
-                                    <path class="gauge-bg" d="M 20 100 A 80 80 0 0 1 180 100" />
-                                    <path class="gauge-fill" id="sentimentGaugeFill" d="M 20 100 A 80 80 0 0 1 20 100" />
-                                    <!-- 指针 -->
-                                    <line id="gaugeNeedle" x1="100" y1="100" x2="20" y2="100" stroke="#fff" stroke-width="3" stroke-linecap="round" />
-                                    <!-- 指针中心圆点 -->
-                                    <circle cx="100" cy="100" r="6" fill="#fff" />
-                                </svg>
-                                <div class="gauge-value">
-                                    <span class="gauge-score" id="sentimentScore">--</span>
-                                    <span class="gauge-label" id="sentimentLabel">--</span>
-                                </div>
-                            </div>
-                            <div class="gauge-legend">
-                                <span class="legend-item extreme-fear">极度恐惧</span>
-                                <span class="legend-item fear">恐惧</span>
-                                <span class="legend-item neutral">中性</span>
-                                <span class="legend-item greed">贪婪</span>
-                                <span class="legend-item extreme-greed">极度贪婪</span>
-                            </div>
-                        </div>
-                        
-                        <!-- 多空力量对比 -->
-                        <div class="bull-bear-bars">
-                            <div class="force-bar">
-                                <span class="bar-label">北向资金</span>
-                                <div class="bar-container">
-                                    <div class="bar-fill bull" id="northBar" style="width: 50%"></div>
-                                </div>
-                                <span class="bar-value" id="northValue">--</span>
-                            </div>
-                            <div class="force-bar">
-                                <span class="bar-label">融资融券</span>
-                                <div class="bar-container">
-                                    <div class="bar-fill bull" id="marginBar" style="width: 50%"></div>
-                                </div>
-                                <span class="bar-value" id="marginValue">--</span>
-                            </div>
-                            <div class="force-bar">
-                                <span class="bar-label">主力资金</span>
-                                <div class="bar-container">
-                                    <div class="bar-fill bull" id="mainForceBar" style="width: 50%"></div>
-                                </div>
-                                <span class="bar-value" id="mainForceValue">--</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- 详细数据网格 -->
-                    <div class="sentiment-details">
-                        <!-- 北向资金 -->
-                        <div class="sentiment-card" id="northCard">
-                            <div class="card-header">
-                                <i class="fas fa-globe-asia"></i>
-                                <span>北向资金（外资）</span>
-                                <span class="trend-badge" id="northTrend">--</span>
-                            </div>
-                            <div class="card-body">
-                                <div class="metric-row">
-                                    <span class="metric-label">当日净流入</span>
-                                    <span class="metric-value" id="northInflow">--</span>
-                                </div>
-                                <div class="metric-row">
-                                    <span class="metric-label">累计持仓</span>
-                                    <span class="metric-value" id="northCumulative">--</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 南向资金 -->
-                        <div class="sentiment-card" id="southCard">
-                            <div class="card-header">
-                                <i class="fas fa-arrow-right"></i>
-                                <span>南向资金（内资）</span>
-                                <span class="trend-badge" id="southTrend">--</span>
-                            </div>
-                            <div class="card-body">
-                                <div class="metric-row">
-                                    <span class="metric-label">当日净流入</span>
-                                    <span class="metric-value" id="southInflow">--</span>
-                                </div>
-                                <div class="metric-row">
-                                    <span class="metric-label">港股态度</span>
-                                    <span class="metric-value" id="southSentiment">--</span>
-                                </div>
-                            </div>
-                            <!-- 港股沽空数据 -->
-                            <div class="card-body hk-short-section" style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 8px; padding-top: 8px;">
-                                <div class="metric-row">
-                                    <span class="metric-label"><i class="fas fa-chart-bar" style="font-size: 10px;"></i> 沽空股数</span>
-                                    <span class="metric-value" id="hkShortAmount">--</span>
-                                </div>
-                                <div class="metric-row">
-                                    <span class="metric-label">沽空比例</span>
-                                    <span class="metric-value" id="hkShortRatio">--</span>
-                                </div>
-                                <div class="metric-row trend-row">
-                                    <span class="metric-label">1周变化</span>
-                                    <span class="metric-value" id="hkShortChange1W">--</span>
-                                </div>
-                                <div class="metric-row trend-row">
-                                    <span class="metric-label">1月变化</span>
-                                    <span class="metric-value" id="hkShortChange1M">--</span>
-                                </div>
-                                <div class="metric-row trend-row">
-                                    <span class="metric-label">3月变化</span>
-                                    <span class="metric-value" id="hkShortChange3M">--</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 融资融券 -->
-                        <div class="sentiment-card" id="marginCard">
-                            <div class="card-header">
-                                <i class="fas fa-exchange-alt"></i>
-                                <span>融资融券</span>
-                                <span class="trend-badge" id="marginTrend">--</span>
-                            </div>
-                            <div class="card-body">
-                                <div class="metric-row">
-                                    <span class="metric-label">融资余额</span>
-                                    <span class="metric-value" id="marginBalance">--</span>
-                                </div>
-                                <div class="metric-row">
-                                    <span class="metric-label">余额变化</span>
-                                    <span class="metric-value" id="marginChange">--</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 主力资金 -->
-                        <div class="sentiment-card" id="mainForceCard">
-                            <div class="card-header">
-                                <i class="fas fa-building"></i>
-                                <span>主力资金</span>
-                                <span class="trend-badge" id="mainForceTrend">--</span>
-                            </div>
-                            <div class="card-body">
-                                <div class="metric-row">
-                                    <span class="metric-label">超大单</span>
-                                    <span class="metric-value" id="superLargeFlow">--</span>
-                                </div>
-                                <div class="metric-row">
-                                    <span class="metric-label">大单</span>
-                                    <span class="metric-value" id="largeFlow">--</span>
-                                </div>
-                                <div class="metric-row">
-                                    <span class="metric-label">中单</span>
-                                    <span class="metric-value" id="mediumFlow">--</span>
-                                </div>
-                                <div class="metric-row">
-                                    <span class="metric-label">小单</span>
-                                    <span class="metric-value" id="smallFlow">--</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 市场宽度 -->
-                        <div class="sentiment-card wide" id="breadthCard">
-                            <div class="card-header">
-                                <i class="fas fa-chart-bar"></i>
-                                <span>市场宽度</span>
-                            </div>
-                            <div class="card-body">
-                                <div class="breadth-stats">
-                                    <div class="breadth-item">
-                                        <span class="breadth-label">上涨家数</span>
-                                        <span class="breadth-value up" id="upCount">--</span>
-                                    </div>
-                                    <div class="breadth-item">
-                                        <span class="breadth-label">下跌家数</span>
-                                        <span class="breadth-value down" id="downCount">--</span>
-                                    </div>
-                                    <div class="breadth-item">
-                                        <span class="breadth-label">涨停</span>
-                                        <span class="breadth-value up" id="ztCount">--</span>
-                                    </div>
-                                    <div class="breadth-item">
-                                        <span class="breadth-label">跌停</span>
-                                        <span class="breadth-value down" id="dtCount">--</span>
-                                    </div>
-                                    <div class="breadth-item">
-                                        <span class="breadth-label">新高</span>
-                                        <span class="breadth-value" id="newHigh">--</span>
-                                    </div>
-                                    <div class="breadth-item">
-                                        <span class="breadth-label">新低</span>
-                                        <span class="breadth-value" id="newLow">--</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 南向资金流向 -->
-                        <div class="sentiment-card wide" id="southboundCard">
-                            <div class="card-header">
-                                <i class="fas fa-arrow-right"></i>
-                                <span>南向资金流向（港股通）</span>
-                                <span class="trend-badge" id="southboundSignal">--</span>
-                            </div>
-                            <div class="card-body">
-                                <div class="southbound-stats">
-                                    <div class="metric-row">
-                                        <span class="metric-label">今日净流入</span>
-                                        <span class="metric-value" id="southboundToday">--</span>
-                                    </div>
-                                    <div class="metric-row">
-                                        <span class="metric-label">30日累计</span>
-                                        <span class="metric-value" id="southboundCumulative30">--</span>
-                                    </div>
-                                    <div class="metric-row">
-                                        <span class="metric-label">90日累计</span>
-                                        <span class="metric-value" id="southboundCumulative90">--</span>
-                                    </div>
-                                    <div class="metric-row" style="margin-top: 8px; font-size: 0.75rem; color: #94a3b8;">
-                                        <span id="southboundSignalReason">--</span>
-                                    </div>
-                                </div>
-                                <div class="chart-container" style="height: 150px; margin-top: 12px;">
-                                    <canvas id="southboundOverallChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 持仓港股沽空风险分析 -->
-                        <div class="sentiment-card wide" id="hkPortfolioRiskCard" style="display: none;">
-                            <div class="card-header">
-                                <i class="fas fa-exclamation-triangle"></i>
-                                <span>持仓港股沽空风险</span>
-                                <span class="trend-badge" id="hkRiskTrend">--</span>
-                            </div>
-                            <div class="card-body">
-                                <div class="metric-row">
-                                    <span class="metric-label">港股持仓</span>
-                                    <span class="metric-value" id="hkPositionCount">--</span>
-                                </div>
-                                <div class="metric-row">
-                                    <span class="metric-label">持仓市值</span>
-                                    <span class="metric-value" id="hkPositionValue">--</span>
-                                </div>
-                                <div class="metric-row">
-                                    <span class="metric-label">市场沽空率</span>
-                                    <span class="metric-value" id="hkMarketShortRatio">--</span>
-                                </div>
-                                <div class="metric-row">
-                                    <span class="metric-label">3天变化</span>
-                                    <span class="metric-value" id="hkShort1W">--</span>
-                                </div>
-                                <div class="metric-row">
-                                    <span class="metric-label">1周变化</span>
-                                    <span class="metric-value" id="hkShort1M">--</span>
-                                </div>
-                                <div class="metric-row">
-                                    <span class="metric-label">2周变化</span>
-                                    <span class="metric-value" id="hkShort2W">--</span>
-                                </div>
-                                <div class="metric-row">
-                                    <span class="metric-label">1月变化</span>
-                                    <span class="metric-value" id="hkShort1Mo">--</span>
-                                </div>
-                                <div class="risk-advice" id="hkRiskAdvice" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 11px; color: #aaa;">
-                                    --
-                                </div>
-                            </div>
+                <div class="panel-body">
+                    <div id="stockDetail">
+                        <div style="text-align: center; color: #6b7280; padding: 40px;">
+                            请选择一只股票查看详情
                         </div>
                     </div>
                 </div>
             </div>
-        </section>
 
-        <!-- 右侧：市场情报 -->
-        <aside class="sidebar-right">
-            <!-- 热点板块 -->
-            <div class="panel">
+            <!-- 策略执行情况 -->
+            <div class="panel strategy-panel" style="margin-top: 16px;">
                 <div class="panel-header">
-                    <h3><i class="fas fa-fire"></i> 热点板块</h3>
-                    <span class="panel-badge">实时</span>
+                    <h3><i class="fas fa-chess-knight"></i> 策略执行追踪</h3>
+                    <span class="badge" id="strategyBadge">监控中</span>
                 </div>
-                <div class="hot-sectors" id="hotSectors">
-                    <!-- 动态生成 -->
+                <div class="panel-body">
+                    <div id="strategyExecution">
+                        <div class="strategy-status">
+                            <div class="status-item">
+                                <span class="label">策略模式：</span>
+                                <span class="value" id="currentStrategy">--</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="label">执行状态：</span>
+                                <span class="value" id="executionStatus">--</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="label">上次交易：</span>
+                                <span class="value" id="lastTrade">--</span>
+                            </div>
+                        </div>
+                        <div class="action-buttons" style="margin-top: 12px; display: flex; gap: 8px;">
+                            <button class="btn btn-primary" onclick="executeBuy()">
+                                <i class="fas fa-arrow-down"></i> 执行买入
+                            </button>
+                            <button class="btn btn-danger" onclick="executeSell()">
+                                <i class="fas fa-arrow-up"></i> 执行卖出
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 右侧面板 -->
+        <aside class="sidebar-right">
+            <!-- 市场情绪 -->
+            <div class="panel sentiment-panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-heartbeat"></i> 市场情绪</h3>
+                </div>
+                <div class="panel-body">
+                    <div id="marketSentiment">
+                        <div style="text-align: center; color: #6b7280; padding: 20px;">
+                            加载中...
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- 实时新闻 -->
-            <div class="panel">
+            <div class="panel news-panel" style="margin-top: 16px;">
                 <div class="panel-header">
                     <h3><i class="fas fa-newspaper"></i> 实时新闻</h3>
-                    <div class="panel-actions">
-                        <button class="btn-text" onclick="showNewsDetailModal()">查看全部 <i class="fas fa-arrow-right"></i></button>
-                        <span class="panel-badge">24H</span>
+                    <button class="btn-icon" onclick="loadNews()" title="刷新新闻">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div class="panel-body">
+                    <div class="news-list" id="newsList">
+                        <div style="text-align: center; color: #6b7280; padding: 20px;">
+                            加载中...
+                        </div>
                     </div>
-                </div>
-                <div class="news-list" id="newsList">
-                    <!-- 动态生成 -->
-                </div>
-            </div>
-
-            <!-- 提醒列表 -->
-            <div class="panel">
-                <div class="panel-header">
-                    <h3><i class="fas fa-bell"></i> 交易提醒</h3>
-                    <span class="panel-badge alert" id="alertCount">0</span>
-                </div>
-                <div class="alert-list" id="alertList">
-                    <!-- 动态生成 -->
                 </div>
             </div>
         </aside>
-    </main>
+    </div>
 
     <!-- 添加股票弹窗 -->
     <div class="modal" id="addStockModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i class="fas fa-plus-circle"></i> 添加自选股</h3>
-                <button class="btn-close" onclick="hideAddStockModal()"><i class="fas fa-times"></i></button>
+                <h3>添加股票</h3>
+                <button class="btn-close" onclick="closeAddStockModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="addStockForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>股票代码</label>
-                            <input type="text" id="stockCode" placeholder="如：09988.HK" required>
-                        </div>
-                        <div class="form-group">
-                            <label>股票名称</label>
-                            <input type="text" id="stockName" placeholder="如：阿里巴巴-W" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>市场类型</label>
-                            <select id="marketType">
-                                <option value="A股">A股</option>
-                                <option value="港股">港股</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>投资上限（万元）</label>
-                            <input type="number" id="investLimit" placeholder="A股50，港股150" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>当前持仓数量</label>
-                            <input type="number" id="holdQuantity" placeholder="0" value="0">
-                        </div>
-                        <div class="form-group">
-                            <label>持仓成本</label>
-                            <input type="number" id="holdCost" placeholder="0" value="0" step="0.01">
-                        </div>
+                    <div class="form-group">
+                        <label>股票代码</label>
+                        <input type="text" id="stockCode" placeholder="例如：000001" required>
                     </div>
                     <div class="form-group">
-                        <label>策略模式</label>
-                        <select id="strategyMode">
-                            <option value="基础">基础策略（中轴价格±8%）</option>
-                            <option value="进阶">进阶策略（个性化网格）</option>
+                        <label>股票名称</label>
+                        <input type="text" id="stockName" placeholder="例如：平安银行" required>
+                    </div>
+                    <div class="form-group">
+                        <label>市场类型</label>
+                        <select id="stockMarket">
+                            <option value="A股">A股</option>
+                            <option value="港股">港股</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label>持仓成本</label>
+                        <input type="number" id="holdCost" step="0.01" placeholder="0.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label>持仓数量</label>
+                        <input type="number" id="holdQuantity" placeholder="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>当前价格</label>
+                        <input type="number" id="currentPrice" step="0.01" placeholder="自动获取">
+                    </div>
                     <div class="form-actions">
-                        <button type="button" class="btn-cancel" onclick="hideAddStockModal()">取消</button>
-                        <button type="submit" class="btn-submit"><i class="fas fa-check"></i> 添加</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeAddStockModal()">取消</button>
+                        <button type="submit" class="btn btn-primary">添加</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
+    <!-- 数据分析弹窗 -->
+    <div class="modal" id="analysisModal">
+        <div class="modal-content" style="width: 90%; max-width: 1200px;">
+            <div class="modal-header">
+                <h3>投资组合分析</h3>
+                <button class="btn-close" onclick="closeAnalysisModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="analysis-grid">
+                    <div class="analysis-card">
+                        <h4>资产配置</h4>
+                        <canvas id="allocationChart"></canvas>
+                    </div>
+                    <div class="analysis-card">
+                        <h4>风险分析</h4>
+                        <div id="riskAnalysis"></div>
+                    </div>
+                    <div class="analysis-card">
+                        <h4>收益分析</h4>
+                        <div id="returnAnalysis"></div>
+                    </div>
+                    <div class="analysis-card">
+                        <h4>策略效果</h4>
+                        <div id="strategyAnalysis"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 数据导入弹窗 -->
     <div class="modal" id="dataImportModal">
-        <div class="modal-content modal-large">
+        <div class="modal-content" style="width: 90%; max-width: 800px;">
             <div class="modal-header">
-                <h3><i class="fas fa-file-import"></i> 数据导入</h3>
-                <button class="btn-close" onclick="hideDataImportModal()"><i class="fas fa-times"></i></button>
+                <h3>数据导入</h3>
+                <button class="btn-close" onclick="closeDataImportModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="import-tabs">
-                    <button class="import-tab active" data-tab="upload"><i class="fas fa-upload"></i> 文件上传</button>
-                    <button class="import-tab" data-tab="manual"><i class="fas fa-edit"></i> 手动录入</button>
-                    <button class="import-tab" data-tab="history"><i class="fas fa-history"></i> 导入历史</button>
+                    <button class="tab-btn active" onclick="switchImportTab('upload')">文件上传</button>
+                    <button class="tab-btn" onclick="switchImportTab('manual')">手动录入</button>
+                    <button class="tab-btn" onclick="switchImportTab('history')">导入历史</button>
                 </div>
-
-                <!-- 文件上传区域 -->
-                <div class="import-content active" id="uploadTab">
-                    <div class="upload-wrapper" id="uploadWrapper">
-                        <div class="upload-area" id="uploadArea">
-                            <input type="file" id="fileInput" accept=".txt,.csv,.xls,.xlsx" hidden>
-                            <div class="upload-placeholder">
-                                <i class="fas fa-cloud-upload-alt"></i>
-                                <p class="upload-title">点击或拖拽文件到此处上传</p>
-                                <p class="upload-desc">支持 .txt、.csv、Excel 格式</p>
-                                <p class="upload-hint">支持同花顺、东方财富、通达信等券商导出格式</p>
-                            </div>
-                        </div>
-
-                        <!-- 模板下载区域 -->
-                        <div class="template-download">
-                            <span class="template-label"><i class="fas fa-download"></i> 下载示例模板：</span>
-                            <button class="btn-template" onclick="downloadTemplate('txt')">
-                                <i class="fas fa-file-alt"></i> 记事本格式
-                            </button>
-                            <button class="btn-template" onclick="downloadTemplate('csv')">
-                                <i class="fas fa-file-csv"></i> CSV格式
-                            </button>
-                        </div>
+                
+                <div class="tab-content active" id="uploadTab">
+                    <div class="upload-area" id="uploadArea">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 48px; color: var(--text-muted); margin-bottom: 16px;"></i>
+                        <p>拖拽文件到此处，或点击上传</p>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">支持 .txt、.csv、.xls、.xlsx 格式</p>
+                        <input type="file" id="fileInput" accept=".txt,.csv,.xls,.xlsx" style="display: none;">
                     </div>
-
                     <div class="file-preview" id="filePreview" style="display: none;">
                         <div class="preview-header">
-                            <span class="file-name" id="previewFileName"></span>
-                            <button class="btn-text" onclick="clearFile()"><i class="fas fa-trash"></i> 清除</button>
+                            <span id="previewFileName"></span>
+                            <button class="btn-text" onclick="resetFileUpload()">重新选择</button>
                         </div>
-                        <div class="preview-content">
-                            <table class="preview-table" id="previewTable">
-                                <!-- 动态生成预览表格 -->
-                            </table>
-                        </div>
-                        <div class="preview-stats" id="previewStats">
-                            <!-- 动态生成统计信息 -->
-                        </div>
+                        <table class="preview-table" id="previewTable"></table>
+                        <div class="preview-stats" id="previewStats"></div>
+                        <button class="btn btn-primary" onclick="confirmImport()" id="confirmImportBtn" disabled>
+                            确认导入
+                        </button>
+                    </div>
+                    <div class="import-template" style="margin-top: 16px;">
+                        <p style="font-size: 12px; color: var(--text-muted);">
+                            没有模板？<a href="#" onclick="downloadTemplate()">下载导入模板</a>
+                        </p>
                     </div>
                 </div>
-
-                <!-- 手动录入区域 -->
-                <div class="import-content" id="manualTab">
+                
+                <div class="tab-content" id="manualTab">
                     <div class="manual-input-area">
-                        <div class="manual-header">
-                            <label><i class="fas fa-paste"></i> 粘贴持仓数据</label>
-                            <span class="manual-hint">支持从同花顺、东方财富等券商APP直接复制</span>
-                        </div>
-                        <div class="manual-examples">
-                            <details>
-                                <summary><i class="fas fa-eye"></i> 查看格式示例</summary>
-                                <div class="example-content">
-                                    <p><strong>同花顺格式示例：</strong></p>
-                                    <pre>证券代码  证券名称  证券数量  参考成本价  当前价  最新市值  浮动盈亏
-000001    平安银行  1000      12.50       13.20   13200     700
-00700     腾讯控股  500       380.00      420.00  210000    20000</pre>
-                                    <p><strong>简单格式示例：</strong></p>
-                                    <pre>代码      名称      数量  成本价  现价
-000001    平安银行  1000  12.50   13.20
-00700     腾讯控股  500   380.00  420.00</pre>
-                                </div>
-                            </details>
-                        </div>
-                        <textarea id="manualDataInput" rows="10" placeholder="在这里粘贴你的持仓数据..."></textarea>
-                        <div class="manual-actions">
-                            <button class="btn-secondary" onclick="parseManualData()">
-                                <i class="fas fa-play"></i> 解析数据
-                            </button>
-                            <button class="btn-text" onclick="clearManualData()">
-                                <i class="fas fa-eraser"></i> 清空
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 导入历史区域 -->
-                <div class="import-content" id="historyTab">
-                    <div class="history-list" id="importHistoryList">
-                        <div class="history-empty">
-                            <i class="fas fa-inbox"></i>
-                            <p>暂无导入记录</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-cancel" onclick="hideDataImportModal()">取消</button>
-                <button class="btn-submit" id="confirmImportBtn" onclick="confirmImport()" disabled>
-                    <i class="fas fa-check"></i> 确认导入
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 数据分析弹窗 -->
-    <div class="modal" id="analysisModal">
-        <div class="modal-content modal-xlarge">
-            <div class="modal-header">
-                <h3><i class="fas fa-chart-pie"></i> 数据分析中心</h3>
-                <div class="analysis-date-selector">
-                    <select id="analysisDateRange">
-                        <option value="today">今日</option>
-                        <option value="week">本周</option>
-                        <option value="month">本月</option>
-                        <option value="quarter">本季度</option>
-                        <option value="year">本年</option>
-                    </select>
-                </div>
-                <button class="btn-close" onclick="hideAnalysisModal()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="modal-body">
-                <div class="analysis-tabs">
-                    <button class="analysis-tab active" data-tab="portfolio"><i class="fas fa-briefcase"></i> 持仓分析</button>
-                    <button class="analysis-tab" data-tab="profit"><i class="fas fa-coins"></i> 盈亏分析</button>
-                    <button class="analysis-tab" data-tab="risk"><i class="fas fa-shield-alt"></i> 风险分析</button>
-                    <button class="analysis-tab" data-tab="trend"><i class="fas fa-chart-line"></i> 趋势分析</button>
-                </div>
-
-                <!-- 持仓分析 -->
-                <div class="analysis-content active" id="portfolioTab">
-                    <div class="analysis-grid">
-                        <div class="analysis-card">
-                            <div class="card-title"><i class="fas fa-chart-pie"></i> 持仓分布</div>
-                            <div class="chart-container-mini" id="portfolioPieChart">
-                                <div class="chart-placeholder-mini">饼图区域</div>
-                            </div>
-                        </div>
-                        <div class="analysis-card">
-                            <div class="card-title"><i class="fas fa-industry"></i> 行业分布</div>
-                            <div class="chart-container-mini" id="sectorBarChart">
-                                <div class="chart-placeholder-mini">柱状图区域</div>
-                            </div>
-                        </div>
-                        <div class="analysis-card full-width">
-                            <div class="card-title"><i class="fas fa-list-ol"></i> 持仓明细</div>
-                            <div class="analysis-table-container">
-                                <table class="analysis-table" id="portfolioDetailTable">
-                                    <thead>
-                                        <tr>
-                                            <th>代码</th>
-                                            <th>名称</th>
-                                            <th>市值</th>
-                                            <th>占比</th>
-                                            <th>盈亏</th>
-                                            <th>盈亏率</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- 动态生成 -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 盈亏分析 -->
-                <div class="analysis-content" id="profitTab">
-                    <div class="analysis-grid">
-                        <div class="analysis-card">
-                            <div class="card-title"><i class="fas fa-calendar-day"></i> 今日盈亏</div>
-                            <div class="profit-stats">
-                                <div class="profit-item">
-                                    <span class="label">总盈亏</span>
-                                    <span class="value up" id="todayTotalPnL">+12,580</span>
-                                </div>
-                                <div class="profit-item">
-                                    <span class="label">盈亏率</span>
-                                    <span class="value up" id="todayPnLRate">+1.58%</span>
-                                </div>
-                                <div class="profit-item">
-                                    <span class="label">盈利股数</span>
-                                    <span class="value" id="profitStockCount">8只</span>
-                                </div>
-                                <div class="profit-item">
-                                    <span class="label">亏损股数</span>
-                                    <span class="value" id="lossStockCount">3只</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="analysis-card">
-                            <div class="card-title"><i class="fas fa-history"></i> 累计盈亏</div>
-                            <div class="profit-stats">
-                                <div class="profit-item">
-                                    <span class="label">总盈亏</span>
-                                    <span class="value up" id="totalPnL">+125,800</span>
-                                </div>
-                                <div class="profit-item">
-                                    <span class="label">收益率</span>
-                                    <span class="value up" id="totalReturnRate">+15.8%</span>
-                                </div>
-                                <div class="profit-item">
-                                    <span class="label">年化收益</span>
-                                    <span class="value up" id="annualReturn">+23.5%</span>
-                                </div>
-                                <div class="profit-item">
-                                    <span class="label">最大回撤</span>
-                                    <span class="value down" id="maxDrawdown">-5.2%</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="analysis-card full-width">
-                            <div class="card-title"><i class="fas fa-chart-area"></i> 盈亏走势</div>
-                            <div class="chart-container-large" id="pnlTrendChart">
-                                <div class="chart-placeholder-large">盈亏走势图</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 风险分析 -->
-                <div class="analysis-content" id="riskTab">
-                    <div class="analysis-grid">
-                        <div class="analysis-card">
-                            <div class="card-title"><i class="fas fa-exclamation-triangle"></i> 风险指标</div>
-                            <div class="risk-indicators">
-                                <div class="risk-item">
-                                    <span class="risk-name">集中度风险</span>
-                                    <div class="risk-bar">
-                                        <div class="risk-fill warning" style="width: 65%;"></div>
-                                    </div>
-                                    <span class="risk-value">65%</span>
-                                </div>
-                                <div class="risk-item">
-                                    <span class="risk-name">波动率风险</span>
-                                    <div class="risk-bar">
-                                        <div class="risk-fill safe" style="width: 35%;"></div>
-                                    </div>
-                                    <span class="risk-value">35%</span>
-                                </div>
-                                <div class="risk-item">
-                                    <span class="risk-name">流动性风险</span>
-                                    <div class="risk-bar">
-                                        <div class="risk-fill safe" style="width: 20%;"></div>
-                                    </div>
-                                    <span class="risk-value">20%</span>
-                                </div>
-                                <div class="risk-item">
-                                    <span class="risk-name">行业风险</span>
-                                    <div class="risk-bar">
-                                        <div class="risk-fill danger" style="width: 80%;"></div>
-                                    </div>
-                                    <span class="risk-value">80%</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="analysis-card">
-                            <div class="card-title"><i class="fas fa-balance-scale"></i> 仓位建议</div>
-                            <div class="position-suggestion">
-                                <div class="suggestion-item">
-                                    <span class="sugg-label">当前仓位</span>
-                                    <span class="sugg-value">78%</span>
-                                </div>
-                                <div class="suggestion-item">
-                                    <span class="sugg-label">建议仓位</span>
-                                    <span class="sugg-value suggested">65%</span>
-                                </div>
-                                <div class="suggestion-reason">
-                                    <i class="fas fa-info-circle"></i>
-                                    <span>市场波动较大，建议适当降低仓位控制风险</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="analysis-card full-width">
-                            <div class="card-title"><i class="fas fa-list-ul"></i> 风险股票预警</div>
-                            <div class="risk-stock-list" id="riskStockList">
-                                <div class="risk-stock-item high">
-                                    <span class="stock-info"><strong>09988.HK</strong> 阿里巴巴-W</span>
-                                    <span class="risk-tag">集中度超标</span>
-                                    <span class="risk-desc">单一持仓占比超过30%</span>
-                                </div>
-                                <div class="risk-stock-item medium">
-                                    <span class="stock-info"><strong>00700.HK</strong> 腾讯控股</span>
-                                    <span class="risk-tag">波动率过高</span>
-                                    <span class="risk-desc">近20日波动率超过5%</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 趋势分析 -->
-                <div class="analysis-content" id="trendTab">
-                    <div class="analysis-grid">
-                        <div class="analysis-card">
-                            <div class="card-title"><i class="fas fa-chart-line"></i> 净值走势</div>
-                            <div class="chart-container-large" id="netValueChart">
-                                <div class="chart-placeholder-large">净值走势图</div>
-                            </div>
-                        </div>
-                        <div class="analysis-card">
-                            <div class="card-title"><i class="fas fa-tachometer-alt"></i> 交易统计</div>
-                            <div class="trade-stats">
-                                <div class="stat-row">
-                                    <span>总交易次数</span>
-                                    <span class="stat-value">128次</span>
-                                </div>
-                                <div class="stat-row">
-                                    <span>盈利次数</span>
-                                    <span class="stat-value up">86次</span>
-                                </div>
-                                <div class="stat-row">
-                                    <span>亏损次数</span>
-                                    <span class="stat-value down">42次</span>
-                                </div>
-                                <div class="stat-row">
-                                    <span>胜率</span>
-                                    <span class="stat-value">67.2%</span>
-                                </div>
-                                <div class="stat-row">
-                                    <span>平均盈利</span>
-                                    <span class="stat-value up">+2,580</span>
-                                </div>
-                                <div class="stat-row">
-                                    <span>平均亏损</span>
-                                    <span class="stat-value down">-1,240</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 买卖提醒弹窗 -->
-    <div class="modal alert-modal" id="tradeAlertModal">
-        <div class="modal-content">
-            <div class="modal-header alert-header">
-                <i class="fas fa-exclamation-triangle"></i>
-                <h3>交易提醒</h3>
-            </div>
-            <div class="modal-body">
-                <div class="alert-content" id="tradeAlertContent">
-                    <!-- 动态生成 -->
-                </div>
-                <div class="alert-actions">
-                    <button class="btn-confirm" onclick="confirmTrade()"><i class="fas fa-check"></i> 确认</button>
-                    <button class="btn-snooze" onclick="snoozeAlert()"><i class="fas fa-clock"></i> 稍后</button>
-                    <button class="btn-ignore" onclick="ignoreAlert()"><i class="fas fa-times"></i> 忽略</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 新闻详情弹窗 -->
-    <div class="modal" id="newsDetailModal">
-        <div class="modal-content modal-large">
-            <div class="modal-header">
-                <h3><i class="fas fa-newspaper"></i> 实时新闻</h3>
-                <button class="btn-close" onclick="hideNewsDetailModal()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="modal-body">
-                <div class="news-tabs">
-                    <button class="news-tab active" data-tab="all" onclick="filterNews('all')">全部</button>
-                    <button class="news-tab" data-tab="headline" onclick="filterNews('headline')">📰 头条</button>
-                    <button class="news-tab" data-tab="portfolio" onclick="filterNews('portfolio')">💼 持仓相关</button>
-                    <button class="news-tab" data-tab="theme" onclick="filterNews('theme')">💡 题材</button>
-                </div>
-                <div class="news-detail-list" id="newsDetailList">
-                    <!-- 动态生成 -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 投行分析详情弹窗 -->
-    <div class="modal ib-detail-modal" id="ibDetailModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="ib-detail-header">
-                    <div>
-                        <div class="ib-detail-title"><i class="fas fa-globe"></i> 国际投行观点分析</div>
-                        <div class="ib-detail-subtitle" id="ibDetailSubtitle">数据来源：摩根士丹利、高盛、摩根大通、中金、瑞银、富达国际、汇丰</div>
-                    </div>
-                    <button class="btn-close" onclick="hideIBDetailModal()"><i class="fas fa-times"></i></button>
-                </div>
-            </div>
-            <div class="modal-body">
-                <div class="ib-detail-content" id="ibDetailContent">
-                    <!-- 动态生成 -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 持仓股票详细分析弹窗 -->
-    <div class="modal" id="stockAnalysisModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7);">
-        <div class="modal-content" style="background: linear-gradient(135deg, #1a2332 0%, #0f1419 100%); border: 2px solid #10b981; border-radius: 12px; width: 90%; max-width: 600px; max-height: 85vh; overflow-y: auto; margin: 5% auto;">
-            <div class="modal-header" style="padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <div style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-                        <span id="stockAnalysisTitle">--</span>
-                        <span id="stockAnalysisStatus" style="font-size: 0.75rem; padding: 2px 8px; border-radius: 4px;">--</span>
-                    </div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">
-                        基于中轴价格策略分析
-                    </div>
-                </div>
-                <button class="btn-close" onclick="hideStockAnalysisModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 1.2rem; cursor: pointer;">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <div class="modal-body" style="padding: 20px;">
-                <!-- 核心数据卡片 -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
-                    <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
-                        <div style="font-size: 0.7rem; color: var(--text-secondary);">当前价格</div>
-                        <div id="stockAnalysisPrice" style="font-size: 1.2rem; font-weight: 600; margin-top: 4px;">--</div>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
-                        <div style="font-size: 0.7rem; color: var(--text-secondary);">中轴价格</div>
-                        <div id="stockAnalysisPivot" style="font-size: 1.2rem; font-weight: 600; margin-top: 4px;">--</div>
-                    </div>
-                    
-                    <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
-                        <div style="font-size: 0.7rem; color: var(--text-secondary);">中轴偏离</div>
-                        <div id="stockAnalysisDeviation" style="font-size: 1.2rem; font-weight: 600; margin-top: 4px;">--</div>
-                    </div>
-                    
-                    <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
-                        <div style="font-size: 0.7rem; color: var(--text-secondary);">浮动盈亏</div>
-                        <div id="stockAnalysisPnl" style="font-size: 1.2rem; font-weight: 600; margin-top: 4px;">--</div>
-                    </div>
-                </div>
-                
-                <!-- 触发价格提示 -->
-                <div id="stockAnalysisTriggers" style="display: flex; gap: 8px; margin-bottom: 20px;">
-                    <div style="flex: 1; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); padding: 10px; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 0.7rem; color: #3b82f6;">买入触发价</div>
-                        <div id="stockAnalysisTriggerBuy" style="font-size: 1rem; font-weight: 600; color: #3b82f6; margin-top: 4px;">--</div>
-                    </div>
-                    
-                    <div style="flex: 1; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); padding: 10px; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 0.7rem; color: #f59e0b;">卖出触发价</div>
-                        <div id="stockAnalysisTriggerSell" style="font-size: 1rem; font-weight: 600; color: #f59e0b; margin-top: 4px;">--</div>
-                    </div>
-                </div>
-                
-                <!-- P0技术指标展示 -->
-                <div id="stockAnalysisTechSection" style="margin-bottom: 20px; display: none;">
-                    <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
-                        <i class="fas fa-chart-line"></i> 技术指标 (P0)
-                    </div>
-                    
-                    <!-- 均线系统 -->
-                    <div id="stockAnalysisMA" style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; margin-bottom: 10px; display: none;">
-                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">均线系统</div>
-                        <div id="stockAnalysisMAContent" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center;">
-                            <!-- MA数据 -->
-                        </div>
-                        <div id="stockAnalysisMATrend" style="margin-top: 8px; font-size: 0.7rem; text-align: center;"></div>
-                    </div>
-                    
-                    <!-- MACD -->
-                    <div id="stockAnalysisMACD" style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; margin-bottom: 10px; display: none;">
-                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">MACD指标</div>
-                        <div id="stockAnalysisMACDContent" style="display: flex; gap: 12px; justify-content: center; align-items: center;">
-                            <!-- MACD数据 -->
-                        </div>
-                        <div id="stockAnalysisMACDSignal" style="margin-top: 6px; font-size: 0.75rem; text-align: center;"></div>
-                    </div>
-                    
-                    <!-- 资金流向 -->
-                    <div id="stockAnalysisFlow" style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; display: none;">
-                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">资金流向</div>
-                        <div id="stockAnalysisFlowContent" style="display: flex; gap: 12px; justify-content: center; align-items: center;">
-                            <!-- 资金流向数据 -->
+                        <textarea id="manualDataInput" placeholder="请输入股票数据，格式：&#10;代码 名称 市场 持仓 成本价 现价&#10;&#10;例如：&#10;000001 平安银行 A股 1000 10.50 11.20&#10;00700 腾讯控股 港股 500 380.00 395.50"></textarea>
+                        <div class="manual-actions" style="margin-top: 12px; display: flex; gap: 8px; justify-content: flex-end;">
+                            <button class="btn btn-secondary" onclick="clearManualData()">清空</button>
+                            <button class="btn btn-primary" onclick="parseManualData()">解析数据</button>
                         </div>
                     </div>
                 </div>
                 
-                <!-- 详细分析内容 -->
-                <div id="stockAnalysisDetail">
-                    <!-- 数据来源 -->
-                    <div style="margin-bottom: 20px;">
-                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
-                            <i class="fas fa-database"></i> 数据来源
-                        </div>
-                        <div id="stockAnalysisDataSources" style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.8;">
-                            <!-- 动态生成 -->
-                        </div>
+                <div class="tab-content" id="historyTab">
+                    <div class="import-history" id="importHistoryList">
+                        <!-- 导入历史列表 -->
                     </div>
-                    
-                    <!-- 分析逻辑 -->
-                    <div style="margin-bottom: 20px;">
-                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
-                            <i class="fas fa-brain"></i> 分析逻辑
-                        </div>
-                        <div id="stockAnalysisLogic" style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.8;">
-                            <!-- 动态生成 -->
-                        </div>
-                    </div>
-                    
-                    <!-- 结论建议 -->
-                    <div>
-                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
-                            <i class="fas fa-lightbulb"></i> 结论与建议
-                        </div>
-                        <div id="stockAnalysisConclusion" style="background: rgba(16,185,129,0.05); border: 1px solid rgba(16,185,129,0.2); padding: 12px; border-radius: 8px;">
-                            <div id="stockAnalysisConclusionTitle" style="font-size: 0.85rem; font-weight: 600; color: #10b981; margin-bottom: 8px;">--</div>
-                            <div id="stockAnalysisConclusionContent" style="font-size: 0.8rem; line-height: 1.8;">
-                                <!-- 动态生成 -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- 更新时间 -->
-                <div id="stockAnalysisUpdateTime" style="margin-top: 20px; text-align: center; font-size: 0.7rem; color: var(--text-secondary);">
-                    更新时间: --
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Toast 提示 -->
+    <div class="toast-container" id="toastContainer"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <!-- 新模块: 工具函数 (Step 1) -->
     <script src="{{ url_for('static', filename='js/modules/utils.js') }}?v={{ now }}"></script>
-    <!-- 新模块: API层 (Step 2) -->
     <script src="{{ url_for('static', filename='js/modules/api.js') }}?v={{ now }}"></script>
-    <!-- 新模块: 状态管理 (Step 3) -->
     <script src="{{ url_for('static', filename='js/modules/state.js') }}?v={{ now }}"></script>
     <script src="{{ url_for('static', filename='js/southbound.js') }}?v={{ now }}"></script>
-    <script src="{{ url_for('static', filename='js/app.js') }}?v={{ now }}"></script>
     <script src="{{ url_for('static', filename='js/import.js') }}?v={{ now }}"></script>
-    <script>
-        // 保底渲染逻辑 - 确保持仓列表一定能显示
-        (function renderStockListFallback() {
-            console.log('[Fallback] 检查 stockList...');
-            var list = document.getElementById('stockList');
-            if (!list) {
-                console.error('[Fallback] 找不到 stockList 元素');
-                return;
-            }
-            
-            // 如果列表已经有内容，不需要保底渲染
-            if (list.children.length > 0) {
-                console.log('[Fallback] 列表已有内容，跳过保底渲染');
-                return;
-            }
-            
-            console.log('[Fallback] 列表为空，尝试从 API 获取数据并渲染...');
-            
-            // 直接从 API 获取数据并渲染
-            fetch('/api/stocks')
-                .then(function(r) { return r.json(); })
-                .then(function(stocks) {
-                    if (!stocks || stocks.length === 0) {
-                        list.innerHTML = '<div style="padding: 20px; text-align: center; color: #9ca3af;">暂无持仓数据</div>';
-                        return;
-                    }
-                    
-                    console.log('[Fallback] 获取到', stocks.length, '只股票');
-                    
-                    // 【关键】同步更新 appState.stocks，保留已有行情数据
-                    if (typeof appState !== 'undefined' && appState.stocks && appState.stocks.length > 0) {
-                        // 如果已有行情数据，合并而不是替换
-                        stocks.forEach(function(s) {
-                            var existing = appState.stocks.find(function(es) { return es.code === s.code; });
-                            if (existing) {
-                                // 保留已有价格和涨跌幅，只更新静态数据
-                                existing.id = s.id;
-                                existing.name = s.name;
-                                existing.market = s.market || 'A股';
-                                existing.holdCost = s.avg_cost || existing.holdCost;
-                                existing.holdQuantity = s.shares || existing.holdQuantity;
-                                existing.pivotPrice = s.axis_price || existing.pivotPrice;
-                                existing.triggerBuy = s.next_buy_price || existing.triggerBuy;
-                                existing.triggerSell = s.next_sell_price || existing.triggerSell;
-                                // 价格和涨跌幅保留已有值（由行情API更新）
-                                if (existing.price === 0) existing.price = s.current_price || 0;
-                            } else {
-                                appState.stocks.push({
-                                    id: s.id,
-                                    code: s.code,
-                                    name: s.name,
-                                    market: s.market || 'A股',
-                                    price: s.current_price || 0,
-                                    holdCost: s.avg_cost || 0,
-                                    holdQuantity: s.shares || 0,
-                                    pivotPrice: s.axis_price || 0,
-                                    triggerBuy: s.next_buy_price || 0,
-                                    triggerSell: s.next_sell_price || 0,
-                                    change: 0,
-                                    changePercent: 0
-                                });
-                            }
-                        });
-                        console.log('[Fallback] 已合并数据到 appState.stocks');
-                    } else if (typeof appState !== 'undefined') {
-                        // 首次初始化
-                        appState.stocks = stocks.map(function(s) {
-                            return {
-                                id: s.id,
-                                code: s.code,
-                                name: s.name,
-                                market: s.market || 'A股',
-                                price: s.current_price || 0,
-                                holdCost: s.avg_cost || 0,
-                                holdQuantity: s.shares || 0,
-                                pivotPrice: s.axis_price || 0,
-                                triggerBuy: s.next_buy_price || 0,
-                                triggerSell: s.next_sell_price || 0,
-                                change: 0,
-                                changePercent: 0
-                            };
-                        });
-                        console.log('[Fallback] 已初始化 appState.stocks');
-                    }
-                    
-                    list.innerHTML = '';
-                    
-                    stocks.forEach(function(stock, index) {
-                        var item = document.createElement('div');
-                        item.className = 'stock-item' + (index === 0 ? ' active' : '');
-                        item.style.cssText = 'display: flex; align-items: center; padding: 12px 8px; border-radius: 8px; cursor: pointer; margin-bottom: 4px; background: #1a1f2e; color: white;';
-                        
-                        var isUp = (stock.change || 0) >= 0;
-                        var color = isUp ? '#ff4d4f' : '#52c41a';
-                        var marketValue = ((stock.current_price || 0) * (stock.shares || 0) / 10000).toFixed(1);
-                        
-                        item.innerHTML = 
-                            '<div style="flex: 1.5; text-align: left;">' +
-                                '<span style="font-weight: 600; font-size: 0.875rem; color: #e8eaed;">' + stock.code + '</span>' +
-                                '<span style="font-size: 0.75rem; color: #9ca3af; display: block;">' + stock.name + '</span>' +
-                            '</div>' +
-                            '<div style="flex: 1; text-align: right; font-weight: 600; color: ' + color + ';">' +
-                                (stock.current_price || 0).toFixed(2) +
-                            '</div>' +
-                            '<div style="flex: 1; text-align: right; font-weight: 600; color: ' + color + ';">' +
-                                (stock.change >= 0 ? '+' : '') + (stock.change_percent || 0).toFixed(2) + '%' +
-                            '</div>' +
-                            '<div style="flex: 1; text-align: right; font-size: 0.75rem; color: #e8eaed;">' +
-                                marketValue + '万' +
-                            '</div>';
-                        
-                        item.onclick = function() {
-                            document.querySelectorAll('.stock-item').forEach(function(el) { el.classList.remove('active'); });
-                            item.classList.add('active');
-                            if (typeof selectStock === 'function') selectStock(index);
-                        };
-                        
-                        list.appendChild(item);
-                    });
-                    
-                    console.log('[Fallback] 保底渲染完成，子元素数:', list.children.length);
-                })
-                .catch(function(err) {
-                    console.error('[Fallback] 获取数据失败:', err);
-                    list.innerHTML = '<div style="padding: 20px; text-align: center; color: #9ca3af;">加载失败，请刷新页面</div>';
-                });
-        })();
-        
-        // 延迟再次检查
-        setTimeout(function() {
-            var list = document.getElementById('stockList');
-            if (list && list.children.length === 0) {
-                console.log('列表仍为空，强制调用 renderStockList...');
-                if (typeof renderStockList === 'function') {
-                    renderStockList();
-                } else {
-                    console.error('renderStockList 函数不存在!');
-                }
-            }
-        }, 2000);
-    </script>
-    <script>
-    // ========== 国际投行观点分析 ==========
-    let ibAnalysisData = null;
-
-    // 加载投行分析数据
-    async function loadIBAnalysis() {
-        try {
-            const response = await fetch('/api/ib-analysis?t=' + Date.now()); // 加时间戳防止缓存
-            const result = await response.json();
-            
-            console.log('loadIBAnalysis API 返回:', result);
-            
-            if (result.success && result.data) {
-                // 检查数据是否有效
-                const holdings = result.data.holdings_map || [];
-                if (holdings.length === 0) {
-                    console.warn('API 返回的 holdings_map 为空');
-                } else {
-                    console.log('API 返回 holdings 数量:', holdings.length);
-                }
-                
-                ibAnalysisData = result.data;
-                renderIBAnalysis(ibAnalysisData);
-            } else {
-                console.error('加载投行分析失败:', result.error);
-                document.getElementById('ibAnalysisContent').innerHTML = `
-                    <div class="ib-loading">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <span>加载失败，请稍后重试</span>
-                    </div>
-                `;
-            }
-        } catch (error) {
-            console.error('加载投行分析错误:', error);
-        }
-    }
-
-    // 渲染投行分析面板
-    function renderIBAnalysis(data) {
-        console.log('renderIBAnalysis 被调用，完整数据:', JSON.stringify(data, null, 2));
-        if (!data) {
-            console.error('renderIBAnalysis: data 为空');
-            return;
-        }
-        
-        // 检查数据结构
-        console.log('data 的 keys:', Object.keys(data));
-        
-        // 更新时间和报告日期
-        const reportDate = data.update_time || '--';
-        document.getElementById('ibUpdateTime').textContent = reportDate;
-        
-        // 尝试不同的数据路径
-        let holdings = data.holdings_map || [];
-        let macro = data.macro_summary || {};
-        
-        // 如果 holdings 为空，检查是否有 portfolio_mapping
-        if (holdings.length === 0 && data.portfolio_mapping) {
-            console.log('使用 portfolio_mapping 替代 holdings_map');
-            holdings = data.portfolio_mapping.holdings || [];
-        }
-        
-        console.log('最终 holdings 数量:', holdings.length);
-        console.log('macro:', macro);
-        
-        console.log('holdings_map 数量:', holdings.length);
-        console.log('macro_summary:', macro);
-        
-        // 分类持仓
-        var strongHoldings = holdings.filter(h => h.alignment === 'strong');
-        var moderateHoldings = holdings.filter(h => h.alignment === 'moderate');
-        var weakHoldings = holdings.filter(h => h.alignment === 'weak');
-        var neutralHoldings = holdings.filter(h => h.alignment === 'neutral');
-        
-        console.log('分类统计:', {strong: strongHoldings.length, moderate: moderateHoldings.length, weak: weakHoldings.length, neutral: neutralHoldings.length});
-        
-        // 显示所有持仓股
-        const displayHoldings = holdings;
-        console.log('displayHoldings 数量:', displayHoldings.length);
-        
-        let html = `
-            <div class="ib-summary" style="margin-bottom: 8px;">
-                <div class="ib-consensus">
-                    <div class="ib-consensus-icon ${getConsensusClass(macro.consensus)}"></div>
-                    <span class="ib-consensus-text">外资共识: ${macro.consensus || '未知'}</span>
-                </div>
-                <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 4px; text-align: right;">
-                    <i class="far fa-clock"></i> 报告日期: ${reportDate}
-                </div>
-            </div>
-        `;
-        
-        // 指数目标
-        if (macro.key_targets && macro.key_targets.length > 0) {
-            html += `<div class="ib-targets" style="margin-bottom: 8px;">`;
-            macro.key_targets.forEach(target => {
-                const targetTooltip = target.source ? `数据来源: ${target.source}@@报告日期: ${reportDate}` : `报告日期: ${reportDate}`;
-                const safeTitle = (target.index || '').replace(/"/g, '&quot;');
-                const safeTooltip = targetTooltip.replace(/"/g, '&quot;');
-                html += `
-                    <div class="ib-target-item" 
-                         data-tooltip-title="${safeTitle} 目标"
-                         data-tooltip-content="${safeTooltip}"
-                         onmouseenter="showIBTooltipFromData(this)"
-                         onmouseleave="hideIBTooltip()">
-                        <span class="ib-target-index">${target.index}</span>
-                        <span class="ib-target-value">${target.target}</span>
-                    </div>
-                `;
-            });
-            html += '</div>';
-        }
-        
-        // 投资主线
-        if (macro.main_themes && macro.main_themes.length > 0) {
-            const themesToShow = macro.main_themes.slice(0, 10);
-            html += `
-                <div class="ib-themes" style="margin: 8px 0; padding: 8px; background: rgba(59,130,246,0.08); border-radius: 6px;">
-                    <div style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">
-                        <i class="fas fa-chart-line"></i> 投资主线 (${macro.main_themes.length}条) <span style="font-size: 0.6rem; opacity: 0.7;">[${reportDate}]</span>
-                    </div>
-            `;
-            themesToShow.forEach((theme, idx) => {
-                const safeTheme = (theme || '').replace(/"/g, '&quot;');
-                const tooltipText = `${theme}@@报告日期: ${reportDate}`;
-                const safeTooltip = tooltipText.replace(/"/g, '&quot;');
-                
-                html += `
-                    <div class="ib-theme-item" 
-                         style="font-size: 0.75rem; color: var(--text-primary); padding: 3px 0; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.03);"
-                         data-tooltip-title="投资主线 ${idx + 1}"
-                         data-tooltip-content="${safeTooltip}"
-                         onmouseenter="showIBTooltipFromData(this)"
-                         onmouseleave="hideIBTooltip()"
-                         onclick="showIBDetailModal()">
-                        <span style="color: var(--accent-blue); margin-right: 4px;">${idx + 1}.</span>
-                        ${theme.substring(0, 16)}${theme.length > 16 ? '...' : ''}
-                        <span style="font-size: 0.6rem; color: var(--text-secondary); margin-left: 4px;">[${reportDate}]</span>
-                    </div>
-                `;
-            });
-            if (macro.main_themes.length > 10) {
-                html += `<div style="font-size: 0.7rem; color: var(--accent-blue); text-align: center; padding-top: 4px; cursor: pointer;" onclick="showIBDetailModal()">还有 ${macro.main_themes.length - 10} 条... 点击查看全部</div>`;
-            }
-            html += '</div>';
-        }
-        
-        // 持仓映射 - 显示所有持仓股
-        console.log('准备渲染持仓契合度, displayHoldings.length:', displayHoldings.length);
-        if (displayHoldings.length > 0) {
-            console.log('开始渲染持仓契合度列表');
-            html += `
-                <div class="ib-holdings" style="margin-top: 8px;">
-                    <div class="ib-holdings-title" style="font-size: 0.75rem; margin-bottom: 6px;">
-                        持仓契合度 (${strongHoldings.length}强/${moderateHoldings.length}中/${neutralHoldings.length}平/${weakHoldings.length}弱) 
-                        <span style="font-size: 0.6rem; color: var(--text-secondary);">[${reportDate}]</span>
-                    </div>
-            `;
-            
-            displayHoldings.forEach((holding, idx) => {
-                console.log(`渲染第${idx+1}只股票:`, holding.name, holding.alignment);
-                const alignmentText = {
-                    'strong': '高度契合',
-                    'moderate': '部分契合',
-                    'neutral': '中性',
-                    'weak': '存在分歧'
-                }[holding.alignment] || '中性';
-                
-                // HTML转义函数
-                const escapeHtml = (str) => str ? str.replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
-                
-                // 构建悬停提示内容，包含报告日期 - 使用占位符避免HTML解析问题
-                const viewsWithDate = holding.ib_views ? holding.ib_views.map(v => `${v} [${reportDate}]`).join('||') : '暂无详细观点';
-                const tooltipContent = `${viewsWithDate}@@报告日期: ${reportDate}`;
-                
-                html += `
-                    <div class="ib-holding-item" onclick="showIBStockDetail('${holding.code}')" 
-                         data-tooltip-title="${escapeHtml(holding.name)}"
-                         data-tooltip-content="${escapeHtml(tooltipContent)}"
-                         onmouseenter="showIBTooltipFromData(this)"
-                         onmouseleave="hideIBTooltip()"
-                         style="padding: 4px 6px; margin-bottom: 2px;">
-                        <div class="ib-holding-alignment ${holding.alignment}"></div>
-                        <div class="ib-holding-info" style="flex: 1.5;">
-                            <div class="ib-holding-name" style="font-size: 0.8rem;">${holding.name}</div>
-                            <div class="ib-holding-code" style="font-size: 0.65rem;">${holding.code}</div>
-                        </div>
-                        <span class="ib-holding-tag ${holding.alignment}" style="font-size: 0.7rem;">${alignmentText}</span>
-                    </div>
-                `;
-            });
-            
-            html += '</div>';
-        } else {
-            console.log('持仓契合度不渲染: displayHoldings.length =', displayHoldings.length);
-            console.log('holdings 数据:', holdings);
-        }
-        
-        // 风险提示
-        if (macro.warnings && macro.warnings.length > 0) {
-            html += `
-                <div class="ib-warnings" style="margin-top: 8px; padding: 8px; background: rgba(245, 34, 45, 0.08); border-radius: 6px;">
-                    <div class="ib-warning-title" style="font-size: 0.75rem; margin-bottom: 6px;">
-                        <i class="fas fa-exclamation-triangle"></i> 风险提示 <span style="font-size: 0.6rem; color: var(--text-secondary);">[${reportDate}]</span>
-                    </div>
-                    <div class="ib-warning-list">
-            `;
-            macro.warnings.slice(0, 3).forEach(warning => {
-                html += `<div class="ib-warning-item" style="font-size: 0.7rem; padding: 3px 0;">${warning} <span style="color: var(--text-secondary); font-size: 0.6rem;">[${reportDate}]</span></div>`;
-            });
-            html += '</div></div>';
-        }
-        
-        document.getElementById('ibAnalysisContent').innerHTML = html;
-        console.log('ibAnalysisContent HTML 已设置，长度:', html.length);
-    }
-
-    function getConsensusClass(consensus) {
-        if (!consensus) return '';
-        if (consensus.includes('乐观')) return '';
-        if (consensus.includes('谨慎')) return 'cautious';
-        if (consensus.includes('悲观')) return 'negative';
-        return '';
-    }
-
-    // 显示投行分析详情弹窗
-    function showIBDetailModal() {
-        if (!ibAnalysisData) {
-            loadIBAnalysis().then(() => showIBDetailModalContent());
-        } else {
-            showIBDetailModalContent();
-        }
-    }
-
-    function showIBDetailModalContent() {
-        const data = ibAnalysisData;
-        if (!data) return;
-        
-        const macro = data.macro_summary || {};
-        const holdings = data.holdings_map || [];
-        
-        let html = `
-            <div class="ib-detail-section">
-                <div class="ib-detail-section-title">宏观共识与指数目标</div>
-                <div class="ib-consensus" style="margin-bottom: 16px;">
-                    <div class="ib-consensus-icon ${getConsensusClass(macro.consensus)}"></div>
-                    <span class="ib-consensus-text">外资整体观点: ${macro.consensus || '未知'}</span>
-                </div>
-        `;
-        
-        if (macro.key_targets) {
-            html += '<div class="ib-targets">';
-            macro.key_targets.forEach(target => {
-                html += `
-                    <div class="ib-target-item">
-                        <span class="ib-target-index">${target.index}</span>
-                        <span class="ib-target-value">${target.target}</span>
-                        <span style="font-size: 0.7rem; color: var(--text-secondary);">${target.source}</span>
-                    </div>
-                `;
-            });
-            html += '</div>';
-        }
-        
-        html += '</div>';
-        
-        // 主要主题
-        if (macro.main_themes && macro.main_themes.length > 0) {
-            html += `
-                <div class="ib-detail-section">
-                    <div class="ib-detail-section-title">投资主线</div>
-                    <div class="ib-theme-list">
-            `;
-            macro.main_themes.forEach(theme => {
-                html += `
-                    <div class="ib-theme-item">
-                        <i class="fas fa-check-circle"></i>
-                        <span>${theme}</span>
-                    </div>
-                `;
-            });
-            html += '</div></div>';
-        }
-        
-        // 持仓详细映射
-        html += `
-            <div class="ib-detail-section">
-                <div class="ib-detail-section-title">持仓与投行观点映射</div>
-                <table class="ib-detail-table">
-                    <thead>
-                        <tr>
-                            <th>股票</th>
-                            <th>契合度</th>
-                            <th>投行观点</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-        
-        const alignmentLabels = {
-            'strong': '高度契合',
-            'moderate': '部分契合',
-            'neutral': '中性',
-            'weak': '存在分歧'
-        };
-        
-        holdings.forEach(holding => {
-            const views = holding.ib_views || ['暂无观点'];
-            html += `
-                <tr>
-                    <td>
-                        <div style="font-weight: 500;">${holding.name}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-secondary);">${holding.code}</div>
-                    </td>
-                    <td>
-                        <span class="ib-detail-alignment ${holding.alignment}">
-                            ${alignmentLabels[holding.alignment] || '中性'}
-                        </span>
-                    </td>
-                    <td>
-                        <ul class="ib-detail-views">
-                            ${views.map(v => `<li>• ${v}</li>`).join('')}
-                        </ul>
-                    </td>
-                </tr>
-            `;
-        });
-        
-        html += '</tbody></table></div>';
-        
-        // 风险提示
-        if (macro.warnings && macro.warnings.length > 0) {
-            html += `
-                <div class="ib-detail-section">
-                    <div class="ib-detail-section-title">⚠️ 风险与预警</div>
-                    <div class="ib-warning-list">
-            `;
-            macro.warnings.forEach(warning => {
-                html += `<div class="ib-warning-item">${warning}</div>`;
-            });
-            html += '</div></div>';
-        }
-        
-        document.getElementById('ibDetailContent').innerHTML = html;
-        document.getElementById('ibDetailModal').style.display = 'block';
-    }
-
-    function hideIBDetailModal() {
-        document.getElementById('ibDetailModal').style.display = 'none';
-    }
-
-    function showIBStockDetail(code) {
-        // 可以在这里添加跳转到个股详情的逻辑
-        console.log('查看股票详情:', code);
-    }
-
-    // ========== 投行观点悬停提示 ==========
-    let ibTooltipEl = null;
-    
-    function initIBTooltip() {
-        if (!ibTooltipEl) {
-            ibTooltipEl = document.createElement('div');
-            ibTooltipEl.className = 'ib-tooltip';
-            ibTooltipEl.id = 'ib-global-tooltip';
-            document.body.appendChild(ibTooltipEl);
-        }
-    }
-    
-    function showIBTooltip(element, title, content) {
-        initIBTooltip();
-        
-        // 将占位符替换为HTML标签
-        const safeTitle = title.replace(/"/g, '&quot;');
-        const safeContent = content.replace(/"/g, '&quot;').replace(/\|\|/g, '<br>• ').replace(/@@/g, '<br><br>');
-        
-        ibTooltipEl.innerHTML = `
-            <div class="ib-tooltip-title">${safeTitle}</div>
-            <div class="ib-tooltip-content">${safeContent}</div>
-        `;
-        
-        positionIBTooltip(element);
-    }
-    
-    // 从 data 属性读取 tooltip 内容
-    function showIBTooltipFromData(element) {
-        const title = element.getAttribute('data-tooltip-title') || '';
-        const content = element.getAttribute('data-tooltip-content') || '';
-        showIBTooltip(element, title, content);
-    }
-    
-    function positionIBTooltip(element) {
-        // 计算位置
-        const rect = element.getBoundingClientRect();
-        const tooltipRect = ibTooltipEl.getBoundingClientRect();
-        
-        let left = rect.right + 10;
-        let top = rect.top;
-        
-        // 防止超出屏幕右侧
-        if (left + tooltipRect.width > window.innerWidth - 10) {
-            left = rect.left - tooltipRect.width - 10;
-        }
-        
-        // 防止超出屏幕底部
-        if (top + tooltipRect.height > window.innerHeight - 10) {
-            top = window.innerHeight - tooltipRect.height - 10;
-        }
-        
-        ibTooltipEl.style.left = Math.max(10, left) + 'px';
-        ibTooltipEl.style.top = Math.max(10, top) + 'px';
-        
-        // 显示
-        ibTooltipEl.style.display = 'block';
-        ibTooltipEl.style.opacity = '1';
-        ibTooltipEl.style.visibility = 'visible';
-    }
-    
-    function hideIBTooltip() {
-        if (ibTooltipEl) {
-            ibTooltipEl.style.display = 'none';
-            ibTooltipEl.style.opacity = '0';
-            ibTooltipEl.style.visibility = 'hidden';
-        }
-    }
-
-    // ========== 持仓健康度分析 ==========
-    let portfolioAnalysisData = null;
-    
-    async function loadPortfolioAnalysis() {
-        try {
-            const response = await fetch('/api/portfolio-analysis');
-            const result = await response.json();
-            
-            if (result.success) {
-                portfolioAnalysisData = result.data;
-                renderPortfolioAnalysis(portfolioAnalysisData);
-            } else {
-                console.error('加载持仓分析失败:', result.error);
-                document.getElementById('portfolioAnalysisContent').innerHTML = `
-                    <div style="color: var(--text-secondary); font-size: 0.8rem; text-align: center; padding: 10px;">
-                        <i class="fas fa-exclamation-circle"></i> 加载失败
-                    </div>
-                `;
-            }
-        } catch (error) {
-            console.error('加载持仓分析错误:', error);
-        }
-    }
-    
-    function renderPortfolioAnalysis(data) {
-        if (!data) return;
-        
-        const summary = data.summary || {};
-        const reportDate = data.report_date || '--';
-        
-        // 更新健康度分数
-        const healthScore = summary.health_score || 0;
-        const healthColor = healthScore >= 70 ? '#10b981' : healthScore >= 50 ? '#f59e0b' : '#ef4444';
-        document.getElementById('portfolioHealthScore').textContent = healthScore + '/100';
-        document.getElementById('portfolioHealthScore').style.color = healthColor;
-        document.getElementById('portfolioReportDate').textContent = reportDate;
-        
-        // 生成HTML
-        let html = '';
-        
-        // 盈亏概况
-        const totalPnl = summary.total_pnl || 0;
-        const pnlPercent = summary.total_pnl_percent || 0;
-        const pnlColor = totalPnl >= 0 ? '#10b981' : '#ef4444';
-        const pnlIcon = totalPnl >= 0 ? '📈' : '📉';
-        
-        html += `
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 6px;">
-                <div>
-                    <div style="font-size: 0.7rem; color: var(--text-secondary);">总盈亏</div>
-                    <div style="font-size: 0.9rem; font-weight: 600; color: ${pnlColor};">${pnlIcon} ¥${totalPnl.toLocaleString()} (${pnlPercent}%)</div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 0.7rem; color: var(--text-secondary);">总市值</div>
-                    <div style="font-size: 0.9rem; font-weight: 600;">¥${(summary.total_market_value || 0).toLocaleString()}</div>
-                </div>
-            </div>
-        `;
-        
-        // 技术状态分布
-        const statusDist = summary.status_distribution || {};
-        html += `
-            <div style="margin-bottom: 10px;">
-                <div style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 6px;">中轴偏离分布</div>
-                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-                    <span style="background: rgba(16,185,129,0.2); color: #10b981; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">🟢 强势 ${statusDist.strong || 0}</span>
-                    <span style="background: rgba(156,163,175,0.2); color: #9ca3af; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">⚪ 震荡 ${statusDist.neutral || 0}</span>
-                    <span style="background: rgba(239,68,68,0.2); color: #ef4444; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">🔴 弱势 ${statusDist.weak || 0}</span>
-                </div>
-                <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
-                    <span style="background: rgba(59,130,246,0.2); color: #3b82f6; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">💡 超卖(买) ${statusDist.oversold || 0}</span>
-                    <span style="background: rgba(245,158,11,0.2); color: #f59e0b; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">⚠️ 超买(卖) ${statusDist.overbought || 0}</span>
-                </div>
-            </div>
-        `;
-        
-        // 买卖信号
-        const buyOps = summary.buy_opportunities_count || 0;
-        const sellSigs = summary.sell_signals_count || 0;
-        
-        if (buyOps > 0 || sellSigs > 0) {
-            html += `<div style="margin-bottom: 10px;">`;
-            if (buyOps > 0) {
-                html += `<div style="background: rgba(59,130,246,0.1); border-left: 3px solid #3b82f6; padding: 6px 8px; margin-bottom: 4px; border-radius: 0 4px 4px 0;">
-                    <div style="font-size: 0.75rem; color: #3b82f6;"><i class="fas fa-shopping-cart"></i> 买入机会: ${buyOps}只跌破中轴8%</div>
-                </div>`;
-            }
-            if (sellSigs > 0) {
-                html += `<div style="background: rgba(245,158,11,0.1); border-left: 3px solid #f59e0b; padding: 6px 8px; border-radius: 0 4px 4px 0;">
-                    <div style="font-size: 0.75rem; color: #f59e0b;"><i class="fas fa-hand-holding-usd"></i> 减仓信号: ${sellSigs}只涨超中轴8%</div>
-                </div>`;
-            }
-            html += `</div>`;
-        }
-        
-        // 操作建议
-        const recommendations = data.recommendations || [];
-        if (recommendations.length > 0) {
-            html += `<div style="margin-top: 8px;">`;
-            html += `<div style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 4px;">💡 操作建议</div>`;
-            recommendations.slice(0, 2).forEach(rec => {
-                const icon = rec.type === 'buy' ? '💡' : rec.type === 'sell' ? '⚠️' : '📊';
-                html += `<div style="font-size: 0.75rem; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    ${icon} ${rec.content.substring(0, 35)}${rec.content.length > 35 ? '...' : ''}
-                </div>`;
-            });
-            html += `</div>`;
-        }
-        
-        document.getElementById('portfolioAnalysisContent').innerHTML = html;
-        
-        // 渲染股票列表
-        renderPortfolioStockList(data.stock_analyses || []);
-        
-        // 渲染板块列表
-        renderSectorList(data.sector_analysis || []);
-    }
-    
-    // 渲染持仓分析中的股票列表（注意：不要与 app.js 中的 renderStockList 混淆）
-    function renderPortfolioStockList(stocks) {
-        const container = document.getElementById('portfolioStockItems');
-        const countEl = document.getElementById('portfolioStockCount');
-        
-        if (!stocks || stocks.length === 0) {
-            container.innerHTML = '<div style="color: var(--text-secondary); font-size: 0.75rem; text-align: center;">暂无数据</div>';
-            return;
-        }
-        
-        countEl.textContent = `${stocks.length}只`;
-        
-        // 按中轴偏离度排序（绝对值大的在前）
-        const sortedStocks = [...stocks].sort((a, b) => 
-            Math.abs(b.axis_deviation || 0) - Math.abs(a.axis_deviation || 0)
-        );
-        
-        let html = '';
-        sortedStocks.forEach(stock => {
-            const statusColors = {
-                'overbought': { bg: 'rgba(245,158,11,0.1)', border: '#f59e0b', text: '#f59e0b' },
-                'strong': { bg: 'rgba(16,185,129,0.1)', border: '#10b981', text: '#10b981' },
-                'neutral': { bg: 'rgba(156,163,175,0.1)', border: '#9ca3af', text: '#9ca3af' },
-                'weak': { bg: 'rgba(239,68,68,0.1)', border: '#ef4444', text: '#ef4444' },
-                'oversold': { bg: 'rgba(59,130,246,0.1)', border: '#3b82f6', text: '#3b82f6' }
-            };
-            const colors = statusColors[stock.technical_status] || statusColors['neutral'];
-            
-            const pnlColor = stock.pnl >= 0 ? '#10b981' : '#ef4444';
-            const pnlIcon = stock.pnl >= 0 ? '+' : '';
-            
-            html += `
-                <div onclick="showStockAnalysisDetail('${stock.code}')" 
-                     style="background: ${colors.bg}; border: 1px solid ${colors.border}; border-radius: 8px; padding: 10px 12px; cursor: pointer; transition: all 0.2s;"
-                     onmouseover="this.style.opacity='0.9'" 
-                     onmouseout="this.style.opacity='1'"
-                     onmousedown="this.style.transform='scale(0.98)'"
-                     onmouseup="this.style.transform='scale(1)'"
-                >
-                    <div style="display: flex; justify-content: space-between; align-items: center;"
-                    >
-                        <div style="display: flex; align-items: center; gap: 8px;"
-                        >
-                            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);"
-                            >${stock.name}</span>
-                            <span style="font-size: 0.7rem; color: var(--text-secondary);">${stock.code}</span>
-                            <span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: ${colors.border}20; color: ${colors.text}; border: 1px solid ${colors.border}40;"
-                            >${stock.status_icon} ${stock.status_desc}</span>
-                        </div>
-                        <div style="text-align: right;"
-                        >
-                            <div style="font-size: 0.8rem; font-weight: 600; color: ${pnlColor};"
-                            >${pnlIcon}${stock.pnl_percent}%</div>
-                            <div style="font-size: 0.7rem; color: var(--text-secondary);"
-                            >偏离 ${stock.axis_deviation > 0 ? '+' : ''}${stock.axis_deviation || 0}%</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        
-        container.innerHTML = html;
-    }
-    
-    // 渲染板块列表
-    function renderSectorList(sectors) {
-        const container = document.getElementById('portfolioSectorItems');
-        const sectionEl = document.getElementById('portfolioSectorList');
-        
-        if (!sectors || sectors.length === 0) {
-            sectionEl.style.display = 'none';
-            return;
-        }
-        
-        sectionEl.style.display = 'block';
-        
-        let html = '';
-        sectors.slice(0, 4).forEach(sector => {
-            const pnlColor = sector.pnl >= 0 ? '#10b981' : '#ef4444';
-            html += `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: rgba(255,255,255,0.03); border-radius: 6px;">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <span style="font-size: 0.75rem; color: var(--text-primary);">${sector.name}</span>
-                        <span style="font-size: 0.65rem; color: var(--text-secondary);">${sector.stock_count}只</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 0.7rem; color: ${pnlColor};">${sector.pnl >= 0 ? '+' : ''}${sector.pnl_percent}%</span>
-                        <span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.05);">${sector.status}</span>
-                    </div>
-                </div>
-            `;
-        });
-        
-        container.innerHTML = html;
-    }
-    
-    // 显示股票详细分析弹窗
-    function showStockAnalysisDetail(code) {
-        console.log('点击股票:', code, 'portfolioAnalysisData:', portfolioAnalysisData);
-        
-        if (!portfolioAnalysisData) {
-            console.error('portfolioAnalysisData 为空');
-            alert('数据加载中，请稍后重试');
-            return;
-        }
-        
-        if (!portfolioAnalysisData.stock_analyses) {
-            console.error('stock_analyses 不存在');
-            alert('数据格式错误');
-            return;
-        }
-        
-        const stock = portfolioAnalysisData.stock_analyses.find(s => s.code === code);
-        console.log('找到股票:', stock);
-        
-        if (!stock) {
-            console.error('未找到股票:', code, '可用股票:', portfolioAnalysisData.stock_analyses.map(s => s.code));
-            alert('未找到该股票数据');
-            return;
-        }
-        
-        const analysis = stock.analysis || {};
-        
-        // 设置标题和状态
-        document.getElementById('stockAnalysisTitle').textContent = stock.name;
-        const statusEl = document.getElementById('stockAnalysisStatus');
-        statusEl.textContent = stock.status_icon + ' ' + stock.status_desc;
-        
-        // 设置状态颜色
-        const statusColors = {
-            'overbought': { bg: 'rgba(245,158,11,0.2)', text: '#f59e0b' },
-            'strong': { bg: 'rgba(16,185,129,0.2)', text: '#10b981' },
-            'neutral': { bg: 'rgba(156,163,175,0.2)', text: '#9ca3af' },
-            'weak': { bg: 'rgba(239,68,68,0.2)', text: '#ef4444' },
-            'oversold': { bg: 'rgba(59,130,246,0.2)', text: '#3b82f6' }
-        };
-        const colors = statusColors[stock.technical_status] || statusColors['neutral'];
-        statusEl.style.background = colors.bg;
-        statusEl.style.color = colors.text;
-        
-        // 设置核心数据
-        const currency = stock.market === '港股' ? 'HK$' : '¥';
-        document.getElementById('stockAnalysisPrice').textContent = currency + (stock.current_price || 0).toFixed(2);
-        document.getElementById('stockAnalysisPivot').textContent = currency + (stock.axis_price || 0).toFixed(2);
-        
-        const deviationEl = document.getElementById('stockAnalysisDeviation');
-        const axisDev = stock.axis_deviation || 0;
-        deviationEl.textContent = (axisDev > 0 ? '+' : '') + axisDev + '%';
-        deviationEl.style.color = axisDev >= 0 ? '#10b981' : '#ef4444';
-        
-        const pnlEl = document.getElementById('stockAnalysisPnl');
-        pnlEl.textContent = (stock.pnl >= 0 ? '+' : '') + '¥' + Math.abs(stock.pnl).toLocaleString();
-        pnlEl.style.color = stock.pnl >= 0 ? '#10b981' : '#ef4444';
-        
-        // 设置触发价格
-        document.getElementById('stockAnalysisTriggerBuy').textContent = currency + (stock.trigger_buy || 0).toFixed(2);
-        document.getElementById('stockAnalysisTriggerSell').textContent = currency + (stock.trigger_sell || 0).toFixed(2);
-        
-        // 设置数据来源
-        const dataSources = analysis.data_sources || [];
-        document.getElementById('stockAnalysisDataSources').innerHTML = dataSources.map(s => 
-            `<div style="margin-bottom: 4px;">• ${s}</div>`
-        ).join('') || '<div style="color: var(--text-secondary);">暂无数据来源信息</div>';
-        
-        // 设置P0技术指标
-        const techData = stock.technical_indicators || {};
-        renderTechnicalIndicators(techData, stock.current_price);
-        
-        // 设置分析逻辑
-        const logicItems = analysis.analysis_logic || [];
-        document.getElementById('stockAnalysisLogic').innerHTML = logicItems.map(l => 
-            `<div style="margin-bottom: 8px; padding-left: 12px; border-left: 2px solid rgba(255,255,255,0.1);">${l}</div>`
-        ).join('') || '<div style="color: var(--text-secondary);">暂无分析逻辑</div>';
-        
-        // 设置结论
-        const conclusion = analysis.conclusion || {};
-        document.getElementById('stockAnalysisConclusionTitle').textContent = conclusion.title || '暂无结论';
-        
-        const conclusionContent = conclusion.content || [];
-        document.getElementById('stockAnalysisConclusionContent').innerHTML = conclusionContent.map(c => 
-            `<div style="margin-bottom: 6px;">• ${c}</div>`
-        ).join('') || '<div style="color: var(--text-secondary);">暂无建议</div>';
-        
-        // 设置更新时间
-        document.getElementById('stockAnalysisUpdateTime').textContent = 
-            '更新时间: ' + (analysis.update_time || data.report_date || '--');
-        
-        // 显示弹窗
-        document.getElementById('stockAnalysisModal').style.display = 'block';
-        console.log('弹窗已显示');
-    }
-    
-    // 渲染P0技术指标
-    function renderTechnicalIndicators(techData, currentPrice) {
-        const sectionEl = document.getElementById('stockAnalysisTechSection');
-        
-        if (!techData || Object.keys(techData).length === 0) {
-            sectionEl.style.display = 'none';
-            return;
-        }
-        
-        sectionEl.style.display = 'block';
-        
-        // 渲染均线系统
-        const maData = techData.ma || {};
-        const priceVsMA = techData.price_vs_ma || {};
-        const maEl = document.getElementById('stockAnalysisMA');
-        const maContentEl = document.getElementById('stockAnalysisMAContent');
-        const maTrendEl = document.getElementById('stockAnalysisMATrend');
-        
-        if (maData && Object.keys(maData).length > 0) {
-            maEl.style.display = 'block';
-            
-            let maHtml = '';
-            const periods = [5, 10, 20, 60];
-            const colors = { 5: '#ef4444', 10: '#f59e0b', 20: '#3b82f6', 60: '#10b981' };
-            
-            periods.forEach(period => {
-                const maValue = maData[period];
-                const pvma = priceVsMA[`ma${period}`] || {};
-                const deviation = pvma.deviation || 0;
-                const isAbove = pvma.above;
-                
-                maHtml += `
-                    <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px;">
-                        <div style="font-size: 0.65rem; color: var(--text-secondary);">MA${period}</div>
-                        <div style="font-size: 0.8rem; font-weight: 600; color: ${colors[period]};">¥${maValue}</div>
-                        <div style="font-size: 0.6rem; color: ${isAbove ? '#10b981' : '#ef4444'};">${deviation > 0 ? '+' : ''}${deviation}%</div>
-                    </div>
-                `;
-            });
-            
-            maContentEl.innerHTML = maHtml;
-            
-            // 均线趋势
-            const maTrend = techData.ma_trend || 'neutral';
-            const trendText = {
-                'bullish': '🟢 多头排列 (MA5>MA10>MA20)',
-                'bearish': '🔴 空头排列 (MA5<MA10<MA20)',
-                'neutral': '⚪ 震荡整理'
-            }[maTrend] || '⚪ 震荡整理';
-            maTrendEl.textContent = trendText;
-        } else {
-            maEl.style.display = 'none';
-        }
-        
-        // 渲染MACD
-        const macdData = techData.macd || {};
-        const macdEl = document.getElementById('stockAnalysisMACD');
-        const macdContentEl = document.getElementById('stockAnalysisMACDContent');
-        const macdSignalEl = document.getElementById('stockAnalysisMACDSignal');
-        
-        if (macdData && macdData.dif !== undefined) {
-            macdEl.style.display = 'block';
-            
-            const dif = macdData.dif;
-            const dea = macdData.dea;
-            const hist = macdData.hist;
-            const signal = macdData.signal || '暂无信号';
-            
-            const histColor = hist >= 0 ? '#10b981' : '#ef4444';
-            
-            macdContentEl.innerHTML = `
-                <div style="text-align: center;">
-                    <div style="font-size: 0.65rem; color: var(--text-secondary);">DIF</div>
-                    <div style="font-size: 0.9rem; font-weight: 600;">${dif}</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 0.65rem; color: var(--text-secondary);">DEA</div>
-                    <div style="font-size: 0.9rem; font-weight: 600;">${dea}</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 0.65rem; color: var(--text-secondary);">柱状图</div>
-                    <div style="font-size: 0.9rem; font-weight: 600; color: ${histColor};">${hist > 0 ? '+' : ''}${hist}</div>
-                </div>
-            `;
-            
-            macdSignalEl.innerHTML = `<span style="color: ${macdData.status?.includes('golden') || macdData.status?.includes('bullish') ? '#10b981' : macdData.status?.includes('death') || macdData.status?.includes('bearish') ? '#ef4444' : '#9ca3af'};">${signal}</span>`;
-        } else {
-            macdEl.style.display = 'none';
-        }
-        
-        // 渲染资金流向
-        const flowData = techData.capital_flow || {};
-        const flowEl = document.getElementById('stockAnalysisFlow');
-        const flowContentEl = document.getElementById('stockAnalysisFlowContent');
-        
-        if (flowData && flowData.main_inflow !== undefined) {
-            flowEl.style.display = 'block';
-            
-            const mainInflow = flowData.main_inflow;
-            const flowColor = mainInflow >= 0 ? '#10b981' : '#ef4444';
-            const flowIcon = mainInflow >= 0 ? '▲' : '▼';
-            
-            flowContentEl.innerHTML = `
-                <div style="text-align: center;">
-                    <div style="font-size: 0.65rem; color: var(--text-secondary);">主力净流入</div>
-                    <div style="font-size: 1rem; font-weight: 600; color: ${flowColor};">${flowIcon} ¥${Math.abs(mainInflow)}万</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 0.65rem; color: var(--text-secondary);">日期</div>
-                    <div style="font-size: 0.8rem;">${flowData.date || '--'}</div>
-                </div>
-            `;
-        } else {
-            flowEl.style.display = 'none';
-        }
-    }
-    
-    // 隐藏股票详细分析弹窗
-    function hideStockAnalysisModal() {
-        document.getElementById('stockAnalysisModal').style.display = 'none';
-    }
-    
-    // 点击弹窗外部关闭
-    document.getElementById('stockAnalysisModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            hideStockAnalysisModal();
-        }
-    });
-
-    // 页面加载时初始化
-    document.addEventListener('DOMContentLoaded', function() {
-        // 延迟加载投行分析（优先加载核心数据）
-        setTimeout(loadIBAnalysis, 2000);
-        // 加载持仓分析
-        setTimeout(loadPortfolioAnalysis, 3000);
-    });
-    </script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v={{ now }}"></script>
+</body>
 </html>
