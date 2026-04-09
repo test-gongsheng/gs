@@ -454,6 +454,9 @@ def add_stock():
 @app.route('/api/stocks/batch', methods=['POST'])
 def batch_add_stocks():
     """批量添加股票（避免并发冲突），支持自动记录交易"""
+    import time
+    import random
+    
     try:
         data = load_data()
         request_data = request.json
@@ -493,9 +496,6 @@ def batch_add_stocks():
         
         added_stocks = []
         for new_stock in stocks_to_add:
-            import time
-            import random
-            
             stock_id = f"{int(time.time())}{random.randint(100, 999)}"
             new_stock['id'] = stock_id
             new_stock['status'] = '监控中'
