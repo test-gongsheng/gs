@@ -64,47 +64,23 @@ async function init() {
     }
     isInitialized = true;
 
-    console.log('[init] 开始初始化...');
+    // 清空现有数据，避免重复
+    appState.stocks = [];
     let loadedFromBackend = false;
-    
-    // 【修复1】优先使用内联脚本已加载的数据
-    if (window.appState && window.appState.stocks && window.appState.stocks.length > 0) {
-        console.log('[init] 使用内联脚本已加载的数据:', window.appState.stocks.length);
-        appState.stocks = window.appState.stocks;
-        loadedFromBackend = true;
-        renderStockList();
-    }
-    
-    // 【修复2】尝试从 localStorage 加载
-    if (!loadedFromBackend) {
-        const savedStocks = localStorage.getItem('import_data_last');
-        if (savedStocks) {
-            try {
-                const stocks = JSON.parse(savedStocks);
-                if (stocks && stocks.length > 0) {
-                    appState.stocks = stocks;
-                    console.log('[init] 已从 localStorage 加载', stocks.length, '只');
-                    loadedFromBackend = true;
-                    renderStockList();
-                }
-            } catch (e) {
-                console.error('[init] localStorage加载失败:', e);
-            }
-        }
-    }
-    
-    // 【修复3】异步刷新最新数据
-    console.log('[init] 异步刷新数据...');
+    console.log('[init] 开始初始化，已清空股票列表');
     try {
-        const response = await fetch('/api/stocks?_=' + Date.now());
-        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const response = await fetch('/api/stocks');
         const stocks = await response.json();
-        
         if (Array.isArray(stocks) && stocks.length > 0) {
+            // 转换后端数据格式为前端格式
             appState.stocks = stocks.map(s => ({
-                id: s.id, code: s.code, name: s.name,
-                market: s.market || 'A股', price: s.current_price || 0,
-                holdCost: s.avg_cost || 0, holdQuantity: s.shares || 0,
+                id: s.id,
+                code: s.code,
+                name: s.name,
+                market: s.market || 'A股',
+                price: s.current_price || 0,
+                holdCost: s.avg_cost || 0,
+                holdQuantity: s.shares || 0,
                 pivotPrice: s.axis_price || 0,
                 triggerBuy: s.next_buy_price || 0,
                 triggerSell: s.next_sell_price || 0,
@@ -113,31 +89,58 @@ async function init() {
                 floatRatio: s.float_position_pct || 50,
                 strategy: s.strategy_mode || '基础',
                 gridLevels: s.grid_levels || [],
-                change: s.change || 0, changePercent: s.change_percent || 0,
-                exchangeRate: s.exchange_rate,
+                change: 0,
+                changePercent: 0,
+                exchangeRate: s.exchange_rate,  // 从后端获取汇率
+                // 股票类型和执行数据
                 stock_type: s.stock_type || 'normal',
-                vol_score: s.vol_score || 0, annual_vol: s.annual_vol || 0,
+                vol_score: s.vol_score || 0,
+                annual_vol: s.annual_vol || 0,
                 atr_pct: s.atr_pct || 0,
                 last_trade_time: s.last_trade_time,
                 last_trade_type: s.last_trade_type,
                 cooldown_days: s.cooldown_days || 20
             }));
+            loadedFromBackend = true;
+            console.log('已从后端 API 加载', appState.stocks.length, '只股票');
+            // 同时保存到 localStorage 作为备份
             localStorage.setItem('import_data_last', JSON.stringify(appState.stocks));
-            renderStockList();
-            console.log('[init] 数据已刷新:', appState.stocks.length);
         }
     } catch (e) {
-        console.error('[init] 刷新失败:', e);
+        console.error('从后端加载数据失败:', e);
+    }
+    
+    // 如果后端没有数据，尝试从 localStorage 读取
+    if (!loadedFromBackend) {
+        const savedStocks = localStorage.getItem('import_data_last');
+        if (savedStocks) {
+            try {
+                const stocks = JSON.parse(savedStocks);
+                if (stocks && stocks.length > 0) {
+                    appState.stocks = stocks;
+                    console.log('已从 localStorage 恢复', stocks.length, '只股票');
+                } else {
+                    appState.stocks = mockStocks;
+                }
+            } catch (e) {
+                console.error('读取本地数据失败:', e);
+                appState.stocks = mockStocks;
+            }
+        } else {
+            appState.stocks = mockStocks;
+        }
     }
     
     appState.hotSectors = mockHotSectors;
     appState.news = { headlines: [], themes: [], calendar: [], portfolio: [], general: mockNews };
 
-    // 确保渲染
-    if (appState.stocks.length === 0) {
-        console.log('[init] 没有数据，显示空状态');
-    }
+    // 【修复】先立即渲染列表（使用本地数据），再后台获取行情
+    // 这样即使行情获取卡住，用户也能看到持仓列表
+    console.log('[init] 立即渲染持仓列表（使用本地数据）...');
+    console.log('[init] appState.stocks 数量:', appState.stocks.length);
+    console.log('[init] 准备调用 renderStockList...');
     renderStockList();
+    console.log('[init] renderStockList 调用完成');
     updateAssetOverview();
     
     // 默认选中第一个股票
@@ -2692,26 +2695,8 @@ async function loadPortfolioAnalysis() {
         console.log('[DEBUG] loadPortfolioAnalysis 开始执行');
         const response = await fetch('/api/portfolio-analysis');
         console.log('[DEBUG] 持仓分析 API 响应状态:', response.status);
-        
-        // 获取DOM元素
-        const scoreEl = document.getElementById('portfolioHealthScore');
-        const contentEl = document.getElementById('portfolioAnalysisContent');
-        console.log('[DEBUG] DOM元素检查:', {scoreEl: !!scoreEl, contentEl: !!contentEl});
-        
         if (!response.ok) {
-            console.log('[DEBUG] 持仓分析 API 响应不成功, 显示暂无数据');
-            // 显示暂无数据提示，而不是一直显示"加载中"
-            if (scoreEl) {
-                scoreEl.textContent = '--';
-                scoreEl.style.color = '#999';
-            }
-            if (contentEl) {
-                console.log('[DEBUG] 正在替换 contentEl HTML');
-                contentEl.innerHTML = '<div style="text-align:center;padding:20px;color:#999;font-size:12px;">暂无分析报告<br><span style="font-size:11px;">每日收盘后自动生成</span></div>';
-                console.log('[DEBUG] contentEl HTML 已替换');
-            } else {
-                console.error('[DEBUG] contentEl 不存在!');
-            }
+            console.log('[DEBUG] 持仓分析 API 响应不成功, 返回');
             return;
         }
         
@@ -2885,35 +2870,13 @@ function renderPortfolioAnalysis() {
 // 显示个股分析详情弹窗
 function showStockAnalysisDetail(code) {
     const data = appState.portfolioAnalysis;
+    if (!data || !data.stock_analyses) return;
     
-    // 先从 stocks 中获取股票基本信息
-    const stock = appState.stocks.find(s => s.code === code);
-    if (!stock) {
-        showNotification('股票数据不存在', 'error');
-        return;
-    }
-    
-    // 如果有分析报告，使用报告数据；否则使用基本信息
-    let stockAnalysis = null;
-    if (data && data.stock_analyses) {
-        stockAnalysis = data.stock_analyses.find(s => s.code === code);
-    }
-    
-    // 如果没有分析报告，创建一个基本的分析对象
-    if (!stockAnalysis) {
-        stockAnalysis = {
-            code: stock.code,
-            name: stock.name,
-            current_price: stock.price || stock.current_price || 0,
-            axis_price: stock.pivotPrice || stock.axis_price || 0,
-            axis_deviation: stock.axisDeviation || 0,
-            health_score: null,
-            analysis: null,
-            technical_status: stock.technicalStatus || 'neutral'
-        };
-    }
+    const stockAnalysis = data.stock_analyses.find(s => s.code === code);
+    if (!stockAnalysis) return;
     
     // 从 stocks 中获取完整的股票数据（包括价格、市场等）
+    const stock = appState.stocks.find(s => s.code === code) || {};
     const isHK = stock.market === '港股';
     const currency = isHK ? 'HK$' : '¥';
     
@@ -2946,16 +2909,8 @@ function showStockAnalysisDetail(code) {
                 
                 <div style="margin-bottom: 16px;">
                     <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">健康度评分</div>
-                    <div style="font-size: 1.5rem; font-weight: 700; color: ${stockAnalysis.health_score ? (stockAnalysis.health_score >= 80 ? '#10b981' : stockAnalysis.health_score >= 60 ? '#f59e0b' : '#ef4444') : '#999'};">${stockAnalysis.health_score || '待生成'}</div>
-                    ${!stockAnalysis.health_score ? '<div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">每日收盘后自动生成分析报告</div>' : ''}
+                    <div style="font-size: 1.5rem; font-weight: 700; color: ${stockAnalysis.health_score >= 80 ? '#10b981' : stockAnalysis.health_score >= 60 ? '#f59e0b' : '#ef4444'};">${stockAnalysis.health_score || '--'}/100</div>
                 </div>
-                
-                ${!stockAnalysis.analysis ? `
-                <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
-                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 6px;">📊 分析结论</div>
-                    <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">分析报告暂未生成，将在每日收盘后自动更新</div>
-                </div>
-                ` : ''}
                 
                 ${stockAnalysis.analysis ? `
                 <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px;">

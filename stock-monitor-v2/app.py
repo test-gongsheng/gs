@@ -1,18 +1,3 @@
-#!/usr/bin/env python3
-import sys
-import os
-
-# 自动检测并使用虚拟环境（如果存在venv但当前不是venv解释器）
-venv_path = os.path.join(os.path.dirname(__file__), 'venv')
-venv_python = os.path.join(venv_path, 'bin', 'python')
-
-# 检查：venv存在、当前不是venv解释器、VIRTUAL_ENV未设置
-if (os.path.exists(venv_path) and 
-    os.path.exists(venv_python) and 
-    sys.executable != venv_python):
-    print(f"[Auto] 切换到虚拟环境: {venv_python}")
-    os.execv(venv_python, [venv_python] + sys.argv)
-
 from flask import Flask, render_template, jsonify, request, make_response
 import json
 import os
@@ -412,7 +397,6 @@ def get_stocks():
     # 保存更新后的数据
     save_data(data)
     
-    print(f"[get_stocks] 返回 {len(stocks)} 只股票")
     return jsonify(stocks)
 
 @app.route('/api/stocks', methods=['POST'])
@@ -524,9 +508,10 @@ def batch_add_stocks():
                     new_stock['last_trade_price'] = latest_buy.get('price', 0)
                     new_stock['last_trade_shares'] = latest_buy.get('shares', 0)
             
-            # 港股添加汇率字段（离线模式，使用固定值）
+            # 港股添加汇率字段（使用实时汇率）
             if new_stock.get('market') == '港股':
-                new_stock['exchange_rate'] = 1.0836  # 固定汇率，不依赖网络
+                from utils.exchange_rate import get_cny_hkd_rate
+                new_stock['exchange_rate'] = get_cny_hkd_rate() or 1.0836
             
             data['stocks'].append(new_stock)
             added_stocks.append(new_stock)
