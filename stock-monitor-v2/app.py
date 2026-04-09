@@ -478,11 +478,16 @@ def batch_add_stocks():
         print(f"[batch_add_stocks] 批量添加 {len(stocks_to_add)} 只股票")
         print(f"[batch_add_stocks] 接收到的交易记录: {len(trades)} 笔")
         
-        # 【修复】先备份当前数据，失败时可恢复
-        backup_file = os.path.join(tempfile.gettempdir(), f'stock_backup_{int(time.time())}.json')
-        with open(backup_file, 'w', encoding='utf-8') as f:
-            json.dump(data['stocks'], f, ensure_ascii=False, indent=2)
-        print(f"[batch_add_stocks] 已备份现有数据到 {backup_file}")
+        # 【修复】先备份当前数据到数据目录，失败时可恢复
+        data_dir = os.path.dirname(DATA_FILE)
+        backup_file = os.path.join(data_dir, f'stock_backup_{int(time.time())}.json')
+        try:
+            with open(backup_file, 'w', encoding='utf-8') as f:
+                json.dump(data['stocks'], f, ensure_ascii=False, indent=2)
+            print(f"[batch_add_stocks] 已备份现有数据到 {backup_file}")
+        except Exception as backup_err:
+            print(f"[batch_add_stocks] 备份失败: {backup_err}")
+            backup_file = None
         
         # 【新增】处理交易记录，更新股票的 last_trade 信息
         trade_map = {}
@@ -607,9 +612,9 @@ def clear_all_stocks():
         data = load_data()
         deleted_count = len(data['stocks'])
         
-        # 【修复】先备份数据到临时存储
-        import tempfile
-        backup_file = os.path.join(tempfile.gettempdir(), 'stock_backup.json')
+        # 【修复】先备份数据到数据目录
+        data_dir = os.path.dirname(DATA_FILE)
+        backup_file = os.path.join(data_dir, 'stock_backup_clear.json')
         with open(backup_file, 'w', encoding='utf-8') as f:
             json.dump(data['stocks'], f, ensure_ascii=False, indent=2)
         print(f"[clear_all_stocks] 已备份 {deleted_count} 只股票到 {backup_file}")
