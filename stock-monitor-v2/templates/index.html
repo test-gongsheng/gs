@@ -13,7 +13,7 @@
     <script>
         // 自动缓存清除机制 - 使用固定版本号
         (function() {
-            const APP_VERSION = '20250402-step4-cache-debug3';  // Step 4: 添加详细缓存调试
+            const APP_VERSION = '20250410-portfolio-fix';  // 修复持仓健康度显示
             const storedVersion = localStorage.getItem('app_version');
             
             if (storedVersion !== APP_VERSION) {
@@ -2010,134 +2010,21 @@
     }
 
     // ========== 持仓健康度分析 ==========
-    let portfolioAnalysisData = null;
+    // 注意：loadPortfolioAnalysis 和 renderPortfolioAnalysis 函数在 app.js 中定义
+    // 这里只需要确保在页面加载完成后调用
     
-    async function loadPortfolioAnalysis() {
-        try {
-            const response = await fetch('/api/portfolio-analysis');
-            const result = await response.json();
-            
-            if (result.success) {
-                portfolioAnalysisData = result.data;
-                renderPortfolioAnalysis(portfolioAnalysisData);
-            } else {
-                console.error('加载持仓分析失败:', result.error);
-                document.getElementById('portfolioAnalysisContent').innerHTML = `
-                    <div style="color: var(--text-secondary); font-size: 0.8rem; text-align: center; padding: 10px;">
-                        <i class="fas fa-exclamation-circle"></i> 加载失败
-                    </div>
-                `;
-            }
-        } catch (error) {
-            console.error('加载持仓分析错误:', error);
-        }
+    // 隐藏股票详细分析弹窗
+    function hideStockAnalysisModal() {
+        document.getElementById('stockAnalysisModal').style.display = 'none';
     }
     
-    function renderPortfolioAnalysis(data) {
-        if (!data) return;
-        
-        const summary = data.summary || {};
-        const reportDate = data.report_date || '--';
-        
-        // 更新健康度分数
-        const healthScore = summary.health_score || 0;
-        const healthColor = healthScore >= 70 ? '#10b981' : healthScore >= 50 ? '#f59e0b' : '#ef4444';
-        document.getElementById('portfolioHealthScore').textContent = healthScore + '/100';
-        document.getElementById('portfolioHealthScore').style.color = healthColor;
-        document.getElementById('portfolioReportDate').textContent = reportDate;
-        
-        // 生成HTML
-        let html = '';
-        
-        // 盈亏概况
-        const totalPnl = summary.total_pnl || 0;
-        const pnlPercent = summary.total_pnl_percent || 0;
-        const pnlColor = totalPnl >= 0 ? '#10b981' : '#ef4444';
-        const pnlIcon = totalPnl >= 0 ? '📈' : '📉';
-        
-        html += `
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 6px;">
-                <div>
-                    <div style="font-size: 0.7rem; color: var(--text-secondary);">总盈亏</div>
-                    <div style="font-size: 0.9rem; font-weight: 600; color: ${pnlColor};">${pnlIcon} ¥${totalPnl.toLocaleString()} (${pnlPercent}%)</div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 0.7rem; color: var(--text-secondary);">总市值</div>
-                    <div style="font-size: 0.9rem; font-weight: 600;">¥${(summary.total_market_value || 0).toLocaleString()}</div>
-                </div>
-            </div>
-        `;
-        
-        // 技术状态分布
-        const statusDist = summary.status_distribution || {};
-        html += `
-            <div style="margin-bottom: 10px;">
-                <div style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 6px;">中轴偏离分布</div>
-                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-                    <span style="background: rgba(16,185,129,0.2); color: #10b981; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">🟢 强势 ${statusDist.strong || 0}</span>
-                    <span style="background: rgba(156,163,175,0.2); color: #9ca3af; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">⚪ 震荡 ${statusDist.neutral || 0}</span>
-                    <span style="background: rgba(239,68,68,0.2); color: #ef4444; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">🔴 弱势 ${statusDist.weak || 0}</span>
-                </div>
-                <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
-                    <span style="background: rgba(59,130,246,0.2); color: #3b82f6; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">💡 超卖(买) ${statusDist.oversold || 0}</span>
-                    <span style="background: rgba(245,158,11,0.2); color: #f59e0b; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">⚠️ 超买(卖) ${statusDist.overbought || 0}</span>
-                </div>
-            </div>
-        `;
-        
-        // 买卖信号
-        const buyOps = summary.buy_opportunities_count || 0;
-        const sellSigs = summary.sell_signals_count || 0;
-        
-        if (buyOps > 0 || sellSigs > 0) {
-            html += `<div style="margin-bottom: 10px;">`;
-            if (buyOps > 0) {
-                html += `<div style="background: rgba(59,130,246,0.1); border-left: 3px solid #3b82f6; padding: 6px 8px; margin-bottom: 4px; border-radius: 0 4px 4px 0;">
-                    <div style="font-size: 0.75rem; color: #3b82f6;"><i class="fas fa-shopping-cart"></i> 买入机会: ${buyOps}只跌破中轴8%</div>
-                </div>`;
-            }
-            if (sellSigs > 0) {
-                html += `<div style="background: rgba(245,158,11,0.1); border-left: 3px solid #f59e0b; padding: 6px 8px; border-radius: 0 4px 4px 0;">
-                    <div style="font-size: 0.75rem; color: #f59e0b;"><i class="fas fa-hand-holding-usd"></i> 减仓信号: ${sellSigs}只涨超中轴8%</div>
-                </div>`;
-            }
-            html += `</div>`;
+    // 点击弹窗外部关闭
+    document.getElementById('stockAnalysisModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            hideStockAnalysisModal();
         }
-        
-        // 操作建议
-        const recommendations = data.recommendations || [];
-        if (recommendations.length > 0) {
-            html += `<div style="margin-top: 8px;">`;
-            html += `<div style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 4px;">💡 操作建议</div>`;
-            recommendations.slice(0, 2).forEach(rec => {
-                const icon = rec.type === 'buy' ? '💡' : rec.type === 'sell' ? '⚠️' : '📊';
-                html += `<div style="font-size: 0.75rem; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    ${icon} ${rec.content.substring(0, 35)}${rec.content.length > 35 ? '...' : ''}
-                </div>`;
-            });
-            html += `</div>`;
-        }
-        
-        document.getElementById('portfolioAnalysisContent').innerHTML = html;
-        
-        // 渲染股票列表
-        renderPortfolioStockList(data.stock_analyses || []);
-        
-        // 渲染板块列表
-        renderSectorList(data.sector_analysis || []);
-    }
-    
-    // 渲染持仓分析中的股票列表（注意：不要与 app.js 中的 renderStockList 混淆）
-    function renderPortfolioStockList(stocks) {
-        const container = document.getElementById('portfolioStockItems');
-        const countEl = document.getElementById('portfolioStockCount');
-        
-        if (!stocks || stocks.length === 0) {
-            container.innerHTML = '<div style="color: var(--text-secondary); font-size: 0.75rem; text-align: center;">暂无数据</div>';
-            return;
-        }
-        
-        countEl.textContent = `${stocks.length}只`;
+    });
+</script>
         
         // 按中轴偏离度排序（绝对值大的在前）
         const sortedStocks = [...stocks].sort((a, b) => 
