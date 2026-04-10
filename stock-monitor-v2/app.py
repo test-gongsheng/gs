@@ -2,6 +2,7 @@ from flask import Flask, render_template, jsonify, request, make_response
 import json
 import os
 import time
+import threading
 from datetime import datetime, timedelta
 from utils.stock_quote import get_stock_quotes, get_dynamic_axis_price
 from utils.exchange_rate import get_cny_hkd_rate, get_yesterday_cny_hkd_rate, convert_hkd_to_cny
@@ -11,6 +12,9 @@ from utils.market_sentiment import get_market_sentiment
 from utils.southbound_capital import get_southbound_overall_history, get_southbound_signal, get_southbound_stock_history
 
 app = Flask(__name__)
+
+# 数据文件锁，防止并发读写导致数据丢失
+data_file_lock = threading.Lock()
 
 # 彻底禁用静态文件缓存
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -217,69 +221,82 @@ def get_cached_axis_price(code, market, days=90):
     return default_data
 
 def load_data():
-    """加载股票数据，如果不存在则自动创建"""
-    # 自动创建 data 目录
-    data_dir = os.path.dirname(DATA_FILE)
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-        print(f"[load_data] 创建目录: {data_dir}")
-    
-    # 如果文件不存在，创建初始数据文件
-    if not os.path.exists(DATA_FILE):
-        default_data = {
-            "portfolio": {
-                "total_capital": 8000000,
-                "a_stock_limit": 500000,
-                "a_stock_focus_limit": 1000000,
-                "hk_stock_limit": 1500000,
-                "strategy": "左侧交易+中轴价格仓位控制法+个性化网格策略"
-            },
-            "stocks": [],
-            "market_sentiment": {},
-            "hot_sectors": [],
-            "alerts": [],
-            "risk_control": {}
-        }
+    """加载股票数据，如果不存在则自动创建（线程安全）"""
+    with data_file_lock:
+        # 自动创建 data 目录
+        data_dir = os.path.dirname(DATA_FILE)
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+            print(f"[load_data] 创建目录: {data_dir}")
+        
+        # 如果文件不存在，创建初始数据文件
+        if not os.path.exists(DATA_FILE):
+            default_data = {
+                "portfolio": {
+                    "total_capital": 8000000,
+                    "a_stock_limit": 500000,
+                    "a_stock_focus_limit": 1000000,
+                    "hk_stock_limit": 1500000,
+                    "strategy": "左侧交易+中轴价格仓位控制法+个性化网格策略"
+                },
+                "stocks": [],
+                "market_sentiment": {},
+                "hot_sectors": [],
+                "alerts": [],
+                "risk_control": {}
+            }
+            try:
+                with open(DATA_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(default_data, f, ensure_ascii=False, indent=2)
+                print(f"[load_data] 创建初始数据文件: {DATA_FILE}")
+                return default_data
+            except Exception as e:
+                print(f"[load_data] 创建初始数据文件失败: {e}")
+        
+        # 正常加载数据
         try:
-            with open(DATA_FILE, 'w', encoding='utf-8') as f:
-                json.dump(default_data, f, ensure_ascii=False, indent=2)
-            print(f"[load_data] 创建初始数据文件: {DATA_FILE}")
-            return default_data
+            with open(DATA_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
         except Exception as e:
-            print(f"[load_data] 创建初始数据文件失败: {e}")
-    
-    # 正常加载数据
-    try:
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except Exception as e:
-        print(f"[load_data] 加载数据失败: {e}")
-        return {
-            "portfolio": {
-                "total_capital": 8000000,
-                "a_stock_limit": 500000,
-                "a_stock_focus_limit": 1000000,
-                "hk_stock_limit": 1500000,
-                "strategy": "左侧交易+中轴价格仓位控制法+个性化网格策略"
-            },
-            "stocks": [],
-            "market_sentiment": {},
-            "hot_sectors": [],
-            "alerts": [],
-            "risk_control": {}
-        }
+            print(f"[load_data] 加载数据失败: {e}")
+            return {
+                "portfolio": {
+                    "total_capital": 8000000,
+                    "a_stock_limit": 500000,
+                    "a_stock_focus_limit": 1000000,
+                    "hk_stock_limit": 1500000,
+                    "strategy": "左侧交易+中轴价格仓位控制法+个性化网格策略"
+                },
+                "stocks": [],
+                "market_sentiment": {},
+                "hot_sectors": [],
+                "alerts": [],
+                "risk_control": {}
+            }
 
 def save_data(data):
-    """保存股票数据"""
-    try:
-        with open(DATA_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        return True
-    except Exception as e:
-        import traceback
-        print(f"Error saving data: {e}")
-        traceback.print_exc()
-        return False
+    """保存股票数据（线程安全）"""
+    with data_file_lock:
+        temp_file = None
+        try:
+            # 先写入临时文件，成功后重命名（原子操作，避免写入中断导致数据损坏）
+            temp_file = DATA_FILE + '.tmp'
+            with open(temp_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            # 原子重命名
+            os.replace(temp_file, DATA_FILE)
+            return True
+        except Exception as e:
+            import traceback
+            print(f"Error saving data: {e}")
+            traceback.print_exc()
+            # 清理临时文件
+            if temp_file and os.path.exists(temp_file):
+                try:
+                    os.remove(temp_file)
+                except:
+                    pass
+            return False
 
 @app.route('/')
 def index():
@@ -394,8 +411,37 @@ def get_stocks():
         stock['cooldown_remaining'] = buy_info['cooldown_remaining']
         stock['strategy_reason'] = buy_info['reason']
     
-    # 保存更新后的数据
-    save_data(data)
+    # 【修复】只在确实需要保存时才保存（避免竞态条件覆盖导入数据）
+    # 检查是否有新计算的股票类型需要持久化
+    need_save = False
+    for stock in stocks:
+        # 如果股票类型刚计算成功且需要保存，则标记需要保存
+        if stock.get('stock_type_calculated') and 'stock_type_calc_time' in stock:
+            # 检查是否是本次会话新计算的（通过时间戳判断）
+            calc_time = stock.get('stock_type_calc_time', '')
+            if calc_time and datetime.now().isoformat()[:10] == calc_time[:10]:
+                need_save = True
+                break
+    
+    if need_save:
+        # 重新加载最新数据，合并后再保存（避免覆盖其他并发修改）
+        fresh_data = load_data()
+        fresh_codes = {s['id']: s for s in fresh_data['stocks']}
+        
+        # 只更新本次计算过的股票，保留其他股票不变
+        for stock in stocks:
+            if stock['id'] in fresh_codes:
+                fresh_codes[stock['id']].update({
+                    'stock_type': stock.get('stock_type'),
+                    'vol_score': stock.get('vol_score'),
+                    'annual_vol': stock.get('annual_vol'),
+                    'atr_pct': stock.get('atr_pct'),
+                    'stock_type_calculated': stock.get('stock_type_calculated'),
+                    'stock_type_calc_time': stock.get('stock_type_calc_time')
+                })
+        
+        save_data(fresh_data)
+        print(f"[get_stocks] 已保存 {len([s for s in stocks if s.get('stock_type_calculated')])} 只股票类型计算结果")
     
     return jsonify(stocks)
 
