@@ -13,7 +13,7 @@
     <script>
         // 自动缓存清除机制 - 使用固定版本号
         (function() {
-            const APP_VERSION = '20250410-complete-fix';  // 彻底修复HTML残留代码
+            const APP_VERSION = '20250410-1840-force-reload';  // 强制刷新 - 修复持仓分析404
             const storedVersion = localStorage.getItem('app_version');
             
             if (storedVersion !== APP_VERSION) {
@@ -22,10 +22,8 @@
                 localStorage.removeItem('alertedStocks');
                 localStorage.removeItem('trade_alert_date');
                 localStorage.setItem('app_version', APP_VERSION);
-                // 只刷新一次
-                if (storedVersion) {
-                    window.location.reload(true);
-                }
+                // 强制刷新页面
+                window.location.reload(true);
             }
         })();
     </script>
