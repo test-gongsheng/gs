@@ -428,7 +428,7 @@ def get_stocks():
         fresh_data = load_data()
         fresh_codes = {s['id']: s for s in fresh_data['stocks']}
         
-        # 只更新本次计算过的股票，保留其他股票不变
+        # 1. 更新文件中已存在的股票
         for stock in stocks:
             if stock['id'] in fresh_codes:
                 fresh_codes[stock['id']].update({
@@ -440,8 +440,18 @@ def get_stocks():
                     'stock_type_calc_time': stock.get('stock_type_calc_time')
                 })
         
+        # 2. 【修复】添加内存中有但文件中没有的股票（新导入的）
+        current_ids = {s['id'] for s in stocks}
+        fresh_ids = {s['id'] for s in fresh_data['stocks']}
+        new_ids = current_ids - fresh_ids
+        
+        for stock in stocks:
+            if stock['id'] in new_ids:
+                fresh_data['stocks'].append(stock)
+                print(f"[get_stocks] 添加新股票到文件: {stock.get('code')} {stock.get('name')}")
+        
         save_data(fresh_data)
-        print(f"[get_stocks] 已保存 {len([s for s in stocks if s.get('stock_type_calculated')])} 只股票类型计算结果")
+        print(f"[get_stocks] 已保存 {len([s for s in stocks if s.get('stock_type_calculated')])} 只股票类型，新增 {len(new_ids)} 只")
     
     return jsonify(stocks)
 
