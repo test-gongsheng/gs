@@ -578,6 +578,37 @@ def batch_add_stocks():
         
         if save_data(data):
             print(f"[batch_add_stocks] 成功添加 {len(added_stocks)} 只股票，记录 {len(trades)} 笔交易")
+            
+            # 【新增】导入成功后自动生成持仓分析报告
+            try:
+                import threading
+                def generate_report_async():
+                    try:
+                        print("[batch_add_stocks] 开始异步生成持仓分析报告...")
+                        # 调用报告生成脚本
+                        import subprocess
+                        result = subprocess.run(
+                            ['venv/bin/python', 'update_portfolio_analysis.py'],
+                            cwd=os.path.dirname(__file__),
+                            capture_output=True,
+                            text=True,
+                            timeout=120
+                        )
+                        if result.returncode == 0:
+                            print("[batch_add_stocks] 持仓分析报告生成成功")
+                            # 清除缓存，让新报告立即生效
+                            _portfolio_analysis_cache['data'] = None
+                            _portfolio_analysis_cache['timestamp'] = 0
+                        else:
+                            print(f"[batch_add_stocks] 报告生成失败: {result.stderr}")
+                    except Exception as e:
+                        print(f"[batch_add_stocks] 异步生成报告异常: {e}")
+                
+                # 启动后台线程生成报告，不阻塞导入响应
+                threading.Thread(target=generate_report_async, daemon=True).start()
+            except Exception as e:
+                print(f"[batch_add_stocks] 启动报告生成线程失败: {e}")
+            
             return jsonify({
                 'success': True, 
                 'stocks': added_stocks, 
