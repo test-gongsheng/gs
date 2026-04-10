@@ -1867,11 +1867,15 @@ def get_portfolio_analysis():
         )
         
         if cache_valid:
-            return jsonify({
+            response = jsonify({
                 'success': True,
                 'data': _portfolio_analysis_cache['data'],
                 'cached': True
             })
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+            return response
         
         # 缓存无效，尝试加载文件
         data = load_portfolio_analysis()
@@ -1879,11 +1883,16 @@ def get_portfolio_analysis():
         if data:
             _portfolio_analysis_cache['data'] = data
             _portfolio_analysis_cache['timestamp'] = now
-            return jsonify({
+            response = jsonify({
                 'success': True,
                 'data': data,
                 'cached': False
             })
+            # 禁用浏览器缓存，避免显示旧数据
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+            return response
         
         # 文件不存在，尝试实时生成报告
         print("[Portfolio Analysis] 缓存和文件都不存在，尝试实时生成...")
