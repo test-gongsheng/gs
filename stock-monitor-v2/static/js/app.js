@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "3.2.0"; // 新增：方案3C完整实现 - 冷却期+分级买卖点
+const APP_VERSION = "3.2.1"; // 修复：持仓分析API添加时间戳防缓存
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -2693,7 +2693,9 @@ function renderSentiment() {
 async function loadPortfolioAnalysis() {
     try {
         console.log('[DEBUG] loadPortfolioAnalysis 开始执行');
-        const response = await fetch('/api/portfolio-analysis');
+        // 添加时间戳参数，防止浏览器缓存旧响应
+        const timestamp = Date.now();
+        const response = await fetch(`/api/portfolio-analysis?_t=${timestamp}`);
         console.log('[DEBUG] 持仓分析 API 响应状态:', response.status);
         
         // 获取DOM元素
