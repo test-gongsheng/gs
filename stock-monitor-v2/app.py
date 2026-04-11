@@ -1,6 +1,7 @@
 from flask import Flask, render_template, jsonify, request, make_response
 import json
 import os
+import sys
 import time
 import threading
 from datetime import datetime, timedelta
@@ -588,7 +589,7 @@ def batch_add_stocks():
                         # 调用报告生成脚本
                         import subprocess
                         result = subprocess.run(
-                            ['venv/bin/python', 'update_portfolio_analysis.py'],
+                            [sys.executable, 'update_portfolio_analysis.py'],
                             cwd=os.path.dirname(__file__),
                             capture_output=True,
                             text=True,
@@ -1879,7 +1880,7 @@ def get_portfolio_analysis():
         try:
             import subprocess
             result = subprocess.run(
-                ['venv/bin/python', 'update_portfolio_analysis.py'],
+                [sys.executable, 'update_portfolio_analysis.py'],
                 cwd=os.path.dirname(__file__),
                 capture_output=True,
                 text=True,
