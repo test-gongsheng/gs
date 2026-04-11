@@ -580,41 +580,35 @@ def batch_add_stocks():
         if save_data(data):
             print(f"[batch_add_stocks] 成功添加 {len(added_stocks)} 只股票，记录 {len(trades)} 笔交易")
             
-            # 【新增】导入成功后自动生成持仓分析报告
+            # 【新增】导入成功后同步生成持仓分析报告（确保立即可用）
+            report_result = None
             try:
-                import threading
-                def generate_report_async():
-                    try:
-                        print("[batch_add_stocks] 开始异步生成持仓分析报告...")
-                        # 调用报告生成脚本
-                        import subprocess
-                        result = subprocess.run(
-                            [sys.executable, 'update_portfolio_analysis.py'],
-                            cwd=os.path.dirname(__file__),
-                            capture_output=True,
-                            text=True,
-                            timeout=120
-                        )
-                        if result.returncode == 0:
-                            print("[batch_add_stocks] 持仓分析报告生成成功")
-                            # 清除缓存，让新报告立即生效
-                            _portfolio_analysis_cache['data'] = None
-                            _portfolio_analysis_cache['timestamp'] = 0
-                        else:
-                            print(f"[batch_add_stocks] 报告生成失败: {result.stderr}")
-                    except Exception as e:
-                        print(f"[batch_add_stocks] 异步生成报告异常: {e}")
-                
-                # 启动后台线程生成报告，不阻塞导入响应
-                threading.Thread(target=generate_report_async, daemon=True).start()
+                print("[batch_add_stocks] 开始生成持仓分析报告...")
+                import subprocess
+                result = subprocess.run(
+                    [sys.executable, 'update_portfolio_analysis.py'],
+                    cwd=os.path.dirname(__file__),
+                    capture_output=True,
+                    text=True,
+                    timeout=120
+                )
+                if result.returncode == 0:
+                    print("[batch_add_stocks] 持仓分析报告生成成功")
+                    report_result = 'success'
+                else:
+                    error_msg = result.stderr[:200] if result.stderr else '未知错误'
+                    print(f"[batch_add_stocks] 报告生成失败: {error_msg}")
+                    report_result = f'failed: {error_msg}'
             except Exception as e:
-                print(f"[batch_add_stocks] 启动报告生成线程失败: {e}")
+                print(f"[batch_add_stocks] 生成报告异常: {e}")
+                report_result = f'error: {str(e)}'
             
             return jsonify({
                 'success': True, 
                 'stocks': added_stocks, 
                 'count': len(added_stocks),
-                'trades_recorded': len(trades)
+                'trades_recorded': len(trades),
+                'report_status': report_result
             })
         else:
             return jsonify({'success': False, 'error': '保存失败'}), 500
