@@ -7,11 +7,30 @@
 import os
 import sys
 import json
+import traceback
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
+# 添加项目路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from app import load_data, get_cached_axis_price
+
+# 尝试导入，如果失败则记录错误
+try:
+    from app import load_data, get_cached_axis_price
+except Exception as import_e:
+    print(f"[ERROR] 导入 app 模块失败: {import_e}")
+    traceback.print_exc()
+    # 使用默认实现
+    def load_data():
+        data_file = os.path.join(os.path.dirname(__file__), 'data', 'stocks.json')
+        try:
+            with open(data_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except:
+            return {'stocks': []}
+    
+    def get_cached_axis_price(code, market, days=90):
+        return {'axis_price': 0, 'upper_band': 0, 'lower_band': 0}
 
 # 导入P0技术分析模块
 try:
