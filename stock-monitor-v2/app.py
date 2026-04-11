@@ -1854,44 +1854,24 @@ def load_portfolio_analysis():
 
 @app.route('/api/portfolio-analysis')
 def get_portfolio_analysis():
-    """获取持仓分析报告 - 改进版：失败时自动尝试生成"""
-    global _portfolio_analysis_cache
+    """获取持仓分析报告 - 禁用服务器缓存，确保数据实时"""
     
     try:
-        now = time.time()
-        
-        # 检查缓存是否有效
-        cache_valid = (
-            _portfolio_analysis_cache.get('data') is not None and 
-            (now - _portfolio_analysis_cache.get('timestamp', 0)) < PORTFOLIO_CACHE_TTL
-        )
-        
-        if cache_valid:
-            response = jsonify({
-                'success': True,
-                'data': _portfolio_analysis_cache['data'],
-                'cached': True
-            })
-            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-            response.headers['Pragma'] = 'no-cache'
-            response.headers['Expires'] = '0'
-            return response
-        
-        # 缓存无效，尝试加载文件
+        # 禁用服务器缓存，每次都从文件重新加载
+        # 这样可以确保数据一致性
         data = load_portfolio_analysis()
         
         if data:
-            _portfolio_analysis_cache['data'] = data
-            _portfolio_analysis_cache['timestamp'] = now
             response = jsonify({
                 'success': True,
                 'data': data,
                 'cached': False
             })
-            # 禁用浏览器缓存，避免显示旧数据
-            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            # 禁用所有缓存
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
             response.headers['Pragma'] = 'no-cache'
             response.headers['Expires'] = '0'
+            response.headers['Vary'] = '*'
             return response
         
         # 文件不存在，尝试实时生成报告
