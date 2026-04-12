@@ -1933,7 +1933,45 @@ def get_portfolio_analysis():
         }), 500
 
 
+def setup_cron_job():
+    """启动时自动检查并设置 crontab 定时任务"""
+    try:
+        import subprocess
+        
+        # 当前脚本路径
+        script_path = os.path.join(os.path.dirname(__file__), 'generate_daily_report.sh')
+        
+        # 检查 crontab 中是否已存在该任务
+        result = subprocess.run(['crontab', '-l'], capture_output=True, text=True)
+        current_crontab = result.stdout if result.returncode == 0 else ''
+        
+        if script_path in current_crontab:
+            print(f"[Cron] 定时任务已存在，跳过设置")
+            return
+        
+        # 构建新的 crontab 内容
+        cron_line = f"30 16 * * * {script_path}"
+        new_crontab = current_crontab.strip() + '\n' + cron_line + '\n'
+        
+        # 写入 crontab
+        proc = subprocess.Popen(['crontab', '-'], stdin=subprocess.PIPE, text=True)
+        proc.communicate(input=new_crontab)
+        
+        if proc.returncode == 0:
+            print(f"[Cron] ✅ 定时任务已自动设置: 每天 16:30 生成持仓分析报告")
+        else:
+            print(f"[Cron] ⚠️ 设置定时任务失败，请手动执行: crontab -e")
+            print(f"[Cron] 添加此行: {cron_line}")
+            
+    except Exception as e:
+        print(f"[Cron] ⚠️ 自动设置定时任务出错: {e}")
+        print(f"[Cron] 如需定时生成报告，请手动配置 crontab")
+
+
 if __name__ == '__main__':
+    # 启动时自动设置 crontab
+    setup_cron_job()
+    
     # 启动时预加载中轴价格缓存
     preload_axis_cache()
     
