@@ -1851,6 +1851,14 @@ def load_portfolio_analysis():
 def get_portfolio_analysis():
     """获取持仓分析报告 - 禁用服务器缓存，确保数据实时"""
     
+    def add_no_cache_headers(response):
+        """添加防缓存头"""
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        response.headers['Vary'] = '*'
+        return response
+    
     try:
         # 禁用服务器缓存，每次都从文件重新加载
         # 这样可以确保数据一致性
@@ -1862,12 +1870,7 @@ def get_portfolio_analysis():
                 'data': data,
                 'cached': False
             })
-            # 禁用所有缓存
-            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
-            response.headers['Pragma'] = 'no-cache'
-            response.headers['Expires'] = '0'
-            response.headers['Vary'] = '*'
-            return response
+            return add_no_cache_headers(response)
         
         # 文件不存在，尝试实时生成报告
         print("[Portfolio Analysis] 缓存和文件都不存在，尝试实时生成...")
@@ -1886,11 +1889,12 @@ def get_portfolio_analysis():
                 if data:
                     _portfolio_analysis_cache['data'] = data
                     _portfolio_analysis_cache['timestamp'] = time.time()
-                    return jsonify({
+                    response = jsonify({
                         'success': True,
                         'data': data,
                         'cached': False
                     })
+                    return add_no_cache_headers(response)
             else:
                 print(f"[Portfolio Analysis] 实时生成失败: {result.stderr}")
         except Exception as gen_e:
@@ -1898,7 +1902,7 @@ def get_portfolio_analysis():
         
         # 如果到这里还没有返回，说明确实无法获取报告
         # 返回一个友好的提示，而不是 404
-        return jsonify({
+        response = jsonify({
             'success': True,  # 改为 True，让前端正常显示
             'data': {
                 'summary': {
@@ -1922,15 +1926,17 @@ def get_portfolio_analysis():
             'cached': False,
             'generating': True  # 标记正在生成
         })
+        return add_no_cache_headers(response)
         
     except Exception as e:
         print(f"[Portfolio Analysis] 获取报告异常: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({
+        response = jsonify({
             'success': False,
             'error': str(e)
         }), 500
+        return add_no_cache_headers(response)
 
 
 def setup_cron_job():
