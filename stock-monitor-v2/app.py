@@ -1968,9 +1968,36 @@ def setup_cron_job():
         print(f"[Cron] 如需定时生成报告，请手动配置 crontab")
 
 
+def ensure_portfolio_analysis():
+    """启动时检查报告文件是否存在，不存在则自动生成"""
+    try:
+        if os.path.exists(PORTFOLIO_ANALYSIS_FILE):
+            print(f"[Report] 报告文件已存在: {PORTFOLIO_ANALYSIS_FILE}")
+            return
+        
+        print("[Report] 报告文件不存在，正在自动生成...")
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, 'update_portfolio_analysis.py'],
+            cwd=os.path.dirname(__file__),
+            capture_output=True,
+            text=True,
+            timeout=120
+        )
+        if result.returncode == 0:
+            print("[Report] ✅ 报告生成成功")
+        else:
+            print(f"[Report] ⚠️ 报告生成失败: {result.stderr}")
+    except Exception as e:
+        print(f"[Report] ⚠️ 检查/生成报告时出错: {e}")
+
+
 if __name__ == '__main__':
     # 启动时自动设置 crontab
     setup_cron_job()
+    
+    # 启动时检查报告文件，不存在则自动生成
+    ensure_portfolio_analysis()
     
     # 启动时预加载中轴价格缓存
     preload_axis_cache()
