@@ -1865,6 +1865,15 @@ def get_portfolio_analysis():
         data = load_portfolio_analysis()
         
         if data:
+            # 添加调试信息
+            import os
+            file_stat = os.stat(PORTFOLIO_ANALYSIS_FILE)
+            data['_debug'] = {
+                'file_mtime': file_stat.st_mtime,
+                'file_size': file_stat.st_size,
+                'stock_count': len(data.get('stock_analyses', [])),
+                'server_time': datetime.now().isoformat()
+            }
             response = jsonify({
                 'success': True,
                 'data': data,
@@ -1981,6 +1990,13 @@ def ensure_portfolio_analysis():
             print(f"[Report] 报告文件已存在: {PORTFOLIO_ANALYSIS_FILE}")
             return
         
+        # 先检查 stocks.json 数据
+        data = load_data()
+        stocks = data.get('stocks', [])
+        print(f"[Report] 当前持仓股票数量: {len(stocks)}")
+        if stocks:
+            print(f"[Report] 前3只股票: {[s.get('code') for s in stocks[:3]]}")
+        
         print("[Report] 报告文件不存在，正在自动生成...")
         import subprocess
         result = subprocess.run(
@@ -1992,10 +2008,20 @@ def ensure_portfolio_analysis():
         )
         if result.returncode == 0:
             print("[Report] ✅ 报告生成成功")
+            # 验证生成的报告
+            if os.path.exists(PORTFOLIO_ANALYSIS_FILE):
+                import json
+                with open(PORTFOLIO_ANALYSIS_FILE, 'r') as f:
+                    report = json.load(f)
+                print(f"[Report] 生成报告股票数: {len(report.get('stock_analyses', []))}")
+                print(f"[Report] 生成报告分数: {report.get('summary', {}).get('health_score')}")
         else:
             print(f"[Report] ⚠️ 报告生成失败: {result.stderr}")
+            print(f"[Report] stdout: {result.stdout}")
     except Exception as e:
         print(f"[Report] ⚠️ 检查/生成报告时出错: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 if __name__ == '__main__':
