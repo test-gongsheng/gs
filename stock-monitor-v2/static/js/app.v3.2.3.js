@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "3.2.2"; // 修复：持仓健康度显示问题
+const APP_VERSION = "3.2.3"; // 修复：持仓健康度显示问题
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
