@@ -1838,13 +1838,21 @@ PORTFOLIO_CACHE_TTL = 3600  # 缓存1小时
 def load_portfolio_analysis():
     """加载持仓分析报告"""
     try:
+        print(f"[DEBUG] 尝试加载报告，路径: {PORTFOLIO_ANALYSIS_FILE}")
+        print(f"[DEBUG] 当前工作目录: {os.getcwd()}")
+        print(f"[DEBUG] 文件是否存在: {os.path.exists(PORTFOLIO_ANALYSIS_FILE)}")
         if not os.path.exists(PORTFOLIO_ANALYSIS_FILE):
+            print(f"[DEBUG] 报告文件不存在")
             return None
         
         with open(PORTFOLIO_ANALYSIS_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            data = json.load(f)
+        print(f"[DEBUG] 报告加载成功，股票数: {len(data.get('stock_analyses', []))}")
+        return data
     except Exception as e:
-        print(f"加载持仓分析报告失败: {e}")
+        print(f"[DEBUG] 加载持仓分析报告失败: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 @app.route('/api/portfolio-analysis')
@@ -1860,80 +1868,62 @@ def get_portfolio_analysis():
         return response
     
     try:
-        # 禁用服务器缓存，每次都从文件重新加载
-        # 这样可以确保数据一致性
-        data = load_portfolio_analysis()
+        # 强制每次都从文件重新加载
+        print(f"[Portfolio Analysis] 收到请求，强制重新加载文件...")
         
-        if data:
-            # 添加调试信息
-            import os
-            file_stat = os.stat(PORTFOLIO_ANALYSIS_FILE)
-            data['_debug'] = {
-                'file_mtime': file_stat.st_mtime,
-                'file_size': file_stat.st_size,
-                'stock_count': len(data.get('stock_analyses', [])),
-                'server_time': datetime.now().isoformat()
-            }
+        # 先检查文件是否存在
+        if not os.path.exists(PORTFOLIO_ANALYSIS_FILE):
+            print(f"[Portfolio Analysis] 文件不存在: {PORTFOLIO_ANALYSIS_FILE}")
+            # 返回占位数据
             response = jsonify({
                 'success': True,
-                'data': data,
-                'cached': False
+                'data': {
+                    'summary': {
+                        'health_score': 0,
+                        'health_level': {'label': '待生成', 'color': '#999', 'desc': '报告正在生成中，请稍后再试'},
+                        'total_stocks': len(load_data().get('stocks', [])),
+                        'total_pnl': 0,
+                        'total_pnl_percent': 0
+                    },
+                    'stock_analyses': [],
+                    'sector_analysis': [],
+                    'portfolio_analysis': {
+                        'position': {'position_advice': '报告正在生成，请稍后再试'},
+                        'risks': []
+                    },
+                    'alerts': [],
+                    'highlights': [],
+                    'generated_at': '生成中...',
+                    'report_date': datetime.now().strftime('%Y-%m-%d')
+                },
+                'cached': False,
+                'generating': True
             })
             return add_no_cache_headers(response)
         
-        # 文件不存在，尝试实时生成报告
-        print("[Portfolio Analysis] 缓存和文件都不存在，尝试实时生成...")
-        try:
-            import subprocess
-            result = subprocess.run(
-                [sys.executable, 'update_portfolio_analysis.py'],
-                cwd=os.path.dirname(__file__),
-                capture_output=True,
-                text=True,
-                timeout=60
-            )
-            if result.returncode == 0:
-                print("[Portfolio Analysis] 实时生成成功，重新加载...")
-                data = load_portfolio_analysis()
-                if data:
-                    _portfolio_analysis_cache['data'] = data
-                    _portfolio_analysis_cache['timestamp'] = time.time()
-                    response = jsonify({
-                        'success': True,
-                        'data': data,
-                        'cached': False
-                    })
-                    return add_no_cache_headers(response)
-            else:
-                print(f"[Portfolio Analysis] 实时生成失败: {result.stderr}")
-        except Exception as gen_e:
-            print(f"[Portfolio Analysis] 实时生成异常: {gen_e}")
+        # 文件存在，直接读取
+        print(f"[Portfolio Analysis] 文件存在，开始读取...")
+        with open(PORTFOLIO_ANALYSIS_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
         
-        # 如果到这里还没有返回，说明确实无法获取报告
-        # 返回一个友好的提示，而不是 404
+        stock_count = len(data.get('stock_analyses', []))
+        health_score = data.get('summary', {}).get('health_score', 0)
+        print(f"[Portfolio Analysis] 读取成功: {stock_count} 只股票, 健康分: {health_score}")
+        
+        # 添加调试信息
+        file_stat = os.stat(PORTFOLIO_ANALYSIS_FILE)
+        data['_debug'] = {
+            'file_mtime': file_stat.st_mtime,
+            'file_size': file_stat.st_size,
+            'stock_count': stock_count,
+            'server_time': datetime.now().isoformat(),
+            'read_directly': True
+        }
+        
         response = jsonify({
-            'success': True,  # 改为 True，让前端正常显示
-            'data': {
-                'summary': {
-                    'health_score': 0,
-                    'health_level': {'label': '待生成', 'color': '#999', 'desc': '报告正在生成中，请稍后再试'},
-                    'total_stocks': len(load_data().get('stocks', [])),
-                    'total_pnl': 0,
-                    'total_pnl_percent': 0
-                },
-                'stock_analyses': [],
-                'sector_analysis': [],
-                'portfolio_analysis': {
-                    'position': {'position_advice': '报告正在生成，请稍后再试'},
-                    'risks': []
-                },
-                'alerts': [],
-                'highlights': [],
-                'generated_at': '生成中...',
-                'report_date': datetime.now().strftime('%Y-%m-%d')
-            },
-            'cached': False,
-            'generating': True  # 标记正在生成
+            'success': True,
+            'data': data,
+            'cached': False
         })
         return add_no_cache_headers(response)
         
@@ -1944,6 +1934,8 @@ def get_portfolio_analysis():
         response = jsonify({
             'success': False,
             'error': str(e)
+        })
+        return add_no_cache_headers(response)
         }), 500
         return add_no_cache_headers(response)
 
