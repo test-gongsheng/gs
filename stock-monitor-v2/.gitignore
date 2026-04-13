@@ -22,7 +22,7 @@ logs/
 server.log
 
 # Data & Reports (large files)
-reports/*.json
+reports/portfolio_analysis_2*.json
 data/*.json.bak
 
 # IDE
