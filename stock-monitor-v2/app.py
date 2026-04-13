@@ -1871,9 +1871,26 @@ def get_portfolio_analysis():
         # 强制每次都从文件重新加载
         print(f"[Portfolio Analysis] 收到请求，强制重新加载文件...")
         
-        # 先检查文件是否存在
-        if not os.path.exists(PORTFOLIO_ANALYSIS_FILE):
-            print(f"[Portfolio Analysis] 文件不存在: {PORTFOLIO_ANALYSIS_FILE}")
+        # 确定要读取的文件路径
+        file_to_read = PORTFOLIO_ANALYSIS_FILE
+        
+        # 先检查 latest 文件是否存在
+        if not os.path.exists(file_to_read):
+            print(f"[Portfolio Analysis] latest 文件不存在，尝试查找日期文件...")
+            # 查找 reports 目录下最新的 portfolio_analysis_YYYY-MM-DD.json 文件
+            reports_dir = os.path.join(os.path.dirname(__file__), 'reports')
+            if os.path.exists(reports_dir):
+                import glob
+                date_files = glob.glob(os.path.join(reports_dir, 'portfolio_analysis_202[0-9]-[0-9][0-9]-[0-9][0-9].json'))
+                if date_files:
+                    # 按修改时间排序，取最新的
+                    date_files.sort(key=os.path.getmtime, reverse=True)
+                    file_to_read = date_files[0]
+                    print(f"[Portfolio Analysis] 找到日期文件: {file_to_read}")
+        
+        # 检查文件是否存在（可能是 latest 或日期文件）
+        if not os.path.exists(file_to_read):
+            print(f"[Portfolio Analysis] 文件不存在: {file_to_read}")
             # 返回占位数据
             response = jsonify({
                 'success': True,
@@ -1902,8 +1919,8 @@ def get_portfolio_analysis():
             return add_no_cache_headers(response)
         
         # 文件存在，直接读取
-        print(f"[Portfolio Analysis] 文件存在，开始读取...")
-        with open(PORTFOLIO_ANALYSIS_FILE, 'r', encoding='utf-8') as f:
+        print(f"[Portfolio Analysis] 读取文件: {file_to_read}")
+        with open(file_to_read, 'r', encoding='utf-8') as f:
             data = json.load(f)
         
         stock_count = len(data.get('stock_analyses', []))
@@ -1911,13 +1928,13 @@ def get_portfolio_analysis():
         print(f"[Portfolio Analysis] 读取成功: {stock_count} 只股票, 健康分: {health_score}")
         
         # 添加调试信息
-        file_stat = os.stat(PORTFOLIO_ANALYSIS_FILE)
+        file_stat = os.stat(file_to_read)
         data['_debug'] = {
             'file_mtime': file_stat.st_mtime,
             'file_size': file_stat.st_size,
             'stock_count': stock_count,
             'server_time': datetime.now().isoformat(),
-            'read_directly': True
+            'read_from': file_to_read
         }
         
         response = jsonify({
@@ -1935,8 +1952,6 @@ def get_portfolio_analysis():
             'success': False,
             'error': str(e)
         })
-        return add_no_cache_headers(response)
-        }), 500
         return add_no_cache_headers(response)
 
 
