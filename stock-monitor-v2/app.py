@@ -580,6 +580,18 @@ def batch_add_stocks():
         if save_data(data):
             print(f"[batch_add_stocks] 成功添加 {len(added_stocks)} 只股票，记录 {len(trades)} 笔交易")
             
+            # 【修复】强制刷新数据，确保导入的数据已持久化
+            import time
+            time.sleep(0.1)  # 给文件系统一点时间
+            verify_data = load_data()
+            verify_codes = [s.get('code') for s in verify_data.get('stocks', [])]
+            added_codes = [s.get('code') for s in added_stocks]
+            missing = [c for c in added_codes if c not in verify_codes]
+            if missing:
+                print(f"[batch_add_stocks] [WARN] 验证发现缺失股票: {missing}")
+            else:
+                print(f"[batch_add_stocks] [OK] 数据验证通过，所有股票已持久化")
+            
             # 【新增】导入成功后同步生成持仓分析报告（确保立即可用）
             report_result = None
             try:
