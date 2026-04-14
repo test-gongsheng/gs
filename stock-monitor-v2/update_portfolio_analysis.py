@@ -62,18 +62,36 @@ def get_stock_sector(code: str) -> str:
 
 
 def get_real_axis_price(code: str, market: str, current_price: float) -> float:
-    """获取真实的中轴价格（基于历史数据计算）"""
+    """获取真实的中轴价格（调用后端API计算）"""
     try:
-        # 尝试从缓存/计算获取中轴价格
-        axis_data = get_cached_axis_price(code, market, days=90)
-        axis_price = axis_data.get('axis_price', 0)
+        import requests
         
-        # 如果计算失败，使用当前价格作为fallback
-        if axis_price <= 0:
-            print(f"[WARN] {code} 中轴价格计算失败，使用当前价格作为参考")
-            return current_price
+        # 调用 /api/axis-price 接口获取中轴价格
+        url = "http://localhost:8888/api/axis-price"
         
-        return axis_price
+        # 确定 market 参数
+        market_param = "HK" if market == "港股" else "A"
+        
+        payload = {
+            "code": code,
+            "market": market_param,
+            "days": 90
+        }
+        
+        response = requests.post(url, json=payload, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success"):
+                axis_price = data.get("data", {}).get("axis_price", 0)
+                if axis_price > 0:
+                    print(f"[OK] {code} 中轴价格: ¥{axis_price:.2f}")
+                    return axis_price
+        
+        # API调用失败或返回无效数据
+        print(f"[WARN] {code} API获取中轴价格失败，使用当前价格作为参考")
+        return current_price
+        
     except Exception as e:
         print(f"[ERROR] {code} 获取中轴价格失败: {e}")
         return current_price
