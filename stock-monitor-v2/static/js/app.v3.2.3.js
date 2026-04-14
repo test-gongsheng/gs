@@ -2947,7 +2947,10 @@ function showStockAnalysisDetail(code) {
                 ${stockAnalysis.analysis ? `
                 <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
                     <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 6px;">📊 分析结论</div>
-                    <div style="font-size: 0.85rem; color: var(--text-primary); line-height: 1.6;">${stockAnalysis.analysis}</div>
+                    <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">${stockAnalysis.analysis.conclusion?.title || ''}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-primary); line-height: 1.6;">
+                        ${(stockAnalysis.analysis.conclusion?.content || []).map(line => `<p style="margin: 4px 0;">${line}</p>`).join('')}
+                    </div>
                 </div>
                 ` : ''}
                 
