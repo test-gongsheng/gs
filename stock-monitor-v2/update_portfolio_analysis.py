@@ -456,15 +456,19 @@ def generate_portfolio_analysis_v2() -> Dict:
     
     report_date = datetime.now().strftime('%Y-%m-%d')
     
-    # 第一步：获取实时价格并更新股票数据
+    # 第一步：强制重置所有股票价格并获取实时价格
     print(f"[实时数据] 获取 {len(stocks)} 只股票的实时价格...")
     for stock in stocks:
         code = stock['code']
         market = stock['market']
+        # 【强制】先重置价格为0，确保一定会获取实时价格
+        stock['current_price'] = 0
         realtime_price = get_realtime_price(code, market)
         if realtime_price > 0:
             stock['current_price'] = realtime_price
-            print(f"[实时数据] {code} 更新价格: ¥{stock.get('current_price', 0)} -> ¥{realtime_price:.2f}")
+            print(f"[实时数据] {code} 价格: ¥{realtime_price:.2f}")
+        else:
+            print(f"[WARN] {code} 获取实时价格失败，将使用0")
     print("[实时数据] 价格更新完成")
     
     # 第二步：预加载所有股票的中轴价格并存储
