@@ -39,5 +39,3 @@ Thumbs.db
 stock_analyzer/venv/
 __pycache__/
 *.pyc
-EOF
-data/stocks.json
