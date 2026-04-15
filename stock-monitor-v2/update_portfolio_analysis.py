@@ -61,6 +61,30 @@ def get_stock_sector(code: str) -> str:
     return SECTOR_MAP.get(code, '其他')
 
 
+def get_realtime_price(code: str, market: str) -> float:
+    """获取实时价格（调用后端API）"""
+    try:
+        import requests
+        
+        # 调用 /api/stocks 获取实时行情
+        url = "http://localhost:8888/api/stocks"
+        response = requests.get(url, timeout=30)
+        
+        if response.status_code == 200:
+            stocks = response.json()
+            for stock in stocks:
+                if stock.get('code') == code:
+                    price = stock.get('current_price', 0)
+                    print(f"[实时价格] {code} = ¥{price:.2f}")
+                    return price
+        
+        print(f"[WARN] {code} 获取实时价格失败")
+        return 0
+    except Exception as e:
+        print(f"[ERROR] {code} 获取实时价格异常: {e}")
+        return 0
+
+
 def get_real_axis_price(code: str, market: str, current_price: float) -> float:
     """获取真实的中轴价格（调用后端API计算）"""
     try:
@@ -422,7 +446,18 @@ def generate_portfolio_analysis_v2() -> Dict:
     
     report_date = datetime.now().strftime('%Y-%m-%d')
     
-    # 第一步：预加载所有股票的中轴价格
+    # 第一步：获取实时价格并更新股票数据
+    print(f"[实时数据] 获取 {len(stocks)} 只股票的实时价格...")
+    for stock in stocks:
+        code = stock['code']
+        market = stock['market']
+        realtime_price = get_realtime_price(code, market)
+        if realtime_price > 0:
+            stock['current_price'] = realtime_price
+            print(f"[实时数据] {code} 更新价格: ¥{stock.get('current_price', 0)} -> ¥{realtime_price:.2f}")
+    print("[实时数据] 价格更新完成")
+    
+    # 第二步：预加载所有股票的中轴价格
     print(f"[预加载] 开始计算 {len(stocks)} 只股票的中轴价格...")
     for stock in stocks:
         code = stock['code']
