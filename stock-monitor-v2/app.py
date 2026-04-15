@@ -363,6 +363,23 @@ def get_stocks():
                     # 打印更新日志（只打印价格变化超过1%的）
                     if old_price > 0 and abs(new_price - old_price) / old_price > 0.01:
                         print(f"[get_stocks] {code} 价格更新: ¥{old_price:.2f} → ¥{new_price:.2f}")
+        
+        # 【新增】为每只股票获取实时中轴价格
+        print("[get_stocks] 计算中轴价格...")
+        for stock in stocks:
+            code = stock.get('code', '')
+            market = stock.get('market', 'A股')
+            try:
+                axis_data = get_cached_axis_price(code, market, 90)
+                if axis_data and axis_data.get('axis_price', 0) > 0:
+                    stock['axis_price'] = axis_data['axis_price']
+                else:
+                    # 如果获取失败，用当前价格作为中轴价格
+                    stock['axis_price'] = stock.get('current_price', 0)
+            except Exception as e:
+                print(f"[get_stocks] {code} 中轴价格计算失败: {e}")
+                stock['axis_price'] = stock.get('current_price', 0)
+        
     except Exception as e:
         print(f"[get_stocks] 实时行情刷新失败: {e}")
         import traceback
@@ -412,47 +429,6 @@ def get_stocks():
         stock['cooldown_remaining'] = buy_info['cooldown_remaining']
         stock['strategy_reason'] = buy_info['reason']
     
-    # 【修复】只在确实需要保存时才保存（避免竞态条件覆盖导入数据）
-    # 检查是否有新计算的股票类型需要持久化
-    need_save = False
-    for stock in stocks:
-        # 如果股票类型刚计算成功且需要保存，则标记需要保存
-        if stock.get('stock_type_calculated') and 'stock_type_calc_time' in stock:
-            # 检查是否是本次会话新计算的（通过时间戳判断）
-            calc_time = stock.get('stock_type_calc_time', '')
-            if calc_time and datetime.now().isoformat()[:10] == calc_time[:10]:
-                need_save = True
-                break
-    
-    if need_save:
-        # 重新加载最新数据，合并后再保存（避免覆盖其他并发修改）
-        fresh_data = load_data()
-        fresh_codes = {s['id']: s for s in fresh_data['stocks']}
-        
-        # 1. 更新文件中已存在的股票
-        for stock in stocks:
-            if stock['id'] in fresh_codes:
-                fresh_codes[stock['id']].update({
-                    'stock_type': stock.get('stock_type'),
-                    'vol_score': stock.get('vol_score'),
-                    'annual_vol': stock.get('annual_vol'),
-                    'atr_pct': stock.get('atr_pct'),
-                    'stock_type_calculated': stock.get('stock_type_calculated'),
-                    'stock_type_calc_time': stock.get('stock_type_calc_time')
-                })
-        
-        # 2. 【修复】添加内存中有但文件中没有的股票（新导入的）
-        current_ids = {s['id'] for s in stocks}
-        fresh_ids = {s['id'] for s in fresh_data['stocks']}
-        new_ids = current_ids - fresh_ids
-        
-        for stock in stocks:
-            if stock['id'] in new_ids:
-                fresh_data['stocks'].append(stock)
-                print(f"[get_stocks] 添加新股票到文件: {stock.get('code')} {stock.get('name')}")
-        
-        save_data(fresh_data)
-        print(f"[get_stocks] 已保存 {len([s for s in stocks if s.get('stock_type_calculated')])} 只股票类型，新增 {len(new_ids)} 只")
     
     return jsonify(stocks)
 
@@ -597,12 +573,17 @@ def batch_add_stocks():
             try:
                 print("[batch_add_stocks] 开始生成持仓分析报告...")
                 import subprocess
+                
+                # 【修复】先等待中轴价格计算完成，确保数据就绪
+                print("[batch_add_stocks] 等待中轴价格计算...")
+                time.sleep(2)
+                
                 result = subprocess.run(
                     [sys.executable, 'update_portfolio_analysis.py'],
                     cwd=os.path.dirname(__file__),
                     capture_output=True,
                     text=True,
-                    timeout=120
+                    timeout=180  # 【修复】增加超时时间到3分钟
                 )
                 if result.returncode == 0:
                     print("[batch_add_stocks] 持仓分析报告生成成功")
@@ -611,6 +592,9 @@ def batch_add_stocks():
                     error_msg = result.stderr[:200] if result.stderr else '未知错误'
                     print(f"[batch_add_stocks] 报告生成失败: {error_msg}")
                     report_result = f'failed: {error_msg}'
+            except subprocess.TimeoutExpired:
+                print("[batch_add_stocks] 报告生成超时，请稍后手动执行")
+                report_result = 'timeout'
             except Exception as e:
                 print(f"[batch_add_stocks] 生成报告异常: {e}")
                 report_result = f'error: {str(e)}'
