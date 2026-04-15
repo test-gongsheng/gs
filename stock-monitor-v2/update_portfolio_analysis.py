@@ -121,17 +121,19 @@ def get_real_axis_price(code: str, market: str, current_price: float) -> float:
         return current_price
 
 
-def analyze_stock_detailed(stock: Dict) -> Dict:
+def analyze_stock_detailed(stock: Dict, realtime_price: float = 0, realtime_axis: float = 0) -> Dict:
     """生成单只股票的详细分析报告"""
     code = stock['code']
     name = stock['name']
     market = stock['market']
     avg_cost = stock.get('avg_cost', 0)
     shares = stock.get('shares', 0)
-    current_price = stock.get('current_price', 0)
     
-    # 获取真实的中轴价格（基于历史数据计算）
-    axis_price = get_real_axis_price(code, market, current_price)
+    # 【修复】使用传入的实时价格，而不是从 stock 读取
+    current_price = realtime_price if realtime_price > 0 else stock.get('current_price', 0)
+    
+    # 【修复】使用传入的实时中轴价格
+    axis_price = realtime_axis if realtime_axis > 0 else get_real_axis_price(code, market, current_price)
     
     # 基础计算
     market_value = current_price * shares
@@ -457,23 +459,28 @@ def generate_portfolio_analysis_v2() -> Dict:
             print(f"[实时数据] {code} 更新价格: ¥{stock.get('current_price', 0)} -> ¥{realtime_price:.2f}")
     print("[实时数据] 价格更新完成")
     
-    # 第二步：预加载所有股票的中轴价格
+    # 第二步：预加载所有股票的中轴价格并存储
     print(f"[预加载] 开始计算 {len(stocks)} 只股票的中轴价格...")
+    stock_axis_prices = {}  # 存储每只股票的实时中轴价格
     for stock in stocks:
         code = stock['code']
         market = stock['market']
         current_price = stock.get('current_price', 0)
         axis_price = get_real_axis_price(code, market, current_price)
+        stock_axis_prices[code] = axis_price
         print(f"[预加载] {code} 中轴价格: ¥{axis_price:.2f}")
     print("[预加载] 中轴价格计算完成")
     
-    # 第二步：分析每只股票
+    # 第三步：分析每只股票（传入实时价格和中轴价格）
     stock_analyses = []
     total_market_value = 0
     total_cost = 0
     
     for stock in stocks:
-        analysis = analyze_stock_detailed(stock)
+        code = stock['code']
+        realtime_price = stock.get('current_price', 0)
+        realtime_axis = stock_axis_prices.get(code, 0)
+        analysis = analyze_stock_detailed(stock, realtime_price, realtime_axis)
         stock_analyses.append(analysis)
         total_market_value += analysis['market_value']
         total_cost += stock['avg_cost'] * stock['shares']
