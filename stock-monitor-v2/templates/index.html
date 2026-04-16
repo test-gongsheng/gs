@@ -13,15 +13,19 @@
     <script>
         // 自动缓存清除机制 - 使用固定版本号
         (function() {
-            const APP_VERSION = '3.2.4';  // 【修复】个股分析报告中轴价格显示错误
+            const APP_VERSION = '3.2.5';  // 【紧急修复】个股分析弹窗显示错误数据
             const storedVersion = localStorage.getItem('app_version');
             
             if (storedVersion !== APP_VERSION) {
                 console.log('[Cache Clear] 版本变化:', storedVersion, '->', APP_VERSION);
+                // 清除所有相关缓存
                 localStorage.removeItem('import_data_last');
                 localStorage.removeItem('alertedStocks');
                 localStorage.removeItem('trade_alert_date');
                 localStorage.removeItem('portfolio_analysis_cache');
+                localStorage.removeItem('axis_prices_cache');
+                // 清除 sessionStorage
+                sessionStorage.clear();
                 localStorage.setItem('app_version', APP_VERSION);
                 // 强制刷新页面
                 window.location.reload(true);
@@ -1440,7 +1444,7 @@
     <!-- 新模块: 状态管理 (Step 3) -->
     <script src="{{ url_for('static', filename='js/modules/state.js') }}?v={{ now }}"></script>
     <script src="{{ url_for('static', filename='js/southbound.js') }}?v={{ now }}"></script>
-    <script src="{{ url_for('static', filename='js/app.v3.2.3.js') }}?v={{ now }}"></script>
+    <script src="{{ url_for('static', filename='js/app.v3.2.4.js') }}?v={{ now }}"></script>
     <script src="{{ url_for('static', filename='js/import.js') }}?v={{ now }}"></script>
     <script>
         // 保底渲染逻辑 - 确保持仓列表一定能显示
