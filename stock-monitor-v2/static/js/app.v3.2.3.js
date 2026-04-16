@@ -2907,14 +2907,32 @@ function showStockAnalysisDetail(code) {
     const stockAnalysis = data.stock_analyses.find(s => s.code === code);
     if (!stockAnalysis) return;
     
-    // 从 stocks 中获取完整的股票数据（包括价格、市场等）
-    const stock = appState.stocks.find(s => s.code === code) || {};
-    const isHK = stock.market === '港股';
+    // 【修复】计算个股健康度评分（基于技术状态）
+    const statusScores = {
+        'overbought': 40,   // 超买 - 偏高风险
+        'strong': 80,       // 强势 - 良好
+        'neutral': 60,      // 震荡 - 一般
+        'weak': 40,         // 弱势 - 偏低
+        'oversold': 70      // 超卖 - 机会
+    };
+    const healthScore = stockAnalysis.health_score || statusScores[stockAnalysis.technical_status] || 50;
+    
+    // 设置货币符号
+    const isHK = stockAnalysis.market === '港股';
     const currency = isHK ? 'HK$' : '¥';
     
-    // 获取价格和轴价格
-    const currentPrice = stock.price || stockAnalysis.current_price || 0;
-    const pivotPrice = stock.pivotPrice || stockAnalysis.axis_price || 0;
+    // 强制使用分析报告中的数据，不从 stocks 数组读取
+    const currentPrice = stockAnalysis.current_price || 0;
+    const pivotPrice = stockAnalysis.axis_price || 0;
+    
+    // 计算偏离度（用于验证数据一致性）
+    const calculatedDeviation = pivotPrice > 0 ? ((currentPrice - pivotPrice) / pivotPrice * 100).toFixed(2) : 0;
+    const reportDeviation = stockAnalysis.axis_deviation || 0;
+    
+    // 如果计算值和报告值不一致，记录错误日志
+    if (Math.abs(parseFloat(calculatedDeviation) - reportDeviation) > 0.5) {
+        console.error(`[数据不一致警告] ${code}: 计算偏离 ${calculatedDeviation}%, 报告偏离 ${reportDeviation}%`);
+    }
     
     // 创建弹窗
     const modal = document.createElement('div');
@@ -2940,8 +2958,13 @@ function showStockAnalysisDetail(code) {
                 </div>
                 
                 <div style="margin-bottom: 16px;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">偏离中轴</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: ${reportDeviation > 0 ? '#10b981' : reportDeviation < -5 ? '#ef4444' : '#f59e0b'};">${reportDeviation > 0 ? '+' : ''}${reportDeviation}%</div>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
                     <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">健康度评分</div>
-                    <div style="font-size: 1.5rem; font-weight: 700; color: ${stockAnalysis.health_score >= 80 ? '#10b981' : stockAnalysis.health_score >= 60 ? '#f59e0b' : '#ef4444'};">${stockAnalysis.health_score || '--'}/100</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: ${healthScore >= 80 ? '#10b981' : healthScore >= 60 ? '#f59e0b' : '#ef4444'};">${healthScore}/100</div>
                 </div>
                 
                 ${stockAnalysis.analysis ? `

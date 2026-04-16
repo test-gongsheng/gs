@@ -13,7 +13,7 @@
     <script>
         // 自动缓存清除机制 - 使用固定版本号
         (function() {
-            const APP_VERSION = '3.2.3';  // 修复：持仓健康度显示问题 - 强制刷新
+            const APP_VERSION = '3.2.4';  // 【修复】个股分析报告中轴价格显示错误
             const storedVersion = localStorage.getItem('app_version');
             
             if (storedVersion !== APP_VERSION) {
@@ -21,6 +21,7 @@
                 localStorage.removeItem('import_data_last');
                 localStorage.removeItem('alertedStocks');
                 localStorage.removeItem('trade_alert_date');
+                localStorage.removeItem('portfolio_analysis_cache');
                 localStorage.setItem('app_version', APP_VERSION);
                 // 强制刷新页面
                 window.location.reload(true);
