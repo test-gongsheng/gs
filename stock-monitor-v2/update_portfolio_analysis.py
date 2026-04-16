@@ -62,27 +62,17 @@ def get_stock_sector(code: str) -> str:
 
 
 def get_realtime_price(code: str, market: str) -> float:
-    """获取实时价格（直接调用数据获取函数）"""
+    """获取实时价格（直接调用数据获取函数，强制清除缓存）"""
     try:
-        from utils.stock_quote import get_stock_quotes, normalize_stock_code
+        from utils.stock_quote import get_quote_from_tencent
         
-        # 构造股票列表
-        stock_list = [{'code': code, 'market': market}]
-        quotes = get_stock_quotes(stock_list)
+        # 【修复】直接调用腾讯API，绕过缓存
+        quote = get_quote_from_tencent(code, market)
         
-        # 构造匹配的code key
-        if market == '港股' or len(code) == 5:
-            quote_key = f"hk{code}"
-        elif code.startswith(('6', '688')):
-            quote_key = f"sh{code}"
-        else:
-            quote_key = f"sz{code}"
-        
-        if quote_key in quotes:
-            price = quotes[quote_key].get('price', 0)
-            if price > 0:
-                print(f"[实时价格] {code} = ¥{price:.2f}")
-                return price
+        if quote and quote.get('price', 0) > 0:
+            price = quote['price']
+            print(f"[实时价格] {code} = ¥{price:.2f}")
+            return price
         
         print(f"[WARN] {code} 获取实时价格失败")
         return 0
