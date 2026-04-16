@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "3.2.7"; // 新增：个股报告展示三个高价值维度（交易质量/特权利用/集中度偏离）
+const APP_VERSION = "3.2.8"; // 强制刷新：确保三个维度显示正常
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
