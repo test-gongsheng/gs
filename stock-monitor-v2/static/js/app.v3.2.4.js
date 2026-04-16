@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "3.2.6"; // 修复：清除localStorage缓存，强制重新加载持仓数据
+const APP_VERSION = "3.2.7"; // 新增：个股报告展示三个高价值维度（交易质量/特权利用/集中度偏离）
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -3004,6 +3004,44 @@ function renderStockAnalysisModal(stockAnalysis, data) {
                     <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">健康度评分</div>
                     <div style="font-size: 1.5rem; font-weight: 700; color: ${healthScore >= 80 ? '#10b981' : healthScore >= 60 ? '#f59e0b' : '#ef4444'};">${healthScore}/100</div>
                 </div>
+                
+                <!-- 三个高价值维度分析 -->
+                ${stockAnalysis.trade_quality ? `
+                <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 3px solid ${stockAnalysis.trade_quality.grade === 'A' ? '#10b981' : stockAnalysis.trade_quality.grade === 'B' ? '#3b82f6' : stockAnalysis.trade_quality.grade === 'C' ? '#f59e0b' : '#ef4444'};">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">🎯 加减仓质量评分</div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                        <span style="font-size: 1.2rem; font-weight: 700; color: ${stockAnalysis.trade_quality.grade === 'A' ? '#10b981' : stockAnalysis.trade_quality.grade === 'B' ? '#3b82f6' : stockAnalysis.trade_quality.grade === 'C' ? '#f59e0b' : '#ef4444'};">${stockAnalysis.trade_quality.grade}</span>
+                        ${stockAnalysis.trade_quality.deviation !== null ? `<span style="font-size: 0.8rem; color: var(--text-secondary);">偏离 ${stockAnalysis.trade_quality.deviation > 0 ? '+' : ''}${stockAnalysis.trade_quality.deviation}%</span>` : ''}
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-primary); line-height: 1.4;">${stockAnalysis.trade_quality.detail}</div>
+                </div>
+                ` : ''}
+                
+                ${stockAnalysis.privilege_utilization ? `
+                <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 3px solid ${stockAnalysis.privilege_utilization.is_high_vol ? (stockAnalysis.privilege_utilization.utilization_rate >= 80 ? '#10b981' : stockAnalysis.privilege_utilization.utilization_rate >= 50 ? '#3b82f6' : '#f59e0b') : '#6b7280'};">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">⚡ 高波动股特权利用率</div>
+                    ${stockAnalysis.privilege_utilization.is_high_vol ? `
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                        <div style="flex: 1; background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden;">
+                            <div style="width: ${stockAnalysis.privilege_utilization.utilization_rate}%; height: 100%; background: ${stockAnalysis.privilege_utilization.utilization_rate >= 80 ? '#10b981' : stockAnalysis.privilege_utilization.utilization_rate >= 50 ? '#3b82f6' : '#f59e0b'}; border-radius: 4px;"></div>
+                        </div>
+                        <span style="font-size: 0.9rem; font-weight: 600;">${stockAnalysis.privilege_utilization.utilization_rate}%</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-primary); line-height: 1.4;">${stockAnalysis.privilege_utilization.detail}</div>
+                    ` : `<div style="font-size: 0.85rem; color: var(--text-secondary);">${stockAnalysis.privilege_utilization.detail}</div>`}
+                </div>
+                ` : ''}
+                
+                ${stockAnalysis.concentration_deviation ? `
+                <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 3px solid ${Math.abs(stockAnalysis.concentration_deviation.deviation) <= 5 ? '#10b981' : Math.abs(stockAnalysis.concentration_deviation.deviation) <= 10 ? '#f59e0b' : '#ef4444'};">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">📊 持仓集中度动态偏离</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; font-size: 0.8rem;">
+                        <div><span style="color: var(--text-secondary);">实际占比:</span> <span style="font-weight: 600;">${stockAnalysis.concentration_deviation.current_weight}%</span></div>
+                        <div><span style="color: var(--text-secondary);">目标占比:</span> <span style="font-weight: 600;">${stockAnalysis.concentration_deviation.target_weight}%</span></div>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-primary); line-height: 1.4;">${stockAnalysis.concentration_deviation.detail}</div>
+                </div>
+                ` : ''}
                 
                 ${stockAnalysis.analysis ? `
                 <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
