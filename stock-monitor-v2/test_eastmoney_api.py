@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 东方财富南向资金直接API - 抓包分析版本
 页面: https://data.eastmoney.com/hsgt/StockHdDetail/09988.html

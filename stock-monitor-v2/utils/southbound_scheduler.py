@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 南向资金预加载定时任务配置
 使用 APScheduler 实现

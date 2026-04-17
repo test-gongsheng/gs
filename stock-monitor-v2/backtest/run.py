@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 中轴价格仓位控制法回测 - 一键运行脚本

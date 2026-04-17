@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import re
 
 # 读取原始文件
