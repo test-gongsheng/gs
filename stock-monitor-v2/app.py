@@ -1951,6 +1951,151 @@ def get_portfolio_analysis():
         return add_no_cache_headers(response)
 
 
+# ========== 报告自动检查与生成 API ==========
+
+@app.route('/api/reports/check')
+def check_report_exists():
+    """
+    检查指定日期的报告是否存在
+    参数: date (YYYY-MM-DD)，默认今天
+    """
+    try:
+        date_str = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
+        
+        # 检查日期格式
+        try:
+            check_date = datetime.strptime(date_str, '%Y-%m-%d')
+        except ValueError:
+            return jsonify({
+                'success': False,
+                'error': '日期格式错误，应为 YYYY-MM-DD'
+            }), 400
+        
+        # 检查最新的报告文件
+        reports_dir = os.path.join(os.path.dirname(__file__), 'reports')
+        
+        # 检查两种方式：1. latest 文件  2. 日期文件
+        latest_file = os.path.join(reports_dir, 'portfolio_analysis_latest.json')
+        date_file = os.path.join(reports_dir, f'portfolio_analysis_{date_str}.json')
+        
+        exists = False
+        report_file = None
+        report_mtime = None
+        
+        # 优先检查日期文件
+        if os.path.exists(date_file):
+            exists = True
+            report_file = date_file
+            report_mtime = os.path.getmtime(date_file)
+        # 其次检查 latest 文件
+        elif os.path.exists(latest_file):
+            # 检查 latest 文件的修改时间是否匹配请求日期
+            latest_mtime = os.path.getmtime(latest_file)
+            latest_date = datetime.fromtimestamp(latest_mtime).strftime('%Y-%m-%d')
+            if latest_date == date_str:
+                exists = True
+                report_file = latest_file
+                report_mtime = latest_mtime
+        
+        result = {
+            'success': True,
+            'date': date_str,
+            'exists': exists,
+            'report_file': report_file,
+            'server_time': datetime.now().isoformat()
+        }
+        
+        if exists and report_mtime:
+            result['report_mtime'] = datetime.fromtimestamp(report_mtime).isoformat()
+            result['report_mtime_timestamp'] = report_mtime
+        
+        print(f"[Report Check] 日期: {date_str}, 存在: {exists}")
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"[Report Check] 错误: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/reports/generate', methods=['POST'])
+def generate_report():
+    """
+    手动触发生成持仓分析报告
+    调用 update_portfolio_analysis.py 生成报告
+    """
+    try:
+        print("[Report Generate] 开始生成持仓分析报告...")
+        
+        import subprocess
+        import sys
+        
+        script_path = os.path.join(os.path.dirname(__file__), 'update_portfolio_analysis.py')
+        
+        # 检查脚本是否存在
+        if not os.path.exists(script_path):
+            return jsonify({
+                'success': False,
+                'error': f'生成脚本不存在: {script_path}'
+            }), 500
+        
+        # 执行生成脚本
+        result = subprocess.run(
+            [sys.executable, script_path],
+            cwd=os.path.dirname(__file__),
+            capture_output=True,
+            text=True,
+            timeout=180  # 3分钟超时
+        )
+        
+        if result.returncode == 0:
+            print("[Report Generate] 报告生成成功")
+            
+            # 获取生成的文件信息
+            latest_file = os.path.join(os.path.dirname(__file__), 'reports', 'portfolio_analysis_latest.json')
+            file_info = {}
+            if os.path.exists(latest_file):
+                stat = os.stat(latest_file)
+                file_info = {
+                    'file_size': stat.st_size,
+                    'mtime': datetime.fromtimestamp(stat.st_mtime).isoformat()
+                }
+            
+            return jsonify({
+                'success': True,
+                'message': '报告生成成功',
+                'stdout': result.stdout[:500] if result.stdout else '',  # 限制输出长度
+                'file_info': file_info
+            })
+        else:
+            error_msg = result.stderr[:500] if result.stderr else '生成失败'
+            print(f"[Report Generate] 生成失败: {error_msg}")
+            return jsonify({
+                'success': False,
+                'error': error_msg,
+                'stdout': result.stdout[:500] if result.stdout else ''
+            }), 500
+            
+    except subprocess.TimeoutExpired:
+        print("[Report Generate] 生成超时")
+        return jsonify({
+            'success': False,
+            'error': '报告生成超时，请稍后重试'
+        }), 504
+    except Exception as e:
+        print(f"[Report Generate] 异常: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 def setup_cron_job():
     """启动时自动检查并设置 crontab 定时任务"""
     try:

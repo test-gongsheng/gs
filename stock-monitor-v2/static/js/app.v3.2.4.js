@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "3.2.8"; // 强制刷新：确保三个维度显示正常
+const APP_VERSION = "3.2.4"; // 新增：自动检查每日报告 + 刷新报告按钮
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');
@@ -207,6 +207,10 @@ async function init() {
     // 启动方案3C买卖点实时监控
     console.log('[init] 启动方案3C买卖点监控...');
     startPriceAlertMonitor();
+    
+    // 【新增】页面加载时自动检查并生成每日报告
+    console.log('[init] 自动检查每日报告...');
+    checkAndGenerateReport();
 }
 
 /**
@@ -247,6 +251,118 @@ async function refreshAxisPricesInBackground() {
         console.log('[refreshAxisPricesInBackground] 后台刷新完成');
     } catch (e) {}
 }
+
+/**
+ * 【新增】检查并自动生成本日持仓分析报告
+ * - 页面加载时调用
+ * - 检查当天报告是否存在
+ * - 如果不存在，自动调用生成API
+ */
+async function checkAndGenerateReport() {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        console.log(`[checkAndGenerateReport] 检查 ${today} 的报告...`);
+        
+        // 检查报告是否存在
+        const checkResponse = await fetch(`/api/reports/check?date=${today}`);
+        const checkResult = await checkResponse.json();
+        
+        if (!checkResult.exists) {
+            console.log('[checkAndGenerateReport] 今日报告不存在，开始自动生成...');
+            
+            // 显示生成中状态
+            showReportGeneratingStatus(true);
+            
+            // 调用生成API
+            const generateResponse = await fetch('/api/reports/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const generateResult = await generateResponse.json();
+            
+            if (generateResult.success) {
+                console.log('[checkAndGenerateReport] 报告生成成功');
+                // 重新加载报告
+                setTimeout(() => {
+                    loadPortfolioAnalysis();
+                    showReportGeneratingStatus(false);
+                }, 1000);
+            } else {
+                console.error('[checkAndGenerateReport] 报告生成失败:', generateResult.error);
+                showReportGeneratingStatus(false);
+            }
+        } else {
+            console.log('[checkAndGenerateReport] 今日报告已存在');
+        }
+    } catch (error) {
+        console.error('[checkAndGenerateReport] 检查/生成报告失败:', error);
+        showReportGeneratingStatus(false);
+    }
+}
+
+/**
+ * 【新增】显示报告生成状态
+ */
+function showReportGeneratingStatus(generating) {
+    const contentEl = document.getElementById('portfolioAnalysisContent');
+    if (!contentEl) return;
+    
+    if (generating) {
+        contentEl.innerHTML = `
+            <div style="text-align:center;padding:20px;color:#3b82f6;font-size:12px;">
+                <div style="margin-bottom:10px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size:24px;"></i>
+                </div>
+                <div>正在生成今日持仓分析报告...</div>
+                <div style="font-size:11px;color:#888;margin-top:5px;">请稍候</div>
+            </div>
+        `;
+    }
+}
+
+/**
+ * 【新增】手动刷新报告
+ * 由刷新按钮调用
+ */
+async function manualRefreshReport() {
+    const btn = document.getElementById('refreshReportBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    }
+    
+    showReportGeneratingStatus(true);
+    
+    try {
+        const response = await fetch('/api/reports/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('[manualRefreshReport] 报告刷新成功');
+            // 等待一小段时间让文件写入完成
+            setTimeout(() => {
+                loadPortfolioAnalysis();
+            }, 500);
+        } else {
+            console.error('[manualRefreshReport] 报告刷新失败:', result.error);
+            alert('报告生成失败: ' + (result.error || '未知错误'));
+        }
+    } catch (error) {
+        console.error('[manualRefreshReport] 刷新报告失败:', error);
+        alert('刷新报告失败: ' + error.message);
+    } finally {
+        if (btn) {
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sync-alt"></i> 刷新报告';
+            }, 1000);
+        }
+    }
+}
+window.manualRefreshReport = manualRefreshReport;
 
 /**
  * 刷新所有股票的中轴价格
@@ -2902,61 +3018,21 @@ function renderPortfolioAnalysis() {
 // 显示个股分析详情弹窗
 function showStockAnalysisDetail(code) {
     console.log('[DEBUG] showStockAnalysisDetail 被调用，code:', code);
+    const data = appState.portfolioAnalysis;
+    if (!data || !data.stock_analyses) {
+        console.error('[DEBUG] 没有分析报告数据');
+        return;
+    }
     
-    // 【修复】强制重新加载分析报告，避免显示旧数据
-    const timestamp = Date.now();
-    fetch(`/api/portfolio-analysis?_t=${timestamp}`)
-        .then(r => r.json())
-        .then(result => {
-            if (!result.success || !result.data) {
-                alert('分析报告加载失败，请稍后重试');
-                return;
-            }
-            
-            // 更新全局状态
-            appState.portfolioAnalysis = result.data;
-            
-            const data = result.data;
-            const stockAnalysis = data.stock_analyses.find(s => s.code === code);
-            
-            if (!stockAnalysis) {
-                alert('找不到该股票的分析数据');
-                return;
-            }
-            
-            console.log('[DEBUG] stockAnalysis 原始数据:', stockAnalysis);
-            
-            // 【强制】使用 API 返回的原始数据，不做任何转换
-            const rawCurrentPrice = stockAnalysis.current_price;
-            const rawAxisPrice = stockAnalysis.axis_price;
-            const rawAvgCost = stockAnalysis.avg_cost;
-            
-            console.log(`[DEBUG] ${code} 原始数据: current_price=${rawCurrentPrice}, axis_price=${rawAxisPrice}, avg_cost=${rawAvgCost}`);
-            
-            // 数据校验：current_price 不应该等于 avg_cost
-            if (Math.abs(rawCurrentPrice - rawAvgCost) < 0.01) {
-                console.error(`[数据错误警告] ${code}: current_price (${rawCurrentPrice}) 等于 avg_cost (${rawAvgCost})，这是异常的`);
-            }
-            
-            renderStockAnalysisModal(stockAnalysis, data);
-        })
-        .catch(err => {
-            console.error('[DEBUG] 加载分析数据失败:', err);
-            alert('加载分析数据失败: ' + err.message);
-        });
-}
-
-// 【新增】渲染个股分析弹窗（从原函数拆分出来）
-function renderStockAnalysisModal(stockAnalysis, data) {
-    const code = stockAnalysis.code;
+    const stockAnalysis = data.stock_analyses.find(s => s.code === code);
+    if (!stockAnalysis) {
+        console.error('[DEBUG] 找不到股票分析数据:', code);
+        return;
+    }
     
-    // 【强制】使用 API 返回的原始数据，不做任何转换
-    const currentPrice = stockAnalysis.current_price || 0;
-    const pivotPrice = stockAnalysis.axis_price || 0;
-    const avgCost = stockAnalysis.avg_cost || 0;
-    const reportDeviation = stockAnalysis.axis_deviation || 0;
+    console.log('[DEBUG] stockAnalysis 数据:', JSON.stringify(stockAnalysis, null, 2));
     
-    // 计算个股健康度评分（基于技术状态）
+    // 【修复】计算个股健康度评分（基于技术状态）
     const statusScores = {
         'overbought': 40,   // 超买 - 偏高风险
         'strong': 80,       // 强势 - 良好
@@ -2970,7 +3046,20 @@ function renderStockAnalysisModal(stockAnalysis, data) {
     const isHK = stockAnalysis.market === '港股';
     const currency = isHK ? 'HK$' : '¥';
     
-    console.log(`[DEBUG] 弹窗渲染数据: code=${code}, currentPrice=${currentPrice}, pivotPrice=${pivotPrice}, avgCost=${avgCost}`);
+    // 【重要】强制使用分析报告中的数据
+    const currentPrice = stockAnalysis.current_price || 0;
+    const pivotPrice = stockAnalysis.axis_price || 0;
+    
+    console.log(`[DEBUG] ${code} 价格数据: currentPrice=${currentPrice}, pivotPrice=${pivotPrice}`);
+    
+    // 计算偏离度（用于验证数据一致性）
+    const calculatedDeviation = pivotPrice > 0 ? ((currentPrice - pivotPrice) / pivotPrice * 100).toFixed(2) : 0;
+    const reportDeviation = stockAnalysis.axis_deviation || 0;
+    
+    // 如果计算值和报告值不一致，记录错误日志
+    if (Math.abs(parseFloat(calculatedDeviation) - reportDeviation) > 0.5) {
+        console.error(`[数据不一致警告] ${code}: 计算偏离 ${calculatedDeviation}%, 报告偏离 ${reportDeviation}%`);
+    }
     
     // 创建弹窗
     const modal = document.createElement('div');
@@ -3004,44 +3093,6 @@ function renderStockAnalysisModal(stockAnalysis, data) {
                     <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">健康度评分</div>
                     <div style="font-size: 1.5rem; font-weight: 700; color: ${healthScore >= 80 ? '#10b981' : healthScore >= 60 ? '#f59e0b' : '#ef4444'};">${healthScore}/100</div>
                 </div>
-                
-                <!-- 三个高价值维度分析 -->
-                ${stockAnalysis.trade_quality ? `
-                <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 3px solid ${stockAnalysis.trade_quality.grade === 'A' ? '#10b981' : stockAnalysis.trade_quality.grade === 'B' ? '#3b82f6' : stockAnalysis.trade_quality.grade === 'C' ? '#f59e0b' : '#ef4444'};">
-                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">🎯 加减仓质量评分</div>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                        <span style="font-size: 1.2rem; font-weight: 700; color: ${stockAnalysis.trade_quality.grade === 'A' ? '#10b981' : stockAnalysis.trade_quality.grade === 'B' ? '#3b82f6' : stockAnalysis.trade_quality.grade === 'C' ? '#f59e0b' : '#ef4444'};">${stockAnalysis.trade_quality.grade}</span>
-                        ${stockAnalysis.trade_quality.deviation !== null ? `<span style="font-size: 0.8rem; color: var(--text-secondary);">偏离 ${stockAnalysis.trade_quality.deviation > 0 ? '+' : ''}${stockAnalysis.trade_quality.deviation}%</span>` : ''}
-                    </div>
-                    <div style="font-size: 0.8rem; color: var(--text-primary); line-height: 1.4;">${stockAnalysis.trade_quality.detail}</div>
-                </div>
-                ` : ''}
-                
-                ${stockAnalysis.privilege_utilization ? `
-                <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 3px solid ${stockAnalysis.privilege_utilization.is_high_vol ? (stockAnalysis.privilege_utilization.utilization_rate >= 80 ? '#10b981' : stockAnalysis.privilege_utilization.utilization_rate >= 50 ? '#3b82f6' : '#f59e0b') : '#6b7280'};">
-                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">⚡ 高波动股特权利用率</div>
-                    ${stockAnalysis.privilege_utilization.is_high_vol ? `
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                        <div style="flex: 1; background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden;">
-                            <div style="width: ${stockAnalysis.privilege_utilization.utilization_rate}%; height: 100%; background: ${stockAnalysis.privilege_utilization.utilization_rate >= 80 ? '#10b981' : stockAnalysis.privilege_utilization.utilization_rate >= 50 ? '#3b82f6' : '#f59e0b'}; border-radius: 4px;"></div>
-                        </div>
-                        <span style="font-size: 0.9rem; font-weight: 600;">${stockAnalysis.privilege_utilization.utilization_rate}%</span>
-                    </div>
-                    <div style="font-size: 0.8rem; color: var(--text-primary); line-height: 1.4;">${stockAnalysis.privilege_utilization.detail}</div>
-                    ` : `<div style="font-size: 0.85rem; color: var(--text-secondary);">${stockAnalysis.privilege_utilization.detail}</div>`}
-                </div>
-                ` : ''}
-                
-                ${stockAnalysis.concentration_deviation ? `
-                <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 3px solid ${Math.abs(stockAnalysis.concentration_deviation.deviation) <= 5 ? '#10b981' : Math.abs(stockAnalysis.concentration_deviation.deviation) <= 10 ? '#f59e0b' : '#ef4444'};">
-                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">📊 持仓集中度动态偏离</div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; font-size: 0.8rem;">
-                        <div><span style="color: var(--text-secondary);">实际占比:</span> <span style="font-weight: 600;">${stockAnalysis.concentration_deviation.current_weight}%</span></div>
-                        <div><span style="color: var(--text-secondary);">目标占比:</span> <span style="font-weight: 600;">${stockAnalysis.concentration_deviation.target_weight}%</span></div>
-                    </div>
-                    <div style="font-size: 0.8rem; color: var(--text-primary); line-height: 1.4;">${stockAnalysis.concentration_deviation.detail}</div>
-                </div>
-                ` : ''}
                 
                 ${stockAnalysis.analysis ? `
                 <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
