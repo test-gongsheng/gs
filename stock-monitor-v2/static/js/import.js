@@ -315,6 +315,22 @@ function parseStockLine(line, formatType) {
             costPrice = currentPrice * 0.9; // 估算成本
         }
         
+        // 尝试解析扩展字段（交易记录、高波动标记、优先级）
+        let lastTradePrice = 0;
+        let lastTradeType = '';
+        let lastTradeTime = '';
+        let stockType = 'normal';
+        let priority = 'P2';
+        
+        // 如果字段数量足够，尝试解析扩展字段
+        if (parts.length >= 12) {
+            lastTradePrice = parseFloat(parts[8]) || 0;
+            lastTradeType = parts[9] || '';
+            lastTradeTime = parts[10] || '';
+            stockType = parts[11] || 'normal';
+            priority = parts[12] || 'P2';
+        }
+        
         return {
             code,
             name,
@@ -322,7 +338,13 @@ function parseStockLine(line, formatType) {
             shares,
             costPrice,
             currentPrice,
-            marketValue  // 券商提供的最新市值
+            marketValue,  // 券商提供的最新市值
+            // 扩展字段
+            lastTradePrice,
+            lastTradeType,
+            lastTradeTime,
+            stockType,
+            priority
         };
     } catch (e) {
         console.error('解析行失败:', line, e);
@@ -694,9 +716,14 @@ async function confirmImport() {
             float_position_pct: 50,
             trigger_pct: 8,
             stop_loss: 0,
-            priority: 'P2',
+            priority: newStock.priority || 'P2',
             strategy_mode: '基础策略',
-            notes: ''
+            notes: '',
+            // 【新增】交易记录和股票类型
+            stock_type: newStock.stockType || 'normal',
+            last_trade_price: newStock.lastTradePrice || 0,
+            last_trade_type: newStock.lastTradeType || '',
+            last_trade_time: newStock.lastTradeTime || ''
         }));
 
         console.log(`[confirmImport] 批量导入 ${stocksToAdd.length} 只股票`);
