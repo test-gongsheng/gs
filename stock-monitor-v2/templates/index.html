@@ -919,6 +919,7 @@
                 <div class="import-tabs">
                     <button class="import-tab active" data-tab="upload"><i class="fas fa-upload"></i> 文件上传</button>
                     <button class="import-tab" data-tab="manual"><i class="fas fa-edit"></i> 手动录入</button>
+                    <button class="import-tab" data-tab="trades"><i class="fas fa-exchange-alt"></i> 交易记录</button>
                     <button class="import-tab" data-tab="history"><i class="fas fa-history"></i> 导入历史</button>
                 </div>
 
@@ -994,6 +995,50 @@
                                 <i class="fas fa-eraser"></i> 清空
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                <!-- 交易记录区域 -->
+                <div class="import-content" id="tradesTab">
+                    <div class="upload-wrapper" id="tradeUploadWrapper">
+                        <div class="upload-area" id="tradeUploadArea">
+                            <input type="file" id="tradeFileInput" accept=".txt,.csv,.xls,.xlsx" hidden>
+                            <div class="upload-placeholder">
+                                <i class="fas fa-exchange-alt"></i>
+                                <p class="upload-title">点击或拖拽历史成交文件到此处</p>
+                                <p class="upload-desc">支持 同花顺/通达信 历史成交导出格式</p>
+                                <p class="upload-hint">自动过滤GC001逆回购，更新持仓股交易记录</p>
+                            </div>
+                        </div>
+
+                        <!-- 格式说明 -->
+                        <div class="template-download">
+                            <span class="template-label"><i class="fas fa-info-circle"></i> 支持格式：</span>
+                            <span style="font-size: 0.8rem; color: var(--text-secondary);">
+                                成交日期 | 成交时间 | 证券代码 | 证券名称 | 买卖标志 | 成交价格 | 成交数量
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="file-preview" id="tradePreview" style="display: none;">
+                        <div class="preview-header">
+                            <span class="file-name" id="tradePreviewFileName"></span>
+                            <button class="btn-text" onclick="clearTradeFile()">清除</button>
+                        </div>
+                        <div class="preview-content">
+                            <table class="preview-table" id="tradePreviewTable">
+                                <!-- 动态生成预览表格 -->
+                            </table>
+                        </div>
+                        <div class="preview-stats" id="tradePreviewStats">
+                            <!-- 动态生成统计信息 -->
+                        </div>
+                    </div>
+                    
+                    <div class="import-actions" id="tradeImportActions" style="margin-top: 16px; text-align: center; display: none;">
+                        <button class="btn-submit" onclick="confirmTradeImport()">
+                            <i class="fas fa-check"></i> 确认导入交易记录
+                        </button>
                     </div>
                 </div>
 

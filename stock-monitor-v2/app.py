@@ -2173,6 +2173,106 @@ def ensure_portfolio_analysis():
         traceback.print_exc()
 
 
+@app.route('/api/trades/import', methods=['POST'])
+def import_trades():
+    """
+    导入历史成交记录，更新持仓股的 last_trade 信息
+    """
+    try:
+        data = request.json
+        trades = data.get('trades', [])
+        
+        if not trades:
+            return jsonify({
+                'success': False,
+                'error': '交易记录为空'
+            }), 400
+        
+        print(f"[TradeImport] 接收 {len(trades)} 笔交易记录")
+        
+        # 加载现有持仓数据
+        portfolio_data = load_data()
+        stocks = portfolio_data.get('stocks', [])
+        
+        # 建立股票代码索引
+        stock_map = {s.get('code'): s for s in stocks}
+        
+        # 按股票分组交易，找到每只股票最新的一笔
+        latest_trades = {}
+        for trade in trades:
+            code = trade.get('code')
+            if not code:
+                continue
+            
+            # 只处理持仓中存在的股票
+            if code not in stock_map:
+                print(f"[TradeImport] 跳过非持仓股交易: {code}")
+                continue
+            
+            # 记录最新交易（按时间）
+            if code not in latest_trades:
+                latest_trades[code] = trade
+            else:
+                # 比较时间，保留更新的
+                current_time = latest_trades[code].get('time', '')
+                new_time = trade.get('time', '')
+                if new_time > current_time:
+                    latest_trades[code] = trade
+        
+        # 更新持仓股的 last_trade 信息
+        updated_count = 0
+        for code, trade in latest_trades.items():
+            stock = stock_map[code]
+            stock['last_trade_price'] = trade.get('price', 0)
+            stock['last_trade_type'] = trade.get('tradeType', '')
+            stock['last_trade_time'] = trade.get('time', '')
+            stock['last_trade_shares'] = trade.get('shares', 0)
+            updated_count += 1
+            print(f"[TradeImport] 更新 {code}: {trade.get('tradeType')} @ {trade.get('price')} ({trade.get('time')})")
+        
+        # 同时保存到交易日志
+        if 'trade_logs' not in portfolio_data:
+            portfolio_data['trade_logs'] = []
+        
+        for trade in trades:
+            trade_record = {
+                'id': f"{int(time.time())}_{trade.get('code')}_{trade.get('tradeType')}",
+                'time': trade.get('time', datetime.now().isoformat()),
+                'stock_code': trade.get('code'),
+                'stock_name': trade.get('name', ''),
+                'trade_type': trade.get('tradeType'),
+                'price': trade.get('price', 0),
+                'shares': trade.get('shares', 0),
+                'amount': trade.get('price', 0) * trade.get('shares', 0),
+                'imported_at': datetime.now().isoformat()
+            }
+            portfolio_data['trade_logs'].append(trade_record)
+        
+        # 保存数据
+        if save_data(portfolio_data):
+            print(f"[TradeImport] 成功更新 {updated_count} 只股票的交易记录")
+            return jsonify({
+                'success': True,
+                'updated': updated_count,
+                'total_trades': len(trades),
+                'message': f'成功更新 {updated_count} 只股票的交易记录'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': '保存数据失败'
+            }), 500
+            
+    except Exception as e:
+        print(f"[TradeImport] 导入失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 if __name__ == '__main__':
     # 启动时自动设置 crontab
     setup_cron_job()

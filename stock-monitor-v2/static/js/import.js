@@ -20,6 +20,7 @@ function initDataImport() {
     initManualInput();
     initImportHistory();
     initTemplateDownload();
+    initTradeImport();  // 初始化交易记录导入
     
     console.log('数据导入模块初始化完成');
 }
@@ -1149,3 +1150,423 @@ window.downloadTemplate = downloadTemplate;
 window.restoreFromHistory = restoreFromHistory;
 window.showNotification = showNotification;
 window.refreshStockQuotes = refreshStockQuotesAfterImport;
+
+// ========== 交易记录导入功能 ==========
+
+let pendingTradeData = null;
+
+/**
+ * 初始化交易记录导入功能
+ */
+function initTradeImport() {
+    const tradeUploadArea = document.getElementById('tradeUploadArea');
+    const tradeFileInput = document.getElementById('tradeFileInput');
+    
+    if (!tradeUploadArea || !tradeFileInput) {
+        console.log('[TradeImport] 找不到交易上传元素，可能页面未加载');
+        return;
+    }
+    
+    // 点击上传
+    tradeUploadArea.onclick = function(e) {
+        if (e.target.tagName !== 'INPUT') {
+            tradeFileInput.click();
+        }
+    };
+    
+    // 文件选择
+    tradeFileInput.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) processTradeFile(file);
+    };
+    
+    console.log('[TradeImport] 交易记录导入初始化完成');
+}
+
+/**
+ * 处理交易记录文件
+ */
+function processTradeFile(file) {
+    console.log('[TradeImport] 处理交易文件:', file.name);
+    
+    const validTypes = ['.txt', '.csv', '.xls', '.xlsx'];
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    
+    if (!validTypes.includes(ext)) {
+        showNotification('不支持的文件格式，请上传 .txt、.csv 或 Excel 文件', 'error');
+        return;
+    }
+    
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        const content = e.target.result;
+        try {
+            const result = parseTradeData(content, file.name);
+            if (result.success && result.trades.length > 0) {
+                pendingTradeData = {
+                    fileName: file.name,
+                    trades: result.trades,
+                    stats: result.stats,
+                    timestamp: new Date().toISOString()
+                };
+                showTradePreview(pendingTradeData);
+                showNotification(`成功解析 ${result.trades.length} 笔交易`, 'success');
+            } else {
+                showNotification(result.error || '未能解析到交易记录', 'error');
+            }
+        } catch (err) {
+            console.error('解析交易文件出错:', err);
+            showNotification('文件解析失败，请检查格式是否正确', 'error');
+        }
+    };
+    
+    reader.onerror = function() {
+        showNotification('文件读取失败', 'error');
+    };
+    
+    // 交易文件通常用GBK编码
+    if (ext === '.txt') {
+        reader.readAsText(file, 'GBK');
+    } else {
+        reader.readAsText(file, 'UTF-8');
+    }
+}
+
+/**
+ * 解析交易记录数据 - 支持同花顺/通达信格式
+ */
+function parseTradeData(content, fileName) {
+    const lines = content.split('\n').filter(line => line.trim());
+    const trades = [];
+    let stats = {
+        totalCount: 0,
+        buyCount: 0,
+        sellCount: 0,
+        stockTrades: 0,
+        filteredCount: 0
+    };
+    
+    // 检测表头行
+    let headerFound = false;
+    let headerIndex = -1;
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line.includes('成交日期') || line.includes('成交时间') || line.includes('证券代码')) {
+            headerFound = true;
+            headerIndex = i;
+            break;
+        }
+    }
+    
+    // 开始解析数据行
+    const startIndex = headerFound ? headerIndex + 1 : 0;
+    
+    for (let i = startIndex; i < lines.length; i++) {
+        const line = lines[i].trim();
+        
+        // 跳过空行和分隔线
+        if (!line || line.match(/^[-=]+$/) || line.includes('合计') || line.includes('总计')) continue;
+        
+        const trade = parseTradeLine(line);
+        if (trade) {
+            // 过滤逆回购等非股票交易
+            if (isStockTrade(trade)) {
+                trades.push(trade);
+                stats.stockTrades++;
+                stats.totalCount++;
+                if (trade.tradeType === 'buy') {
+                    stats.buyCount++;
+                } else {
+                    stats.sellCount++;
+                }
+            } else {
+                stats.filteredCount++;
+            }
+        }
+    }
+    
+    if (trades.length === 0) {
+        return { success: false, error: '未能解析到有效交易记录，请检查文件格式' };
+    }
+    
+    return { success: true, trades, stats };
+}
+
+/**
+ * 解析单行交易数据
+ */
+function parseTradeLine(line) {
+    try {
+        // 清理行内容
+        line = line.replace(/"/g, '').trim();
+        
+        // 按空格或制表符分割
+        const parts = line.split(/\s+|\t+/).filter(p => p.trim());
+        
+        if (parts.length < 6) return null;
+        
+        // 同花顺格式:
+        // 成交日期 成交时间 证券代码 证券名称 买卖标志 成交价格 成交数量 成交金额
+        // 20260410 09:55:58 000559 万向钱潮 证券卖出 16.840 3000 50520.00
+        
+        // 尝试识别各字段位置
+        let date = '';
+        let time = '';
+        let code = '';
+        let name = '';
+        let tradeType = '';
+        let price = 0;
+        let shares = 0;
+        
+        // 遍历字段，根据特征识别
+        for (let i = 0; i < parts.length; i++) {
+            const part = parts[i].trim();
+            
+            // 日期格式: 20260410 或 2026-04-10
+            if (!date && part.match(/^\d{8}$/) || part.match(/^\d{4}[-/]\d{2}[-/]\d{2}$/)) {
+                date = part.replace(/[-/]/g, '');
+                continue;
+            }
+            
+            // 时间格式: 09:55:58 或 09:55
+            if (!time && part.match(/^\d{2}:\d{2}(:\d{2})?$/)) {
+                time = part;
+                continue;
+            }
+            
+            // 证券代码: 6位数字
+            if (!code && part.match(/^\d{5,6}$/)) {
+                code = part;
+                continue;
+            }
+            
+            // 买卖标志
+            if (!tradeType && (part.includes('买入') || part.includes('卖出') || part.includes('买') || part.includes('卖'))) {
+                tradeType = part.includes('买入') || part.includes('买') ? 'buy' : 'sell';
+                continue;
+            }
+            
+            // 成交价格: 带小数点的数字
+            if (price === 0 && part.match(/^\d+\.\d+$/)) {
+                price = parseFloat(part);
+                continue;
+            }
+            
+            // 成交数量: 整数
+            if (shares === 0 && part.match(/^\d+$/) && parseInt(part) > 100) {
+                shares = parseInt(part);
+                continue;
+            }
+            
+            // 证券名称: 中文，不是数字
+            if (!name && !part.match(/^\d/) && part.length >= 2 && part.length <= 6) {
+                name = part;
+                continue;
+            }
+        }
+        
+        // 如果没有识别出名称，尝试用代码附近的字段
+        if (!name) {
+            const codeIndex = parts.findIndex(p => p === code);
+            if (codeIndex >= 0 && codeIndex + 1 < parts.length) {
+                const nextPart = parts[codeIndex + 1];
+                if (!nextPart.match(/^\d/) && !nextPart.includes('买入') && !nextPart.includes('卖出')) {
+                    name = nextPart;
+                }
+            }
+        }
+        
+        // 验证必填字段
+        if (!code || !tradeType || price === 0 || shares === 0) {
+            return null;
+        }
+        
+        // 构建交易记录
+        const tradeTime = date && time ? `${date.slice(0,4)}-${date.slice(4,6)}-${date.slice(6,8)} ${time}` : 
+                         date ? `${date.slice(0,4)}-${date.slice(4,6)}-${date.slice(6,8)}` :
+                         new Date().toISOString();
+        
+        return {
+            code,
+            name: name || code,
+            tradeType,
+            price,
+            shares,
+            time: tradeTime,
+            amount: price * shares
+        };
+    } catch (e) {
+        console.error('解析交易行失败:', line, e);
+        return null;
+    }
+}
+
+/**
+ * 判断是否为股票交易（排除逆回购等）
+ */
+function isStockTrade(trade) {
+    // 排除国债逆回购
+    const nonStockCodes = ['GC001', 'GC007', 'GC028', 'R001', 'R007', 'R028'];
+    if (nonStockCodes.includes(trade.code)) return false;
+    
+    // 排除基金
+    if (trade.code.startsWith('5') || trade.code.startsWith('1')) {
+        // 检查名称是否包含基金相关字样
+        const fundKeywords = ['ETF', 'LOF', '基金', '国债', '转债'];
+        if (fundKeywords.some(k => trade.name.includes(k))) return false;
+    }
+    
+    // 确保代码是6位（A股）或5位（港股）
+    if (trade.code.length !== 6 && trade.code.length !== 5) return false;
+    
+    return true;
+}
+
+/**
+ * 显示交易记录预览
+ */
+function showTradePreview(data) {
+    const uploadArea = document.getElementById('tradeUploadArea');
+    const preview = document.getElementById('tradePreview');
+    const fileName = document.getElementById('tradePreviewFileName');
+    const table = document.getElementById('tradePreviewTable');
+    const stats = document.getElementById('tradePreviewStats');
+    const actions = document.getElementById('tradeImportActions');
+    
+    if (!uploadArea || !preview) return;
+    
+    // 隐藏上传区域，显示预览
+    uploadArea.style.display = 'none';
+    preview.style.display = 'block';
+    if (actions) actions.style.display = 'block';
+    
+    // 显示文件名
+    if (fileName) fileName.textContent = data.fileName;
+    
+    // 生成预览表格
+    if (table) {
+        const trades = data.trades.slice(0, 10); // 最多显示10条
+        const hasMore = data.trades.length > 10;
+        
+        let html = `
+            <thead>
+                <tr>
+                    <th>日期时间</th>
+                    <th>代码</th>
+                    <th>名称</th>
+                    <th>类型</th>
+                    <th>价格</th>
+                    <th>数量</th>
+                    <th>金额</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
+        
+        trades.forEach(t => {
+            const typeClass = t.tradeType === 'buy' ? 'up' : 'down';
+            const typeText = t.tradeType === 'buy' ? '买入' : '卖出';
+            html += `
+                <tr>
+                    <td>${t.time.slice(0,16)}</td>
+                    <td>${t.code}</td>
+                    <td>${t.name}</td>
+                    <td class="${typeClass}">${typeText}</td>
+                    <td>${t.price.toFixed(2)}</td>
+                    <td>${t.shares}</td>
+                    <td>${(t.amount/10000).toFixed(2)}万</td>
+                </tr>
+            `;
+        });
+        
+        if (hasMore) {
+            html += `<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">...还有 ${data.trades.length - 10} 笔交易...</td></tr>`;
+        }
+        
+        html += '</tbody>';
+        table.innerHTML = html;
+    }
+    
+    // 显示统计
+    if (stats) {
+        stats.innerHTML = `
+            <div style="display:flex;gap:16px;justify-content:center;padding:12px;">
+                <span>总计: <strong>${data.stats.totalCount}</strong> 笔</span>
+                <span style="color:#10b981;">买入: <strong>${data.stats.buyCount}</strong></span>
+                <span style="color:#ef4444;">卖出: <strong>${data.stats.sellCount}</strong></span>
+                ${data.stats.filteredCount > 0 ? `<span style="color:#999;">已过滤: ${data.stats.filteredCount}</span>` : ''}
+            </div>
+        `;
+    }
+}
+
+/**
+ * 清除交易文件
+ */
+function clearTradeFile() {
+    pendingTradeData = null;
+    const uploadArea = document.getElementById('tradeUploadArea');
+    const preview = document.getElementById('tradePreview');
+    const fileInput = document.getElementById('tradeFileInput');
+    const actions = document.getElementById('tradeImportActions');
+    
+    if (uploadArea) uploadArea.style.display = 'flex';
+    if (preview) preview.style.display = 'none';
+    if (actions) actions.style.display = 'none';
+    if (fileInput) fileInput.value = '';
+}
+
+/**
+ * 确认导入交易记录
+ */
+async function confirmTradeImport() {
+    console.log('[TradeImport] 确认导入交易记录', pendingTradeData);
+    
+    if (!pendingTradeData || !pendingTradeData.trades.length) {
+        showNotification('没有待导入的交易记录', 'warning');
+        return;
+    }
+    
+    try {
+        showNotification('正在导入交易记录...', 'info');
+        
+        const response = await fetch('/api/trades/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                trades: pendingTradeData.trades
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('[TradeImport] 导入结果:', result);
+        
+        if (result.success) {
+            showNotification(`导入成功！更新 ${result.updated} 只股票交易记录`, 'success');
+            
+            // 清除状态
+            clearTradeFile();
+            
+            // 延迟刷新页面
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            showNotification(result.error || '导入失败', 'error');
+        }
+    } catch (error) {
+        console.error('[TradeImport] 导入失败:', error);
+        showNotification('导入失败: ' + error.message, 'error');
+    }
+}
+
+// 导出到全局
+window.initTradeImport = initTradeImport;
+window.confirmTradeImport = confirmTradeImport;
+window.clearTradeFile = clearTradeFile;
