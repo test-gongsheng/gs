@@ -185,13 +185,13 @@ def calculate_concentration_deviation(stock, market_value, portfolio_data):
         grade = '正常'
         detail = f'占比合理，实际{current_weight:.1f}% vs 目标{target:.1f}%'
     elif deviation > 10:
-        grade = '⚠️ 超配'
+        grade = '[WARN] 超配'
         detail = f'{code}占比{current_weight:.1f}%超配{deviation:.1f}%，违背优先级设定'
     elif deviation > 5:
         grade = '略超配'
         detail = f'{code}占比{current_weight:.1f}%略超配{deviation:.1f}%'
     elif deviation < -10:
-        grade = '⚠️ 低配'
+        grade = '[WARN] 低配'
         detail = f'{code}占比{current_weight:.1f}%低配{abs(deviation):.1f}%，资金被占用'
     else:
         grade = '略低配'
@@ -377,8 +377,8 @@ def analyze_stock_detailed(stock: Dict, realtime_price: float = 0, realtime_axis
         'technical_status': technical_status,
         'status_desc': status_desc,
         'status_icon': {
-            'overbought': '⚠️', 'strong': '🟢', 'neutral': '⚪',
-            'weak': '🔴', 'oversold': '💡'
+            'overbought': '[WARN]', 'strong': '[GREEN]', 'neutral': '⚪',
+            'weak': '[RED]', 'oversold': '[TIP]'
         }.get(technical_status, '⚪'),
         'trigger_buy': trigger_buy,
         'trigger_sell': trigger_sell,
@@ -507,7 +507,7 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
     # 3. 结论与建议
     if status == 'overbought':
         conclusion = {
-            'title': '⚠️ 超买区 - 建议减仓',
+            'title': '[WARN] 超买区 - 建议减仓',
             'content': [
                 f"{name}当前处于超买状态，价格偏离中轴{axis_deviation:+.1f}%，超过+8%阈值。",
                 "根据中轴价格策略，当前已进入相对高估区域，短期回调风险增加。",
@@ -517,7 +517,7 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
         }
     elif status == 'strong':
         conclusion = {
-            'title': '🟢 强势区 - 持有观察',
+            'title': '[GREEN] 强势区 - 持有观察',
             'content': [
                 f"{name}表现强势，价格高于中轴{axis_deviation:+.1f}%，处于相对高位。",
                 "尚未达到超买阈值，可继续持有享受上涨收益。",
@@ -527,7 +527,7 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
         }
     elif status == 'oversold':
         conclusion = {
-            'title': '💡 超卖区 - 关注买入',
+            'title': '[TIP] 超卖区 - 关注买入',
             'content': [
                 f"{name}当前处于超卖状态，价格偏离中轴{axis_deviation:.1f}%，跌破-8%阈值。",
                 "根据中轴价格策略，当前已进入相对低估区域，可能存在左侧布局机会。",
@@ -537,7 +537,7 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
         }
     elif status == 'weak':
         conclusion = {
-            'title': '🔴 弱势区 - 关注支撑',
+            'title': '[RED] 弱势区 - 关注支撑',
             'content': [
                 f"{name}相对弱势，价格低于中轴{axis_deviation:.1f}%，但尚未达到超卖阈值。",
                 "建议保持观望，等待更明确的买入信号。",
@@ -593,13 +593,13 @@ def analyze_sector(stocks: List[Dict]) -> Dict:
         # 判断板块整体状态
         total = len(stats['stocks'])
         if stats['overbought'] >= total * 0.3:
-            status = '⚠️ 过热'
+            status = '[WARN] 过热'
         elif stats['oversold'] >= total * 0.3:
-            status = '💡 超卖'
+            status = '[TIP] 超卖'
         elif stats['strong'] > stats['weak']:
-            status = '🟢 强势'
+            status = '[GREEN] 强势'
         elif stats['weak'] > stats['strong']:
-            status = '🔴 弱势'
+            status = '[RED] 弱势'
         else:
             status = '⚪ 震荡'
         
@@ -908,7 +908,7 @@ def save_report(report: Dict):
     with open(backup_file, 'w', encoding='utf-8') as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     
-    print(f"✅ 报告已保存: {ANALYSIS_FILE}")
+    print(f"[OK] 报告已保存: {ANALYSIS_FILE}")
 
 
 def main():
@@ -918,21 +918,21 @@ def main():
         
         # 打印摘要
         print("\n" + "="*60)
-        print(f"📊 持仓分析报告V2 ({report['report_date']})")
+        print(f"[REPORT] 持仓分析报告V2 ({report['report_date']})")
         print("="*60)
         summary = report['summary']
-        print(f"🟡 健康度: {summary['health_score']}/100")
-        print(f"📈 盈亏: RMB{summary['total_pnl']:,.2f} ({summary['total_pnl_percent']}%)")
-        print(f"💰 市值: RMB{summary['total_market_value']:,.2f}")
-        print(f"\n📊 板块分布:")
+        print(f"[YELLOW] 健康度: {summary['health_score']}/100")
+        print(f"[UP] 盈亏: RMB{summary['total_pnl']:,.2f} ({summary['total_pnl_percent']}%)")
+        print(f"[MONEY] 市值: RMB{summary['total_market_value']:,.2f}")
+        print(f"\n[REPORT] 板块分布:")
         for sector in report['sector_analysis'][:3]:
             print(f"  {sector['status']} {sector['name']}: {sector['stock_count']}只")
-        print(f"\n📝 已生成 {len(report['stock_analyses'])} 只股票详细分析")
+        print(f"\n[NOTE] 已生成 {len(report['stock_analyses'])} 只股票详细分析")
         print("="*60)
         return True
         
     except Exception as e:
-        print(f"❌ 失败: {e}")
+        print(f"[FAIL] 失败: {e}")
         import traceback
         traceback.print_exc()
         return False
