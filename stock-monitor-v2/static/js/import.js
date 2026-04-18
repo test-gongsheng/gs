@@ -1295,7 +1295,7 @@ function parseTradeData(content, fileName) {
 }
 
 /**
- * 解析单行交易数据
+ * 解析单行交易数据 - 修复版：按列位置提取
  */
 function parseTradeLine(line) {
     try {
@@ -1305,88 +1305,98 @@ function parseTradeLine(line) {
         // 按空格或制表符分割
         const parts = line.split(/\s+|\t+/).filter(p => p.trim());
         
-        if (parts.length < 6) return null;
+        if (parts.length < 6) {
+            console.log('[TradeImport] 字段不足:', parts.length, parts);
+            return null;
+        }
         
-        // 同花顺格式:
-        // 成交日期 成交时间 证券代码 证券名称 买卖标志 成交价格 成交数量 成交金额
-        // 20260410 09:55:58 000559 万向钱潮 证券卖出 16.840 3000 50520.00
+        // 同花顺格式（固定列位置）：
+        // 成交日期(0) 成交时间(1) 证券代码(2) 证券名称(3) 买卖标志(4) 委价(5) 委量(6) 笔数(7) 成交价(8) 成交量(9) 成交金额(10) ...
+        // 20260410    09:55:58    000559      万向钱潮   证券卖出   16.790     3000      ...      16.840      3000        50520.00
         
-        // 尝试识别各字段位置
-        let date = '';
-        let time = '';
-        let code = '';
-        let name = '';
+        // 提取关键字段
+        const date = parts[0];           // 第1列: 成交日期
+        const time = parts[1];           // 第2列: 成交时间
+        const code = parts[2];           // 第3列: 证券代码 (关键修复：直接按位置取)
+        const name = parts[3];           // 第4列: 证券名称
+        const tradeFlag = parts[4];      // 第5列: 买卖标志
+        
+        // 验证日期格式 (8位数字)
+        if (!date || !date.match(/^\d{8}$/)) {
+            console.log('[TradeImport] 日期格式错误:', date);
+            return null;
+        }
+        
+        // 验证代码格式 (5-6位数字)
+        if (!code || !code.match(/^\d{5,6}$/)) {
+            console.log('[TradeImport] 代码格式错误:', code);
+            return null;
+        }
+        
+        // 解析买卖类型
         let tradeType = '';
+        if (tradeFlag.includes('买入') || tradeFlag.includes('买')) {
+            tradeType = 'buy';
+        } else if (tradeFlag.includes('卖出') || tradeFlag.includes('卖')) {
+            tradeType = 'sell';
+        } else {
+            console.log('[TradeImport] 无法识别买卖标志:', tradeFlag);
+            return null;
+        }
+        
+        // 查找成交价格和成交量（可能在不同位置，尝试多个字段）
         let price = 0;
         let shares = 0;
         
-        // 遍历字段，根据特征识别
-        for (let i = 0; i < parts.length; i++) {
-            const part = parts[i].trim();
+        // 同花顺格式：成交价通常在第9列(index 8)，成交量在第10列(index 9)
+        // 尝试从固定位置读取
+        if (parts.length > 9) {
+            const priceCandidate = parts[8];  // 成交价
+            const sharesCandidate = parts[9]; // 成交量
             
-            // 日期格式: 20260410 或 2026-04-10
-            if (!date && part.match(/^\d{8}$/) || part.match(/^\d{4}[-/]\d{2}[-/]\d{2}$/)) {
-                date = part.replace(/[-/]/g, '');
-                continue;
+            if (priceCandidate && priceCandidate.match(/^\d+\.?\d*$/)) {
+                price = parseFloat(priceCandidate);
             }
-            
-            // 时间格式: 09:55:58 或 09:55
-            if (!time && part.match(/^\d{2}:\d{2}(:\d{2})?$/)) {
-                time = part;
-                continue;
-            }
-            
-            // 证券代码: 6位数字
-            if (!code && part.match(/^\d{5,6}$/)) {
-                code = part;
-                continue;
-            }
-            
-            // 买卖标志
-            if (!tradeType && (part.includes('买入') || part.includes('卖出') || part.includes('买') || part.includes('卖'))) {
-                tradeType = part.includes('买入') || part.includes('买') ? 'buy' : 'sell';
-                continue;
-            }
-            
-            // 成交价格: 带小数点的数字
-            if (price === 0 && part.match(/^\d+\.\d+$/)) {
-                price = parseFloat(part);
-                continue;
-            }
-            
-            // 成交数量: 整数
-            if (shares === 0 && part.match(/^\d+$/) && parseInt(part) > 100) {
-                shares = parseInt(part);
-                continue;
-            }
-            
-            // 证券名称: 中文，不是数字
-            if (!name && !part.match(/^\d/) && part.length >= 2 && part.length <= 6) {
-                name = part;
-                continue;
+            if (sharesCandidate && sharesCandidate.match(/^\d+$/)) {
+                shares = parseInt(sharesCandidate);
             }
         }
         
-        // 如果没有识别出名称，尝试用代码附近的字段
-        if (!name) {
-            const codeIndex = parts.findIndex(p => p === code);
-            if (codeIndex >= 0 && codeIndex + 1 < parts.length) {
-                const nextPart = parts[codeIndex + 1];
-                if (!nextPart.match(/^\d/) && !nextPart.includes('买入') && !nextPart.includes('卖出')) {
-                    name = nextPart;
+        // 如果固定位置没拿到，遍历查找
+        if (price === 0 || shares === 0) {
+            for (let i = 5; i < parts.length && i < 15; i++) {
+                const part = parts[i];
+                
+                // 跳过已识别的字段
+                if (part === date || part === time || part === code || part === name || part === tradeFlag) continue;
+                
+                // 成交价格: 带小数点的数字，范围合理（0.01-10000）
+                if (price === 0 && part.match(/^\d+\.\d+$/) && !part.includes('-')) {
+                    const p = parseFloat(part);
+                    if (p > 0.01 && p < 10000) {
+                        price = p;
+                        continue;
+                    }
+                }
+                
+                // 成交数量: 整数，大于100（排除小数位）
+                if (shares === 0 && part.match(/^\d+$/) && parseInt(part) >= 100) {
+                    shares = parseInt(part);
+                    continue;
                 }
             }
         }
         
         // 验证必填字段
         if (!code || !tradeType || price === 0 || shares === 0) {
+            console.log('[TradeImport] 字段缺失:', { code, tradeType, price, shares, parts });
             return null;
         }
         
         // 构建交易记录
-        const tradeTime = date && time ? `${date.slice(0,4)}-${date.slice(4,6)}-${date.slice(6,8)} ${time}` : 
-                         date ? `${date.slice(0,4)}-${date.slice(4,6)}-${date.slice(6,8)}` :
-                         new Date().toISOString();
+        const tradeTime = `${date.slice(0,4)}-${date.slice(4,6)}-${date.slice(6,8)} ${time || '00:00:00'}`;
+        
+        console.log('[TradeImport] 解析成功:', { code, name, tradeType, price, shares, time: tradeTime });
         
         return {
             code,
