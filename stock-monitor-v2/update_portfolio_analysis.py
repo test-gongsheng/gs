@@ -377,8 +377,8 @@ def analyze_stock_detailed(stock: Dict, realtime_price: float = 0, realtime_axis
         'technical_status': technical_status,
         'status_desc': status_desc,
         'status_icon': {
-            'overbought': '[WARN]', 'strong': '[GREEN]', 'neutral': '⚪',
-            'weak': '[RED]', 'oversold': '[TIP]'
+            'overbought': '⚠️', 'strong': '🟢', 'neutral': '⚪',
+            'weak': '🔴', 'oversold': '💡'
         }.get(technical_status, '⚪'),
         'trigger_buy': trigger_buy,
         'trigger_sell': trigger_sell,
