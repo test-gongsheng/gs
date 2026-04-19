@@ -39,3 +39,5 @@ Thumbs.db
 stock_analyzer/venv/
 __pycache__/
 *.pyc
+reports/*.json
+portfolio_analysis_latest.json
