@@ -917,10 +917,10 @@
             </div>
             <div class="modal-body">
                 <div class="import-tabs">
-                    <button class="import-tab active" data-tab="upload"><i class="fas fa-upload"></i> 文件上传</button>
-                    <button class="import-tab" data-tab="manual"><i class="fas fa-edit"></i> 手动录入</button>
-                    <button class="import-tab" data-tab="trades"><i class="fas fa-exchange-alt"></i> 交易记录</button>
-                    <button class="import-tab" data-tab="history"><i class="fas fa-history"></i> 导入历史</button>
+                    <button class="import-tab active" data-tab="upload" onclick="switchImportTab('upload')"><i class="fas fa-upload"></i> 文件上传</button>
+                    <button class="import-tab" data-tab="manual" onclick="switchImportTab('manual')"><i class="fas fa-edit"></i> 手动录入</button>
+                    <button class="import-tab" data-tab="trades" onclick="switchImportTab('trades')"><i class="fas fa-exchange-alt"></i> 交易记录</button>
+                    <button class="import-tab" data-tab="history" onclick="switchImportTab('history')"><i class="fas fa-history"></i> 导入历史</button>
                 </div>
 
                 <!-- 文件上传区域 -->
