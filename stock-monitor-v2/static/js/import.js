@@ -845,16 +845,9 @@ function detectTrades(oldStocks, newStocks) {
         const oldStock = oldMap[code];
         
         if (!oldStock) {
-            // 全新买入
-            trades.push({
-                stock_code: code,
-                stock_name: newStock.name,
-                trade_type: 'buy',
-                price: newStock.costPrice,
-                shares: newStock.shares,
-                time: now,
-                note: '导入时检测：新增持仓'
-            });
+            // 全新买入 - 不生成交易记录，避免last_trade_price被设为成本价
+            // 只有真实的交易记录才应该更新last_trade_price
+            console.log(`[detectTrades] ${code} 是全新持仓，不生成虚拟交易`);
         } else if (newStock.shares > oldStock.shares) {
             // 加仓
             const addedShares = newStock.shares - oldStock.shares;
@@ -876,16 +869,8 @@ function detectTrades(oldStocks, newStocks) {
         const newStock = newMap[code];
         
         if (!newStock) {
-            // 完全清仓
-            trades.push({
-                stock_code: code,
-                stock_name: oldStock.name,
-                trade_type: 'sell',
-                price: oldStock.avg_cost, // 使用成本价作为卖出参考
-                shares: oldStock.shares,
-                time: now,
-                note: '导入时检测：清仓卖出'
-            });
+            // 完全清仓 - 不生成交易记录，因为这是重新部署导致的
+            console.log(`[detectTrades] ${code} 已清仓，不生成虚拟交易`);
         } else if (oldStock.shares > newStock.shares) {
             // 减仓卖出
             const soldShares = oldStock.shares - newStock.shares;
