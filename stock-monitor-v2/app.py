@@ -2262,13 +2262,17 @@ def import_trades():
                     stock['avg_cost'] = round(avg_cost, 2)
                     print(f"[TradeImport] {code} 重新计算持仓: {remaining_shares}股, 成本={avg_cost:.2f}")
             
-            # 更新 last_trade 信息
-            stock['last_trade_price'] = trade.get('price', 0)
-            stock['last_trade_type'] = trade.get('tradeType', '')
-            stock['last_trade_time'] = trade.get('time', '')
-            stock['last_trade_shares'] = trade.get('shares', 0)
-            updated_count += 1
-            print(f"[TradeImport] 更新 {code}: {trade.get('tradeType')} @ {trade.get('price')} ({trade.get('time')})")
+            # 更新 last_trade 信息（只更新真实交易，跳过初始持仓导入）
+            note = trade.get('note', '')
+            if note != '初始持仓导入':
+                stock['last_trade_price'] = trade.get('price', 0)
+                stock['last_trade_type'] = trade.get('tradeType', '')
+                stock['last_trade_time'] = trade.get('time', '')
+                stock['last_trade_shares'] = trade.get('shares', 0)
+                updated_count += 1
+                print(f"[TradeImport] 更新 {code}: {trade.get('tradeType')} @ {trade.get('price')} ({trade.get('time')})")
+            else:
+                print(f"[TradeImport] 跳过初始持仓记录: {code}")
         
         # 同时保存到交易日志
         if 'trade_logs' not in portfolio_data:
