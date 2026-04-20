@@ -519,15 +519,35 @@ def batch_add_stocks():
             new_stock['status'] = '监控中'
             new_stock['market_value'] = new_stock.get('current_price', 0) * new_stock.get('shares', 0)
             
-            # 【新增】如果有该股票的交易记录，更新 last_trade 信息
+            # 【新增】如果有该股票的交易记录，更新持仓成本和交易信息
             code = new_stock.get('code', '')
             if code in trade_map:
-                # 找到最新的交易（通常是卖出）
-                sell_trades = [t for t in trade_map[code] if t.get('trade_type') == 'sell']
-                buy_trades = [t for t in trade_map[code] if t.get('trade_type') == 'buy']
+                trades_for_stock = trade_map[code]
+                buy_trades = [t for t in trades_for_stock if t.get('trade_type') == 'buy']
+                sell_trades = [t for t in trades_for_stock if t.get('trade_type') == 'sell']
                 
+                # 【修复】根据交易记录重新计算持仓成本和数量
+                if buy_trades:
+                    total_buy_shares = sum(t.get('shares', 0) for t in buy_trades)
+                    total_buy_cost = sum(t.get('price', 0) * t.get('shares', 0) for t in buy_trades)
+                    
+                    # 减去卖出的数量
+                    total_sell_shares = sum(t.get('shares', 0) for t in sell_trades)
+                    remaining_shares = total_buy_shares - total_sell_shares
+                    
+                    # 计算剩余持仓的成本（先进先出法）
+                    if remaining_shares > 0 and total_buy_shares > 0:
+                        # 按比例计算剩余成本
+                        remaining_cost = total_buy_cost * (remaining_shares / total_buy_shares)
+                        avg_cost = remaining_cost / remaining_shares
+                        
+                        # 更新股票数据
+                        new_stock['shares'] = remaining_shares
+                        new_stock['avg_cost'] = round(avg_cost, 2)
+                        print(f"[batch_add_stocks] {code} 计算持仓: {remaining_shares}股, 成本={avg_cost:.2f}")
+                
+                # 更新 last_trade 信息
                 if sell_trades:
-                    # 有卖出交易，更新卖出记录（用于计算冷却期）
                     latest_sell = max(sell_trades, key=lambda x: x.get('time', ''))
                     new_stock['last_trade_time'] = latest_sell.get('time')
                     new_stock['last_trade_type'] = 'sell'
@@ -535,7 +555,6 @@ def batch_add_stocks():
                     new_stock['last_trade_shares'] = latest_sell.get('shares', 0)
                     print(f"[batch_add_stocks] {code} 更新卖出记录: {latest_sell.get('time')}")
                 elif buy_trades:
-                    # 只有买入交易
                     latest_buy = max(buy_trades, key=lambda x: x.get('time', ''))
                     new_stock['last_trade_time'] = latest_buy.get('time')
                     new_stock['last_trade_type'] = 'buy'
