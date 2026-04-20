@@ -64,6 +64,7 @@ def calculate_trade_quality(stock, trigger_buy, trigger_sell, current_price):
     last_trade_price = stock.get('last_trade_price', 0)
     last_trade_type = stock.get('last_trade_type', '')
     shares = stock.get('shares', 0)
+    avg_cost = stock.get('avg_cost', 0)
     
     if not last_trade_price or not last_trade_type:
         return {

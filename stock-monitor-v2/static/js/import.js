@@ -311,9 +311,16 @@ function parseStockLine(line, formatType) {
             market = '港股';
         }
         
-        // 处理异常成本价
-        if (costPrice <= 0 || costPrice > currentPrice * 10) {
-            costPrice = currentPrice * 0.9; // 估算成本
+        // 【修复】处理异常成本价：如果成本价<=0或过高，尝试其他字段
+        if (costPrice <= 0 || (currentPrice > 0 && costPrice > currentPrice * 3)) {
+            // 尝试从其他数值字段找合理的成本价
+            for (let i = 2; i < parts.length; i++) {
+                const val = parseFloat(parts[i].replace(/,/g, ''));
+                if (!isNaN(val) && val > 0 && val < 10000 && (currentPrice <= 0 || val <= currentPrice * 3)) {
+                    costPrice = val;
+                    break;
+                }
+            }
         }
         
         // 尝试解析扩展字段（交易记录、高波动标记、优先级）
