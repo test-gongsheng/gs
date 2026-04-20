@@ -2238,10 +2238,31 @@ def import_trades():
                 if new_time > current_time:
                     latest_trades[code] = trade
         
-        # 更新持仓股的 last_trade 信息
+        # 【修复】根据交易记录重新计算持仓成本和数量
         updated_count = 0
         for code, trade in latest_trades.items():
             stock = stock_map[code]
+            
+            # 获取该股票的所有交易记录
+            stock_trades = [t for t in trades if t.get('code') == code]
+            buy_trades = [t for t in stock_trades if t.get('tradeType') == 'buy']
+            sell_trades = [t for t in stock_trades if t.get('tradeType') == 'sell']
+            
+            # 计算持仓成本和数量
+            if buy_trades:
+                total_buy_shares = sum(t.get('shares', 0) for t in buy_trades)
+                total_buy_cost = sum(t.get('price', 0) * t.get('shares', 0) for t in buy_trades)
+                total_sell_shares = sum(t.get('shares', 0) for t in sell_trades)
+                remaining_shares = total_buy_shares - total_sell_shares
+                
+                if remaining_shares > 0 and total_buy_shares > 0:
+                    remaining_cost = total_buy_cost * (remaining_shares / total_buy_shares)
+                    avg_cost = remaining_cost / remaining_shares
+                    stock['shares'] = remaining_shares
+                    stock['avg_cost'] = round(avg_cost, 2)
+                    print(f"[TradeImport] {code} 重新计算持仓: {remaining_shares}股, 成本={avg_cost:.2f}")
+            
+            # 更新 last_trade 信息
             stock['last_trade_price'] = trade.get('price', 0)
             stock['last_trade_type'] = trade.get('tradeType', '')
             stock['last_trade_time'] = trade.get('time', '')
