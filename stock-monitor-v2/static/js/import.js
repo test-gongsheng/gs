@@ -727,11 +727,9 @@ async function confirmImport() {
             priority: newStock.priority || 'P2',
             strategy_mode: '基础策略',
             notes: '',
-            // 【新增】交易记录和股票类型
-            stock_type: newStock.stockType || 'normal',
-            last_trade_price: newStock.lastTradePrice || 0,
-            last_trade_type: newStock.lastTradeType || '',
-            last_trade_time: newStock.lastTradeTime || ''
+            // 【修复】不传 last_trade 字段，由后端从交易记录计算
+            // 持仓文件里没有真实交易记录，误解析会导致报告异常
+            stock_type: newStock.stockType || 'normal'
         }));
 
         console.log(`[confirmImport] 批量导入 ${stocksToAdd.length} 只股票`);

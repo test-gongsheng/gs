@@ -519,6 +519,13 @@ def batch_add_stocks():
             new_stock['status'] = '监控中'
             new_stock['market_value'] = new_stock.get('current_price', 0) * new_stock.get('shares', 0)
             
+            # 【修复】强制清空 last_trade 字段，只从真实交易记录设置
+            # 防止前端传来的误解析值影响报告
+            new_stock['last_trade_price'] = 0
+            new_stock['last_trade_type'] = ''
+            new_stock['last_trade_time'] = ''
+            new_stock['last_trade_shares'] = 0
+            
             # 【新增】如果有该股票的交易记录，更新持仓成本和交易信息
             code = new_stock.get('code', '')
             if code in trade_map:
