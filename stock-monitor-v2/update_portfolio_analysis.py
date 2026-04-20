@@ -332,9 +332,14 @@ def analyze_stock_detailed(stock: Dict, realtime_price: float = 0, realtime_axis
         technical_status = 'weak'
         status_desc = '弱势'
     
-    # 触发价格计算（基于成本价的网格策略）
-    trigger_buy = round(avg_cost * 0.92, 2)
-    trigger_sell = round(avg_cost * 1.08, 2)
+    # 触发价格计算（基于中轴价格的网格策略）
+    if axis_price > 0:
+        trigger_buy = round(axis_price * 0.92, 2)
+        trigger_sell = round(axis_price * 1.08, 2)
+    else:
+        # 没有中轴价格时，回退到成本价
+        trigger_buy = round(avg_cost * 0.92, 2)
+        trigger_sell = round(avg_cost * 1.08, 2)
     
     # P0级别技术分析
     tech_data = None
@@ -419,7 +424,7 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
         f"**当前价格**: RMB{current_price:.2f}（{market}实时行情）",
         f"**中轴价格**: RMB{axis_price:.2f}（基于近90日均价计算）",
         f"**持仓成本**: RMB{avg_cost:.2f}（您的实际买入均价）",
-        f"**网格触发**: 买入≤RMB{trigger_buy} / 卖出≥RMB{trigger_sell}（成本±8%）",
+        f"**网格触发**: 买入≤RMB{trigger_buy} / 卖出≥RMB{trigger_sell}（中轴价格±8%）",
     ]
     
     # 添加技术指标数据源
@@ -460,8 +465,8 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
             )
         else:
             analysis_logic.append(
-                f"**空间测算**: 距离成本价卖出触发线（RMB{trigger_sell}）"
-                f"还有{((trigger_sell-current_price)/current_price*100):.1f}%上涨空间。"
+                f"**空间测算**: 距离中轴卖点（RMB{trigger_sell}）"
+                f"还有{((trigger_sell-current_price)/current_price*100):.1f}%上涨空间（相对当前价）。"
             )
     else:
         analysis_logic.append(
@@ -474,8 +479,8 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
             )
         else:
             analysis_logic.append(
-                f"**空间测算**: 距离成本价买入触发线（RMB{trigger_buy}）"
-                f"还有{((current_price-trigger_buy)/current_price*100):.1f}%下跌空间。"
+                f"**空间测算**: 距离中轴买点（RMB{trigger_buy}）"
+                f"还有{((current_price-trigger_buy)/current_price*100):.1f}%下跌空间（相对当前价）。"
             )
     
     # 持仓盈亏分析
@@ -512,7 +517,7 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
             'content': [
                 f"{name}当前处于超买状态，价格偏离中轴{axis_deviation:+.1f}%，超过+8%阈值。",
                 "根据中轴价格策略，当前已进入相对高估区域，短期回调风险增加。",
-                f"建议：考虑减仓1/4至1/3，锁定部分利润。若继续上涨至RMB{trigger_sell}（成本+8%），可进一步减仓。",
+                f"建议：考虑减仓1/4至1/3，锁定部分利润。若继续上涨至RMB{trigger_sell}（中轴+8%），可进一步减仓。",
                 "未来观察：等待价格回落至中轴附近（RMB{:.2f}）再考虑接回。".format(axis_price)
             ]
         }
@@ -522,7 +527,7 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
             'content': [
                 f"{name}表现强势，价格高于中轴{axis_deviation:+.1f}%，处于相对高位。",
                 "尚未达到超买阈值，可继续持有享受上涨收益。",
-                f"建议：设置动态止盈，若跌破中轴或达到RMB{trigger_sell}（成本+8%）考虑减仓。",
+                f"建议：设置动态止盈，若跌破中轴或达到RMB{trigger_sell}（中轴+8%）考虑减仓。",
                 "未来观察：关注成交量是否持续放大，警惕放量滞涨信号。"
             ]
         }
@@ -532,7 +537,7 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
             'content': [
                 f"{name}当前处于超卖状态，价格偏离中轴{axis_deviation:.1f}%，跌破-8%阈值。",
                 "根据中轴价格策略，当前已进入相对低估区域，可能存在左侧布局机会。",
-                f"建议：关注买入机会，可考虑分批建仓。若继续下跌至RMB{trigger_buy}（成本-8%），可加大仓位。",
+                f"建议：关注买入机会，可考虑分批建仓。若继续下跌至RMB{trigger_buy}（中轴-8%），可加大仓位。",
                 "未来观察：等待价格反弹至中轴附近，或观察是否出现企稳信号。"
             ]
         }
@@ -542,7 +547,7 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
             'content': [
                 f"{name}相对弱势，价格低于中轴{axis_deviation:.1f}%，但尚未达到超卖阈值。",
                 "建议保持观望，等待更明确的买入信号。",
-                f"建议：若跌破RMB{trigger_buy}（成本-8%）进入超卖区，可考虑加仓；若反弹突破中轴，趋势可能转强。",
+                f"建议：若跌破RMB{trigger_buy}（中轴-8%）进入超卖区，可考虑加仓；若反弹突破中轴，趋势可能转强。",
                 "未来观察：关注是否出现止跌企稳信号，以及基本面是否有改善。"
             ]
         }
