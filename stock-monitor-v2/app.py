@@ -546,20 +546,25 @@ def batch_add_stocks():
                         new_stock['avg_cost'] = round(avg_cost, 2)
                         print(f"[batch_add_stocks] {code} 计算持仓: {remaining_shares}股, 成本={avg_cost:.2f}")
                 
-                # 更新 last_trade 信息
-                if sell_trades:
-                    latest_sell = max(sell_trades, key=lambda x: x.get('time', ''))
+                # 更新 last_trade 信息（只更新真实交易，跳过初始持仓导入）
+                # 过滤掉 note 为"初始持仓导入"的虚拟交易记录
+                real_buy_trades = [t for t in buy_trades if t.get('note') != '初始持仓导入']
+                real_sell_trades = [t for t in sell_trades if t.get('note') != '初始持仓导入']
+                
+                if real_sell_trades:
+                    latest_sell = max(real_sell_trades, key=lambda x: x.get('time', ''))
                     new_stock['last_trade_time'] = latest_sell.get('time')
                     new_stock['last_trade_type'] = 'sell'
                     new_stock['last_trade_price'] = latest_sell.get('price', 0)
                     new_stock['last_trade_shares'] = latest_sell.get('shares', 0)
-                    print(f"[batch_add_stocks] {code} 更新卖出记录: {latest_sell.get('time')}")
-                elif buy_trades:
-                    latest_buy = max(buy_trades, key=lambda x: x.get('time', ''))
+                elif real_buy_trades:
+                    latest_buy = max(real_buy_trades, key=lambda x: x.get('time', ''))
                     new_stock['last_trade_time'] = latest_buy.get('time')
                     new_stock['last_trade_type'] = 'buy'
                     new_stock['last_trade_price'] = latest_buy.get('price', 0)
                     new_stock['last_trade_shares'] = latest_buy.get('shares', 0)
+                # 如果没有真实交易记录，不设置 last_trade（保持为空）
+                # 这样 calculate_trade_quality 会返回"无交易记录"
             
             # 港股添加汇率字段（使用实时汇率）
             if new_stock.get('market') == '港股':
