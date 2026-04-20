@@ -845,9 +845,20 @@ function detectTrades(oldStocks, newStocks) {
         const oldStock = oldMap[code];
         
         if (!oldStock) {
-            // 全新买入 - 不生成交易记录，避免last_trade_price被设为成本价
-            // 只有真实的交易记录才应该更新last_trade_price
-            console.log(`[detectTrades] ${code} 是全新持仓，不生成虚拟交易`);
+            // 【修复】全新买入也需要生成交易记录，用于后端计算持仓成本
+            // 生成一笔初始买入交易，让后端能正确计算 avg_cost
+            if (newStock.shares > 0 && newStock.costPrice > 0) {
+                trades.push({
+                    stock_code: code,
+                    stock_name: newStock.name,
+                    trade_type: 'buy',
+                    price: newStock.costPrice,
+                    shares: newStock.shares,
+                    time: now,
+                    note: '初始持仓导入'
+                });
+                console.log(`[detectTrades] ${code} 生成初始买入记录: ${newStock.shares}股 @ ¥${newStock.costPrice}`);
+            }
         } else if (newStock.shares > oldStock.shares) {
             // 加仓
             const addedShares = newStock.shares - oldStock.shares;
