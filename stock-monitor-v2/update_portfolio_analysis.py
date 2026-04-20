@@ -377,9 +377,9 @@ def analyze_stock_detailed(stock: Dict, realtime_price: float = 0, realtime_axis
         'technical_status': technical_status,
         'status_desc': status_desc,
         'status_icon': {
-            'overbought': '⚠️', 'strong': '🟢', 'neutral': '⚪',
-            'weak': '🔴', 'oversold': '💡'
-        }.get(technical_status, '⚪'),
+            'overbought': '[OVER]', 'strong': '[STRONG]', 'neutral': '[NEUTRAL]',
+            'weak': '[WEAK]', 'oversold': '[BUY]'
+        }.get(technical_status, '[NEUTRAL]'),
         'trigger_buy': trigger_buy,
         'trigger_sell': trigger_sell,
         'action_suggestion': {
@@ -547,7 +547,7 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
         }
     else:
         conclusion = {
-            'title': '⚪ 震荡区 - 正常持有',
+            'title': '[NEUTRAL] 震荡区 - 正常持有',
             'content': [
                 f"{name}价格在正常震荡区间，偏离中轴{axis_deviation:+.1f}%，处于±3%合理范围内。",
                 "股价围绕中轴波动，暂无明确趋势，保持当前仓位即可。",
@@ -601,7 +601,7 @@ def analyze_sector(stocks: List[Dict]) -> Dict:
         elif stats['weak'] > stats['strong']:
             status = '[RED] 弱势'
         else:
-            status = '⚪ 震荡'
+            status = '[NEUTRAL] 震荡'
         
         sector_analysis.append({
             'name': sector,
