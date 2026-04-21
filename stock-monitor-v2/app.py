@@ -526,52 +526,31 @@ def batch_add_stocks():
             new_stock['last_trade_time'] = ''
             new_stock['last_trade_shares'] = 0
             
-            # 【新增】如果有该股票的交易记录，更新持仓成本和交易信息
+            # 【修复】不再根据交易记录重新计算持仓数量
+            # 原因：detectTrades 生成的交易记录不完整（只包含变化量），
+            # 重新计算会导致持仓数量错误。持仓数量应以前端传入的为准。
             code = new_stock.get('code', '')
             if code in trade_map:
                 trades_for_stock = trade_map[code]
-                buy_trades = [t for t in trades_for_stock if t.get('trade_type') == 'buy']
-                sell_trades = [t for t in trades_for_stock if t.get('trade_type') == 'sell']
                 
-                # 【修复】根据交易记录重新计算持仓成本和数量
-                if buy_trades:
-                    total_buy_shares = sum(t.get('shares', 0) for t in buy_trades)
-                    total_buy_cost = sum(t.get('price', 0) * t.get('shares', 0) for t in buy_trades)
-                    
-                    # 减去卖出的数量
-                    total_sell_shares = sum(t.get('shares', 0) for t in sell_trades)
-                    remaining_shares = total_buy_shares - total_sell_shares
-                    
-                    # 计算剩余持仓的成本（先进先出法）
-                    if remaining_shares > 0 and total_buy_shares > 0:
-                        # 按比例计算剩余成本
-                        remaining_cost = total_buy_cost * (remaining_shares / total_buy_shares)
-                        avg_cost = remaining_cost / remaining_shares
-                        
-                        # 更新股票数据
-                        new_stock['shares'] = remaining_shares
-                        new_stock['avg_cost'] = round(avg_cost, 2)
-                        print(f"[batch_add_stocks] {code} 计算持仓: {remaining_shares}股, 成本={avg_cost:.2f}")
+                # 只更新 last_trade 信息（使用最新真实交易）
+                real_trades = [t for t in trades_for_stock if t.get('note') not in ['初始持仓导入', '导入时检测：加仓', '导入时检测：减仓卖出']]
+                buy_trades = [t for t in real_trades if t.get('trade_type') == 'buy']
+                sell_trades = [t for t in real_trades if t.get('trade_type') == 'sell']
                 
-                # 更新 last_trade 信息（只更新真实交易，跳过初始持仓导入）
-                # 过滤掉 note 为"初始持仓导入"的虚拟交易记录
-                real_buy_trades = [t for t in buy_trades if t.get('note') != '初始持仓导入']
-                real_sell_trades = [t for t in sell_trades if t.get('note') != '初始持仓导入']
-                
-                if real_sell_trades:
-                    latest_sell = max(real_sell_trades, key=lambda x: x.get('time', ''))
+                if sell_trades:
+                    latest_sell = max(sell_trades, key=lambda x: x.get('time', ''))
                     new_stock['last_trade_time'] = latest_sell.get('time')
                     new_stock['last_trade_type'] = 'sell'
                     new_stock['last_trade_price'] = latest_sell.get('price', 0)
                     new_stock['last_trade_shares'] = latest_sell.get('shares', 0)
-                elif real_buy_trades:
-                    latest_buy = max(real_buy_trades, key=lambda x: x.get('time', ''))
+                elif buy_trades:
+                    latest_buy = max(buy_trades, key=lambda x: x.get('time', ''))
                     new_stock['last_trade_time'] = latest_buy.get('time')
                     new_stock['last_trade_type'] = 'buy'
                     new_stock['last_trade_price'] = latest_buy.get('price', 0)
                     new_stock['last_trade_shares'] = latest_buy.get('shares', 0)
                 # 如果没有真实交易记录，不设置 last_trade（保持为空）
-                # 这样 calculate_trade_quality 会返回"无交易记录"
             
             # 港股添加汇率字段（使用实时汇率）
             if new_stock.get('market') == '港股':
@@ -2250,31 +2229,14 @@ def import_trades():
                 if new_time > current_time:
                     latest_trades[code] = trade
         
-        # 【修复】根据交易记录重新计算持仓成本和数量
+        # 【修复】不再用交易记录重新计算持仓数量
+        # 原因：交易记录通常不完整，缺少历史初始持仓
+        # 持仓数量应以持仓导入的数据为准
         updated_count = 0
         for code, trade in latest_trades.items():
             stock = stock_map[code]
             
-            # 获取该股票的所有交易记录
-            stock_trades = [t for t in trades if t.get('code') == code]
-            buy_trades = [t for t in stock_trades if t.get('tradeType') == 'buy']
-            sell_trades = [t for t in stock_trades if t.get('tradeType') == 'sell']
-            
-            # 计算持仓成本和数量
-            if buy_trades:
-                total_buy_shares = sum(t.get('shares', 0) for t in buy_trades)
-                total_buy_cost = sum(t.get('price', 0) * t.get('shares', 0) for t in buy_trades)
-                total_sell_shares = sum(t.get('shares', 0) for t in sell_trades)
-                remaining_shares = total_buy_shares - total_sell_shares
-                
-                if remaining_shares > 0 and total_buy_shares > 0:
-                    remaining_cost = total_buy_cost * (remaining_shares / total_buy_shares)
-                    avg_cost = remaining_cost / remaining_shares
-                    stock['shares'] = remaining_shares
-                    stock['avg_cost'] = round(avg_cost, 2)
-                    print(f"[TradeImport] {code} 重新计算持仓: {remaining_shares}股, 成本={avg_cost:.2f}")
-            
-            # 更新 last_trade 信息（只更新真实交易，跳过初始持仓导入）
+            # 只更新 last_trade 信息（只更新真实交易，跳过初始持仓导入）
             note = trade.get('note', '')
             if note != '初始持仓导入':
                 stock['last_trade_price'] = trade.get('price', 0)
