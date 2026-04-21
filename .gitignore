@@ -1,0 +1,23 @@
+# 数据文件（用户持仓、交易记录，不应提交到 git）
+data/stocks.json
+data/*.db
+data/cache/
+data/southbound/
+reports/portfolio_analysis_latest.json
+
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# 日志
+*.log
+nohup.out
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
