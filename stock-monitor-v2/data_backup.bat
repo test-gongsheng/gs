@@ -1,7 +1,6 @@
 @echo off
-chcp 65001 >nul
-:: Windows 数据备份脚本
-:: 放在 stock-monitor-v2 目录下使用
+:: Data Backup Script for Windows
+:: Place in stock-monitor-v2 directory
 
 set "DATA_DIR=%USERPROFILE%\stock-monitor-data"
 set "REPO_DIR=%CD%"
@@ -12,46 +11,64 @@ if "%1"=="backup" goto backup
 if "%1"=="restore" goto restore
 if "%1"=="status" goto status
 
-echo 用法: data_backup.bat {backup^|restore^|status}
+echo Usage: data_backup.bat {backup^|restore^|status}
 echo.
-echo   backup  - 备份持仓数据
-echo   restore - 恢复持仓数据
-echo   status  - 查看状态
+echo   backup  - Save portfolio data
+echo   restore - Restore portfolio data
+echo   status  - Check backup status
 goto end
 
 :backup
-echo [备份] 保存数据到 %DATA_DIR%
+echo [Backup] Saving data to %DATA_DIR%
+set "BACKUP_COUNT=0"
+
 if exist "%REPO_DIR%\data\stocks.json" (
-    copy /Y "%REPO_DIR%\data\stocks.json" "%DATA_DIR%\stocks.json.bak"
-    echo [备份] stocks.json 已备份
+    copy /Y "%REPO_DIR%\data\stocks.json" "%DATA_DIR%\stocks.json.bak" >nul
+    echo [OK] stocks.json backed up
+    set /a "BACKUP_COUNT+=1"
 )
+
 if exist "%REPO_DIR%\data\stocks.db" (
-    copy /Y "%REPO_DIR%\data\stocks.db" "%DATA_DIR%\stocks.db.bak"
-    echo [备份] stocks.db 已备份
+    copy /Y "%REPO_DIR%\data\stocks.db" "%DATA_DIR%\stocks.db.bak" >nul
+    echo [OK] stocks.db backed up
+    set /a "BACKUP_COUNT+=1"
 )
-echo [备份] 完成
+
+if exist "%REPO_DIR%\reports\portfolio_analysis_latest.json" (
+    copy /Y "%REPO_DIR%\reports\portfolio_analysis_latest.json" "%DATA_DIR%\report.json.bak" >nul
+    echo [OK] report backed up
+    set /a "BACKUP_COUNT+=1"
+)
+
+echo [Done] %BACKUP_COUNT% files backed up
 goto end
 
 :restore
-echo [恢复] 从 %DATA_DIR% 恢复数据
+echo [Restore] Restoring data from %DATA_DIR%
+set "RESTORE_COUNT=0"
+
 if exist "%DATA_DIR%\stocks.json.bak" (
-    copy /Y "%DATA_DIR%\stocks.json.bak" "%REPO_DIR%\data\stocks.json"
-    echo [恢复] stocks.json 已恢复
+    copy /Y "%DATA_DIR%\stocks.json.bak" "%REPO_DIR%\data\stocks.json" >nul
+    echo [OK] stocks.json restored
+    set /a "RESTORE_COUNT+=1"
 ) else (
-    echo [恢复] 警告：找不到备份
+    echo [WARN] stocks.json backup not found
 )
+
 if exist "%DATA_DIR%\stocks.db.bak" (
-    copy /Y "%DATA_DIR%\stocks.db.bak" "%REPO_DIR%\data\stocks.db"
-    echo [恢复] stocks.db 已恢复
+    copy /Y "%DATA_DIR%\stocks.db.bak" "%REPO_DIR%\data\stocks.db" >nul
+    echo [OK] stocks.db restored
+    set /a "RESTORE_COUNT+=1"
 )
-echo [恢复] 完成
+
+echo [Done] %RESTORE_COUNT% files restored
 goto end
 
 :status
-echo === 备份目录 ===
+echo === Backup Directory ===
 dir "%DATA_DIR%"
 echo.
-echo === 当前数据 ===
+echo === Current Data ===
 dir "%REPO_DIR%\data"
 goto end
 
