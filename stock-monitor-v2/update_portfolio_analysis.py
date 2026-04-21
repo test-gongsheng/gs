@@ -188,13 +188,13 @@ def calculate_concentration_deviation(stock, market_value, portfolio_data):
         grade = '正常'
         detail = f'占比合理，实际{current_weight:.1f}% vs 目标{target:.1f}%'
     elif deviation > 10:
-        grade = '[WARN] 超配'
+        grade = '[警告] 超配'
         detail = f'{code}占比{current_weight:.1f}%超配{deviation:.1f}%，违背优先级设定'
     elif deviation > 5:
         grade = '略超配'
         detail = f'{code}占比{current_weight:.1f}%略超配{deviation:.1f}%'
     elif deviation < -10:
-        grade = '[WARN] 低配'
+        grade = '[警告] 低配'
         detail = f'{code}占比{current_weight:.1f}%低配{abs(deviation):.1f}%，资金被占用'
     else:
         grade = '略低配'
@@ -515,7 +515,7 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
     # 3. 结论与建议
     if status == 'overbought':
         conclusion = {
-            'title': '[WARN] 超买区 - 建议减仓',
+            'title': '[警告] 超买区 - 建议减仓',
             'content': [
                 f"{name}当前处于超买状态，价格偏离中轴{axis_deviation:+.1f}%，超过+8%阈值。",
                 "根据中轴价格策略，当前已进入相对高估区域，短期回调风险增加。",
@@ -535,7 +535,7 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
         }
     elif status == 'oversold':
         conclusion = {
-            'title': '[TIP] 超卖区 - 关注买入',
+            'title': '[提示] 超卖区 - 关注买入',
             'content': [
                 f"{name}当前处于超卖状态，价格偏离中轴{axis_deviation:.1f}%，跌破-8%阈值。",
                 "根据中轴价格策略，当前已进入相对低估区域，可能存在左侧布局机会。",

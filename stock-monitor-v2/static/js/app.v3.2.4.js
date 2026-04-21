@@ -3116,7 +3116,7 @@ function showStockAnalysisDetail(code) {
                 <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
                     <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 6px;">⚖️ 持仓集中度偏离</div>
                     <div style="font-size: 1rem; font-weight: 600; color: ${stockAnalysis.concentration_deviation.grade?.includes('正常') ? '#10b981' : '#f59e0b'};">${stockAnalysis.concentration_deviation.grade || '无数据'}</div>
-                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">当前 ${stockAnalysis.concentration_deviation.current_weight || 0}% vs 目标 ${stockAnalysis.concentration_deviation.target_weight || 0}% (${stockAnalysis.concentration_deviation.priority || 'P2'})</div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">当前 ${stockAnalysis.concentration_deviation.current_weight || 0}% vs 目标 ${stockAnalysis.concentration_deviation.target_weight || 0}% (${stockAnalysis.concentration_deviation.priority === 'P0' || stockAnalysis.concentration_deviation.priority === 'P2' ? stockAnalysis.concentration_deviation.priority : 'P2'})</div>
                 </div>
                 ` : ''}
                 
