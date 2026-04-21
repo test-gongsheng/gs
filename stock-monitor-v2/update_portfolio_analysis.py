@@ -383,9 +383,9 @@ def analyze_stock_detailed(stock: Dict, realtime_price: float = 0, realtime_axis
         'technical_status': technical_status,
         'status_desc': status_desc,
         'status_icon': {
-            'overbought': '[OVER]', 'strong': '[STRONG]', 'neutral': '[NEUTRAL]',
-            'weak': '[WEAK]', 'oversold': '[BUY]'
-        }.get(technical_status, '[NEUTRAL]'),
+            'overbought': '[超买]', 'strong': '[强势]', 'neutral': '[中性]',
+            'weak': '[弱势]', 'oversold': '[买入]'
+        }.get(technical_status, '[中性]'),
         'trigger_buy': trigger_buy,
         'trigger_sell': trigger_sell,
         'action_suggestion': {
@@ -523,7 +523,7 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
         }
     elif status == 'strong':
         conclusion = {
-            'title': '[GREEN] 强势区 - 持有观察',
+            'title': '[强势] 强势区 - 持有观察',
             'content': [
                 f"{name}表现强势，价格高于中轴{axis_deviation:+.1f}%，处于相对高位。",
                 "尚未达到超买阈值，可继续持有享受上涨收益。",
@@ -543,7 +543,7 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
         }
     elif status == 'weak':
         conclusion = {
-            'title': '[RED] 弱势区 - 关注支撑',
+            'title': '[弱势] 弱势区 - 关注支撑',
             'content': [
                 f"{name}相对弱势，价格低于中轴{axis_deviation:.1f}%，但尚未达到超卖阈值。",
                 "建议保持观望，等待更明确的买入信号。",
@@ -553,7 +553,7 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
         }
     else:
         conclusion = {
-            'title': '[NEUTRAL] 震荡区 - 正常持有',
+            'title': '[中性] 震荡区 - 正常持有',
             'content': [
                 f"{name}价格在正常震荡区间，偏离中轴{axis_deviation:+.1f}%，处于±3%合理范围内。",
                 "股价围绕中轴波动，暂无明确趋势，保持当前仓位即可。",
@@ -603,11 +603,11 @@ def analyze_sector(stocks: List[Dict]) -> Dict:
         elif stats['oversold'] >= total * 0.3:
             status = '[TIP] 超卖'
         elif stats['strong'] > stats['weak']:
-            status = '[GREEN] 强势'
+            status = '[强势] 强势'
         elif stats['weak'] > stats['strong']:
-            status = '[RED] 弱势'
+            status = '[弱势] 弱势'
         else:
-            status = '[NEUTRAL] 震荡'
+            status = '[中性] 震荡'
         
         sector_analysis.append({
             'name': sector,
