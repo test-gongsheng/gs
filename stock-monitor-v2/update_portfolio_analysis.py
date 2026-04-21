@@ -63,7 +63,9 @@ def calculate_trade_quality(stock, trigger_buy, trigger_sell, current_price):
     """计算加减仓质量评分"""
     last_trade_price = stock.get('last_trade_price', 0)
     last_trade_type = stock.get('last_trade_type', '')
-    shares = stock.get('shares', 0)
+    shares = stock.get('last_trade_shares', 0)  # 【修复】用实际交易股数，不是总持仓
+    if shares == 0:
+        shares = stock.get('shares', 0)  # 兜底：如果没有交易股数，用持仓
     avg_cost = stock.get('avg_cost', 0)
     
     if not last_trade_price or not last_trade_type:
