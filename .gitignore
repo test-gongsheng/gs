@@ -1,16 +1,28 @@
-# 数据文件（用户持仓、交易记录，不应提交到 git）
+# Data files (user portfolio, trade records, should not be in git)
 data/stocks.json
 data/*.db
 data/cache/
 data/southbound/
 reports/portfolio_analysis_latest.json
 
+# Kimi Claw downloads (screenshots, temporary files)
+.kimi/
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# Generated data files
+stock_analyzer/data/*.csv
+backtest/results/*.png
+backtest/results/*.json
+
 # Python
 __pycache__/
 *.pyc
 venv/
 
-# 日志
+# Logs
 *.log
 nohup.out
 
