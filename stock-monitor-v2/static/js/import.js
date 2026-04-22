@@ -311,15 +311,33 @@ function parseStockLine(line, formatType) {
             market = '港股';
         }
         
-        // 【修复】处理异常成本价：如果成本价<=0或过高，尝试其他字段
-        if (costPrice <= 0 || (currentPrice > 0 && costPrice > currentPrice * 3)) {
-            // 尝试从其他数值字段找合理的成本价
-            for (let i = 2; i < parts.length; i++) {
+        // 【修复】处理异常成本价：如果成本价<=0或过高（超过现价5倍），则尝试修正
+        if (costPrice <= 0 || (currentPrice > 0 && costPrice > currentPrice * 5)) {
+            console.warn(`[成本修正] ${code}(${name}) 成本异常: ${costPrice}, 现价: ${currentPrice}`);
+            let fixed = false;
+            
+            // 尝试1: 从其他数值字段找合理的成本价（跳过持仓数/市值等已知非成本字段）
+            // 同花顺格式: parts[2]=持仓数, parts[3]=可用, parts[4]=冻结, parts[5]=成本价, parts[6]=现价
+            // 后面的字段可能包含市值、盈亏额等极大值，需要排除
+            for (let i = 5; i < parts.length; i++) {
+                // 跳过已知的非成本字段（避免持仓数被误识别）
+                if (i === 2 || i === 3 || i === 4) continue;
                 const val = parseFloat(parts[i].replace(/,/g, ''));
-                if (!isNaN(val) && val > 0 && val < 10000 && (currentPrice <= 0 || val <= currentPrice * 3)) {
-                    costPrice = val;
-                    break;
+                if (!isNaN(val) && val > 0 && val < 10000) {
+                    // 必须在现价的合理范围内 (±50%)，避免选中市值/盈亏额
+                    if (currentPrice <= 0 || (val >= currentPrice * 0.5 && val <= currentPrice * 1.5)) {
+                        costPrice = val;
+                        console.warn(`[成本修正] ${code} 从字段[${i}]找到替代成本: ${costPrice}`);
+                        fixed = true;
+                        break;
+                    }
                 }
+            }
+            
+            // 尝试2: 如果还异常，用当前价格作为兜底（避免负值或极大值影响策略）
+            if (!fixed && (costPrice <= 0 || (currentPrice > 0 && costPrice > currentPrice * 5))) {
+                console.warn(`[成本修正] ${code} 未找到合理替代值，使用现价兜底: ${currentPrice}`);
+                costPrice = currentPrice;
             }
         }
         
