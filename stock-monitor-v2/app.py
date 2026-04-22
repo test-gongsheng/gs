@@ -564,6 +564,28 @@ def batch_add_stocks():
         # 更新风险控制
         update_risk_control(data)
         
+        # 【修复】从 trade_logs 恢复 last_trade 信息（避免导入持仓时清空交易记录）
+        trade_logs = data.get('trade_logs', [])
+        if trade_logs:
+            # 按股票分组，找每只股票最新的真实交易
+            from collections import defaultdict
+            code_trades = defaultdict(list)
+            for log in trade_logs:
+                code = log.get('stock_code')
+                if code and log.get('trade_type') in ['buy', 'sell']:
+                    code_trades[code].append(log)
+            
+            for stock in added_stocks:
+                code = stock.get('code')
+                if code in code_trades:
+                    # 按时间排序，取最新一笔
+                    latest = max(code_trades[code], key=lambda x: x.get('time', ''))
+                    stock['last_trade_price'] = latest.get('price', 0)
+                    stock['last_trade_type'] = latest.get('trade_type', '')
+                    stock['last_trade_time'] = latest.get('time', '')
+                    stock['last_trade_shares'] = latest.get('shares', 0)
+                    print(f"[batch_add_stocks] 从 trade_logs 恢复 {code} 交易记录: {latest.get('trade_type')} @ {latest.get('price')}")
+        
         if save_data(data):
             print(f"[batch_add_stocks] 成功添加 {len(added_stocks)} 只股票，记录 {len(trades)} 笔交易")
             
