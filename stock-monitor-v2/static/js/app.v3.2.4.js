@@ -258,63 +258,83 @@ async function refreshAxisPricesInBackground() {
  * - 检查当天报告是否存在
  * - 如果不存在，自动调用生成API
  */
-async function checkAndGenerateReport() {
+/**
+ * 检查并生成每日报告（带自动重试）
+ */
+async function checkAndGenerateReport(retryCount = 0) {
+    const MAX_RETRIES = 3;
+    const today = new Date().toISOString().split('T')[0];
+    
     try {
-        const today = new Date().toISOString().split('T')[0];
-        console.log(`[checkAndGenerateReport] 检查 ${today} 的报告...`);
+        console.log(`[checkAndGenerateReport] 检查 ${today} 的报告... (重试: ${retryCount}/${MAX_RETRIES})`);
         
-        // 检查报告是否存在
+        // 检查报告是否存在且有效
         const checkResponse = await fetch(`/api/reports/check?date=${today}`);
         const checkResult = await checkResponse.json();
         
-        if (!checkResult.exists) {
-            console.log('[checkAndGenerateReport] 今日报告不存在，开始自动生成...');
-            
-            // 显示生成中状态
-            showReportGeneratingStatus(true);
-            
-            // 调用生成API
-            const generateResponse = await fetch('/api/reports/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            });
-            const generateResult = await generateResponse.json();
-            
-            if (generateResult.success) {
-                console.log('[checkAndGenerateReport] 报告生成成功');
-                // 重新加载报告
-                setTimeout(() => {
-                    loadPortfolioAnalysis();
-                    showReportGeneratingStatus(false);
-                }, 1000);
-            } else {
-                console.error('[checkAndGenerateReport] 报告生成失败:', generateResult.error);
-                showReportGeneratingStatus(false);
-            }
-        } else {
+        if (checkResult.exists && retryCount === 0) {
             console.log('[checkAndGenerateReport] 今日报告已存在');
+            loadPortfolioAnalysis();
+            return;
+        }
+        
+        // 报告不存在或需要重新生成
+        console.log('[checkAndGenerateReport] 开始生成报告...');
+        showReportGeneratingStatus(true, retryCount > 0 ? `生成失败，正在重试 (${retryCount}/${MAX_RETRIES})...` : null);
+        
+        // 调用生成API
+        const generateResponse = await fetch('/api/reports/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const generateResult = await generateResponse.json();
+        
+        if (generateResult.success) {
+            console.log('[checkAndGenerateReport] 报告生成成功');
+            showReportGeneratingStatus(false);
+            // 延迟加载确保文件已写入
+            setTimeout(() => loadPortfolioAnalysis(), 1500);
+        } else {
+            console.error('[checkAndGenerateReport] 报告生成失败:', generateResult.error);
+            
+            // 自动重试
+            if (retryCount < MAX_RETRIES) {
+                console.log(`[checkAndGenerateReport] ${retryCount + 1}秒后自动重试...`);
+                setTimeout(() => checkAndGenerateReport(retryCount + 1), (retryCount + 1) * 2000);
+            } else {
+                console.error('[checkAndGenerateReport] 已达最大重试次数，请手动刷新');
+                showReportGeneratingStatus(true, '生成失败，请点击上方刷新按钮手动重试');
+            }
         }
     } catch (error) {
         console.error('[checkAndGenerateReport] 检查/生成报告失败:', error);
-        showReportGeneratingStatus(false);
+        
+        // 网络错误也重试
+        if (retryCount < MAX_RETRIES) {
+            console.log(`[checkAndGenerateReport] ${retryCount + 1}秒后自动重试...`);
+            setTimeout(() => checkAndGenerateReport(retryCount + 1), (retryCount + 1) * 2000);
+        } else {
+            showReportGeneratingStatus(true, '网络错误，请手动刷新');
+        }
     }
 }
 
 /**
  * 【新增】显示报告生成状态
  */
-function showReportGeneratingStatus(generating) {
+function showReportGeneratingStatus(generating, customMessage = null) {
     const contentEl = document.getElementById('portfolioAnalysisContent');
     if (!contentEl) return;
     
     if (generating) {
+        const message = customMessage || '正在生成今日持仓分析报告...';
         contentEl.innerHTML = `
             <div style="text-align:center;padding:20px;color:#3b82f6;font-size:12px;">
                 <div style="margin-bottom:10px;">
                     <i class="fas fa-spinner fa-spin" style="font-size:24px;"></i>
                 </div>
-                <div>正在生成今日持仓分析报告...</div>
-                <div style="font-size:11px;color:#888;margin-top:5px;">请稍候</div>
+                <div>${message}</div>
+                <div style="font-size:11px;color:#888;margin-top:5px;">请稍候，首次生成可能需要2-3分钟</div>
             </div>
         `;
     }
