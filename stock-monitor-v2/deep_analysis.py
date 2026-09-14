@@ -597,8 +597,8 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
         lines.append(f"**RSI指标：** RSI(6)={rsi['rsi6']}, RSI(14)={rsi['rsi14']}。{'超买区' if rsi['rsi14'] > 70 else '超卖区' if rsi['rsi14'] < 30 else '中性区'}。")
         lines.append(f"")
     
-    if indicators.get('support_resistance'):
-        sr = indicators['support_resistance']
+    sr = indicators.get('support_resistance', {})
+    if sr:
         lines.append(f"**关键价格区间：**")
         lines.append(f"- 近期支撑: ¥{sr['support_near']}（近5日低点）/ ¥{sr['support_mid']}（近20日低点）/ ¥{sr['support_strong']}（整数关）")
         lines.append(f"- 近期压力: ¥{sr['resistance_near']}（近5日高点）/ ¥{sr['resistance_far']}（近20日高点）")
