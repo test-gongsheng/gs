@@ -612,14 +612,14 @@ def batch_add_stocks():
                 time.sleep(2)
                 
                 result = subprocess.run(
-                    [sys.executable, 'update_portfolio_analysis.py'],
+                    [sys.executable, 'deep_analysis.py'],
                     cwd=os.path.dirname(__file__),
                     capture_output=True,
                     text=True,
-                    timeout=180  # 【修复】增加超时时间到3分钟
+                    timeout=600
                 )
                 if result.returncode == 0:
-                    print("[batch_add_stocks] 持仓分析报告生成成功")
+                    print("[batch_add_stocks] 深度分析报告生成成功")
                     report_result = 'success'
                 else:
                     error_msg = result.stderr[:200] if result.stderr else '未知错误'
@@ -2058,16 +2058,16 @@ def check_report_exists():
 @app.route('/api/reports/generate', methods=['POST'])
 def generate_report():
     """
-    手动触发生成持仓分析报告
-    调用 update_portfolio_analysis.py 生成报告
+    手动触发生成持仓深度分析报告
+    调用 deep_analysis.py 生成报告
     """
     try:
-        print("[Report Generate] 开始生成持仓分析报告...")
+        print("[Report Generate] 开始生成深度分析报告...")
         
         import subprocess
         import sys
         
-        script_path = os.path.join(os.path.dirname(__file__), 'update_portfolio_analysis.py')
+        script_path = os.path.join(os.path.dirname(__file__), 'deep_analysis.py')
         
         # 检查脚本是否存在
         if not os.path.exists(script_path):
@@ -2082,27 +2082,23 @@ def generate_report():
             cwd=os.path.dirname(__file__),
             capture_output=True,
             text=True,
-            timeout=180  # 3分钟超时
+            timeout=600  # 10分钟超时（深度分析需要更长时间）
         )
         
         if result.returncode == 0:
-            print("[Report Generate] 报告生成成功")
+            print("[Report Generate] 深度分析报告生成成功")
             
             # 获取生成的文件信息
-            latest_file = os.path.join(os.path.dirname(__file__), 'reports', 'portfolio_analysis_latest.json')
-            file_info = {}
-            if os.path.exists(latest_file):
-                stat = os.stat(latest_file)
-                file_info = {
-                    'file_size': stat.st_size,
-                    'mtime': datetime.fromtimestamp(stat.st_mtime).isoformat()
-                }
+            report_dir = os.path.join(os.path.dirname(__file__), 'reports')
+            today = datetime.now().strftime('%Y-%m-%d')
+            import glob
+            files = glob.glob(os.path.join(report_dir, f'deep_analysis_*_{today}.md'))
             
             return jsonify({
                 'success': True,
-                'message': '报告生成成功',
-                'stdout': result.stdout[:500] if result.stdout else '',  # 限制输出长度
-                'file_info': file_info
+                'message': f'深度分析报告生成成功，共 {len(files)} 份',
+                'stdout': result.stdout[:500] if result.stdout else '',
+                'report_count': len(files)
             })
         else:
             error_msg = result.stderr[:500] if result.stderr else '生成失败'
@@ -2165,10 +2161,15 @@ def setup_cron_job():
 
 
 def ensure_portfolio_analysis():
-    """启动时检查报告文件是否存在，不存在则自动生成"""
+    """启动时检查深度分析报告是否存在，不存在则自动生成"""
     try:
-        if os.path.exists(PORTFOLIO_ANALYSIS_FILE):
-            print(f"[Report] 报告文件已存在: {PORTFOLIO_ANALYSIS_FILE}")
+        report_dir = os.path.join(os.path.dirname(__file__), 'reports')
+        today = datetime.now().strftime('%Y-%m-%d')
+        import glob
+        files = glob.glob(os.path.join(report_dir, f'deep_analysis_*_{today}.md'))
+        
+        if files:
+            print(f"[Report] 今日深度分析报告已存在: {len(files)} 份")
             return
         
         # 先检查 stocks.json 数据
@@ -2178,24 +2179,19 @@ def ensure_portfolio_analysis():
         if stocks:
             print(f"[Report] 前3只股票: {[s.get('code') for s in stocks[:3]]}")
         
-        print("[Report] 报告文件不存在，正在自动生成...")
+        print("[Report] 深度分析报告不存在，正在自动生成...")
         import subprocess
         result = subprocess.run(
-            [sys.executable, 'update_portfolio_analysis.py'],
+            [sys.executable, 'deep_analysis.py'],
             cwd=os.path.dirname(__file__),
             capture_output=True,
             text=True,
-            timeout=120
+            timeout=600
         )
         if result.returncode == 0:
-            print("[Report] ✅ 报告生成成功")
-            # 验证生成的报告
-            if os.path.exists(PORTFOLIO_ANALYSIS_FILE):
-                import json
-                with open(PORTFOLIO_ANALYSIS_FILE, 'r') as f:
-                    report = json.load(f)
-                print(f"[Report] 生成报告股票数: {len(report.get('stock_analyses', []))}")
-                print(f"[Report] 生成报告分数: {report.get('summary', {}).get('health_score')}")
+            print("[Report] ✅ 深度分析报告生成成功")
+            files = glob.glob(os.path.join(report_dir, f'deep_analysis_*_{today}.md'))
+            print(f"[Report] 生成报告数: {len(files)} 份")
         else:
             print(f"[Report] ⚠️ 报告生成失败: {result.stderr}")
             print(f"[Report] stdout: {result.stdout}")
@@ -2317,6 +2313,104 @@ if __name__ == '__main__':
     # 启动时自动设置 crontab
     setup_cron_job()
     
+    # ========== 深度分析报告 API ==========
+@app.route('/api/deep-analysis/<stock_code>')
+def get_deep_analysis(stock_code):
+    """获取指定股票的深度分析报告（Markdown格式）"""
+    try:
+        # 从 stocks.json 中找到对应的股票信息
+        data = load_data()
+        stock = None
+        for s in data.get('stocks', []):
+            if s.get('code') == stock_code:
+                stock = s
+                break
+        
+        if not stock:
+            return jsonify({'success': False, 'error': '股票不存在'}), 404
+        
+        # 构建报告文件路径
+        report_dir = os.path.join(os.path.dirname(__file__), 'reports')
+        today = datetime.now().strftime('%Y-%m-%d')
+        report_file = os.path.join(report_dir, f'deep_analysis_{stock_code}_{today}.md')
+        
+        # 如果今天的报告不存在，尝试找最近的报告
+        report_content = None
+        if os.path.exists(report_file):
+            with open(report_file, 'r', encoding='utf-8') as f:
+                report_content = f.read()
+        else:
+            # 查找最近的报告文件
+            import glob
+            pattern = os.path.join(report_dir, f'deep_analysis_{stock_code}_*.md')
+            files = glob.glob(pattern)
+            if files:
+                # 按修改时间排序，取最新的
+                files.sort(key=os.path.getmtime, reverse=True)
+                with open(files[0], 'r', encoding='utf-8') as f:
+                    report_content = f.read()
+        
+        if report_content:
+            return jsonify({
+                'success': True,
+                'stock_code': stock_code,
+                'stock_name': stock.get('name', ''),
+                'report_date': today,
+                'content': report_content,
+                'has_report': True
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'stock_code': stock_code,
+                'stock_name': stock.get('name', ''),
+                'report_date': today,
+                'content': '报告生成中，请稍后刷新...',
+                'has_report': False
+            })
+    except Exception as e:
+        print(f"[DeepAnalysis API] 错误: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/deep-analysis/batch', methods=['POST'])
+def generate_deep_analysis_batch():
+    """批量生成深度分析报告（异步任务入口）"""
+    try:
+        data = load_data()
+        stocks = data.get('stocks', [])
+        
+        # 异步在后台生成报告
+        def _generate_reports():
+            import subprocess
+            try:
+                result = subprocess.run(
+                    [sys.executable, 'deep_analysis.py'],
+                    cwd=os.path.dirname(__file__),
+                    capture_output=True,
+                    text=True,
+                    timeout=600
+                )
+                print(f"[DeepAnalysis Batch] 生成完成: {result.returncode}")
+                if result.returncode != 0:
+                    print(f"[DeepAnalysis Batch] 错误: {result.stderr[:500]}")
+            except Exception as e:
+                print(f"[DeepAnalysis Batch] 异常: {e}")
+        
+        thread = threading.Thread(target=_generate_reports, daemon=True)
+        thread.start()
+        
+        return jsonify({
+            'success': True,
+            'message': f'已在后台开始生成 {len(stocks)} 只股票的深度分析报告',
+            'stock_count': len(stocks)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+if __name__ == '__main__':
     # 启动时检查报告文件，不存在则自动生成
     ensure_portfolio_analysis()
     

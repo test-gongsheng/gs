@@ -8,7 +8,7 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] 开始生成持仓分析报告..." >> "$LOG
 
 cd /root/.openclaw/workspace/stock-monitor-v2/stock-monitor-v2
 source venv/bin/activate
-python3 update_portfolio_analysis.py >> "$LOG_FILE" 2>&1
+python3 deep_analysis.py >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 报告生成成功" >> "$LOG_FILE"

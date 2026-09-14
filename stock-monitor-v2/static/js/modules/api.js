@@ -149,6 +149,21 @@ const HKShortAPI = {
     }
 };
 
+// 深度分析相关API
+const DeepAnalysisAPI = {
+    // 获取单只股票深度分析报告
+    async getReport(stockCode) {
+        return apiFetch(`/api/deep-analysis/${stockCode}`);
+    },
+    
+    // 批量生成报告（后台任务）
+    async generateBatch() {
+        return apiFetch('/api/deep-analysis/batch', {
+            method: 'POST'
+        });
+    }
+};
+
 // 挂载到全局
 window.API = {
     fetch: apiFetch,
@@ -158,7 +173,8 @@ window.API = {
     Sentiment: SentimentAPI,
     News: NewsAPI,
     Portfolio: PortfolioAPI,
-    HKShort: HKShortAPI
+    HKShort: HKShortAPI,
+    DeepAnalysis: DeepAnalysisAPI
 };
 
 console.log('[API] 模块加载完成');

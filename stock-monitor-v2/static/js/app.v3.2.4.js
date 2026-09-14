@@ -918,6 +918,11 @@ function renderStockDetail() {
     setText('detailName', safeStock.name);
     setText('detailCode', safeStock.code);
     
+    // 设置深度分析报告的股票代码（供模态框使用）
+    if (typeof _deepAnalysisStockCode !== 'undefined') {
+        _deepAnalysisStockCode = safeStock.code;
+    }
+    
     // 股票类型和执行策略显示
     const stockType = safeStock.stock_type || safeStock.stockType || 'normal';
     const stockTypeText = stockType === 'high_vol' ? '高波动股' : '普通股';

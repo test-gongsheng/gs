@@ -16,6 +16,8 @@ reports/portfolio_analysis_latest.json
 stock_analyzer/data/*.csv
 backtest/results/*.png
 backtest/results/*.json
+reports/deep_analysis_*.md
+reports/ib_analysis_*.md
 
 # Python
 __pycache__/

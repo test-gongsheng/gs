@@ -13,7 +13,7 @@
     <script>
         // 自动缓存清除机制 - 使用固定版本号
         (function() {
-            const APP_VERSION = '3.2.8';  // 强制刷新：修复三个维度显示问题
+            const APP_VERSION = '3.2.9';  // 强制刷新：修复三个维度显示问题
             const storedVersion = localStorage.getItem('app_version');
             
             if (storedVersion !== APP_VERSION) {
@@ -305,6 +305,15 @@
                         </div>
                         <div class="card-value" id="detailPnLPercent">--</div>
                     </div>
+                </div>
+
+                <!-- 深度分析入口 -->
+                <div class="deep-analysis-entry" style="margin: 12px 0; text-align: center;">
+                    <button class="btn btn-primary" id="btnDeepAnalysis" onclick="openDeepAnalysisModal()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; padding: 10px 24px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.3s ease;">
+                        <i class="fas fa-file-alt"></i>
+                        <span>查看深度分析报告</span>
+                        <span class="badge" id="deepAnalysisBadge" style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 10px; font-size: 0.7rem;">每日更新</span>
+                    </button>
                 </div>
 
                 <!-- 中轴价格可视化 -->
@@ -1407,6 +1416,26 @@
                     </div>
                 </div>
                 
+    <!-- 深度分析报告模态框 -->
+    <div class="modal" id="deepAnalysisModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); overflow-y: auto;">
+        <div class="modal-content" style="background: linear-gradient(135deg, #1a2332 0%, #0f1419 100%); border: 1px solid rgba(102,126,234,0.3); border-radius: 12px; width: 95%; max-width: 900px; min-height: 80vh; margin: 3% auto; position: relative;">
+            <div class="modal-header" style="padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: inherit; z-index: 10; border-radius: 12px 12px 0 0;">
+                <div id="deepAnalysisTitle" style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-file-alt"></i> 深度分析报告
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">每日收盘后自动生成</span>
+                    <button class="btn-close" onclick="hideDeepAnalysisModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 1.2rem; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body" id="deepAnalysisContent" style="padding: 24px; max-height: calc(100vh - 120px); overflow-y: auto;">
+                <!-- 报告内容将在这里渲染 -->
+            </div>
+        </div>
+    </div>
+
                 <!-- P0技术指标展示 -->
                 <div id="stockAnalysisTechSection" style="margin-bottom: 20px; display: none;">
                     <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
@@ -2073,6 +2102,99 @@
     document.getElementById('stockAnalysisModal').addEventListener('click', function(e) {
         if (e.target === this) {
             hideStockAnalysisModal();
+        }
+    });
+
+    // ========== 深度分析报告 ==========
+    let _deepAnalysisStockCode = null;
+    
+    function openDeepAnalysisModal() {
+        const stockCode = _deepAnalysisStockCode;
+        if (!stockCode) {
+            console.warn('[DeepAnalysis] 未选择股票');
+            return;
+        }
+        
+        const modal = document.getElementById('deepAnalysisModal');
+        const content = document.getElementById('deepAnalysisContent');
+        const title = document.getElementById('deepAnalysisTitle');
+        
+        // 显示加载中
+        title.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 加载中...';
+        content.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-secondary);"><i class="fas fa-spinner fa-spin" style="font-size:2rem;margin-bottom:16px;display:block;"></i>正在生成深度分析报告...</div>';
+        modal.style.display = 'block';
+        
+        // 调用API获取报告
+        API.DeepAnalysis.getReport(stockCode)
+            .then(result => {
+                if (result.success && result.has_report) {
+                    title.innerHTML = `<i class="fas fa-file-alt"></i> ${result.stock_name || stockCode} 深度分析报告`;
+                    // Markdown转HTML（简单转换）
+                    const html = markdownToHtml(result.content);
+                    content.innerHTML = html;
+                } else {
+                    title.innerHTML = `<i class="fas fa-file-alt"></i> ${stockCode} 深度分析报告`;
+                    content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-secondary);"><i class="fas fa-clock" style="font-size:2rem;margin-bottom:16px;display:block;"></i>报告生成中，请稍后刷新页面重试。<br><small style="color:var(--text-muted);">每日收盘后自动生成</small></div>`;
+                }
+            })
+            .catch(err => {
+                title.innerHTML = `<i class="fas fa-exclamation-triangle"></i> 加载失败`;
+                content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);"><i class="fas fa-exclamation-triangle" style="font-size:2rem;margin-bottom:16px;display:block;"></i>加载报告失败: ${err.message}<br><small style="color:var(--text-muted);">请检查网络连接或稍后重试</small></div>`;
+            });
+    }
+    
+    function hideDeepAnalysisModal() {
+        document.getElementById('deepAnalysisModal').style.display = 'none';
+    }
+    
+    // 简单的Markdown转HTML
+    function markdownToHtml(md) {
+        if (!md) return '';
+        let html = md
+            // 转义HTML
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            // 标题
+            .replace(/^### (.*$)/gim, '<h3 style="color:#667eea;margin:20px 0 12px;font-size:1.1rem;">$1</h3>')
+            .replace(/^## (.*$)/gim, '<h2 style="color:#764ba2;margin:24px 0 16px;font-size:1.3rem;border-bottom:2px solid rgba(102,126,234,0.3);padding-bottom:8px;">$1</h2>')
+            .replace(/^# (.*$)/gim, '<h1 style="color:#fff;margin:0 0 20px;font-size:1.5rem;text-align:center;">$1</h1>')
+            // 粗体
+            .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#fff;">$1</strong>')
+            // 斜体
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            // 代码
+            .replace(/`([^`]+)`/g, '<code style="background:rgba(102,126,234,0.15);padding:2px 6px;border-radius:4px;color:#a5b4fc;">$1</code>')
+            // 表格（简单处理：将 | 分隔的行转为表格）
+            .replace(/\n\|(.+?)\|\n/g, function(match, p1) {
+                const cells = p1.split('|').map(c => c.trim()).filter(c => c);
+                if (cells.length === 0) return match;
+                return '<tr>' + cells.map(c => `<td style="padding:8px 12px;border:1px solid rgba(255,255,255,0.1);">${c}</td>`).join('') + '</tr>';
+            })
+            // 水平线
+            .replace(/^---$/gim, '<hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:20px 0;">')
+            // 列表项
+            .replace(/^\s*[-*] (.*$)/gim, '<li style="margin:6px 0;padding-left:8px;">$1</li>')
+            // 引用块
+            .replace(/^> (.*$)/gim, '<blockquote style="border-left:3px solid #667eea;padding-left:12px;margin:12px 0;color:var(--text-secondary);font-style:italic;">$1</blockquote>')
+            // 段落
+            .replace(/\n\n/g, '</p><p style="margin:12px 0;line-height:1.8;color:var(--text-secondary);">')
+            // 单行换行
+            .replace(/\n/g, '<br>');
+        
+        // 包裹在段落中
+        html = '<div style="font-size:0.9rem;line-height:1.8;"><p style="margin:12px 0;line-height:1.8;color:var(--text-secondary);">' + html + '</p></div>';
+        
+        // 处理表格包装
+        html = html.replace(/(<tr>.*?<\/tr>)/gs, '<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:0.85rem;">$1</table>');
+        
+        return html;
+    }
+    
+    // 点击弹窗外部关闭
+    document.getElementById('deepAnalysisModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            hideDeepAnalysisModal();
         }
     });
 </script>
