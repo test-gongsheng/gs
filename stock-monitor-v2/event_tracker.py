@@ -140,6 +140,103 @@ EVENT_LEVELS = {
                'score': 50},
 }
 
+# ========== 个股级重大事件自动发现 ==========
+# 不限于预定义事件类型，从个股新闻标题中自动识别事件信号
+STOCK_EVENT_SIGNALS = {
+    'critical': {
+        'label': '重大风险',
+        'keywords': ['立案', '退市', '破产', '造假', '违规', '处罚', '警示函',
+                     '债务危机', '爆仓', '被执行', '冻结', '问询函', '调查'],
+    },
+    'high': {
+        'label': '重要事件',
+        'keywords': ['制裁', '管制', '禁令', '关税', '实体清单', '解禁',
+                     '中标', '大单', '收购', '重组', '定增', '回购', '增持',
+                     '业绩预告', '超预期', '巨亏', '亏损', '减持', '高管离职',
+                     '订单', '投产', '扩产', '涨价', '降价'],
+    },
+    'medium': {
+        'label': '一般动态',
+        'keywords': ['发布', '新品', '合作', '签约', '上市', '突破', '专利',
+                     '机构调研', '评级', '研报', '分红', '派息'],
+    },
+}
+
+# 事件方向推断关键词
+POSITIVE_WORDS = ['中标', '大单', '订单', '超预期', '预增', '增长', '突破', '投产', '扩产',
+                  '回购', '增持', '合作', '签约', '新品', '专利', '涨价', '交付', '量产', '盈利']
+NEGATIVE_WORDS = ['立案', '退市', '破产', '造假', '违规', '处罚', '警示函', '债务',
+                  '爆仓', '冻结', '问询', '调查', '制裁', '管制', '禁令', '关税', '实体清单',
+                  '巨亏', '亏损', '减持', '离职', '降价', '违约', '诉讼', '仲裁', '召回',
+                  '解禁', '低于预期', '下修']
+
+
+def extract_stock_events(stock_code: str, stock_name: str, news_list: List[Dict],
+                         all_portfolio_names: List[str] = None) -> List[Dict]:
+    """
+    从个股新闻中自动发现重大事件
+    返回事件列表：{level, label, title, time, source, direction, matched}
+    """
+    events = []
+    seen_titles = set()
+    other_names = [n for n in (all_portfolio_names or []) if n and n != stock_name]
+
+    for news in (news_list or []):
+        title = news.get('title', '') or ''
+        if not title or title in seen_titles:
+            continue
+        seen_titles.add(title)
+        
+        # 去噪：标题不含本股名称/代码，但明确提到其他持仓股 → 不是本股新闻
+        if stock_name and stock_name not in title and stock_code not in title:
+            if any(n in title for n in other_names):
+                continue
+
+        # 跳过纯行情播报类
+        if any(skip in title for skip in ['涨', '跌', '涨停', '跌停', '龙虎榜', '换手率', '成交额']):
+            if not any(sig in title for sig in ['解禁', '减持', '增持', '回购']):
+                continue
+
+        best_level = None
+        best_label = ''
+        matched_kws = []
+        for level, cfg in STOCK_EVENT_SIGNALS.items():
+            hits = [kw for kw in cfg['keywords'] if kw in title]
+            if hits:
+                # 取最高级别（critical > high > medium）
+                if best_level is None or list(STOCK_EVENT_SIGNALS.keys()).index(level) < list(STOCK_EVENT_SIGNALS.keys()).index(best_level):
+                    best_level = level
+                    best_label = cfg['label']
+                    matched_kws = hits
+
+        if not best_level:
+            continue
+
+        # 方向推断
+        pos = sum(1 for w in POSITIVE_WORDS if w in title)
+        neg = sum(1 for w in NEGATIVE_WORDS if w in title)
+        if pos > neg:
+            direction = 'positive'
+        elif neg > pos:
+            direction = 'negative'
+        else:
+            direction = 'neutral'
+
+        events.append({
+            'level': best_level,
+            'label': best_label,
+            'title': title,
+            'time': news.get('time', ''),
+            'source': news.get('source', ''),
+            'direction': direction,
+            'matched': matched_kws,
+        })
+
+    # 按级别排序：critical 在前
+    order = {'critical': 0, 'high': 1, 'medium': 2}
+    events.sort(key=lambda e: (order.get(e['level'], 9), e.get('time', '')), reverse=False)
+    return events
+
 
 # ========== 新闻采集 ==========
 def _fetch_akshare_with_timeout(timeout_sec=15) -> Optional[List[Dict]]:
@@ -220,36 +317,47 @@ def fetch_cls_telegraph() -> List[Dict]:
     return news[:50]  # 限制总量
 
 
-def fetch_stock_news(stock_codes: List[str]) -> Dict[str, List[Dict]]:
-    """获取持仓股相关新闻（带超时保护）"""
+def fetch_stock_news(stock_codes: List[str], stock_names: Dict[str, str] = None) -> Dict[str, List[Dict]]:
+    """获取持仓股相关新闻（代码+名称双路搜索，带超时保护）"""
     result = {}
+    stock_names = stock_names or {}
     for code in stock_codes[:14]:  # 限制只查持仓股
-        try:
-            encoded = requests.utils.quote(json.dumps({
-                "uid": "", "keyword": code, "type": ["cmsArticleWebOld"],
-                "client": "web", "clientVersion": "curr", "clientType": "web",
-                "param": {"cmsArticleWebOld": {"searchScope": "default", "sort": "time", "pageIndex": 1, "pageSize": 5}}
-            }, ensure_ascii=False))
-            url = f'https://search-api-web.eastmoney.com/search/jsonp?cb=jQuery&param={encoded}'
-            resp = _session.get(url, timeout=8)
-            match = re.search(r'jQuery\((.*)\)', resp.text)
-            if match:
-                data = json.loads(match.group(1))
-                inner = data.get('result', {}).get('cmsArticleWebOld', [])
-                if isinstance(inner, dict):
-                    articles = inner.get('list', [])
-                else:
-                    articles = inner
-                result[code] = [{
-                    'title': a.get('title', ''),
-                    'time': a.get('date', ''),
-                    'source': a.get('mediaName', ''),
-                } for a in (articles[:5] if isinstance(articles, list) else [])]
-            else:
-                result[code] = []
-        except Exception as e:
-            result[code] = []
-        time.sleep(0.3)
+        all_news = []
+        seen = set()
+        # 双路搜索：代码 和 股票名称（名称搜到的更相关）
+        keywords = [stock_names.get(code, ''), code] if stock_names.get(code) else [code]
+        for kw in keywords:
+            if not kw:
+                continue
+            try:
+                encoded = requests.utils.quote(json.dumps({
+                    "uid": "", "keyword": kw, "type": ["cmsArticleWebOld"],
+                    "client": "web", "clientVersion": "curr", "clientType": "web",
+                    "param": {"cmsArticleWebOld": {"searchScope": "default", "sort": "time", "pageIndex": 1, "pageSize": 10}}
+                }, ensure_ascii=False))
+                url = f'https://search-api-web.eastmoney.com/search/jsonp?cb=jQuery&param={encoded}'
+                resp = _session.get(url, timeout=8)
+                match = re.search(r'jQuery\((.*)\)', resp.text)
+                if match:
+                    data = json.loads(match.group(1))
+                    inner = data.get('result', {}).get('cmsArticleWebOld', [])
+                    if isinstance(inner, dict):
+                        articles = inner.get('list', [])
+                    else:
+                        articles = inner
+                    for a in (articles if isinstance(articles, list) else []):
+                        t = a.get('title', '')
+                        if t and t not in seen:
+                            seen.add(t)
+                            all_news.append({
+                                'title': t,
+                                'time': a.get('date', ''),
+                                'source': a.get('mediaName', ''),
+                            })
+            except Exception:
+                pass
+            time.sleep(0.3)
+        result[code] = all_news[:15]  # 每只个股最多15条
     return result
 
 
@@ -522,7 +630,20 @@ def run_event_analysis(stocks: List[Dict]) -> Dict:
     # 1. 采集新闻
     print('[1/5] 采集财联社/东财新闻...')
     news = fetch_cls_telegraph()
-    stock_news = fetch_stock_news(stock_codes)
+    name_map = {s['code']: s.get('name', '') for s in stocks}
+    stock_news = fetch_stock_news(stock_codes, name_map)
+    
+    # 1.5 个股级事件自动发现（每只个股扫描自己的新闻）
+    print('[1.5/5] 个股事件自动发现...')
+    stock_events = {}
+    all_names = [s.get('name', '') for s in stocks]
+    for s in stocks:
+        code = s['code']
+        name = s.get('name', '')
+        evts = extract_stock_events(code, name, stock_news.get(code, []), all_names)
+        if evts:
+            stock_events[code] = evts
+            print(f'  [{name}] 发现 {len(evts)} 个事件: {[e["matched"][0] for e in evts[:3]]}')
 
     # 2. 识别事件
     print('[2/5] 识别重大事件...')
@@ -569,6 +690,7 @@ def run_event_analysis(stocks: List[Dict]) -> Dict:
         'date': today,
         'events': history,
         'unlock': unlock_analysis,
+        'stock_events': stock_events,   # 个股级自动发现事件
         'news_count': len(news),
     }
 
@@ -604,6 +726,32 @@ def format_event_for_report(stock_code: str) -> List[str]:
         data = json.load(f)
 
     lines = []
+    
+    # 个股级自动发现事件（优先展示，每只个股都有）
+    stock_evts = data.get('stock_events', {}).get(stock_code, [])
+    if stock_evts:
+        level_icon = {'critical': '🔴', 'high': '🟠', 'medium': '⚪'}
+        dir_cn = {'positive': '偏利好', 'negative': '偏利空', 'neutral': '中性'}
+        # 统计
+        n_crit = sum(1 for e in stock_evts if e['level'] == 'critical')
+        n_neg = sum(1 for e in stock_evts if e['direction'] == 'negative')
+        n_pos = sum(1 for e in stock_evts if e['direction'] == 'positive')
+        summary_bits = []
+        if n_crit: summary_bits.append(f'{n_crit}项重大风险')
+        if n_neg: summary_bits.append(f'{n_neg}项偏利空')
+        if n_pos: summary_bits.append(f'{n_pos}项偏利好')
+        lines.append(f"**近期重大动态（自动发现{len(stock_evts)}项**：{'、'.join(summary_bits) if summary_bits else '均为中性'}）**")
+        for e in stock_evts[:8]:  # 最多列8条
+            icon = level_icon.get(e['level'], '⚪')
+            d = dir_cn.get(e['direction'], '中性')
+            t = (e.get('time', '') or '')[:10]
+            lines.append(f"- {icon} [{e['label']}|{d}] {e['title']}")
+            if t:
+                lines.append(f"  {' ' * 2}{t} · {e.get('source', '')}")
+        lines.append('')
+    else:
+        lines.append('**近期重大动态：** 近5日无重大事件信号，走势主要由板块和市场情绪驱动')
+        lines.append('')
 
     # 相关事件
     related = []
