@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "3.3.0"; // 新增：盘中实时生成深度报告 + 情绪引擎 + 事件驱动分析
+const APP_VERSION = "3.3.1"; // 实时生成改异步轮询，修复连点超时
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');

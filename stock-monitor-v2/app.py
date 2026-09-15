@@ -2374,9 +2374,12 @@ def get_deep_analysis(stock_code):
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+# 盘中生成任务状态（内存 dict，重启后清空）
+GEN_STATUS = {}  # code -> {'status': 'generating'/'done'/'error', 'started': ts, 'error': msg}
+
 @app.route('/api/deep-analysis/generate/<stock_code>', methods=['POST'])
 def generate_deep_analysis_single(stock_code):
-    """实时生成单只股票深度分析报告（盘中手动触发）"""
+    """触发单只股票深度报告生成（异步，立即返回，轮询 status 获取结果）"""
     try:
         data = load_data()
         stock = None
@@ -2388,33 +2391,51 @@ def generate_deep_analysis_single(stock_code):
         if not stock:
             return jsonify({'success': False, 'error': '股票不存在'}), 404
         
-        # 同步生成（单只约5-15秒）
-        from deep_analysis import generate_deep_report
-        report_content = generate_deep_report(stock)
+        # 已在生成中，直接返回状态（防重复点击）
+        if GEN_STATUS.get(stock_code, {}).get('status') == 'generating':
+            return jsonify({'success': True, 'status': 'generating', 'stock_code': stock_code})
         
-        # 保存报告
-        report_dir = os.path.join(os.path.dirname(__file__), 'reports')
-        os.makedirs(report_dir, exist_ok=True)
-        today = datetime.now().strftime('%Y-%m-%d')
-        report_file = os.path.join(report_dir, f'deep_analysis_{stock_code}_{today}.md')
-        with open(report_file, 'w', encoding='utf-8') as f:
-            f.write(report_content)
+        def _gen():
+            import time as _time
+            GEN_STATUS[stock_code] = {'status': 'generating', 'started': _time.time()}
+            try:
+                from deep_analysis import generate_deep_report
+                report_content = generate_deep_report(stock)
+                
+                report_dir = os.path.join(os.path.dirname(__file__), 'reports')
+                os.makedirs(report_dir, exist_ok=True)
+                today = datetime.now().strftime('%Y-%m-%d')
+                report_file = os.path.join(report_dir, f'deep_analysis_{stock_code}_{today}.md')
+                with open(report_file, 'w', encoding='utf-8') as f:
+                    f.write(report_content)
+                
+                GEN_STATUS[stock_code] = {'status': 'done', 'finished': _time.time(), 'report_date': today}
+                print(f"[DeepAnalysis Generate] {stock_code} 盘中报告已生成")
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                GEN_STATUS[stock_code] = {'status': 'error', 'error': str(e)}
         
-        print(f"[DeepAnalysis Generate] {stock_code} 盘中报告已生成")
+        import threading
+        threading.Thread(target=_gen, daemon=True).start()
         
         return jsonify({
             'success': True,
+            'status': 'generating',
             'stock_code': stock_code,
-            'stock_name': stock.get('name', ''),
-            'report_date': today,
-            'content': report_content,
-            'has_report': True
+            'stock_name': stock.get('name', '')
         })
     except Exception as e:
         print(f"[DeepAnalysis Generate] 错误: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/deep-analysis/status/<stock_code>')
+def deep_analysis_gen_status(stock_code):
+    """查询盘中生成任务状态"""
+    info = GEN_STATUS.get(stock_code, {'status': 'unknown'})
+    return jsonify({'success': True, 'stock_code': stock_code, **info})
 
 
 @app.route('/api/deep-analysis/batch', methods=['POST'])

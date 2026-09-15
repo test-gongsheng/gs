@@ -13,7 +13,7 @@
     <script>
         // 自动缓存清除机制 - 使用固定版本号
         (function() {
-            const APP_VERSION = '3.3.0';  // 新增：盘中实时生成深度报告
+            const APP_VERSION = '3.3.1';  // 实时生成改异步轮询，修复连点超时
             const storedVersion = localStorage.getItem('app_version');
             
             if (storedVersion !== APP_VERSION) {
@@ -2147,11 +2147,13 @@
     }
     
     function hideDeepAnalysisModal() {
+        if (_genPollTimer) { clearTimeout(_genPollTimer); _genPollTimer = null; }
         document.getElementById('deepAnalysisModal').style.display = 'none';
     }
     
-    // 实时生成深度分析报告（盘中手动触发）
+    // 实时生成深度分析报告（异步：触发→轮询→渲染）
     let _isRegenerating = false;
+    let _genPollTimer = null;
     function regenerateDeepAnalysis() {
         if (_isRegenerating) return;  // 防止重复点击
         
@@ -2166,32 +2168,87 @@
         const title = document.getElementById('deepAnalysisTitle');
         
         _isRegenerating = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 生成中...';
-        btn.style.opacity = '0.7';
-        btn.style.cursor = 'not-allowed';
+        let pollCount = 0;
+        const MAX_POLL = 60;  // 60次×2秒=120秒上限
         
-        title.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> 正在实时生成报告...';
-        content.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-secondary);"><i class="fas fa-sync-alt fa-spin" style="font-size:2.5rem;margin-bottom:16px;display:block;color:#f5576c;"></i>正在采集最新行情、新闻、情绪数据...<br><small style="color:var(--text-muted);margin-top:8px;display:block;">约需 10-30 秒，请稍候</small><div style="margin-top:20px;font-size:0.8rem;color:var(--text-muted);"><i class="fas fa-info-circle"></i> 包含：实时行情 + 财联社/东财新闻 + 市场情绪 + 事件追踪 + 解禁预警</div></div>';
+        function setBusy(busy) {
+            _isRegenerating = busy;
+            btn.innerHTML = busy 
+                ? '<i class="fas fa-spinner fa-spin"></i> 生成中...' 
+                : '<i class="fas fa-sync-alt"></i> 实时生成';
+            btn.style.opacity = busy ? '0.7' : '1';
+            btn.style.cursor = busy ? 'not-allowed' : 'pointer';
+        }
+        
+        function showError(msg) {
+            title.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 生成失败';
+            content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);"><i class="fas fa-exclamation-triangle" style="font-size:2rem;margin-bottom:16px;display:block;"></i>${msg}<br><small style="color:var(--text-muted);">可点击右上角"实时生成"重试</small></div>`;
+            setBusy(false);
+        }
+        
+        function poll() {
+            API.DeepAnalysis.getGenStatus(stockCode)
+                .then(st => {
+                    pollCount++;
+                    const status = st.status || 'unknown';
+                    
+                    if (status === 'done') {
+                        // 生成完成，拉取报告渲染
+                        title.innerHTML = '<i class="fas fa-file-alt"></i> 报告已生成';
+                        content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary);"><i class="fas fa-spinner fa-spin" style="font-size:2rem;margin-bottom:16px;display:block;color:#f5576c;"></i>正在加载报告内容...</div>';
+                        API.DeepAnalysis.getReport(stockCode)
+                            .then(r => {
+                                if (r.has_report && r.content) {
+                                    title.innerHTML = `<i class="fas fa-file-alt"></i> ${r.stock_name || stockCode} 深度分析报告 <span style="font-size:0.75rem;color:var(--text-muted);margin-left:8px;"><i class="fas fa-bolt"></i> 实时生成</span>`;
+                                    content.innerHTML = markdownToHtml(r.content);
+                                } else {
+                                    showError('报告文件读取失败');
+                                }
+                                setBusy(false);
+                            })
+                            .catch(err => {
+                                showError('报告加载失败: ' + err.message);
+                            });
+                    } else if (status === 'error') {
+                        showError('生成出错: ' + (st.error || '未知错误'));
+                    } else if (pollCount >= MAX_POLL) {
+                        showError('生成超时（超过2分钟），服务器可能繁忙，请稍后重试');
+                    } else {
+                        // 继续等待，更新提示
+                        const dots = '.'.repeat((pollCount % 3) + 1);
+                        title.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> 正在生成${dots} (${Math.round(pollCount * 2)}s)`;
+                        _genPollTimer = setTimeout(poll, 2000);
+                    }
+                })
+                .catch(err => {
+                    // 状态查询失败（网络抖动），继续轮询几次再放弃
+                    if (pollCount >= 10) {
+                        showError('状态查询失败: ' + err.message);
+                    } else {
+                        _genPollTimer = setTimeout(poll, 2000);
+                    }
+                });
+        }
+        
+        // 第一步：触发生成
+        title.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> 正在启动生成...';
+        content.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-secondary);"><i class="fas fa-sync-alt fa-spin" style="font-size:2.5rem;margin-bottom:16px;display:block;color:#f5576c;"></i>正在采集最新行情、新闻、情绪数据...<br><small style="color:var(--text-muted);margin-top:8px;display:block;">生成在后台进行，完成后自动显示，约需 15-40 秒</small><div style="margin-top:20px;font-size:0.8rem;color:var(--text-muted);"><i class="fas fa-info-circle"></i> 包含：实时行情 + 财联社/东财新闻 + 市场情绪 + 事件追踪 + 解禁预警</div></div>';
         
         API.DeepAnalysis.generate(stockCode)
             .then(result => {
-                if (result.success && result.content) {
-                    title.innerHTML = `<i class="fas fa-file-alt"></i> ${result.stock_name || stockCode} 深度分析报告 <span style="font-size:0.75rem;color:var(--text-muted);margin-left:8px;"><i class="fas fa-bolt"></i> 实时生成</span>`;
-                    content.innerHTML = markdownToHtml(result.content);
+                if (result.success) {
+                    if (result.status === 'generating') {
+                        // 已进入生成队列，开始轮询
+                        poll();
+                    } else {
+                        showError('服务响应异常: ' + JSON.stringify(result));
+                    }
                 } else {
-                    title.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 生成失败';
-                    content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);"><i class="fas fa-exclamation-triangle" style="font-size:2rem;margin-bottom:16px;display:block;"></i>生成失败: ${result.error || '未知错误'}<br><small style="color:var(--text-muted);">请稍后重试</small></div>`;
+                    showError('触发失败: ' + (result.error || '未知错误'));
                 }
             })
             .catch(err => {
-                title.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 生成失败';
-                content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);"><i class="fas fa-exclamation-triangle" style="font-size:2rem;margin-bottom:16px;display:block;"></i>请求失败: ${err.message}<br><small style="color:var(--text-muted);">请检查网络连接</small></div>`;
-            })
-            .finally(() => {
-                _isRegenerating = false;
-                btn.innerHTML = '<i class="fas fa-sync-alt"></i> 实时生成';
-                btn.style.opacity = '1';
-                btn.style.cursor = 'pointer';
+                showError('请求失败: ' + err.message);
             });
     }
     
