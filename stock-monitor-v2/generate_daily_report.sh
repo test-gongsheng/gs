@@ -12,11 +12,11 @@ source venv/bin/activate
 
 # 1. 市场情绪引擎（三四层）
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] [1/3] 运行市场情绪引擎..." >> "$LOG_FILE"
-python3 market_sentiment.py >> "$LOG_FILE" 2>&1
+python3 emotion_engine.py >> "$LOG_FILE" 2>&1
 
 # 2. 事件驱动引擎（含解禁监控）
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] [2/3] 运行事件驱动引擎..." >> "$LOG_FILE"
-python3 event_impact.py >> "$LOG_FILE" 2>&1
+python3 event_tracker.py >> "$LOG_FILE" 2>&1
 
 # 3. 深度报告（引用情绪+事件数据）
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] [3/3] 生成深度分析报告..." >> "$LOG_FILE"

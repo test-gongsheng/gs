@@ -1,0 +1,1031 @@
+{
+  "date": "2026-09-15",
+  "events": [
+    {
+      "type": "AI安全监管",
+      "level": "medium",
+      "keywords": [
+        "AI安全"
+      ],
+      "first_news": "软件ETF鹏华(560790)、云计算ETF鹏华(159739)标的指数均涨近1%，<em>AI安全</em>问题浮现，网络<em>安全</em>概念大幅高开",
+      "latest_news": "软件ETF鹏华(560790)、云计算ETF鹏华(159739)标的指数均涨近1%，<em>AI安全</em>问题浮现，网络<em>安全</em>概念大幅高开",
+      "latest_time": "2026-09-15 09:56:17",
+      "count": 1,
+      "impact_paths": [
+        {
+          "sectors": [
+            "AI应用-NLP",
+            "互联网-平台",
+            "互联网-电商"
+          ],
+          "direction": "negative",
+          "logic": "监管收紧→合规成本上升→应用端承压",
+          "confidence": 0.6
+        },
+        {
+          "sectors": [
+            "半导体-GPU",
+            "半导体-存储"
+          ],
+          "direction": "positive",
+          "logic": "限制对华芯片出口→国产替代逻辑强化",
+          "confidence": 0.75
+        },
+        {
+          "sectors": [
+            "数据中心/IDC"
+          ],
+          "direction": "neutral",
+          "logic": "算力基建长期需求不变，短期情绪波动",
+          "confidence": 0.5
+        }
+      ],
+      "impacted_stocks": [
+        {
+          "code": "00700",
+          "sector": "互联网-平台",
+          "expected": "negative",
+          "logic": "监管收紧→合规成本上升→应用端承压",
+          "confidence": 0.6,
+          "actual_change": 0,
+          "verdict": "pending",
+          "gap_score": 0,
+          "price": 0
+        },
+        {
+          "code": "09988",
+          "sector": "互联网-电商",
+          "expected": "negative",
+          "logic": "监管收紧→合规成本上升→应用端承压",
+          "confidence": 0.6,
+          "actual_change": 0,
+          "verdict": "pending",
+          "gap_score": 0,
+          "price": 0
+        },
+        {
+          "code": "300229",
+          "sector": "AI应用-NLP",
+          "expected": "negative",
+          "logic": "监管收紧→合规成本上升→应用端承压",
+          "confidence": 0.6,
+          "actual_change": 0.77,
+          "verdict": "pending",
+          "gap_score": 0,
+          "price": 13.15
+        },
+        {
+          "code": "688795",
+          "sector": "半导体-GPU",
+          "expected": "positive",
+          "logic": "限制对华芯片出口→国产替代逻辑强化",
+          "confidence": 0.75,
+          "actual_change": 2.31,
+          "verdict": "confirmed",
+          "gap_score": 0.77,
+          "price": 354.0
+        },
+        {
+          "code": "301308",
+          "sector": "半导体-存储",
+          "expected": "positive",
+          "logic": "限制对华芯片出口→国产替代逻辑强化",
+          "confidence": 0.75,
+          "actual_change": 0.57,
+          "verdict": "pending",
+          "gap_score": 0,
+          "price": 332.89
+        },
+        {
+          "code": "300442",
+          "sector": "数据中心/IDC",
+          "expected": "neutral",
+          "logic": "算力基建长期需求不变，短期情绪波动",
+          "confidence": 0.5,
+          "actual_change": 1.48,
+          "verdict": "deviated",
+          "gap_score": 0,
+          "price": 61.14
+        }
+      ],
+      "status": "tracking",
+      "first_date": "2026-09-15",
+      "tracking_days": 1,
+      "trend_conclusion": "持续跟踪中，尚未形成明确信号"
+    },
+    {
+      "type": "新能源政策",
+      "level": "medium",
+      "keywords": [
+        "新能源"
+      ],
+      "first_news": "中证港股通人工智能应用指数发布日期提前丨港股早报",
+      "latest_news": "中证港股通人工智能应用指数发布日期提前丨港股早报",
+      "latest_time": "2026-09-15 09:26:26",
+      "count": 1,
+      "impact_paths": [
+        {
+          "sectors": [
+            "新能源汽车",
+            "光伏设备"
+          ],
+          "direction": "positive",
+          "logic": "政策支持→行业景气度提升",
+          "confidence": 0.7
+        }
+      ],
+      "impacted_stocks": [
+        {
+          "code": "300316",
+          "sector": "光伏设备",
+          "expected": "positive",
+          "logic": "政策支持→行业景气度提升",
+          "confidence": 0.7,
+          "actual_change": 0.0,
+          "verdict": "pending",
+          "gap_score": 0,
+          "price": 39.61
+        },
+        {
+          "code": "002594",
+          "sector": "新能源汽车",
+          "expected": "positive",
+          "logic": "政策支持→行业景气度提升",
+          "confidence": 0.7,
+          "actual_change": -0.46,
+          "verdict": "pending",
+          "gap_score": 0,
+          "price": 85.04
+        }
+      ],
+      "status": "confirmed",
+      "first_date": "2026-09-15",
+      "tracking_days": 1,
+      "trend_conclusion": "预期验证，趋势延续"
+    },
+    {
+      "type": "降息降准",
+      "level": "high",
+      "keywords": [
+        "流动性"
+      ],
+      "first_news": "凯莱英大涨10%，股价创近53个月新高！CXO景气持续走高，港股医疗板块冲高逾3%",
+      "latest_news": "凯莱英大涨10%，股价创近53个月新高！CXO景气持续走高，港股医疗板块冲高逾3%",
+      "latest_time": "2026-09-14 11:07:02",
+      "count": 1,
+      "impact_paths": [
+        {
+          "sectors": [
+            "半导体-GPU",
+            "半导体-存储",
+            "半导体设备与服务",
+            "AI应用-NLP",
+            "数据中心/IDC",
+            "光伏设备",
+            "新能源汽车"
+          ],
+          "direction": "positive",
+          "logic": "流动性宽松→成长股估值修复",
+          "confidence": 0.8
+        },
+        {
+          "sectors": [
+            "有色金属-铜",
+            "有色金属-铝"
+          ],
+          "direction": "positive",
+          "logic": "宽松→大宗商品价格走强",
+          "confidence": 0.7
+        }
+      ],
+      "impacted_stocks": [
+        {
+          "code": "601133",
+          "sector": "半导体设备与服务",
+          "expected": "positive",
+          "logic": "流动性宽松→成长股估值修复",
+          "confidence": 0.8,
+          "actual_change": 1.84,
+          "verdict": "confirmed",
+          "gap_score": 0.6133333333333334,
+          "price": 23.28
+        },
+        {
+          "code": "688795",
+          "sector": "半导体-GPU",
+          "expected": "positive",
+          "logic": "流动性宽松→成长股估值修复",
+          "confidence": 0.8,
+          "actual_change": 2.31,
+          "verdict": "confirmed",
+          "gap_score": 0.77,
+          "price": 354.0
+        },
+        {
+          "code": "301308",
+          "sector": "半导体-存储",
+          "expected": "positive",
+          "logic": "流动性宽松→成长股估值修复",
+          "confidence": 0.8,
+          "actual_change": 0.57,
+          "verdict": "pending",
+          "gap_score": 0,
+          "price": 332.89
+        },
+        {
+          "code": "300316",
+          "sector": "光伏设备",
+          "expected": "positive",
+          "logic": "流动性宽松→成长股估值修复",
+          "confidence": 0.8,
+          "actual_change": 0.0,
+          "verdict": "pending",
+          "gap_score": 0,
+          "price": 39.61
+        },
+        {
+          "code": "300442",
+          "sector": "数据中心/IDC",
+          "expected": "positive",
+          "logic": "流动性宽松→成长股估值修复",
+          "confidence": 0.8,
+          "actual_change": 1.48,
+          "verdict": "confirmed",
+          "gap_score": 0.49333333333333335,
+          "price": 61.14
+        },
+        {
+          "code": "002594",
+          "sector": "新能源汽车",
+          "expected": "positive",
+          "logic": "流动性宽松→成长股估值修复",
+          "confidence": 0.8,
+          "actual_change": -0.46,
+          "verdict": "pending",
+          "gap_score": 0,
+          "price": 85.04
+        },
+        {
+          "code": "300229",
+          "sector": "AI应用-NLP",
+          "expected": "positive",
+          "logic": "流动性宽松→成长股估值修复",
+          "confidence": 0.8,
+          "actual_change": 0.77,
+          "verdict": "pending",
+          "gap_score": 0,
+          "price": 13.15
+        },
+        {
+          "code": "000878",
+          "sector": "有色金属-铜",
+          "expected": "positive",
+          "logic": "宽松→大宗商品价格走强",
+          "confidence": 0.7,
+          "actual_change": -1.49,
+          "verdict": "invalidated",
+          "gap_score": -1,
+          "price": 16.58
+        },
+        {
+          "code": "601600",
+          "sector": "有色金属-铝",
+          "expected": "positive",
+          "logic": "宽松→大宗商品价格走强",
+          "confidence": 0.7,
+          "actual_change": -0.75,
+          "verdict": "pending",
+          "gap_score": 0,
+          "price": 9.22
+        }
+      ],
+      "status": "invalidated",
+      "first_date": "2026-09-15",
+      "tracking_days": 1,
+      "trend_conclusion": "预期被证伪，市场定价了其他逻辑"
+    }
+  ],
+  "unlock": {
+    "000559": {
+      "code": "000559",
+      "name": "万向钱潮",
+      "future_warnings": [],
+      "history": [
+        {
+          "date": "2010-05-25",
+          "ratio": 7.12,
+          "before_20d": -4.7,
+          "after_20d": -2.5,
+          "pattern": "正常，解禁后小跌"
+        },
+        {
+          "date": "2010-11-05",
+          "ratio": 41.76,
+          "before_20d": 10.9,
+          "after_20d": -0.3,
+          "pattern": "正常，解禁后小跌"
+        },
+        {
+          "date": "2023-11-06",
+          "ratio": 16.67,
+          "before_20d": 0.8,
+          "after_20d": 4.8,
+          "pattern": "正常，解禁后上涨"
+        }
+      ],
+      "has_warning": false
+    },
+    "000878": {
+      "code": "000878",
+      "name": "云南铜业",
+      "future_warnings": [],
+      "history": [
+        {
+          "date": "2010-03-25",
+          "ratio": 19.79,
+          "before_20d": -0.4,
+          "after_20d": 4.0,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2012-07-19",
+          "ratio": 9.51,
+          "before_20d": -5.3,
+          "after_20d": -4.9,
+          "pattern": "提前下跌，解禁后小跌"
+        },
+        {
+          "date": "2020-02-03",
+          "ratio": 13.27,
+          "before_20d": -7.2,
+          "after_20d": -12.0,
+          "pattern": "提前下跌，解禁后大跌"
+        },
+        {
+          "date": "2022-02-07",
+          "ratio": 3.4,
+          "before_20d": -11.0,
+          "after_20d": 9.7,
+          "pattern": "提前下跌，解禁后上涨"
+        },
+        {
+          "date": "2023-05-29",
+          "ratio": 15.17,
+          "before_20d": -10.2,
+          "after_20d": -0.1,
+          "pattern": "提前下跌，解禁后小跌"
+        }
+      ],
+      "has_warning": false
+    },
+    "002050": {
+      "code": "002050",
+      "name": "三花智控",
+      "future_warnings": [],
+      "history": [
+        {
+          "date": "2011-12-28",
+          "ratio": 6.74,
+          "before_20d": -15.2,
+          "after_20d": -1.2,
+          "pattern": "提前下跌，解禁后小跌"
+        },
+        {
+          "date": "2012-01-05",
+          "ratio": 9.03,
+          "before_20d": -16.2,
+          "after_20d": 0.4,
+          "pattern": "提前下跌，解禁后上涨"
+        },
+        {
+          "date": "2013-12-30",
+          "ratio": 1.12,
+          "before_20d": 3.9,
+          "after_20d": -1.7,
+          "pattern": "正常，解禁后小跌"
+        },
+        {
+          "date": "2017-01-11",
+          "ratio": 2.57,
+          "before_20d": -2.3,
+          "after_20d": 5.7,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2018-07-24",
+          "ratio": 9.85,
+          "before_20d": -8.8,
+          "after_20d": -23.1,
+          "pattern": "提前下跌，解禁后大跌"
+        },
+        {
+          "date": "2018-09-20",
+          "ratio": 4.16,
+          "before_20d": 0.7,
+          "after_20d": -11.9,
+          "pattern": "正常，解禁后大跌"
+        },
+        {
+          "date": "2019-11-06",
+          "ratio": 0.14,
+          "before_20d": 9.7,
+          "after_20d": 4.7,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2020-09-21",
+          "ratio": 10.85,
+          "before_20d": 0.1,
+          "after_20d": 1.1,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2020-11-06",
+          "ratio": 0.14,
+          "before_20d": 20.6,
+          "after_20d": -12.5,
+          "pattern": "正常，解禁后大跌"
+        },
+        {
+          "date": "2021-06-18",
+          "ratio": 0.13,
+          "before_20d": -6.6,
+          "after_20d": 11.5,
+          "pattern": "提前下跌，解禁后上涨"
+        },
+        {
+          "date": "2021-11-08",
+          "ratio": 0.18,
+          "before_20d": 6.9,
+          "after_20d": -2.4,
+          "pattern": "正常，解禁后小跌"
+        },
+        {
+          "date": "2022-05-19",
+          "ratio": 0.12,
+          "before_20d": 11.9,
+          "after_20d": 25.4,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2023-05-15",
+          "ratio": 0.16,
+          "before_20d": -5.0,
+          "after_20d": 5.2,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2023-06-30",
+          "ratio": 0.15,
+          "before_20d": 21.9,
+          "after_20d": -11.3,
+          "pattern": "正常，解禁后大跌"
+        },
+        {
+          "date": "2024-07-01",
+          "ratio": 0.14,
+          "before_20d": -12.0,
+          "after_20d": -5.2,
+          "pattern": "提前下跌，解禁后小跌"
+        },
+        {
+          "date": "2025-07-22",
+          "ratio": 0.18,
+          "before_20d": 13.5,
+          "after_20d": 4.0,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2025-07-30",
+          "ratio": 0.19,
+          "before_20d": 3.4,
+          "after_20d": 12.9,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2026-07-22",
+          "ratio": 0.19,
+          "before_20d": -11.2,
+          "after_20d": 3.9,
+          "pattern": "提前下跌，解禁后上涨"
+        }
+      ],
+      "has_warning": false
+    },
+    "002594": {
+      "code": "002594",
+      "name": "比亚迪",
+      "future_warnings": [],
+      "history": [
+        {
+          "date": "2011-09-30",
+          "ratio": 0.96,
+          "before_20d": -23.4,
+          "after_20d": 28.6,
+          "pattern": "提前下跌，解禁后上涨"
+        },
+        {
+          "date": "2012-07-02",
+          "ratio": 17.54,
+          "before_20d": -18.8,
+          "after_20d": -23.8,
+          "pattern": "提前下跌，解禁后大跌"
+        },
+        {
+          "date": "2014-07-01",
+          "ratio": 56.56,
+          "before_20d": 1.7,
+          "after_20d": 3.3,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2015-07-01",
+          "ratio": 2.6,
+          "before_20d": -16.6,
+          "after_20d": -9.8,
+          "pattern": "提前下跌，解禁后小跌"
+        },
+        {
+          "date": "2016-07-01",
+          "ratio": 2.6,
+          "before_20d": 2.0,
+          "after_20d": -2.1,
+          "pattern": "正常，解禁后小跌"
+        },
+        {
+          "date": "2017-07-03",
+          "ratio": 2.24,
+          "before_20d": 1.0,
+          "after_20d": -1.0,
+          "pattern": "正常，解禁后小跌"
+        },
+        {
+          "date": "2017-07-25",
+          "ratio": 13.91,
+          "before_20d": -3.2,
+          "after_20d": -2.1,
+          "pattern": "正常，解禁后小跌"
+        }
+      ],
+      "has_warning": false
+    },
+    "300229": {
+      "code": "300229",
+      "name": "拓尔思",
+      "future_warnings": [],
+      "history": [
+        {
+          "date": "2011-09-15",
+          "ratio": 5.0,
+          "before_20d": 1.1,
+          "after_20d": 3.3,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2012-06-15",
+          "ratio": 7.5,
+          "before_20d": 3.2,
+          "after_20d": -4.1,
+          "pattern": "正常，解禁后小跌"
+        },
+        {
+          "date": "2014-06-16",
+          "ratio": 66.11,
+          "before_20d": 22.7,
+          "after_20d": 7.1,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2015-09-30",
+          "ratio": 1.29,
+          "before_20d": 12.6,
+          "after_20d": 9.0,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2016-03-30",
+          "ratio": 1.07,
+          "before_20d": 4.7,
+          "after_20d": 5.4,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2016-09-30",
+          "ratio": 1.6,
+          "before_20d": -7.3,
+          "after_20d": 5.3,
+          "pattern": "提前下跌，解禁后上涨"
+        },
+        {
+          "date": "2017-03-31",
+          "ratio": 1.49,
+          "before_20d": -6.3,
+          "after_20d": -14.2,
+          "pattern": "提前下跌，解禁后大跌"
+        },
+        {
+          "date": "2017-07-10",
+          "ratio": 0.41,
+          "before_20d": 2.0,
+          "after_20d": -9.5,
+          "pattern": "正常，解禁后小跌"
+        },
+        {
+          "date": "2017-10-18",
+          "ratio": 1.93,
+          "before_20d": -9.3,
+          "after_20d": 4.7,
+          "pattern": "提前下跌，解禁后上涨"
+        },
+        {
+          "date": "2018-03-30",
+          "ratio": 1.11,
+          "before_20d": 8.2,
+          "after_20d": -26.2,
+          "pattern": "正常，解禁后大跌"
+        },
+        {
+          "date": "2020-06-29",
+          "ratio": 1.02,
+          "before_20d": 7.5,
+          "after_20d": -0.9,
+          "pattern": "正常，解禁后小跌"
+        },
+        {
+          "date": "2021-12-15",
+          "ratio": 0.65,
+          "before_20d": 6.0,
+          "after_20d": 10.6,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2023-03-24",
+          "ratio": 0.1,
+          "before_20d": 24.3,
+          "after_20d": -4.4,
+          "pattern": "正常，解禁后小跌"
+        },
+        {
+          "date": "2025-04-29",
+          "ratio": 8.97,
+          "before_20d": -16.2,
+          "after_20d": -1.0,
+          "pattern": "提前下跌，解禁后小跌"
+        }
+      ],
+      "has_warning": false
+    },
+    "300316": {
+      "code": "300316",
+      "name": "晶盛机电",
+      "future_warnings": [],
+      "history": [
+        {
+          "date": "2012-08-16",
+          "ratio": 4.95,
+          "before_20d": -5.1,
+          "after_20d": 7.7,
+          "pattern": "提前下跌，解禁后上涨"
+        },
+        {
+          "date": "2013-05-13",
+          "ratio": 7.38,
+          "before_20d": 8.9,
+          "after_20d": 5.6,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2015-05-11",
+          "ratio": 58.13,
+          "before_20d": 17.8,
+          "after_20d": 21.2,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2016-05-19",
+          "ratio": 0.13,
+          "before_20d": -19.1,
+          "after_20d": 53.9,
+          "pattern": "提前下跌，解禁后上涨"
+        },
+        {
+          "date": "2016-11-10",
+          "ratio": 10.15,
+          "before_20d": 6.7,
+          "after_20d": -4.0,
+          "pattern": "正常，解禁后小跌"
+        },
+        {
+          "date": "2017-05-12",
+          "ratio": 0.07,
+          "before_20d": -6.7,
+          "after_20d": -5.5,
+          "pattern": "提前下跌，解禁后小跌"
+        },
+        {
+          "date": "2017-06-09",
+          "ratio": 0.06,
+          "before_20d": -6.7,
+          "after_20d": 13.3,
+          "pattern": "提前下跌，解禁后上涨"
+        },
+        {
+          "date": "2018-05-15",
+          "ratio": 0.09,
+          "before_20d": 9.5,
+          "after_20d": -36.7,
+          "pattern": "正常，解禁后大跌"
+        },
+        {
+          "date": "2019-06-17",
+          "ratio": 0.06,
+          "before_20d": 0.6,
+          "after_20d": 0.3,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2019-12-17",
+          "ratio": 0.03,
+          "before_20d": 2.2,
+          "after_20d": 14.7,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2020-06-23",
+          "ratio": 0.05,
+          "before_20d": 9.6,
+          "after_20d": 2.5,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2020-12-15",
+          "ratio": 0.03,
+          "before_20d": 8.0,
+          "after_20d": 18.8,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2021-12-22",
+          "ratio": 0.07,
+          "before_20d": -4.3,
+          "after_20d": -10.6,
+          "pattern": "正常，解禁后大跌"
+        },
+        {
+          "date": "2022-12-16",
+          "ratio": 0.0,
+          "before_20d": 2.7,
+          "after_20d": -5.6,
+          "pattern": "正常，解禁后小跌"
+        },
+        {
+          "date": "2023-01-30",
+          "ratio": 1.63,
+          "before_20d": 10.5,
+          "after_20d": 1.1,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2023-12-19",
+          "ratio": 0.0,
+          "before_20d": -10.1,
+          "after_20d": -1.6,
+          "pattern": "提前下跌，解禁后小跌"
+        }
+      ],
+      "has_warning": false
+    },
+    "300442": {
+      "code": "300442",
+      "name": "润泽科技",
+      "future_warnings": [],
+      "history": [
+        {
+          "date": "2016-04-25",
+          "ratio": 32.17,
+          "before_20d": -9.9,
+          "after_20d": -5.6,
+          "pattern": "提前下跌，解禁后小跌"
+        },
+        {
+          "date": "2017-03-17",
+          "ratio": 1.72,
+          "before_20d": 3.7,
+          "after_20d": -18.3,
+          "pattern": "正常，解禁后大跌"
+        },
+        {
+          "date": "2018-04-25",
+          "ratio": 14.06,
+          "before_20d": 6.0,
+          "after_20d": 7.3,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2020-04-28",
+          "ratio": 27.05,
+          "before_20d": -14.0,
+          "after_20d": 1.2,
+          "pattern": "提前下跌，解禁后上涨"
+        },
+        {
+          "date": "2023-08-16",
+          "ratio": 13.99,
+          "before_20d": -5.9,
+          "after_20d": -4.5,
+          "pattern": "提前下跌，解禁后小跌"
+        },
+        {
+          "date": "2024-08-08",
+          "ratio": 11.36,
+          "before_20d": -9.3,
+          "after_20d": 9.8,
+          "pattern": "提前下跌，解禁后上涨"
+        },
+        {
+          "date": "2025-08-08",
+          "ratio": 62.05,
+          "before_20d": 3.5,
+          "after_20d": 3.7,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2026-05-18",
+          "ratio": 0.11,
+          "before_20d": 12.4,
+          "after_20d": -28.2,
+          "pattern": "正常，解禁后大跌"
+        }
+      ],
+      "has_warning": false
+    },
+    "301308": {
+      "code": "301308",
+      "name": "江波龙",
+      "future_warnings": [],
+      "history": [
+        {
+          "date": "2023-02-06",
+          "ratio": 0.49,
+          "before_20d": 17.3,
+          "after_20d": -5.3,
+          "pattern": "正常，解禁后小跌"
+        },
+        {
+          "date": "2023-08-07",
+          "ratio": 19.11,
+          "before_20d": -12.6,
+          "after_20d": -8.4,
+          "pattern": "提前下跌，解禁后小跌"
+        },
+        {
+          "date": "2023-08-15",
+          "ratio": 0.09,
+          "before_20d": -32.0,
+          "after_20d": 9.4,
+          "pattern": "提前下跌，解禁后上涨"
+        },
+        {
+          "date": "2025-08-05",
+          "ratio": 37.06,
+          "before_20d": 7.0,
+          "after_20d": 13.4,
+          "pattern": "正常，解禁后上涨"
+        }
+      ],
+      "has_warning": false
+    },
+    "601133": {
+      "code": "601133",
+      "name": "柏诚股份",
+      "future_warnings": [],
+      "history": [
+        {
+          "date": "2023-10-10",
+          "ratio": 0.75,
+          "before_20d": -2.0,
+          "after_20d": 3.0,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2024-04-10",
+          "ratio": 3.35,
+          "before_20d": -3.4,
+          "after_20d": 0.4,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2025-08-20",
+          "ratio": 0.36,
+          "before_20d": 5.5,
+          "after_20d": -1.1,
+          "pattern": "正常，解禁后小跌"
+        },
+        {
+          "date": "2026-04-10",
+          "ratio": 71.02,
+          "before_20d": 57.4,
+          "after_20d": 4.3,
+          "pattern": "正常，解禁后上涨"
+        }
+      ],
+      "has_warning": false
+    },
+    "601600": {
+      "code": "601600",
+      "name": "中国铝业",
+      "future_warnings": [],
+      "history": [
+        {
+          "date": "2011-01-04",
+          "ratio": 58.97,
+          "before_20d": -0.1,
+          "after_20d": 2.5,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2016-06-20",
+          "ratio": 12.59,
+          "before_20d": 4.4,
+          "after_20d": 2.0,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2020-02-26",
+          "ratio": 16.2,
+          "before_20d": -10.1,
+          "after_20d": -5.5,
+          "pattern": "提前下跌，解禁后小跌"
+        },
+        {
+          "date": "2024-06-20",
+          "ratio": 0.34,
+          "before_20d": -5.3,
+          "after_20d": -3.9,
+          "pattern": "提前下跌，解禁后小跌"
+        },
+        {
+          "date": "2025-01-03",
+          "ratio": 0.08,
+          "before_20d": -4.7,
+          "after_20d": 8.6,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2025-06-13",
+          "ratio": 0.24,
+          "before_20d": 2.2,
+          "after_20d": 3.0,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2025-12-23",
+          "ratio": 0.06,
+          "before_20d": 4.6,
+          "after_20d": 9.3,
+          "pattern": "正常，解禁后上涨"
+        },
+        {
+          "date": "2026-06-23",
+          "ratio": 0.23,
+          "before_20d": -11.6,
+          "after_20d": -7.0,
+          "pattern": "提前下跌，解禁后小跌"
+        }
+      ],
+      "has_warning": false
+    },
+    "688795": {
+      "code": "688795",
+      "name": "摩尔线程",
+      "future_warnings": [
+        {
+          "date": "2026-12-07",
+          "days_until": 82,
+          "ratio": 39.55,
+          "type": "首发原股东限售股份,首发战略配售股份",
+          "mkt_cap": 643.0,
+          "risk": "HIGH"
+        }
+      ],
+      "history": [
+        {
+          "date": "2026-06-05",
+          "ratio": 0.18,
+          "before_20d": -11.7,
+          "after_20d": -1.9,
+          "pattern": "提前下跌，解禁后小跌"
+        },
+        {
+          "date": "2026-09-07",
+          "ratio": 5.48,
+          "before_20d": -13.1,
+          "after_20d": -33.4,
+          "pattern": "提前下跌，解禁后大跌"
+        }
+      ],
+      "has_warning": true
+    }
+  },
+  "news_count": 50
+}

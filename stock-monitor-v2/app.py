@@ -2374,6 +2374,49 @@ def get_deep_analysis(stock_code):
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/deep-analysis/generate/<stock_code>', methods=['POST'])
+def generate_deep_analysis_single(stock_code):
+    """实时生成单只股票深度分析报告（盘中手动触发）"""
+    try:
+        data = load_data()
+        stock = None
+        for s in data.get('stocks', []):
+            if s.get('code') == stock_code:
+                stock = s
+                break
+        
+        if not stock:
+            return jsonify({'success': False, 'error': '股票不存在'}), 404
+        
+        # 同步生成（单只约5-15秒）
+        from deep_analysis import generate_deep_report
+        report_content = generate_deep_report(stock)
+        
+        # 保存报告
+        report_dir = os.path.join(os.path.dirname(__file__), 'reports')
+        os.makedirs(report_dir, exist_ok=True)
+        today = datetime.now().strftime('%Y-%m-%d')
+        report_file = os.path.join(report_dir, f'deep_analysis_{stock_code}_{today}.md')
+        with open(report_file, 'w', encoding='utf-8') as f:
+            f.write(report_content)
+        
+        print(f"[DeepAnalysis Generate] {stock_code} 盘中报告已生成")
+        
+        return jsonify({
+            'success': True,
+            'stock_code': stock_code,
+            'stock_name': stock.get('name', ''),
+            'report_date': today,
+            'content': report_content,
+            'has_report': True
+        })
+    except Exception as e:
+        print(f"[DeepAnalysis Generate] 错误: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/api/deep-analysis/batch', methods=['POST'])
 def generate_deep_analysis_batch():
     """批量生成深度分析报告（异步任务入口）"""

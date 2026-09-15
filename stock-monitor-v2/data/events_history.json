@@ -1,0 +1,323 @@
+[
+  {
+    "type": "AI安全监管",
+    "level": "medium",
+    "keywords": [
+      "AI安全"
+    ],
+    "first_news": "软件ETF鹏华(560790)、云计算ETF鹏华(159739)标的指数均涨近1%，<em>AI安全</em>问题浮现，网络<em>安全</em>概念大幅高开",
+    "latest_news": "软件ETF鹏华(560790)、云计算ETF鹏华(159739)标的指数均涨近1%，<em>AI安全</em>问题浮现，网络<em>安全</em>概念大幅高开",
+    "latest_time": "2026-09-14",
+    "count": 4,
+    "impact_paths": [
+      {
+        "sectors": [
+          "AI应用-NLP",
+          "互联网-平台",
+          "互联网-电商"
+        ],
+        "direction": "negative",
+        "logic": "监管收紧→合规成本上升→应用端承压",
+        "confidence": 0.6
+      },
+      {
+        "sectors": [
+          "半导体-GPU",
+          "半导体-存储"
+        ],
+        "direction": "positive",
+        "logic": "限制对华芯片出口→国产替代逻辑强化",
+        "confidence": 0.75
+      },
+      {
+        "sectors": [
+          "数据中心/IDC"
+        ],
+        "direction": "neutral",
+        "logic": "算力基建长期需求不变，短期情绪波动",
+        "confidence": 0.5
+      }
+    ],
+    "impacted_stocks": [
+      {
+        "code": "00700",
+        "sector": "互联网-平台",
+        "expected": "negative",
+        "logic": "监管收紧→合规成本上升→应用端承压",
+        "confidence": 0.6,
+        "actual_change": 0,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 0
+      },
+      {
+        "code": "09988",
+        "sector": "互联网-电商",
+        "expected": "negative",
+        "logic": "监管收紧→合规成本上升→应用端承压",
+        "confidence": 0.6,
+        "actual_change": 0,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 0
+      },
+      {
+        "code": "300229",
+        "sector": "AI应用-NLP",
+        "expected": "negative",
+        "logic": "监管收紧→合规成本上升→应用端承压",
+        "confidence": 0.6,
+        "actual_change": 0.77,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 13.15
+      },
+      {
+        "code": "688795",
+        "sector": "半导体-GPU",
+        "expected": "positive",
+        "logic": "限制对华芯片出口→国产替代逻辑强化",
+        "confidence": 0.75,
+        "actual_change": 2.31,
+        "verdict": "confirmed",
+        "gap_score": 0.77,
+        "price": 354.0
+      },
+      {
+        "code": "301308",
+        "sector": "半导体-存储",
+        "expected": "positive",
+        "logic": "限制对华芯片出口→国产替代逻辑强化",
+        "confidence": 0.75,
+        "actual_change": 0.57,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 332.89
+      },
+      {
+        "code": "300442",
+        "sector": "数据中心/IDC",
+        "expected": "neutral",
+        "logic": "算力基建长期需求不变，短期情绪波动",
+        "confidence": 0.5,
+        "actual_change": 1.48,
+        "verdict": "deviated",
+        "gap_score": 0,
+        "price": 61.14
+      }
+    ],
+    "status": "tracking",
+    "first_date": "2026-09-07",
+    "tracking_days": 9,
+    "trend_conclusion": "持续跟踪中，尚未形成明确信号",
+    "timeline": [
+      {
+        "date": "2026-09-07",
+        "event": "最高法发布《AI纠纷案件审理意见》"
+      },
+      {
+        "date": "2026-09-12",
+        "event": "Anthropic CEO Amodei呼吁放缓AI研发，提议限制对华芯片出口"
+      },
+      {
+        "date": "2026-09-13",
+        "event": "奥巴马表态支持监管 / 特朗普反对"
+      },
+      {
+        "date": "2026-09-14",
+        "event": "辛顿警告AI有10%概率毁灭人类；桑德斯推《禁止超级智能草案》"
+      }
+    ]
+  },
+  {
+    "type": "新能源政策",
+    "level": "medium",
+    "keywords": [
+      "新能源"
+    ],
+    "first_news": "中证港股通人工智能应用指数发布日期提前丨港股早报",
+    "latest_news": "中证港股通人工智能应用指数发布日期提前丨港股早报",
+    "latest_time": "2026-09-15 09:26:26",
+    "count": 1,
+    "impact_paths": [
+      {
+        "sectors": [
+          "新能源汽车",
+          "光伏设备"
+        ],
+        "direction": "positive",
+        "logic": "政策支持→行业景气度提升",
+        "confidence": 0.7
+      }
+    ],
+    "impacted_stocks": [
+      {
+        "code": "300316",
+        "sector": "光伏设备",
+        "expected": "positive",
+        "logic": "政策支持→行业景气度提升",
+        "confidence": 0.7,
+        "actual_change": 0.0,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 39.61
+      },
+      {
+        "code": "002594",
+        "sector": "新能源汽车",
+        "expected": "positive",
+        "logic": "政策支持→行业景气度提升",
+        "confidence": 0.7,
+        "actual_change": -0.46,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 85.04
+      }
+    ],
+    "status": "confirmed",
+    "first_date": "2026-09-15",
+    "tracking_days": 1,
+    "trend_conclusion": "预期验证，趋势延续"
+  },
+  {
+    "type": "降息降准",
+    "level": "high",
+    "keywords": [
+      "流动性"
+    ],
+    "first_news": "凯莱英大涨10%，股价创近53个月新高！CXO景气持续走高，港股医疗板块冲高逾3%",
+    "latest_news": "凯莱英大涨10%，股价创近53个月新高！CXO景气持续走高，港股医疗板块冲高逾3%",
+    "latest_time": "2026-09-14 11:07:02",
+    "count": 1,
+    "impact_paths": [
+      {
+        "sectors": [
+          "半导体-GPU",
+          "半导体-存储",
+          "半导体设备与服务",
+          "AI应用-NLP",
+          "数据中心/IDC",
+          "光伏设备",
+          "新能源汽车"
+        ],
+        "direction": "positive",
+        "logic": "流动性宽松→成长股估值修复",
+        "confidence": 0.8
+      },
+      {
+        "sectors": [
+          "有色金属-铜",
+          "有色金属-铝"
+        ],
+        "direction": "positive",
+        "logic": "宽松→大宗商品价格走强",
+        "confidence": 0.7
+      }
+    ],
+    "impacted_stocks": [
+      {
+        "code": "601133",
+        "sector": "半导体设备与服务",
+        "expected": "positive",
+        "logic": "流动性宽松→成长股估值修复",
+        "confidence": 0.8,
+        "actual_change": 1.84,
+        "verdict": "confirmed",
+        "gap_score": 0.6133333333333334,
+        "price": 23.28
+      },
+      {
+        "code": "688795",
+        "sector": "半导体-GPU",
+        "expected": "positive",
+        "logic": "流动性宽松→成长股估值修复",
+        "confidence": 0.8,
+        "actual_change": 2.31,
+        "verdict": "confirmed",
+        "gap_score": 0.77,
+        "price": 354.0
+      },
+      {
+        "code": "301308",
+        "sector": "半导体-存储",
+        "expected": "positive",
+        "logic": "流动性宽松→成长股估值修复",
+        "confidence": 0.8,
+        "actual_change": 0.57,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 332.89
+      },
+      {
+        "code": "300316",
+        "sector": "光伏设备",
+        "expected": "positive",
+        "logic": "流动性宽松→成长股估值修复",
+        "confidence": 0.8,
+        "actual_change": 0.0,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 39.61
+      },
+      {
+        "code": "300442",
+        "sector": "数据中心/IDC",
+        "expected": "positive",
+        "logic": "流动性宽松→成长股估值修复",
+        "confidence": 0.8,
+        "actual_change": 1.48,
+        "verdict": "confirmed",
+        "gap_score": 0.49333333333333335,
+        "price": 61.14
+      },
+      {
+        "code": "002594",
+        "sector": "新能源汽车",
+        "expected": "positive",
+        "logic": "流动性宽松→成长股估值修复",
+        "confidence": 0.8,
+        "actual_change": -0.46,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 85.04
+      },
+      {
+        "code": "300229",
+        "sector": "AI应用-NLP",
+        "expected": "positive",
+        "logic": "流动性宽松→成长股估值修复",
+        "confidence": 0.8,
+        "actual_change": 0.77,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 13.15
+      },
+      {
+        "code": "000878",
+        "sector": "有色金属-铜",
+        "expected": "positive",
+        "logic": "宽松→大宗商品价格走强",
+        "confidence": 0.7,
+        "actual_change": -1.49,
+        "verdict": "invalidated",
+        "gap_score": -1,
+        "price": 16.58
+      },
+      {
+        "code": "601600",
+        "sector": "有色金属-铝",
+        "expected": "positive",
+        "logic": "宽松→大宗商品价格走强",
+        "confidence": 0.7,
+        "actual_change": -0.75,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 9.22
+      }
+    ],
+    "status": "invalidated",
+    "first_date": "2026-09-15",
+    "tracking_days": 1,
+    "trend_conclusion": "预期被证伪，市场定价了其他逻辑"
+  }
+]

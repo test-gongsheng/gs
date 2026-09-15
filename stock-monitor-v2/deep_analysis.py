@@ -643,7 +643,7 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
     
     # ===== 市场情绪对持仓的影响（第三、四层） =====
     try:
-        from market_sentiment import format_sentiment_for_report
+        from emotion_engine import format_sentiment_for_report
         sentiment_lines = format_sentiment_for_report(stock['code'])
         lines.append(f"## 四、市场情绪对持仓的影响")
         lines.append(f"")
@@ -651,11 +651,13 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
             lines.append(sl)
         lines.append(f"")
     except Exception as e:
-        pass  # 情绪模块未运行时不阻塞报告
+        import traceback
+        print(f'[DeepAnalysis] 情绪章节生成失败: {e}')
+        traceback.print_exc()
     
     # ===== 事件影响追踪（含解禁风险） =====
     try:
-        from event_impact import format_event_for_report
+        from event_tracker import format_event_for_report
         event_lines = format_event_for_report(stock['code'])
         lines.append(f"## 五、事件影响追踪")
         lines.append(f"")

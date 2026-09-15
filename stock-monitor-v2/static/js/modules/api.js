@@ -156,6 +156,14 @@ const DeepAnalysisAPI = {
         return apiFetch(`/api/deep-analysis/${stockCode}`);
     },
     
+    // 实时生成单只股票报告（盘中手动触发）
+    async generate(stockCode) {
+        return apiFetch(`/api/deep-analysis/generate/${stockCode}`, {
+            method: 'POST',
+            timeout: 60000  // 生成可能需要10-30秒
+        });
+    },
+    
     // 批量生成报告（后台任务）
     async generateBatch() {
         return apiFetch('/api/deep-analysis/batch', {
