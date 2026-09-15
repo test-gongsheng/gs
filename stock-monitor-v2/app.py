@@ -2469,6 +2469,6 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"[Startup] 南向资金预加载调度器启动失败: {e}")
     
-    app.run(debug=False, host='0.0.0.0', port=8888, use_reloader=False)
+    app.run(debug=False, host='0.0.0.0', port=8888, use_reloader=False, threaded=True)
 
 
