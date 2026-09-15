@@ -2127,23 +2127,30 @@
         content.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-secondary);"><i class="fas fa-spinner fa-spin" style="font-size:2rem;margin-bottom:16px;display:block;"></i>正在生成深度分析报告...</div>';
         modal.style.display = 'block';
         
-        // 调用API获取报告
-        API.DeepAnalysis.getReport(stockCode)
-            .then(result => {
-                if (result.success && result.has_report) {
-                    title.innerHTML = `<i class="fas fa-file-alt"></i> ${result.stock_name || stockCode} 深度分析报告`;
-                    // Markdown转HTML（简单转换）
-                    const html = markdownToHtml(result.content);
-                    content.innerHTML = html;
-                } else {
-                    title.innerHTML = `<i class="fas fa-file-alt"></i> ${stockCode} 深度分析报告`;
-                    content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-secondary);"><i class="fas fa-clock" style="font-size:2rem;margin-bottom:16px;display:block;"></i>报告生成中，请稍后刷新页面重试。<br><small style="color:var(--text-muted);">每日收盘后自动生成</small></div>`;
-                }
-            })
-            .catch(err => {
-                title.innerHTML = `<i class="fas fa-exclamation-triangle"></i> 加载失败`;
-                content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);"><i class="fas fa-exclamation-triangle" style="font-size:2rem;margin-bottom:16px;display:block;"></i>加载报告失败: ${err.message}<br><small style="color:var(--text-muted);">请检查网络连接或稍后重试</small></div>`;
-            });
+        // 调用API获取报告（失败自动重试1次，服务器忙是瞬时情况）
+        function tryLoad(attempt) {
+            API.DeepAnalysis.getReport(stockCode)
+                .then(result => {
+                    if (result.success && result.has_report) {
+                        title.innerHTML = `<i class="fas fa-file-alt"></i> ${result.stock_name || stockCode} 深度分析报告`;
+                        const html = markdownToHtml(result.content);
+                        content.innerHTML = html;
+                    } else {
+                        title.innerHTML = `<i class="fas fa-file-alt"></i> ${stockCode} 深度分析报告`;
+                        content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-secondary);"><i class="fas fa-clock" style="font-size:2rem;margin-bottom:16px;display:block;"></i>报告生成中，请稍后刷新页面重试。<br><small style="color:var(--text-muted);">每日收盘后自动生成</small></div>`;
+                    }
+                })
+                .catch(err => {
+                    if (attempt < 1) {
+                        title.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> 服务器繁忙，自动重试...';
+                        setTimeout(() => tryLoad(attempt + 1), 3000);
+                    } else {
+                        title.innerHTML = `<i class="fas fa-exclamation-triangle"></i> 加载失败`;
+                        content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);"><i class="fas fa-exclamation-triangle" style="font-size:2rem;margin-bottom:16px;display:block;"></i>加载报告失败: ${err.message}<br><button onclick="openDeepAnalysisModal()" style="margin-top:16px;padding:8px 24px;background:linear-gradient(135deg,#667eea,#764ba2);border:none;border-radius:6px;color:#fff;cursor:pointer;"><i class="fas fa-redo"></i> 重试</button></div>`;
+                    }
+                });
+        }
+        tryLoad(0);
     }
     
     function hideDeepAnalysisModal() {

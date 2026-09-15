@@ -10,7 +10,7 @@ from utils.stock_quote import get_stock_quotes, get_dynamic_axis_price
 from utils.exchange_rate import get_cny_hkd_rate, get_yesterday_cny_hkd_rate, convert_hkd_to_cny
 from utils.sector_data import get_hot_sectors_data
 from utils.news_data import get_cls_structured_news
-from utils.market_sentiment import get_market_sentiment
+# 注意：不再 import get_market_sentiment（旧版同步慢扫描，已由 emotion_engine 缓存版替代）
 from utils.southbound_capital import get_southbound_overall_history, get_southbound_signal, get_southbound_stock_history
 
 app = Flask(__name__)
@@ -789,20 +789,111 @@ def get_news():
         })
 
 
+# 情绪接口缓存：新引擎数据文件 + 内存TTL，避免每次页面加载都同步跑扫描
+_sentiment_api_cache = {'data': None, 'time': 0.0}
+SENTIMENT_API_TTL = 1800  # 30分钟
+_sentiment_scanning = {'active': False}
+
+def _load_emotion_sentiment():
+    """从 emotion_engine 的数据文件加载今日情绪，并映射为前端旧格式"""
+    filepath = os.path.join(os.path.dirname(__file__), 'data', 'market_sentiment.json')
+    if not os.path.exists(filepath):
+        return None
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            d = json.load(f)
+    except Exception:
+        return None
+    if not d.get('sentiment_score'):
+        return None
+    
+    stage = d.get('stage', '未知')
+    stage_class_map = {
+        '冰点期': 'cold', '修复期': 'neutral', '发酵期': 'warm',
+        '高潮期': 'hot', '退潮期': 'cool'
+    }
+    breadth = d.get('market_breadth', {}) or {}
+    lud = d.get('limit_up_down', {}) or {}
+    
+    return {
+        'success': True,
+        'sentiment_index': {
+            'score': d.get('sentiment_score', 50),
+            'label': stage,
+            'class': stage_class_map.get(stage, 'neutral'),
+            'change': d.get('score_change', 0),
+            'advice': d.get('stage_advice', ''),
+        },
+        # 新引擎独有数据（前端可选展示）
+        'emotion_detail': {
+            'sectors': d.get('sectors', []),
+            'stocks': (d.get('stocks') or [])[:30],
+            'date': d.get('date', ''),
+        },
+        # 旧版字段占位（新引擎不采集，前端优雅降级为空）
+        'margin': {},
+        'north_south': {},
+        'capital_flow': {},
+        'breadth': {
+            'up_count': breadth.get('up', 0),
+            'down_count': breadth.get('down', 0),
+            'limit_up': lud.get('limit_up', 0),
+            'limit_down': lud.get('limit_down', 0),
+            'max_continuous': lud.get('max_continuous', 0),
+        },
+        'update_time': d.get('date', '') + ' 收盘',
+        'source': 'emotion_engine'
+    }
+
+def _trigger_emotion_scan():
+    """后台线程跑一次情绪扫描（不阻塞请求）"""
+    if _sentiment_scanning['active']:
+        return
+    _sentiment_scanning['active'] = True
+    
+    def _scan():
+        try:
+            from emotion_engine import generate_sentiment_report
+            data = load_data()
+            generate_sentiment_report(data.get('stocks', []))
+            print('[Sentiment API] 后台情绪扫描完成')
+        except Exception as e:
+            print(f'[Sentiment API] 后台情绪扫描失败: {e}')
+        finally:
+            _sentiment_scanning['active'] = False
+    
+    import threading
+    threading.Thread(target=_scan, daemon=True).start()
+
 @app.route('/api/market/sentiment')
 def get_sentiment():
-    """获取市场情绪与多空数据"""
+    """获取市场情绪（新引擎缓存版，永不同步跑重扫描）"""
+    import time as _time
     try:
-        result = get_market_sentiment()
-        return jsonify(result)
+        # 1. 内存缓存命中
+        now = _time.time()
+        if _sentiment_api_cache['data'] and now - _sentiment_api_cache['time'] < SENTIMENT_API_TTL:
+            return jsonify(_sentiment_api_cache['data'])
+        
+        # 2. 读新引擎数据文件
+        result = _load_emotion_sentiment()
+        if result:
+            _sentiment_api_cache['data'] = result
+            _sentiment_api_cache['time'] = now
+            return jsonify(result)
+        
+        # 3. 没有数据：触发后台扫描，返回友好提示
+        _trigger_emotion_scan()
+        return jsonify({
+            'success': False,
+            'error': '情绪数据首次生成中，约1-2分钟，请稍后刷新',
+            'generating': True
+        })
     except Exception as e:
         print(f"获取市场情绪失败: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        })
+        return jsonify({'success': False, 'error': str(e)})
 
 # ========== 南向资金 API ==========
 from utils.southbound_capital import (
