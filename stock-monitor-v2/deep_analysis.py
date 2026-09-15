@@ -641,8 +641,32 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
             lines.append(f"- 关注 ¥{scenarios.get('optimistic', {}).get('target', sr.get('resistance_near', current_price*1.05))} 附近的压力，注意止盈节奏。")
     lines.append(f"")
     
+    # ===== 市场情绪对持仓的影响（第三、四层） =====
+    try:
+        from market_sentiment import format_sentiment_for_report
+        sentiment_lines = format_sentiment_for_report(stock['code'])
+        lines.append(f"## 四、市场情绪对持仓的影响")
+        lines.append(f"")
+        for sl in sentiment_lines:
+            lines.append(sl)
+        lines.append(f"")
+    except Exception as e:
+        pass  # 情绪模块未运行时不阻塞报告
+    
+    # ===== 事件影响追踪（含解禁风险） =====
+    try:
+        from event_impact import format_event_for_report
+        event_lines = format_event_for_report(stock['code'])
+        lines.append(f"## 五、事件影响追踪")
+        lines.append(f"")
+        for el in event_lines:
+            lines.append(el)
+        lines.append(f"")
+    except Exception as e:
+        pass  # 事件模块未运行时不阻塞报告
+    
     # 风险提示
-    lines.append(f"## 四、短期风险提示")
+    lines.append(f"## 六、短期风险提示")
     lines.append(f"")
     risks = []
     
@@ -664,7 +688,7 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
     
     # 消息面
     if news_list:
-        lines.append(f"## 五、近期消息摘要")
+        lines.append(f"## 七、近期消息摘要")
         lines.append(f"")
         for i, news in enumerate(news_list[:5], 1):
             lines.append(f"{i}. **{news['title']}**（{news['source']} {news['time']}）")
