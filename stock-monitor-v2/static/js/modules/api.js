@@ -153,7 +153,9 @@ const HKShortAPI = {
 const DeepAnalysisAPI = {
     // 获取单只股票深度分析报告
     async getReport(stockCode) {
-        return apiFetch(`/api/deep-analysis/${stockCode}`);
+        return apiFetch(`/api/deep-analysis/${stockCode}`, {
+            timeout: 30000  // 服务器繁忙时多等一些（配合前端3次重试）
+        });
     },
     
     // 触发实时生成（异步，立即返回，用 getGenStatus 轮询结果）

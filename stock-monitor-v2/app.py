@@ -365,20 +365,18 @@ def get_stocks():
                     if old_price > 0 and abs(new_price - old_price) / old_price > 0.01:
                         print(f"[get_stocks] {code} 价格更新: ¥{old_price:.2f} → ¥{new_price:.2f}")
         
-        # 【新增】为每只股票获取实时中轴价格
-        print("[get_stocks] 计算中轴价格...")
+        # 【关键性能修复】中轴价格只在缓存命中时用，未命中不阻塞等待重算
+        # （后台预加载线程会慢慢填缓存，下个请求周期就能用上）
+        # 之前这里同步重算14只×akshare，页面请求几分钟不返回，拖死浏览器全部连接
         for stock in stocks:
             code = stock.get('code', '')
             market = stock.get('market', 'A股')
-            try:
-                axis_data = get_cached_axis_price(code, market, 90)
-                if axis_data and axis_data.get('axis_price', 0) > 0:
-                    stock['axis_price'] = axis_data['axis_price']
-                else:
-                    # 如果获取失败，用当前价格作为中轴价格
-                    stock['axis_price'] = stock.get('current_price', 0)
-            except Exception as e:
-                print(f"[get_stocks] {code} 中轴价格计算失败: {e}")
+            cache_key = f"{code}:{market}"
+            cached = axis_price_cache.get(cache_key)
+            if cached and (time.time() - cached['timestamp']) < CACHE_TTL and cached['data'].get('axis_price', 0) > 0:
+                stock['axis_price'] = cached['data']['axis_price']
+            else:
+                # 缓存未命中：先用当前价格占位，后台预加载填缓存后下个周期自动更新
                 stock['axis_price'] = stock.get('current_price', 0)
         
     except Exception as e:
@@ -387,28 +385,18 @@ def get_stocks():
         traceback.print_exc()
     
     # 为每只股票添加类型和执行数据
+    # 【性能修复】股票类型不在请求线程同步算（每次akshare拉124根K线，14只串行要几分钟）
+    # 已有值直接用；缺失时用默认值展示，后台线程补算后写回stocks.json
+    _need_type_calc = []
     for stock in stocks:
-        # 如果还没有计算过股票类型，或者需要重新计算（之前失败了）
         need_calc = 'stock_type' not in stock or stock.get('stock_type_calculated') == False
         
         if need_calc:
-            type_info = calculate_stock_type(stock.get('code'), stock.get('market', 'A股'))
-            
-            # 只有成功计算才保存到文件
-            if type_info.get('calculated', False):
-                stock['stock_type'] = type_info['stockType']
-                stock['vol_score'] = type_info['volScore']
-                stock['annual_vol'] = type_info['annualVol']
-                stock['atr_pct'] = type_info['atrPct']
-                stock['stock_type_calculated'] = True
-                stock['stock_type_calc_time'] = datetime.now().isoformat()
-                print(f"[get_stocks] {stock.get('code')} 股票类型计算成功: {type_info['stockType']}")
-            else:
-                # 计算失败，使用临时值但不保存
-                stock['stock_type'] = 'normal'  # 临时显示普通
-                stock['vol_score'] = type_info['volScore']
-                stock['stock_type_calculated'] = False  # 标记为未计算成功
-                print(f"[get_stocks] {stock.get('code')} 股票类型计算失败，下次重试")
+            # 请求线程不做重计算，先给默认值，后台补
+            if 'stock_type' not in stock:
+                stock['stock_type'] = 'normal'
+                stock['vol_score'] = 50
+            _need_type_calc.append(stock.get('code'))
         
         # 添加执行策略数据（如果没有）
         if 'last_trade_time' not in stock:
@@ -430,6 +418,34 @@ def get_stocks():
         stock['cooldown_remaining'] = buy_info['cooldown_remaining']
         stock['strategy_reason'] = buy_info['reason']
     
+    # 有缺失的股票类型，先快速返回响应，后台线程慢慢补算并写回文件
+    if _need_type_calc:
+        _codes = list(_need_type_calc)
+        def _bg_calc_types():
+            try:
+                _d = load_data()
+                changed = False
+                for st in _d.get('stocks', []):
+                    if st.get('code') not in _codes:
+                        continue
+                    if st.get('stock_type_calculated'):
+                        continue  # 已被其他线程算好
+                    ti = calculate_stock_type(st.get('code'), st.get('market', 'A股'))
+                    if ti.get('calculated', False):
+                        st['stock_type'] = ti['stockType']
+                        st['vol_score'] = ti['volScore']
+                        st['annual_vol'] = ti['annualVol']
+                        st['atr_pct'] = ti['atrPct']
+                        st['stock_type_calculated'] = True
+                        st['stock_type_calc_time'] = datetime.now().isoformat()
+                        changed = True
+                        print(f"[BG-CalcType] {st.get('code')} 补算完成: {ti['stockType']}")
+                if changed:
+                    save_data(_d)
+                    print(f'[BG-CalcType] 已保存 {_codes} 的股票类型')
+            except Exception as e:
+                print(f'[BG-CalcType] 后台补算失败: {e}')
+        threading.Thread(target=_bg_calc_types, daemon=True).start()
     
     return jsonify(stocks)
 
@@ -2422,15 +2438,20 @@ if __name__ == '__main__':
     # ========== 深度分析报告 API ==========
 @app.route('/api/deep-analysis/<stock_code>')
 def get_deep_analysis(stock_code):
-    """获取指定股票的深度分析报告（Markdown格式）"""
+    """获取指定股票的深度分析报告（Markdown格式）
+    轻量路径：直读文件不抢全局锁，保证高负载下也能快速返回"""
     try:
-        # 从 stocks.json 中找到对应的股票信息
-        data = load_data()
+        # 轻量读 stocks.json（不抢 data_file_lock）
         stock = None
-        for s in data.get('stocks', []):
-            if s.get('code') == stock_code:
-                stock = s
-                break
+        try:
+            with open(DATA_FILE, 'r', encoding='utf-8') as f:
+                _data = json.load(f)
+            for s in _data.get('stocks', []):
+                if s.get('code') == stock_code:
+                    stock = s
+                    break
+        except Exception:
+            pass
         
         if not stock:
             return jsonify({'success': False, 'error': '股票不存在'}), 404
@@ -2600,8 +2621,14 @@ def generate_deep_analysis_batch():
 
 
 if __name__ == '__main__':
-    # 启动时检查报告文件，不存在则自动生成
-    ensure_portfolio_analysis()
+    # 启动时检查报告文件——放后台线程，绝不阻塞服务器启动
+    # （之前同步跑subprocess最长卡10分钟，服务器期间完全不响应）
+    def _defer_ensure_reports():
+        try:
+            ensure_portfolio_analysis()
+        except Exception as e:
+            print(f'[Report] 后台生成检查失败: {e}')
+    threading.Thread(target=_defer_ensure_reports, daemon=True).start()
     
     # 启动时预加载中轴价格缓存
     preload_axis_cache()
