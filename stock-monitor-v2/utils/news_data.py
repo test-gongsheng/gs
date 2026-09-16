@@ -5,6 +5,8 @@
 """
 
 import requests
+import threading
+import time
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime, timedelta
 import json
@@ -711,6 +713,70 @@ def calculate_market_sentiment(news_list: List[Dict]) -> Dict:
         }
     }
 
+def _fetch_cls_with_timeout(timeout_sec: int = 12):
+    """线程+队列方式超时保护akshare调用（signal.SIGALRM在主线程外无效）"""
+    import queue as _queue
+    q = _queue.Queue()
+    def _worker():
+        try:
+            import akshare as ak
+            df = ak.stock_info_global_cls()
+            q.put(('ok', df))
+        except Exception as e:
+            q.put(('err', str(e)))
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()
+    try:
+        status, data = q.get(timeout=timeout_sec)
+        return data if status == 'ok' else None
+    except _queue.Empty:
+        print(f'[news] akshare财联社超时({timeout_sec}s)，走备用源')
+        return None
+
+
+def _fetch_em_telegraph_fallback(limit: int = 30) -> List[Dict]:
+    """东财搜索快讯备用源： akshare财联社超时/挂掉时使用"""
+    import re as _re
+    rows = []
+    keywords = ['涨停', 'A股', '央行', '政策', '科技', '新能源']
+    session = requests.Session()
+    session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+    for kw in keywords[:3]:
+        try:
+            encoded = requests.utils.quote(json.dumps({
+                "uid": "", "keyword": kw, "type": ["cmsArticleWebOld"],
+                "client": "web", "clientVersion": "curr", "clientType": "web",
+                "param": {"cmsArticleWebOld": {"searchScope": "default", "sort": "time", "pageIndex": 1, "pageSize": 15}}
+            }, ensure_ascii=False))
+            url = f'https://search-api-web.eastmoney.com/search/jsonp?cb=jQuery&param={encoded}'
+            resp = session.get(url, timeout=8)
+            m = _re.search(r'jQuery\((.*)\)', resp.text)
+            if not m:
+                continue
+            data = json.loads(m.group(1))
+            inner = data.get('result', {}).get('cmsArticleWebOld', [])
+            articles = inner.get('list', []) if isinstance(inner, dict) else inner
+            for a in (articles if isinstance(articles, list) else []):
+                title = a.get('title', '') or ''
+                if len(title) < 6:
+                    continue
+                rows.append({
+                    '标题': title,
+                    '内容': (a.get('content', '') or '')[:100],
+                    '发布时间': (a.get('date', '') or '')[-8:] or '09:00',
+                })
+        except Exception as e:
+            print(f'[news] 备用源 "{kw}" 失败: {e}')
+        time.sleep(0.4)
+    # 去重保序
+    seen, out = set(), []
+    for r in rows:
+        if r['标题'] not in seen:
+            seen.add(r['标题'])
+            out.append(r)
+    return out[:limit]
+
+
 def get_cls_structured_news(limit: int = 30, portfolio_sectors: List[str] = None, analyze_sentiment: bool = True) -> Dict:
     """
     获取结构化的财联社新闻 + 情绪分析
@@ -719,8 +785,15 @@ def get_cls_structured_news(limit: int = 30, portfolio_sectors: List[str] = None
         set_user_portfolio_sectors(portfolio_sectors)
     
     try:
-        import akshare as ak
-        news_df = ak.stock_info_global_cls()
+        news_df = _fetch_cls_with_timeout(12)
+        if news_df is None:
+            # 备用源：东财搜索快讯（转DataFrame保持下游循环兼容）
+            print('[news] akshare超时，切东财搜索备用源')
+            fallback_rows = _fetch_em_telegraph_fallback(limit)
+            if pd is not None and fallback_rows:
+                news_df = pd.DataFrame(fallback_rows)
+            else:
+                raise RuntimeError('akshare超时且备用源无数据')
         
         valid_news = news_df[news_df['标题'].str.len() > 5].head(limit)
         
