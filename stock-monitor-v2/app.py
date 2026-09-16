@@ -896,6 +896,47 @@ def _maybe_refresh_sentiment(max_age_sec=1200):
     except Exception:
         pass
 
+
+# ========== 事件引擎后台刷新（与情绪扫描同模式） ==========
+_event_scanning = {'active': False}
+
+def _trigger_event_scan():
+    """后台线程跑一次事件分析（财联社电报+东财新闻+板块归因），不阻塞请求"""
+    if _event_scanning['active']:
+        return
+    _event_scanning['active'] = True
+    
+    def _scan():
+        try:
+            from event_tracker import run_event_analysis
+            with open(DATA_FILE, 'r', encoding='utf-8') as f:
+                _d = json.load(f)
+            report = run_event_analysis(_d.get('stocks', []))
+            print(f"[Event API] 后台事件分析完成: {report.get('news_count', 0)}条新闻, "
+                  f"{len(report.get('stock_events', {}))}只股票有事件")
+        except Exception as e:
+            print(f'[Event API] 后台事件分析失败: {e}')
+        finally:
+            _event_scanning['active'] = False
+    
+    threading.Thread(target=_scan, daemon=True).start()
+
+def _maybe_refresh_events(max_age_sec=3600):
+    """事件数据超龄（默认1小时）则后台异步刷新
+    解决：event_impact.json 只有手动跑 event_tracker.py 才更新，日常流程从不触发"""
+    try:
+        import os as _os, time as _t
+        f = _os.path.join(_os.path.dirname(__file__), 'data', 'event_impact.json')
+        if not _os.path.exists(f):
+            _trigger_event_scan()
+            return
+        age = _t.time() - _os.path.getmtime(f)
+        if age > max_age_sec:
+            print(f'[DeepAnalysis] 事件数据已{age/60:.0f}分钟未更新，触后台刷新')
+            _trigger_event_scan()
+    except Exception:
+        pass
+
 @app.route('/api/market/sentiment')
 def get_sentiment():
     """获取市场情绪（新引擎缓存版，永不同步跑重扫描）"""
@@ -2542,6 +2583,8 @@ def generate_deep_analysis_single(stock_code):
                 GEN_STATUS[stock_code] = {'status': 'generating', 'started': _time.time()}
                 # 情绪数据超20分钟则后台刷新（不阻塞，本次用现有数据，下次生成生效）
                 _maybe_refresh_sentiment()
+                # 事件数据超1小时则后台刷新（财联社电报+板块归因，同样不阻塞）
+                _maybe_refresh_events()
                 from deep_analysis import generate_deep_report
                 report_content = generate_deep_report(stock)
                 

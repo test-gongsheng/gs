@@ -747,6 +747,17 @@ def generate_all_reports(target_codes: List[str] = None):
 if __name__ == '__main__':
     import sys
     
+    # 先生成事件数据（财联社电报+东财新闻+板块归因），报告第五节要用
+    # 不区分指定股票/全量，事件分析本身是全局的
+    try:
+        import json as _json
+        _df = _json.load(open(os.path.join(DATA_DIR, 'stocks.json'), encoding='utf-8'))
+        from event_tracker import run_event_analysis
+        print('[DeepAnalysis] 先跑事件引擎刷新事件数据...')
+        run_event_analysis(_df.get('stocks', []))
+    except Exception as e:
+        print(f'[DeepAnalysis] 事件引擎刷新失败（用旧数据继续）: {e}')
+    
     if len(sys.argv) > 1:
         # 指定股票代码
         codes = sys.argv[1:]

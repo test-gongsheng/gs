@@ -170,6 +170,63 @@ NEGATIVE_WORDS = ['立案', '退市', '破产', '造假', '违规', '处罚', '�
                   '巨亏', '亏损', '减持', '离职', '降价', '违约', '诉讼', '仲裁', '召回',
                   '解禁', '低于预期', '下修']
 
+# ========== 个股概念标签（板块级事件归因） ==========
+# 新闻标题不含股票名、但含概念词时，事件归到对应持仓股
+# 解决：三花智控这类概念股，机器人板块大事件因标题无"三花智控"被漏掉
+STOCK_CONCEPT_TAGS = {
+    '002050': ['机器人', '人形机器人', '具身智能', '执行器', '特斯拉链'],
+    '002594': ['新能源', '电动车', '插电混', '智驾', '比亚迪'],
+    '00285':  ['比亚迪电子', '英伟达链', 'AI服务器', '机器人', '消费电子'],
+    '300229': ['AI应用', '大模型', '语料', '数据要素', '信创'],
+    '300316': ['半导体设备', '碳化硅', '光伏设备', '晶盛'],
+    '300442': ['算力', '数据中心', 'IDC', '液冷', '润泽'],
+    '301308': ['存储芯片', '江波龙', 'DRAM', 'NAND', '半导体'],
+    '601133': ['半导体', '洁净室', '中芯', '晶圆厂', '柏诚'],
+    '601600': ['铝业', '氧化铝', '有色', '中铝'],
+    '000878': ['铜业', '电解铜', '有色', '云铜'],
+    '000559': ['汽车零部件', '线控底盘', '机器人关节', '万向'],
+    '688795': ['GPU', '国产芯片', '信创', '摩尔线程', '算力芯片'],
+    '00700':  ['腾讯', '游戏版号', 'AI应用', '微信', '视频号'],
+    '09988':  ['阿里', '阿里云', '通义', '电商', 'AI应用'],
+}
+
+
+def extract_concept_events(stock_code: str, concept_tags: List[str], news_pool: List[Dict]) -> List[Dict]:
+    """板块级事件归因：新闻标题含概念标签时，归到对应持仓股。
+    与个股级 extract_stock_events 互补——那个只看标题是否含股票名，这个只看概念词。"""
+    events = []
+    seen_titles = set()
+    for news in (news_pool or []):
+        title = (news.get('title', '') or '').replace('<em>', '').replace('</em>', '')
+        if not title or title in seen_titles:
+            continue
+        matched = [kw for kw in concept_tags if kw in title]
+        if not matched:
+            continue
+        seen_titles.add(title)
+        # 跳过纯行情播报类（与个股级一致的降噪规则）
+        if any(skip in title for skip in ['涨', '跌', '涨停', '跌停', '龙虎榜', '换手率', '成交额']):
+            if not any(sig in title for sig in ['解禁', '减持', '增持', '回购', '订单', '量产', '发布', '突破', '合作', '中标', '量产']):
+                continue
+        # 方向推断（复用全局限定词）
+        pos = sum(1 for w in POSITIVE_WORDS if w in title)
+        neg = sum(1 for w in NEGATIVE_WORDS if w in title)
+        direction = 'positive' if pos > neg else ('negative' if neg > pos else 'neutral')
+        # 概念级最高给到high（critical只留给个股直接事件）
+        level = 'high' if any(k in title for k in STOCK_EVENT_SIGNALS['high']['keywords']) else 'medium'
+        events.append({
+            'level': level,
+            'label': '板块事件',
+            'title': title,
+            'time': news.get('time', ''),
+            'source': news.get('source', ''),
+            'direction': direction,
+            'matched': matched,
+        })
+    order = {'critical': 0, 'high': 1, 'medium': 2}
+    events.sort(key=lambda e: (order.get(e['level'], 9), e.get('time', '')))
+    return events[:5]  # 最多5条，避免板块新闻刷屏
+
 
 def extract_stock_events(stock_code: str, stock_name: str, news_list: List[Dict],
                          all_portfolio_names: List[str] = None) -> List[Dict]:
@@ -182,7 +239,7 @@ def extract_stock_events(stock_code: str, stock_name: str, news_list: List[Dict]
     other_names = [n for n in (all_portfolio_names or []) if n and n != stock_name]
 
     for news in (news_list or []):
-        title = news.get('title', '') or ''
+        title = (news.get('title', '') or '').replace('<em>', '').replace('</em>', '')
         if not title or title in seen_titles:
             continue
         seen_titles.add(title)
@@ -240,30 +297,33 @@ def extract_stock_events(stock_code: str, stock_name: str, news_list: List[Dict]
 
 # ========== 新闻采集 ==========
 def _fetch_akshare_with_timeout(timeout_sec=15) -> Optional[List[Dict]]:
-    """akshare调用带超时保护（防止卡死）"""
-    import signal
-    def handler(signum, frame):
-        raise TimeoutError('akshare timeout')
-    signal.signal(signal.SIGALRM, handler)
-    signal.alarm(timeout_sec)
-    try:
-        import akshare as ak
-        df = ak.stock_info_global_cls(symbol="电报")
-        signal.alarm(0)
-        if df is not None and len(df) > 0:
-            news = []
-            for _, row in df.head(100).iterrows():
-                news.append({
-                    'title': str(row.get('标题', '')),
-                    'content': str(row.get('内容', ''))[:500],
-                    'time': str(row.get('发布日期', '')),
-                    'source': '财联社',
-                })
-            return news
-    except Exception as e:
-        signal.alarm(0)
-        print(f'[财联社] akshare失败: {e}')
-    return None
+    """akshare调用带超时保护（防止卡死）
+    signal.alarm只能在主线程用，后台线程改用线程join超时"""
+    import threading as _td
+    result = [None]
+    def _call():
+        try:
+            import akshare as ak
+            df = ak.stock_info_global_cls(symbol="电报")
+            if df is not None and len(df) > 0:
+                news = []
+                for _, row in df.head(100).iterrows():
+                    news.append({
+                        'title': str(row.get('标题', '')),
+                        'content': str(row.get('内容', ''))[:500],
+                        'time': str(row.get('发布日期', '')),
+                        'source': '财联社',
+                    })
+                result[0] = news
+        except Exception as e:
+            print(f'[财联社] akshare失败: {e}')
+    t = _td.Thread(target=_call, daemon=True)
+    t.start()
+    t.join(timeout=timeout_sec)
+    if t.is_alive():
+        print(f'[财联社] akshare超时({timeout_sec}s)，走备用源')
+        return None
+    return result[0]
 
 
 def fetch_cls_telegraph() -> List[Dict]:
@@ -326,6 +386,9 @@ def fetch_stock_news(stock_codes: List[str], stock_names: Dict[str, str] = None)
         seen = set()
         # 双路搜索：代码 和 股票名称（名称搜到的更相关）
         keywords = [stock_names.get(code, ''), code] if stock_names.get(code) else [code]
+        # 第三路：概念标签搜索（板块新闻标题不含股票名，靠概念词命中）
+        concept_kws = STOCK_CONCEPT_TAGS.get(code, [])[:3]
+        keywords = [k for k in (keywords + concept_kws) if k]
         for kw in keywords:
             if not kw:
                 continue
@@ -644,6 +707,23 @@ def run_event_analysis(stocks: List[Dict]) -> Dict:
         if evts:
             stock_events[code] = evts
             print(f'  [{name}] 发现 {len(evts)} 个事件: {[e["matched"][0] for e in evts[:3]]}')
+
+    # 1.6 板块级事件归因（财联社电报中的板块大事，归到概念股）
+    # 解决：三花智控等概念股，板块新闻标题不含股票名导致全部漏掉
+    print('[1.6/5] 板块级事件归因...')
+    for s in stocks:
+        code = s['code']
+        concept_tags = STOCK_CONCEPT_TAGS.get(code)
+        if not concept_tags:
+            continue
+        concept_evts = extract_concept_events(code, concept_tags, news + stock_news.get(code, []))
+        if concept_evts:
+            existing = stock_events.setdefault(code, [])
+            existing_titles = {e['title'] for e in existing}
+            added = [e for e in concept_evts if e['title'] not in existing_titles]
+            existing.extend(added)
+            if added:
+                print(f"  [{s.get('name')}] 板块归因 +{len(added)} 条: {[e['matched'][0] for e in added[:3]]}")
 
     # 2. 识别事件
     print('[2/5] 识别重大事件...')
