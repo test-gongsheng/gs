@@ -865,6 +865,21 @@ def _trigger_emotion_scan():
     import threading
     threading.Thread(target=_scan, daemon=True).start()
 
+def _maybe_refresh_sentiment(max_age_sec=1200):
+    """情绪数据超龄则后台异步刷新（不阻塞，本次生成仍用现有数据，下次生效）"""
+    try:
+        import os as _os, time as _t
+        f = _os.path.join(_os.path.dirname(__file__), 'data', 'market_sentiment.json')
+        if not _os.path.exists(f):
+            _trigger_emotion_scan()
+            return
+        age = _t.time() - _os.path.getmtime(f)
+        if age > max_age_sec:
+            print(f'[DeepAnalysis] 情绪数据已{age/60:.0f}分钟未更新，触后台刷新')
+            _trigger_emotion_scan()
+    except Exception:
+        pass
+
 @app.route('/api/market/sentiment')
 def get_sentiment():
     """获取市场情绪（新引擎缓存版，永不同步跑重扫描）"""
@@ -2504,6 +2519,8 @@ def generate_deep_analysis_single(stock_code):
             GEN_SEMAPHORE.acquire()
             try:
                 GEN_STATUS[stock_code] = {'status': 'generating', 'started': _time.time()}
+                # 情绪数据超20分钟则后台刷新（不阻塞，本次用现有数据，下次生成生效）
+                _maybe_refresh_sentiment()
                 from deep_analysis import generate_deep_report
                 report_content = generate_deep_report(stock)
                 

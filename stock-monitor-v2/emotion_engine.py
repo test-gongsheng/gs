@@ -598,8 +598,10 @@ def format_sentiment_for_report(stock_code: str) -> List[str]:
         data = json.load(f)
 
     lines = []
+    data_date = data.get('date', '')
+    date_tag = f"（数据时间：{data_date}）" if data_date else ''
     lines.append(f"**市场情绪周期：** {data['stage']}（评分 {data['sentiment_score']}/100，"
-                 f"较昨日{data.get('score_change', 0):+.0f}分）")
+                 f"较昨日{data.get('score_change', 0):+.0f}分）{date_tag}")
     lines.append(f"- {data['stage_advice']}")
     lines.append(f"- 今日涨跌：涨{data['market_breadth']['up']}家 / 跌{data['market_breadth']['down']}家，"
                  f"涨停{data['limit_up_down']['limit_up']}家 / 跌停{data['limit_up_down']['limit_down']}家")

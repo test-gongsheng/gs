@@ -645,7 +645,7 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
     try:
         from emotion_engine import format_sentiment_for_report
         sentiment_lines = format_sentiment_for_report(stock['code'])
-        lines.append(f"## 四、市场情绪对持仓的影响")
+        lines.append(f"## 四、市场情绪对持仓的影响——{stock.get('name', stock['code'])}")
         lines.append(f"")
         for sl in sentiment_lines:
             lines.append(sl)
