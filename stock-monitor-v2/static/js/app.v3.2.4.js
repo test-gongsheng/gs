@@ -4,7 +4,7 @@
  */
 
 // 版本号，用于强制刷新缓存
-const APP_VERSION = "3.3.1"; // 实时生成改异步轮询，修复连点超时
+const APP_VERSION = "3.3.2"; // 实时生成改异步轮询，修复连点超时
 
 // 检查版本，如果不匹配则强制刷新
 const lastVersion = localStorage.getItem('app_version');

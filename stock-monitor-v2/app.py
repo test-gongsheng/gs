@@ -2466,13 +2466,22 @@ def get_deep_analysis(stock_code):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # 盘中生成任务状态（内存 dict，重启后清空）
-GEN_STATUS = {}  # code -> {'status': 'generating'/'done'/'error', 'started': ts, 'error': msg}
+GEN_STATUS = {}  # code -> {'status': 'queued'/'generating'/'done'/'error', 'started': ts, 'error': msg}
+GEN_SEMAPHORE = threading.Semaphore(2)  # 最多同时生成2只，其余排队，防止CPU打满请求饿死
+APP_VERSION = '3.3.2'
+import time as _time
 
 @app.route('/api/deep-analysis/generate/<stock_code>', methods=['POST'])
 def generate_deep_analysis_single(stock_code):
-    """触发单只股票深度报告生成（异步，立即返回，轮询 status 获取结果）"""
+    """触发单只股票深度报告生成（异步，立即返回，轮询 status 获取结果）
+    设计原则：请求线程只做毫秒级操作，绝不在这里等锁/等重算"""
     try:
-        data = load_data()
+        # 轻量读文件，不抢 data_file_lock（读操作，JSON一次性load是原子的）
+        try:
+            with open(DATA_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except Exception:
+            data = {'stocks': []}
         stock = None
         for s in data.get('stocks', []):
             if s.get('code') == stock_code:
@@ -2480,16 +2489,21 @@ def generate_deep_analysis_single(stock_code):
                 break
         
         if not stock:
-            return jsonify({'success': False, 'error': '股票不存在'}), 404
+            return jsonify({'success': False, 'error': '股票不存在', 'v': APP_VERSION}), 404
         
-        # 已在生成中，直接返回状态（防重复点击）
-        if GEN_STATUS.get(stock_code, {}).get('status') == 'generating':
-            return jsonify({'success': True, 'status': 'generating', 'stock_code': stock_code})
+        # 已在生成/排队中，直接返回当前状态（防重复点击）
+        cur = GEN_STATUS.get(stock_code, {})
+        if cur.get('status') in ('generating', 'queued'):
+            return jsonify({'success': True, 'status': cur.get('status'),
+                            'stock_code': stock_code, 'v': APP_VERSION})
+        
+        GEN_STATUS[stock_code] = {'status': 'queued', 'started': _time.time()}
         
         def _gen():
-            import time as _time
-            GEN_STATUS[stock_code] = {'status': 'generating', 'started': _time.time()}
+            # 信号量限流：最多2个并发生成，其余线程在此等待空位
+            GEN_SEMAPHORE.acquire()
             try:
+                GEN_STATUS[stock_code] = {'status': 'generating', 'started': _time.time()}
                 from deep_analysis import generate_deep_report
                 report_content = generate_deep_report(stock)
                 
@@ -2506,21 +2520,24 @@ def generate_deep_analysis_single(stock_code):
                 import traceback
                 traceback.print_exc()
                 GEN_STATUS[stock_code] = {'status': 'error', 'error': str(e)}
+            finally:
+                GEN_SEMAPHORE.release()
         
         import threading
         threading.Thread(target=_gen, daemon=True).start()
         
         return jsonify({
             'success': True,
-            'status': 'generating',
+            'status': 'queued',
             'stock_code': stock_code,
-            'stock_name': stock.get('name', '')
+            'stock_name': stock.get('name', ''),
+            'v': APP_VERSION
         })
     except Exception as e:
         print(f"[DeepAnalysis Generate] 错误: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e), 'v': APP_VERSION}), 500
 
 @app.route('/api/deep-analysis/status/<stock_code>')
 def deep_analysis_gen_status(stock_code):
