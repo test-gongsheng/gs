@@ -667,8 +667,21 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
     except Exception as e:
         pass  # 事件模块未运行时不阻塞报告
     
+    # 持仓实战分析（豆包式综合研判层）
+    try:
+        from tactics import generate_position_tactics
+        tactics_lines = generate_position_tactics(stock, kline)
+        if tactics_lines:
+            lines.append(f"## 六、持仓实战分析")
+            lines.append(f"")
+            for tl in tactics_lines:
+                lines.append(tl)
+            lines.append(f"")
+    except Exception as e:
+        print(f'[Tactics] 实战分析生成失败: {e}')
+    
     # 风险提示
-    lines.append(f"## 六、短期风险提示")
+    lines.append(f"## 七、短期风险提示")
     lines.append(f"")
     risks = []
     
