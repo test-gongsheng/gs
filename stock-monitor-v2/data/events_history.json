@@ -5,10 +5,10 @@
     "keywords": [
       "AI安全"
     ],
-    "first_news": "9月16日股市避雷针",
-    "latest_news": "9月16日股市避雷针",
-    "latest_time": "2026-09-16 08:18:32",
-    "count": 1,
+    "first_news": "英国国王查尔斯三世将与英伟达、Open<em>AI</em>高管讨论<em>AI安全</em>",
+    "latest_news": "四连板中新赛克：<em>AI安全</em>产品营收占比不超2%",
+    "latest_time": "2026-09-15 20:15:37",
+    "count": 13,
     "impact_paths": [
       {
         "sectors": [
@@ -67,10 +67,10 @@
         "expected": "negative",
         "logic": "监管收紧→合规成本上升→应用端承压",
         "confidence": 0.6,
-        "actual_change": -0.77,
+        "actual_change": -0.85,
         "verdict": "pending",
         "gap_score": 0,
-        "price": 12.82
+        "price": 12.81
       },
       {
         "code": "688795",
@@ -78,10 +78,10 @@
         "expected": "positive",
         "logic": "限制对华芯片出口→国产替代逻辑强化",
         "confidence": 0.75,
-        "actual_change": 8.7,
+        "actual_change": 8.68,
         "verdict": "confirmed",
         "gap_score": 1,
-        "price": 395.68
+        "price": 395.58
       },
       {
         "code": "301308",
@@ -89,10 +89,10 @@
         "expected": "positive",
         "logic": "限制对华芯片出口→国产替代逻辑强化",
         "confidence": 0.75,
-        "actual_change": -1.16,
+        "actual_change": -1.14,
         "verdict": "invalidated",
         "gap_score": -1,
-        "price": 335.03
+        "price": 335.09
       },
       {
         "code": "300442",
@@ -100,15 +100,15 @@
         "expected": "neutral",
         "logic": "算力基建长期需求不变，短期情绪波动",
         "confidence": 0.5,
-        "actual_change": -0.5,
+        "actual_change": -0.54,
         "verdict": "as_expected",
         "gap_score": 0,
-        "price": 62.27
+        "price": 62.24
       }
     ],
     "status": "invalidated",
     "first_date": "2026-09-07",
-    "tracking_days": 10,
+    "tracking_days": 11,
     "trend_conclusion": "预期被证伪，市场定价了其他逻辑",
     "timeline": [
       {
@@ -133,12 +133,11 @@
     "type": "新能源政策",
     "level": "medium",
     "keywords": [
-      "锂电",
-      "储能"
+      "光伏"
     ],
-    "first_news": "天赐材料：未来2—3年储能电池需求增速仍有望高于动力电池",
-    "latest_news": "天赐材料：未来2—3年储能电池需求增速仍有望高于动力电池",
-    "latest_time": "2026-09-17 14:37:33",
+    "first_news": "中企在阿塞拜疆投资建设的大型光伏项目正式并网",
+    "latest_news": "中企在阿塞拜疆投资建设的大型光伏项目正式并网",
+    "latest_time": "2026-09-17 16:04:04",
     "count": 1,
     "impact_paths": [
       {
@@ -158,10 +157,10 @@
         "expected": "positive",
         "logic": "政策支持→行业景气度提升",
         "confidence": 0.7,
-        "actual_change": -1.32,
+        "actual_change": -1.39,
         "verdict": "invalidated",
         "gap_score": -1,
-        "price": 40.39
+        "price": 40.36
       },
       {
         "code": "002594",
@@ -169,10 +168,10 @@
         "expected": "positive",
         "logic": "政策支持→行业景气度提升",
         "confidence": 0.7,
-        "actual_change": 1.17,
+        "actual_change": 1.2,
         "verdict": "confirmed",
-        "gap_score": 0.38999999999999996,
-        "price": 84.94
+        "gap_score": 0.39999999999999997,
+        "price": 84.97
       }
     ],
     "status": "invalidated",
@@ -424,6 +423,99 @@
     "status": "invalidated",
     "first_date": "2026-09-15",
     "tracking_days": 3,
+    "trend_conclusion": "预期被证伪，市场定价了其他逻辑"
+  },
+  {
+    "type": "芯片出口管制",
+    "level": "medium",
+    "keywords": [
+      "芯片出口"
+    ],
+    "first_news": "韩国<em>芯片出口</em>增长近两倍，创历史同期最高水平，科创半导体ETF华夏(588170)跟踪指数收跌0.59%",
+    "latest_news": "韩国<em>芯片出口</em>增长近两倍，创历史同期最高水平，科创半导体ETF华夏(588170)跟踪指数收跌0.59%",
+    "latest_time": "2026-08-21 15:58:01",
+    "count": 1,
+    "impact_paths": [
+      {
+        "sectors": [
+          "半导体-GPU",
+          "半导体-存储",
+          "半导体设备与服务"
+        ],
+        "direction": "positive",
+        "logic": "进口受限→国产替代加速",
+        "confidence": 0.85
+      },
+      {
+        "sectors": [
+          "消费电子",
+          "互联网-平台"
+        ],
+        "direction": "negative",
+        "logic": "供应链成本上升",
+        "confidence": 0.6
+      }
+    ],
+    "impacted_stocks": [
+      {
+        "code": "601133",
+        "sector": "半导体设备与服务",
+        "expected": "positive",
+        "logic": "进口受限→国产替代加速",
+        "confidence": 0.85,
+        "actual_change": -0.84,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 23.64
+      },
+      {
+        "code": "688795",
+        "sector": "半导体-GPU",
+        "expected": "positive",
+        "logic": "进口受限→国产替代加速",
+        "confidence": 0.85,
+        "actual_change": 8.68,
+        "verdict": "confirmed",
+        "gap_score": 1,
+        "price": 395.58
+      },
+      {
+        "code": "301308",
+        "sector": "半导体-存储",
+        "expected": "positive",
+        "logic": "进口受限→国产替代加速",
+        "confidence": 0.85,
+        "actual_change": -1.14,
+        "verdict": "invalidated",
+        "gap_score": -1,
+        "price": 335.09
+      },
+      {
+        "code": "00285",
+        "sector": "消费电子",
+        "expected": "negative",
+        "logic": "供应链成本上升",
+        "confidence": 0.6,
+        "actual_change": 0,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 0
+      },
+      {
+        "code": "00700",
+        "sector": "互联网-平台",
+        "expected": "negative",
+        "logic": "供应链成本上升",
+        "confidence": 0.6,
+        "actual_change": 0,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 0
+      }
+    ],
+    "status": "invalidated",
+    "first_date": "2026-09-17",
+    "tracking_days": 1,
     "trend_conclusion": "预期被证伪，市场定价了其他逻辑"
   }
 ]

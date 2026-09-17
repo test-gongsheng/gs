@@ -158,7 +158,8 @@ STOCK_EVENT_SIGNALS = {
     'medium': {
         'label': '一般动态',
         'keywords': ['发布', '新品', '合作', '签约', '上市', '突破', '专利',
-                     '机构调研', '评级', '研报', '分红', '派息'],
+                     '机构调研', '评级', '研报', '分红', '派息',
+                     '适配', '集群', '超节点', 'AIDC', '算力', '大模型'],
     },
 }
 
@@ -250,10 +251,12 @@ def extract_stock_events(stock_code: str, stock_name: str, news_list: List[Dict]
             if any(n in title for n in other_names):
                 continue
 
-        # 跳过纯行情播报类
+        # 跳过纯行情播报类（但 content 含行业实质信息[大会/政策/产业]的放行）
         if any(skip in title for skip in ['涨', '跌', '涨停', '跌停', '龙虎榜', '换手率', '成交额']):
             if not any(sig in title for sig in ['解禁', '减持', '增持', '回购']):
-                continue
+                content_text = (news.get('content', '') or '')[:150]
+                if not any(sub in content_text for sub in ['大会', '政策', '规划', '产业', '行业', '超节点', '智算']):
+                    continue
 
         best_level = None
         best_label = ''
@@ -289,12 +292,52 @@ def extract_stock_events(stock_code: str, stock_name: str, news_list: List[Dict]
             'direction': direction,
             'matched': matched_kws,
             'content': (news.get('content', '') or '')[:200],
+            'article_code': news.get('code', ''),
         })
 
     # 按级别排序：critical 在前
     order = {'critical': 0, 'high': 1, 'medium': 2}
     events.sort(key=lambda e: (order.get(e['level'], 9), e.get('time', '')), reverse=False)
     return events
+
+
+# ========== 全文抓取 ==========
+
+def fetch_article_fulltext(article_code: str) -> str:
+    """抓东财新闻详情页全文，返回正文文本（失败返回空字符串）"""
+    if not article_code:
+        return ''
+    try:
+        url = f'http://finance.eastmoney.com/a/{article_code}.html'
+        resp = _session.get(url, timeout=8, headers={
+            'Referer': 'https://finance.eastmoney.com/'
+        })
+        html = resp.text
+        body = re.search(r'<div[^>]*class="txtinfos"[^>]*>(.*?)</div>', html, re.DOTALL)
+        if body:
+            text = re.sub(r'<[^>]+>', '', body.group(1)).strip()
+            text = re.sub(r'\s+', ' ', text)
+            # 去掉末尾“文章来源：xxx”
+            text = re.sub(r'（文章来源：.*?）$', '', text)
+            return text
+        # 备选：og:description
+        og = re.search(r'<meta[^>]*og:description[^>]*content="([^"]+)"', html)
+        if og:
+            return og.group(1)[:500]
+    except Exception:
+        pass
+    return ''
+
+
+def enrich_events_with_fulltext(events: List[Dict], max_events: int = 6):
+    """对事件列表中有 article_code 的事件抓全文，替换短摘要"""
+    for e in events[:max_events]:
+        code = e.get('article_code', '')
+        if not code:
+            continue
+        full = fetch_article_fulltext(code)
+        if full and len(full) > len(e.get('content', '')):
+            e['content'] = full[:600]
 
 
 # ========== 新闻采集 ==========
@@ -349,7 +392,7 @@ def fetch_cls_telegraph() -> List[Dict]:
             encoded = requests.utils.quote(json.dumps({
                 "uid": "", "keyword": kw, "type": ["cmsArticleWebOld"],
                 "client": "web", "clientVersion": "curr", "clientType": "web",
-                "param": {"cmsArticleWebOld": {"searchScope": "default", "sort": "time", "pageIndex": 1, "pageSize": 20}}
+                "param": {"cmsArticleWebOld": {"searchScope": "default", "sort": "default", "pageIndex": 1, "pageSize": 20}}
             }, ensure_ascii=False))
             url = f'https://search-api-web.eastmoney.com/search/jsonp?cb=jQuery&param={encoded}'
             resp = _session.get(url, timeout=8)
@@ -370,6 +413,7 @@ def fetch_cls_telegraph() -> List[Dict]:
                             'content': art.get('content', '')[:500],
                             'time': art.get('date', ''),
                             'source': art.get('mediaName', '东方财富'),
+                            'code': art.get('code', ''),
                         })
             print(f'[东财] "{kw}" 获取 {len(news)} 条累计')
         except Exception as e:
@@ -398,7 +442,7 @@ def fetch_stock_news(stock_codes: List[str], stock_names: Dict[str, str] = None)
                 encoded = requests.utils.quote(json.dumps({
                     "uid": "", "keyword": kw, "type": ["cmsArticleWebOld"],
                     "client": "web", "clientVersion": "curr", "clientType": "web",
-                    "param": {"cmsArticleWebOld": {"searchScope": "default", "sort": "time", "pageIndex": 1, "pageSize": 10}}
+                    "param": {"cmsArticleWebOld": {"searchScope": "default", "sort": "default", "pageIndex": 1, "pageSize": 20}}
                 }, ensure_ascii=False))
                 url = f'https://search-api-web.eastmoney.com/search/jsonp?cb=jQuery&param={encoded}'
                 resp = _session.get(url, timeout=8)
@@ -419,6 +463,7 @@ def fetch_stock_news(stock_codes: List[str], stock_names: Dict[str, str] = None)
                                 'content': (a.get('content', '') or '').replace('<em>', '').replace('</em>', '')[:300],
                                 'time': a.get('date', ''),
                                 'source': a.get('mediaName', ''),
+                                'code': a.get('code', ''),
                             })
             except Exception:
                 pass
@@ -708,6 +753,8 @@ def run_event_analysis(stocks: List[Dict]) -> Dict:
         name = s.get('name', '')
         evts = extract_stock_events(code, name, stock_news.get(code, []), all_names)
         if evts:
+            # 抓全文：用新闻详情页正文替换搜索摘要，保留关键细节
+            enrich_events_with_fulltext(evts)
             stock_events[code] = evts
             print(f'  [{name}] 发现 {len(evts)} 个事件: {[e["matched"][0] for e in evts[:3]]}')
 
@@ -966,9 +1013,31 @@ def format_event_for_report(stock_code: str) -> List[str]:
         if n_pos: summary_bits.append(f'{n_pos}项偏利好')
         lines.append(f"**近期重大动态（自动发现{len(stock_evts)}项**：{'、'.join(summary_bits) if summary_bits else '均为中性'}）**")
         
-        # 行业原因 vs 公司原因 分组（东财异动解读风格）
-        sector_evts = [e for e in stock_evts if e.get('label') == '板块事件']
-        company_evts = [e for e in stock_evts if e.get('label') != '板块事件']
+        # 行业原因 vs 公司原因 分组——按内容判定，不按来源通道
+        # 公司动作关键词：合作/适配/订单/签署/中标/发布/回购/减持/解禁/财报等
+        company_kw = ['合作', '适配', '订单', '签署', '中标', '发布', '回购', '减持', '增持',
+                      '解禁', '财报', '年报', '半年报', '业绩', '上市', '融资', '定增', '投产', '量产', '共建']
+        sector_kw = ['概念', '板块', '行业', '大会', '政策', '走强', '反弹', '震荡', '提振',
+                     '回调', '下跌', '上涨', '领涨', '领跌', '异动']
+        
+        def is_sector_event(e):
+            """判定为行业事件：标题/正文以板块走势为主，且不含公司级动作词"""
+            title = e.get('title', '')
+            content = (e.get('content', '') or '')[:100]
+            text = title + ' ' + content
+            has_company_action = any(k in title for k in company_kw)
+            has_sector_tone = any(k in title for k in sector_kw)
+            # 有公司动作词的标题 → 公司原因（即使从板块通道进来）
+            if has_company_action:
+                return False
+            # 板块走势类标题 → 行业原因
+            if has_sector_tone:
+                return True
+            # 默认按原 label
+            return e.get('label') == '板块事件'
+        
+        sector_evts = [e for e in stock_evts if is_sector_event(e)]
+        company_evts = [e for e in stock_evts if not is_sector_event(e)]
         
         if sector_evts:
             lines.append('')
@@ -979,7 +1048,7 @@ def format_event_for_report(stock_code: str) -> List[str]:
                 t = (e.get('time', '') or '')[:10]
                 lines.append(f"{i}. {icon} [{d}] {e['title']}")
                 if e.get('content'):
-                    lines.append(f"   {e['content'][:120]}")
+                    lines.append(f"   {e['content'][:260]}")
                 if t:
                     lines.append(f"   📅 {t} · {e.get('source', '')}")
         
@@ -992,7 +1061,7 @@ def format_event_for_report(stock_code: str) -> List[str]:
                 t = (e.get('time', '') or '')[:10]
                 lines.append(f"{i}. {icon} [{d}] {e['title']}")
                 if e.get('content'):
-                    lines.append(f"   {e['content'][:120]}")
+                    lines.append(f"   {e['content'][:260]}")
                 if t:
                     lines.append(f"   📅 {t} · {e.get('source', '')}")
         lines.append('')
