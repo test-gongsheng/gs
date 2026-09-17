@@ -67,10 +67,10 @@
         "expected": "negative",
         "logic": "监管收紧→合规成本上升→应用端承压",
         "confidence": 0.6,
-        "actual_change": -0.15,
+        "actual_change": -0.77,
         "verdict": "pending",
         "gap_score": 0,
-        "price": 12.92
+        "price": 12.82
       },
       {
         "code": "688795",
@@ -78,10 +78,10 @@
         "expected": "positive",
         "logic": "限制对华芯片出口→国产替代逻辑强化",
         "confidence": 0.75,
-        "actual_change": 3.88,
+        "actual_change": 8.7,
         "verdict": "confirmed",
         "gap_score": 1,
-        "price": 364.0
+        "price": 395.68
       },
       {
         "code": "301308",
@@ -89,10 +89,10 @@
         "expected": "positive",
         "logic": "限制对华芯片出口→国产替代逻辑强化",
         "confidence": 0.75,
-        "actual_change": 3.18,
-        "verdict": "confirmed",
-        "gap_score": 1,
-        "price": 338.96
+        "actual_change": -1.16,
+        "verdict": "invalidated",
+        "gap_score": -1,
+        "price": 335.03
       },
       {
         "code": "300442",
@@ -100,16 +100,16 @@
         "expected": "neutral",
         "logic": "算力基建长期需求不变，短期情绪波动",
         "confidence": 0.5,
-        "actual_change": 2.74,
-        "verdict": "deviated",
+        "actual_change": -0.5,
+        "verdict": "as_expected",
         "gap_score": 0,
-        "price": 62.58
+        "price": 62.27
       }
     ],
-    "status": "tracking",
+    "status": "invalidated",
     "first_date": "2026-09-07",
     "tracking_days": 10,
-    "trend_conclusion": "持续跟踪中，尚未形成明确信号",
+    "trend_conclusion": "预期被证伪，市场定价了其他逻辑",
     "timeline": [
       {
         "date": "2026-09-07",
@@ -133,12 +133,13 @@
     "type": "新能源政策",
     "level": "medium",
     "keywords": [
+      "锂电",
       "储能"
     ],
-    "first_news": "马斯克再次暗示特斯拉与Sp<em>a</em>ceX或合并",
-    "latest_news": "马斯克再次暗示特斯拉与SpaceX或合并",
-    "latest_time": "2026-09-16 15:34:23",
-    "count": 2,
+    "first_news": "天赐材料：未来2—3年储能电池需求增速仍有望高于动力电池",
+    "latest_news": "天赐材料：未来2—3年储能电池需求增速仍有望高于动力电池",
+    "latest_time": "2026-09-17 14:37:33",
+    "count": 1,
     "impact_paths": [
       {
         "sectors": [
@@ -157,10 +158,10 @@
         "expected": "positive",
         "logic": "政策支持→行业景气度提升",
         "confidence": 0.7,
-        "actual_change": 4.25,
-        "verdict": "confirmed",
-        "gap_score": 1,
-        "price": 40.93
+        "actual_change": -1.32,
+        "verdict": "invalidated",
+        "gap_score": -1,
+        "price": 40.39
       },
       {
         "code": "002594",
@@ -168,16 +169,16 @@
         "expected": "positive",
         "logic": "政策支持→行业景气度提升",
         "confidence": 0.7,
-        "actual_change": -0.4,
-        "verdict": "pending",
-        "gap_score": 0,
-        "price": 83.96
+        "actual_change": 1.17,
+        "verdict": "confirmed",
+        "gap_score": 0.38999999999999996,
+        "price": 84.94
       }
     ],
-    "status": "confirmed",
+    "status": "invalidated",
     "first_date": "2026-09-15",
-    "tracking_days": 2,
-    "trend_conclusion": "预期验证，趋势延续"
+    "tracking_days": 3,
+    "trend_conclusion": "预期被证伪，市场定价了其他逻辑"
   },
   {
     "type": "降息降准",
@@ -324,13 +325,12 @@
     "type": "地缘冲突",
     "level": "medium",
     "keywords": [
-      "地缘",
       "中东"
     ],
-    "first_news": "机会速递 | 欧洲天然气补库承压，气价中枢望抬升，油价走高，原油产业链龙头受益；三大巨头呼吁AI减速，软件板块担忧缓和；全球钨资源争夺升温，钨价两年飙涨9倍",
-    "latest_news": "机会速递 | 欧洲天然气补库承压，气价中枢望抬升，油价走高，原油产业链龙头受益；三大巨头呼吁AI减速，软件板块担忧缓和；全球钨资源争夺升温，钨价两年飙涨9倍",
-    "latest_time": "2026-09-15 15:48:53",
-    "count": 1,
+    "first_news": "日韩股市收盘，日股上涨，韩股下跌",
+    "latest_news": "“需求+库存+价格”三维共振，制冷剂市场中长期景气向好，化工ETF博时(158006)有望持续受益",
+    "latest_time": "2026-09-17 13:57:20",
+    "count": 2,
     "impact_paths": [
       {
         "sectors": [
@@ -360,10 +360,10 @@
         "expected": "positive",
         "logic": "避险情绪→大宗商品涨价",
         "confidence": 0.7,
-        "actual_change": -2.67,
+        "actual_change": -2.97,
         "verdict": "invalidated",
         "gap_score": -1,
-        "price": 16.38
+        "price": 16.33
       },
       {
         "code": "601600",
@@ -371,10 +371,10 @@
         "expected": "positive",
         "logic": "避险情绪→大宗商品涨价",
         "confidence": 0.7,
-        "actual_change": -0.97,
-        "verdict": "pending",
-        "gap_score": 0,
-        "price": 9.2
+        "actual_change": -1.72,
+        "verdict": "invalidated",
+        "gap_score": -1,
+        "price": 9.15
       },
       {
         "code": "688795",
@@ -382,10 +382,10 @@
         "expected": "negative",
         "logic": "风险偏好下降→科技股承压",
         "confidence": 0.65,
-        "actual_change": 1.27,
+        "actual_change": 8.7,
         "verdict": "contrarian",
         "gap_score": 1,
-        "price": 350.4
+        "price": 395.68
       },
       {
         "code": "00285",
@@ -423,7 +423,7 @@
     ],
     "status": "invalidated",
     "first_date": "2026-09-15",
-    "tracking_days": 1,
+    "tracking_days": 3,
     "trend_conclusion": "预期被证伪，市场定价了其他逻辑"
   }
 ]

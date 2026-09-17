@@ -222,6 +222,7 @@ def extract_concept_events(stock_code: str, concept_tags: List[str], news_pool: 
             'source': news.get('source', ''),
             'direction': direction,
             'matched': matched,
+            'content': (news.get('content', '') or '')[:200],
         })
     order = {'critical': 0, 'high': 1, 'medium': 2}
     events.sort(key=lambda e: (order.get(e['level'], 9), e.get('time', '')))
@@ -287,6 +288,7 @@ def extract_stock_events(stock_code: str, stock_name: str, news_list: List[Dict]
             'source': news.get('source', ''),
             'direction': direction,
             'matched': matched_kws,
+            'content': (news.get('content', '') or '')[:200],
         })
 
     # 按级别排序：critical 在前
@@ -414,6 +416,7 @@ def fetch_stock_news(stock_codes: List[str], stock_names: Dict[str, str] = None)
                             seen.add(t)
                             all_news.append({
                                 'title': t,
+                                'content': (a.get('content', '') or '').replace('<em>', '').replace('</em>', '')[:300],
                                 'time': a.get('date', ''),
                                 'source': a.get('mediaName', ''),
                             })
@@ -796,8 +799,119 @@ def _save_events(events: List[Dict]):
         json.dump(events, f, ensure_ascii=False, indent=2, default=str)
 
 
+def _fetch_financial_highlights(stock_code: str) -> List[str]:
+    """从东财财务摘要提取最新业绩亮点（营收/净利润同比）
+    带文件缓存，同一天不重复调akshare"""
+    cache_file = os.path.join(DATA_DIR, 'financial_cache.json')
+    today = datetime.now().strftime('%Y-%m-%d')
+    try:
+        if os.path.exists(cache_file):
+            with open(cache_file, 'r', encoding='utf-8') as f:
+                cache = json.load(f)
+            if cache.get(stock_code, {}).get('date') == today:
+                return cache[stock_code].get('lines', [])
+    except Exception:
+        cache = {}
+    
+    lines = []
+    try:
+        import threading as _td
+        result = [None]
+        def _call():
+            try:
+                import akshare as ak
+                df = ak.stock_financial_abstract(symbol=stock_code)
+                if df is not None and len(df) > 0:
+                    result[0] = df
+            except Exception:
+                pass
+        t = _td.Thread(target=_call, daemon=True)
+        t.start()
+        t.join(timeout=12)
+        df = result[0]
+        if df is None:
+            return []
+        
+        # 找营收和净利润行
+        cols = [c for c in df.columns if c not in ('选项', '指标')]
+        if len(cols) < 5:
+            return []
+        latest_col = cols[0]   # 最新报告期
+        yoy_col = cols[4]      # 去年同期
+        
+        def _fmt(v):
+            try:
+                v = float(v)
+                if abs(v) >= 1e8:
+                    return f"{v/1e8:.2f}亿"
+                elif abs(v) >= 1e4:
+                    return f"{v/1e4:.0f}万"
+                return f"{v:.0f}"
+            except Exception:
+                return str(v)
+        
+        emitted = set()  # 同名指标只出一次（摘要表多类别下有重复行）
+        for _, row in df.iterrows():
+            indicator = str(row.get('指标', '')).strip()
+            # 精确匹配主指标行，避免'营业收入同比增长'等衍生行混入
+            if indicator in ('营业总收入', '营业收入', '主营业务收入'):
+                is_profit_row = False
+            elif indicator in ('归母净利润', '归属净利润'):
+                is_profit_row = True
+            else:
+                continue
+            key = 'profit' if is_profit_row else 'revenue'
+            if key in emitted:
+                continue
+            emitted.add(key)
+            
+            if not is_profit_row:
+                rev_cur = row.get(latest_col, 0)
+                rev_prev = row.get(yoy_col, 0)
+                try:
+                    yoy = (float(rev_cur) / float(rev_prev) - 1) * 100 if float(rev_prev) != 0 else 0
+                    lines.append(f"营收 {_fmt(rev_cur)}（同比{yoy:+.1f}%）")
+                except Exception:
+                    lines.append(f"营收 {_fmt(rev_cur)}")
+            else:
+                profit_cur = row.get(latest_col, 0)
+                profit_prev = row.get(yoy_col, 0)
+                try:
+                    pc, pp = float(profit_cur), float(profit_prev)
+                    if pc > 0 and pp > 0:
+                        yoy = (pc / pp - 1) * 100
+                        lines.append(f"归母净利 {_fmt(pc)}（同比{yoy:+.1f}%）")
+                    elif pc > 0 >= pp or (pc > 0 and pp < 0):
+                        lines.append(f"归母净利 {_fmt(pc)}（扭亏为盈）")
+                    elif pc < 0 and pp < 0:
+                        narrow = (1 - abs(pc) / abs(pp)) * 100 if pp != 0 else 0
+                        if narrow > 0:
+                            lines.append(f"归母净利 {_fmt(pc)}（亏损收窄{narrow:.0f}%）")
+                        else:
+                            lines.append(f"归母净利 {_fmt(pc)}（亏损扩大{abs(narrow):.0f}%）")
+                    else:
+                        lines.append(f"归母净利 {_fmt(profit_cur)}")
+                except Exception:
+                    lines.append(f"归母净利 {_fmt(profit_cur)}")
+        
+        if lines:
+            lines.insert(0, f"最新报告期 {latest_col}：")
+    except Exception as e:
+        print(f'[财报] {stock_code} 获取失败: {e}')
+    
+    # 写缓存
+    try:
+        cache[stock_code] = {'date': today, 'lines': lines}
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            json.dump(cache, f, ensure_ascii=False)
+    except Exception:
+        pass
+    
+    return lines
+
+
 def format_event_for_report(stock_code: str) -> List[str]:
-    """格式化个股事件影响，供deep_analysis.py引用"""
+    """格式化个股事件影响，供deep_analysis.py引用（东财异动解读风格）"""
     filepath = os.path.join(DATA_DIR, 'event_impact.json')
     if not os.path.exists(filepath):
         return ['事件数据尚未生成']
@@ -807,12 +921,42 @@ def format_event_for_report(stock_code: str) -> List[str]:
 
     lines = []
     
-    # 个股级自动发现事件（优先展示，每只个股都有）
+    # 财报亮点（东财异动解读第一层：业绩数据）
+    fin_lines = _fetch_financial_highlights(stock_code)
+    
+    # 个股级自动发现事件
     stock_evts = data.get('stock_events', {}).get(stock_code, [])
+    
+    # 异动原因标签（东财风格：标签云）
+    tags = []
+    if fin_lines:
+        for fl in fin_lines[1:]:  # 跳过报告期标题
+            if ('同比+' in fl or '扭亏' in fl) and '业绩高增' not in tags:
+                tags.append('业绩高增')
+            elif '收窄' in fl and '亏损收窄' not in tags:
+                tags.append('亏损收窄')
+    for e in (stock_evts or []):
+        for m in (e.get('matched') or []):
+            tag_map = {'GPU': '算力芯片', '国产芯片': '国产替代', '订单': '订单落地',
+                       '中标': '中标', '合作': '合作签约', '量产': '量产突破',
+                       '发布': '新品发布', '突破': '技术突破', '回购': '回购',
+                       '增持': '增持', '减持': '减持', '解禁': '解禁',
+                       '评级': '券商评级', '调研': '机构调研', '机器人': '机器人概念'}
+            t = tag_map.get(m)
+            if t and t not in tags:
+                tags.append(t)
+    
+    if tags or fin_lines:
+        lines.append(f"**异动原因：** {' + '.join(tags[:6]) if tags else '暂无明确催化剂'}")
+        lines.append('')
+    
+    if fin_lines:
+        lines.append('**业绩亮点：** ' + ' ｜ '.join(fin_lines[1:]))
+        lines.append('')
+    
     if stock_evts:
         level_icon = {'critical': '🔴', 'high': '🟠', 'medium': '⚪'}
         dir_cn = {'positive': '偏利好', 'negative': '偏利空', 'neutral': '中性'}
-        # 统计
         n_crit = sum(1 for e in stock_evts if e['level'] == 'critical')
         n_neg = sum(1 for e in stock_evts if e['direction'] == 'negative')
         n_pos = sum(1 for e in stock_evts if e['direction'] == 'positive')
@@ -821,13 +965,36 @@ def format_event_for_report(stock_code: str) -> List[str]:
         if n_neg: summary_bits.append(f'{n_neg}项偏利空')
         if n_pos: summary_bits.append(f'{n_pos}项偏利好')
         lines.append(f"**近期重大动态（自动发现{len(stock_evts)}项**：{'、'.join(summary_bits) if summary_bits else '均为中性'}）**")
-        for e in stock_evts[:8]:  # 最多列8条
-            icon = level_icon.get(e['level'], '⚪')
-            d = dir_cn.get(e['direction'], '中性')
-            t = (e.get('time', '') or '')[:10]
-            lines.append(f"- {icon} [{e['label']}|{d}] {e['title']}")
-            if t:
-                lines.append(f"  {' ' * 2}{t} · {e.get('source', '')}")
+        
+        # 行业原因 vs 公司原因 分组（东财异动解读风格）
+        sector_evts = [e for e in stock_evts if e.get('label') == '板块事件']
+        company_evts = [e for e in stock_evts if e.get('label') != '板块事件']
+        
+        if sector_evts:
+            lines.append('')
+            lines.append('**行业原因：**')
+            for i, e in enumerate(sector_evts[:4], 1):
+                icon = level_icon.get(e['level'], '⚪')
+                d = dir_cn.get(e['direction'], '中性')
+                t = (e.get('time', '') or '')[:10]
+                lines.append(f"{i}. {icon} [{d}] {e['title']}")
+                if e.get('content'):
+                    lines.append(f"   {e['content'][:120]}")
+                if t:
+                    lines.append(f"   📅 {t} · {e.get('source', '')}")
+        
+        if company_evts:
+            lines.append('')
+            lines.append('**公司原因：**')
+            for i, e in enumerate(company_evts[:5], 1):
+                icon = level_icon.get(e['level'], '⚪')
+                d = dir_cn.get(e['direction'], '中性')
+                t = (e.get('time', '') or '')[:10]
+                lines.append(f"{i}. {icon} [{d}] {e['title']}")
+                if e.get('content'):
+                    lines.append(f"   {e['content'][:120]}")
+                if t:
+                    lines.append(f"   📅 {t} · {e.get('source', '')}")
         lines.append('')
     else:
         lines.append('**近期重大动态：** 近5日无重大事件信号，走势主要由板块和市场情绪驱动')

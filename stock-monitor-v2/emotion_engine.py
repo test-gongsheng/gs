@@ -636,7 +636,7 @@ def format_sentiment_for_report(stock_code: str) -> List[str]:
         }
         lines.append(f"- 今日涨跌：{stock_s['change_pct']:+.2f}%，"
                      f"板块内定位：{pos_desc.get(stock_s['position_in_sector'], '?')}")
-        lines.append(f"- 振幅：{stock_s['amplitude']:.1f}%（情绪敏感度参考）")
+        lines.append(f"- 振幅：{min(stock_s['amplitude'], 25):.1f}%（情绪敏感度参考）")
         lines.append(f"- {stock_s['sentiment_impact']}")
         if stock_s.get('cost_position'):
             lines.append(f"- 持仓状态：{stock_s['cost_position']}")
