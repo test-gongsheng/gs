@@ -1,16 +1,16 @@
 {
-  "date": "2026-09-15",
+  "date": "2026-09-16",
   "events": [
     {
       "type": "AI安全监管",
-      "level": "medium",
+      "level": "high",
       "keywords": [
         "AI安全"
       ],
-      "first_news": "软件ETF鹏华(560790)、云计算ETF鹏华(159739)标的指数均涨近1%，<em>AI安全</em>问题浮现，网络<em>安全</em>概念大幅高开",
-      "latest_news": "软件ETF鹏华(560790)、云计算ETF鹏华(159739)标的指数均涨近1%，<em>AI安全</em>问题浮现，网络<em>安全</em>概念大幅高开",
-      "latest_time": "2026-09-14",
-      "count": 4,
+      "first_news": "9月16日股市避雷针",
+      "latest_news": "9月16日股市避雷针",
+      "latest_time": "2026-09-16 08:18:32",
+      "count": 1,
       "impact_paths": [
         {
           "sectors": [
@@ -69,10 +69,10 @@
           "expected": "negative",
           "logic": "监管收紧→合规成本上升→应用端承压",
           "confidence": 0.6,
-          "actual_change": -0.84,
+          "actual_change": -0.15,
           "verdict": "pending",
           "gap_score": 0,
-          "price": 12.94
+          "price": 12.92
         },
         {
           "code": "688795",
@@ -80,10 +80,10 @@
           "expected": "positive",
           "logic": "限制对华芯片出口→国产替代逻辑强化",
           "confidence": 0.75,
-          "actual_change": 1.27,
+          "actual_change": 3.88,
           "verdict": "confirmed",
-          "gap_score": 0.42333333333333334,
-          "price": 350.4
+          "gap_score": 1,
+          "price": 364.0
         },
         {
           "code": "301308",
@@ -91,10 +91,10 @@
           "expected": "positive",
           "logic": "限制对华芯片出口→国产替代逻辑强化",
           "confidence": 0.75,
-          "actual_change": -0.76,
-          "verdict": "pending",
-          "gap_score": 0,
-          "price": 328.5
+          "actual_change": 3.18,
+          "verdict": "confirmed",
+          "gap_score": 1,
+          "price": 338.96
         },
         {
           "code": "300442",
@@ -102,15 +102,15 @@
           "expected": "neutral",
           "logic": "算力基建长期需求不变，短期情绪波动",
           "confidence": 0.5,
-          "actual_change": 1.1,
+          "actual_change": 2.74,
           "verdict": "deviated",
           "gap_score": 0,
-          "price": 60.91
+          "price": 62.58
         }
       ],
       "status": "tracking",
       "first_date": "2026-09-07",
-      "tracking_days": 9,
+      "tracking_days": 10,
       "trend_conclusion": "持续跟踪中，尚未形成明确信号",
       "timeline": [
         {
@@ -137,9 +137,9 @@
       "keywords": [
         "储能"
       ],
-      "first_news": "8月我国动力和储能电池销量为223.1GWh 同比增长65.9%",
-      "latest_news": "突然异动！002584，直线涨停",
-      "latest_time": "2026-09-15 16:12:48",
+      "first_news": "马斯克再次暗示特斯拉与Sp<em>a</em>ceX或合并",
+      "latest_news": "马斯克再次暗示特斯拉与SpaceX或合并",
+      "latest_time": "2026-09-16 15:34:23",
       "count": 2,
       "impact_paths": [
         {
@@ -159,10 +159,10 @@
           "expected": "positive",
           "logic": "政策支持→行业景气度提升",
           "confidence": 0.7,
-          "actual_change": -0.88,
-          "verdict": "pending",
-          "gap_score": 0,
-          "price": 39.26
+          "actual_change": 4.25,
+          "verdict": "confirmed",
+          "gap_score": 1,
+          "price": 40.93
         },
         {
           "code": "002594",
@@ -170,16 +170,16 @@
           "expected": "positive",
           "logic": "政策支持→行业景气度提升",
           "confidence": 0.7,
-          "actual_change": -1.32,
-          "verdict": "invalidated",
-          "gap_score": -1,
-          "price": 84.3
+          "actual_change": -0.4,
+          "verdict": "pending",
+          "gap_score": 0,
+          "price": 83.96
         }
       ],
-      "status": "invalidated",
+      "status": "confirmed",
       "first_date": "2026-09-15",
-      "tracking_days": 1,
-      "trend_conclusion": "预期被证伪，市场定价了其他逻辑"
+      "tracking_days": 2,
+      "trend_conclusion": "预期验证，趋势延续"
     },
     {
       "type": "降息降准",
@@ -1125,10 +1125,10 @@
       "future_warnings": [
         {
           "date": "2026-12-07",
-          "days_until": 82,
+          "days_until": 81,
           "ratio": 39.55,
           "type": "首发原股东限售股份,首发战略配售股份",
-          "mkt_cap": 651.0,
+          "mkt_cap": 677.0,
           "risk": "HIGH"
         }
       ],
@@ -1144,7 +1144,7 @@
           "date": "2026-09-07",
           "ratio": 5.48,
           "before_20d": -13.1,
-          "after_20d": -32.5,
+          "after_20d": -29.9,
           "pattern": "提前下跌，解禁后大跌"
         }
       ],
@@ -1156,7 +1156,7 @@
       {
         "level": "high",
         "label": "重要事件",
-        "title": "<em>万向钱潮</em>：关于重大资产重组的进展公告",
+        "title": "万向钱潮：关于重大资产重组的进展公告",
         "time": "2026-09-07 21:02:00",
         "source": "证券日报",
         "direction": "neutral",
@@ -1185,26 +1185,114 @@
         "matched": [
           "重组"
         ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "万向钱潮：上半年扣非归母净利润5.01亿元，同比下降3.3%",
+        "time": "2026-08-24 20:50:00",
+        "source": "财中社",
+        "direction": "neutral",
+        "matched": [
+          "万向"
+        ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "万向钱潮上半年净利约5.53亿元，同比增长3.44%",
+        "time": "2026-08-24 21:27:23",
+        "source": "北京商报",
+        "direction": "positive",
+        "matched": [
+          "万向"
+        ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "万向钱潮(000559.SZ)：2026年中报净利润为5.53亿元",
+        "time": "2026-08-25 09:10:18",
+        "source": "界面新闻",
+        "direction": "neutral",
+        "matched": [
+          "万向"
+        ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "万向钱潮：2026年上半年净利润5.53亿元 同比增长3.44%",
+        "time": "2026-08-25 09:15:58",
+        "source": "中国证券报·中证网",
+        "direction": "positive",
+        "matched": [
+          "万向"
+        ]
       }
     ],
     "000878": [
       {
         "level": "high",
         "label": "重要事件",
-        "title": "消息称白宫的<em>铜</em>关税计划陷入停滞，有色金属ETF华夏（516650）或受益于<em>铜</em>旺季预期、<em>铜</em>价下方支撑较强",
+        "title": "消息称白宫的铜关税计划陷入停滞，有色金属ETF华夏（516650）或受益于铜旺季预期、铜价下方支撑较强",
         "time": "2026-09-11 14:10:00",
         "source": "21世纪经济报道",
         "direction": "negative",
         "matched": [
           "关税"
         ]
+      },
+      {
+        "level": "high",
+        "label": "重要事件",
+        "title": "年内定增募资排行榜：6家公司募资超百亿元",
+        "time": "2026-09-16 10:22:00",
+        "source": "证券时报网",
+        "direction": "neutral",
+        "matched": [
+          "定增"
+        ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "A股科技、有色、石化，罕见一同回撤，机构火线解读：海外扰动所致，无需恐慌其利率影响；国内中长期逻辑未改，关注业绩验证",
+        "time": "2026-09-11 20:22:56",
+        "source": "中新经纬",
+        "direction": "neutral",
+        "matched": [
+          "有色"
+        ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "有色金属ETF华夏（516650）近10日合计吸金1.6亿元",
+        "time": "2026-09-15 14:45:59",
+        "source": "每日经济新闻",
+        "direction": "neutral",
+        "matched": [
+          "有色"
+        ]
       }
     ],
     "002050": [
       {
+        "level": "high",
+        "label": "重要事件",
+        "title": "A股股票回购一览：21家公司披露回购进展",
+        "time": "2026-09-16 07:35:03",
+        "source": "第一财经",
+        "direction": "positive",
+        "matched": [
+          "回购"
+        ]
+      },
+      {
         "level": "medium",
         "label": "一般动态",
-        "title": "<em>2</em>73家公司获海外机构调研",
+        "title": "273家公司获海外机构调研",
         "time": "2026-09-07 17:44:00",
         "source": "证券时报网",
         "direction": "neutral",
@@ -1226,42 +1314,32 @@
       {
         "level": "medium",
         "label": "一般动态",
-        "title": "<em>22</em>1家公司获海外机构调研",
+        "title": "221家公司获海外机构调研",
         "time": "2026-09-09 16:22:00",
         "source": "证券时报网",
         "direction": "neutral",
         "matched": [
           "机构调研"
         ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "2026年上半年人形机器人产业链景气度上行，中证机器人指数估值处于历史低位",
+        "time": "2026-09-15 14:31:01",
+        "source": "每日经济新闻",
+        "direction": "neutral",
+        "matched": [
+          "机器人",
+          "人形机器人"
+        ]
       }
     ],
     "002594": [
       {
-        "level": "high",
-        "label": "重要事件",
-        "title": "丰田合资板块先行，一汽广汽重组打响“十五五”汽车整合第一枪",
-        "time": "2026-09-15 15:43:26",
-        "source": "第一财经",
-        "direction": "neutral",
-        "matched": [
-          "重组"
-        ]
-      },
-      {
         "level": "medium",
         "label": "一般动态",
-        "title": "11<em>0</em>家公司获海外机构调研",
-        "time": "2026-09-14 16:40:00",
-        "source": "证券时报网",
-        "direction": "neutral",
-        "matched": [
-          "机构调研"
-        ]
-      },
-      {
-        "level": "medium",
-        "label": "一般动态",
-        "title": "<em>209</em>家公司获机构调研（附名单）",
+        "title": "209家公司获机构调研（附名单）",
         "time": "2026-09-15 09:02:00",
         "source": "证券时报网",
         "direction": "neutral",
@@ -1272,12 +1350,45 @@
       {
         "level": "medium",
         "label": "一般动态",
-        "title": "【风口研报】量产节点渐近与多项国标立项共振  固态电池商业化进程有望加速",
-        "time": "2026-09-15 15:10:00",
-        "source": "东方财富研究中心",
-        "direction": "positive",
+        "title": "海外机构调研股名单 广合科技最受关注",
+        "time": "2026-09-15 16:32:00",
+        "source": "证券时报网",
+        "direction": "neutral",
         "matched": [
-          "研报"
+          "机构调研"
+        ]
+      },
+      {
+        "level": "medium",
+        "label": "一般动态",
+        "title": "193家公司获机构调研（附名单）",
+        "time": "2026-09-16 09:32:00",
+        "source": "证券时报网",
+        "direction": "neutral",
+        "matched": [
+          "机构调研"
+        ]
+      },
+      {
+        "level": "medium",
+        "label": "一般动态",
+        "title": "比亚迪腾势N8L纯电上市 搭载AI智能体“迪迪虾”",
+        "time": "2026-09-16 13:42:00",
+        "source": "证券日报",
+        "direction": "neutral",
+        "matched": [
+          "上市"
+        ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "特朗普称愿与伊谈判，要收“护航补偿”；美股半导体板块重挫；苹果回应iPhone 18 Pro“破发”；比亚迪高管：燃油车已无未来丨每经早参",
+        "time": "2026-09-15 05:58:16",
+        "source": "每日经济新闻",
+        "direction": "neutral",
+        "matched": [
+          "比亚迪"
         ]
       }
     ],
@@ -1306,18 +1417,130 @@
         "matched": [
           "机构调研"
         ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "晶盛机电：2026年第二次临时股东会决议公告",
+        "time": "2026-09-15 20:31:00",
+        "source": "证券日报",
+        "direction": "neutral",
+        "matched": [
+          "晶盛"
+        ]
+      }
+    ],
+    "300442": [
+      {
+        "level": "critical",
+        "label": "重大风险",
+        "title": "已向公安机关报案并获立案侦查！60亿出境游概念股孙公司遭合同诈骗2695万元|盘后公告集锦",
+        "time": "2026-09-15 20:30:17",
+        "source": "财联社",
+        "direction": "negative",
+        "matched": [
+          "立案"
+        ]
+      },
+      {
+        "level": "high",
+        "label": "重要事件",
+        "title": "上证早知道｜300442，10亿元加码前沿科技；688608，拟启动回购",
+        "time": "2026-09-16 06:51:46",
+        "source": "上海证券报",
+        "direction": "positive",
+        "matched": [
+          "回购"
+        ]
+      },
+      {
+        "level": "medium",
+        "label": "一般动态",
+        "title": "9月15日晚间上市公司利好消息一览(附名单)",
+        "time": "2026-09-15 20:35:07",
+        "source": "东方财富研究中心",
+        "direction": "neutral",
+        "matched": [
+          "上市"
+        ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "润泽科技：拟10亿元参与投资厦门时代深远创业投资基金",
+        "time": "2026-09-15 20:33:00",
+        "source": "证券时报网",
+        "direction": "neutral",
+        "matched": [
+          "润泽"
+        ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "润泽科技拟出资10亿元参与设立创投基金 投资方向覆盖人工智能、具身智能等领域",
+        "time": "2026-09-15 22:15:39",
+        "source": "央广财经",
+        "direction": "neutral",
+        "matched": [
+          "润泽"
+        ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "润泽科技成立智能科技发展公司",
+        "time": "2026-09-16 11:29:27",
+        "source": "人民财讯",
+        "direction": "neutral",
+        "matched": [
+          "润泽"
+        ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "央广财评|算力网建设迎关键期 算力“建得好”更要“用得好”",
+        "time": "2026-09-16 15:01:11",
+        "source": "央广财经",
+        "direction": "neutral",
+        "matched": [
+          "算力"
+        ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "AI数据中心800VDC入口之争",
+        "time": "2026-09-16 16:05:04",
+        "source": "新财富",
+        "direction": "neutral",
+        "matched": [
+          "数据中心"
+        ]
       }
     ],
     "301308": [
       {
         "level": "high",
         "label": "重要事件",
-        "title": "<em>30</em>股特大单净流入资金超2亿元",
-        "time": "2026-09-14 16:54:00",
+        "title": "年内定增募资排行榜：6家公司募资超百亿元",
+        "time": "2026-09-16 10:22:00",
         "source": "证券时报网",
-        "direction": "positive",
+        "direction": "neutral",
         "matched": [
-          "大单"
+          "定增"
+        ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "博实结：存储芯片价格波动对公司影响有限，已建立有效价格传导机制并实施战略性备货",
+        "time": "2026-09-16 16:11:00",
+        "source": "南方财经网",
+        "direction": "neutral",
+        "matched": [
+          "存储芯片"
         ]
       }
     ],
@@ -1325,7 +1548,7 @@
       {
         "level": "high",
         "label": "重要事件",
-        "title": "<em>柏诚股份</em>：在手订单均按工期安排和节奏顺利推进中",
+        "title": "柏诚股份：在手订单均按工期安排和节奏顺利推进中",
         "time": "2026-08-31 20:03:00",
         "source": "南方财经网",
         "direction": "positive",
@@ -1343,6 +1566,39 @@
         "matched": [
           "订单"
         ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "柏诚股份：每股派0.05元，股权登记日为9月18日",
+        "time": "2026-09-14 17:33:00",
+        "source": "南方财经网",
+        "direction": "neutral",
+        "matched": [
+          "柏诚"
+        ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "柏诚股份：2026年半年度权益分派实施公告",
+        "time": "2026-09-14 19:26:00",
+        "source": "证券日报",
+        "direction": "neutral",
+        "matched": [
+          "柏诚"
+        ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "柏诚股份：将实施中期10派0.5元 股权登记日为9月18日",
+        "time": "2026-09-15 09:14:00",
+        "source": "上海证券报·中国证券网",
+        "direction": "neutral",
+        "matched": [
+          "柏诚"
+        ]
       }
     ],
     "601600": [
@@ -1356,18 +1612,51 @@
         "matched": [
           "增持"
         ]
+      },
+      {
+        "level": "high",
+        "label": "重要事件",
+        "title": "【主力动向】净流入9连阳！红利质量ETF招商(159209)强势翻红，生益科技纳入富时A50，山金国际回购注销！",
+        "time": "2026-09-16 14:10:05",
+        "source": "界面新闻",
+        "direction": "positive",
+        "matched": [
+          "回购"
+        ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "有色金属行业9月8日资金流向日报",
+        "time": "2026-09-08 17:31:00",
+        "source": "证券时报网",
+        "direction": "neutral",
+        "matched": [
+          "有色"
+        ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "AI基础设施建设仍在加速，把握“算力金属”行情选哪个ETF？铜占比超32%的有色ETF景顺(560290)跟踪指数估值处相对低位",
+        "time": "2026-09-16 10:00:00",
+        "source": "界面新闻",
+        "direction": "neutral",
+        "matched": [
+          "有色"
+        ]
       }
     ],
     "688795": [
       {
-        "level": "high",
-        "label": "重要事件",
-        "title": "沐曦股份下周解禁<em>68</em>亿 机构大幅浮盈 会否重演摩尔线程解禁日表现？",
-        "time": "2026-09-13 14:42:58",
-        "source": "第一财经",
-        "direction": "negative",
+        "level": "medium",
+        "label": "一般动态",
+        "title": "万亿巨头获5次首次覆盖，东兴证券近6月推荐成功率居首丨券商评级观察",
+        "time": "2026-09-16 14:42:00",
+        "source": "21世纪经济报道",
+        "direction": "neutral",
         "matched": [
-          "解禁"
+          "评级"
         ]
       }
     ],
@@ -1382,15 +1671,26 @@
         "matched": [
           "评级"
         ]
+      },
+      {
+        "level": "medium",
+        "label": "板块事件",
+        "title": "苹果市值重夺全球“王座” 港股消费电子板块强势反弹",
+        "time": "2026-07-29 14:50:05",
+        "source": "财联社",
+        "direction": "neutral",
+        "matched": [
+          "消费电子"
+        ]
       }
     ],
     "00700": [
       {
         "level": "high",
         "label": "重要事件",
-        "title": "港股公告精选｜大唐新能源前8月发电量同比跌约一成 天域半导体拟回购不超过1<em>0</em>%H股",
-        "time": "2026-09-14 21:24:00",
-        "source": "财联社",
+        "title": "腾讯控股(00700.HK)连续22日回购，累计回购947.30万股",
+        "time": "2026-09-15 23:00:00",
+        "source": "证券时报网",
         "direction": "positive",
         "matched": [
           "回购"
@@ -1399,9 +1699,44 @@
       {
         "level": "high",
         "label": "重要事件",
-        "title": "85家港股公司出手回购（9月14日）",
-        "time": "2026-09-15 09:02:00",
+        "title": "港股股票回购一览：96只个股获公司回购",
+        "time": "2026-09-16 09:03:50",
+        "source": "第一财经",
+        "direction": "positive",
+        "matched": [
+          "回购"
+        ]
+      },
+      {
+        "level": "high",
+        "label": "重要事件",
+        "title": "96家港股公司回购 腾讯控股回购1.01亿港元",
+        "time": "2026-09-16 09:34:00",
         "source": "证券时报网",
+        "direction": "positive",
+        "matched": [
+          "回购"
+        ]
+      },
+      {
+        "level": "high",
+        "label": "重要事件",
+        "title": "腾讯百度小米齐回购，恒生互联网ETF华夏（513330）近10日“吸金”12.9亿元",
+        "time": "2026-09-16 11:35:00",
+        "source": "21世纪经济报道",
+        "direction": "positive",
+        "matched": [
+          "回购"
+        ]
+      }
+    ],
+    "09988": [
+      {
+        "level": "high",
+        "label": "重要事件",
+        "title": "腾讯百度小米齐回购，恒生互联网ETF华夏（513330）近10日“吸金”12.9亿元",
+        "time": "2026-09-16 11:35:00",
+        "source": "21世纪经济报道",
         "direction": "positive",
         "matched": [
           "回购"

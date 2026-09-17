@@ -1,14 +1,14 @@
 [
   {
     "type": "AI安全监管",
-    "level": "medium",
+    "level": "high",
     "keywords": [
       "AI安全"
     ],
-    "first_news": "软件ETF鹏华(560790)、云计算ETF鹏华(159739)标的指数均涨近1%，<em>AI安全</em>问题浮现，网络<em>安全</em>概念大幅高开",
-    "latest_news": "软件ETF鹏华(560790)、云计算ETF鹏华(159739)标的指数均涨近1%，<em>AI安全</em>问题浮现，网络<em>安全</em>概念大幅高开",
-    "latest_time": "2026-09-14",
-    "count": 4,
+    "first_news": "9月16日股市避雷针",
+    "latest_news": "9月16日股市避雷针",
+    "latest_time": "2026-09-16 08:18:32",
+    "count": 1,
     "impact_paths": [
       {
         "sectors": [
@@ -67,10 +67,10 @@
         "expected": "negative",
         "logic": "监管收紧→合规成本上升→应用端承压",
         "confidence": 0.6,
-        "actual_change": 0.77,
+        "actual_change": -0.15,
         "verdict": "pending",
         "gap_score": 0,
-        "price": 13.15
+        "price": 12.92
       },
       {
         "code": "688795",
@@ -78,10 +78,10 @@
         "expected": "positive",
         "logic": "限制对华芯片出口→国产替代逻辑强化",
         "confidence": 0.75,
-        "actual_change": 2.31,
+        "actual_change": 3.88,
         "verdict": "confirmed",
-        "gap_score": 0.77,
-        "price": 354.0
+        "gap_score": 1,
+        "price": 364.0
       },
       {
         "code": "301308",
@@ -89,10 +89,10 @@
         "expected": "positive",
         "logic": "限制对华芯片出口→国产替代逻辑强化",
         "confidence": 0.75,
-        "actual_change": 0.57,
-        "verdict": "pending",
-        "gap_score": 0,
-        "price": 332.89
+        "actual_change": 3.18,
+        "verdict": "confirmed",
+        "gap_score": 1,
+        "price": 338.96
       },
       {
         "code": "300442",
@@ -100,15 +100,15 @@
         "expected": "neutral",
         "logic": "算力基建长期需求不变，短期情绪波动",
         "confidence": 0.5,
-        "actual_change": 1.48,
+        "actual_change": 2.74,
         "verdict": "deviated",
         "gap_score": 0,
-        "price": 61.14
+        "price": 62.58
       }
     ],
     "status": "tracking",
     "first_date": "2026-09-07",
-    "tracking_days": 9,
+    "tracking_days": 10,
     "trend_conclusion": "持续跟踪中，尚未形成明确信号",
     "timeline": [
       {
@@ -133,12 +133,12 @@
     "type": "新能源政策",
     "level": "medium",
     "keywords": [
-      "新能源"
+      "储能"
     ],
-    "first_news": "中证港股通人工智能应用指数发布日期提前丨港股早报",
-    "latest_news": "中证港股通人工智能应用指数发布日期提前丨港股早报",
-    "latest_time": "2026-09-15 09:26:26",
-    "count": 1,
+    "first_news": "马斯克再次暗示特斯拉与Sp<em>a</em>ceX或合并",
+    "latest_news": "马斯克再次暗示特斯拉与SpaceX或合并",
+    "latest_time": "2026-09-16 15:34:23",
+    "count": 2,
     "impact_paths": [
       {
         "sectors": [
@@ -157,10 +157,10 @@
         "expected": "positive",
         "logic": "政策支持→行业景气度提升",
         "confidence": 0.7,
-        "actual_change": 0.0,
-        "verdict": "pending",
-        "gap_score": 0,
-        "price": 39.61
+        "actual_change": 4.25,
+        "verdict": "confirmed",
+        "gap_score": 1,
+        "price": 40.93
       },
       {
         "code": "002594",
@@ -168,15 +168,15 @@
         "expected": "positive",
         "logic": "政策支持→行业景气度提升",
         "confidence": 0.7,
-        "actual_change": -0.46,
+        "actual_change": -0.4,
         "verdict": "pending",
         "gap_score": 0,
-        "price": 85.04
+        "price": 83.96
       }
     ],
     "status": "confirmed",
     "first_date": "2026-09-15",
-    "tracking_days": 1,
+    "tracking_days": 2,
     "trend_conclusion": "预期验证，趋势延续"
   },
   {
@@ -313,6 +313,112 @@
         "verdict": "pending",
         "gap_score": 0,
         "price": 9.22
+      }
+    ],
+    "status": "invalidated",
+    "first_date": "2026-09-15",
+    "tracking_days": 1,
+    "trend_conclusion": "预期被证伪，市场定价了其他逻辑"
+  },
+  {
+    "type": "地缘冲突",
+    "level": "medium",
+    "keywords": [
+      "地缘",
+      "中东"
+    ],
+    "first_news": "机会速递 | 欧洲天然气补库承压，气价中枢望抬升，油价走高，原油产业链龙头受益；三大巨头呼吁AI减速，软件板块担忧缓和；全球钨资源争夺升温，钨价两年飙涨9倍",
+    "latest_news": "机会速递 | 欧洲天然气补库承压，气价中枢望抬升，油价走高，原油产业链龙头受益；三大巨头呼吁AI减速，软件板块担忧缓和；全球钨资源争夺升温，钨价两年飙涨9倍",
+    "latest_time": "2026-09-15 15:48:53",
+    "count": 1,
+    "impact_paths": [
+      {
+        "sectors": [
+          "有色金属-铜",
+          "有色金属-铝"
+        ],
+        "direction": "positive",
+        "logic": "避险情绪→大宗商品涨价",
+        "confidence": 0.7
+      },
+      {
+        "sectors": [
+          "半导体-GPU",
+          "消费电子",
+          "互联网-平台",
+          "互联网-电商"
+        ],
+        "direction": "negative",
+        "logic": "风险偏好下降→科技股承压",
+        "confidence": 0.65
+      }
+    ],
+    "impacted_stocks": [
+      {
+        "code": "000878",
+        "sector": "有色金属-铜",
+        "expected": "positive",
+        "logic": "避险情绪→大宗商品涨价",
+        "confidence": 0.7,
+        "actual_change": -2.67,
+        "verdict": "invalidated",
+        "gap_score": -1,
+        "price": 16.38
+      },
+      {
+        "code": "601600",
+        "sector": "有色金属-铝",
+        "expected": "positive",
+        "logic": "避险情绪→大宗商品涨价",
+        "confidence": 0.7,
+        "actual_change": -0.97,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 9.2
+      },
+      {
+        "code": "688795",
+        "sector": "半导体-GPU",
+        "expected": "negative",
+        "logic": "风险偏好下降→科技股承压",
+        "confidence": 0.65,
+        "actual_change": 1.27,
+        "verdict": "contrarian",
+        "gap_score": 1,
+        "price": 350.4
+      },
+      {
+        "code": "00285",
+        "sector": "消费电子",
+        "expected": "negative",
+        "logic": "风险偏好下降→科技股承压",
+        "confidence": 0.65,
+        "actual_change": 0,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 0
+      },
+      {
+        "code": "00700",
+        "sector": "互联网-平台",
+        "expected": "negative",
+        "logic": "风险偏好下降→科技股承压",
+        "confidence": 0.65,
+        "actual_change": 0,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 0
+      },
+      {
+        "code": "09988",
+        "sector": "互联网-电商",
+        "expected": "negative",
+        "logic": "风险偏好下降→科技股承压",
+        "confidence": 0.65,
+        "actual_change": 0,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 0
       }
     ],
     "status": "invalidated",
