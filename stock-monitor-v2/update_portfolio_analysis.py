@@ -909,6 +909,20 @@ def save_report(report: Dict):
     """保存报告"""
     os.makedirs(REPORTS_DIR, exist_ok=True)
     
+    # 综合研判层：个股tactics+events、组合叙述（必须在保存前完成）
+    try:
+        from portfolio_synthesis import build_full_synthesis
+        from deep_analysis import get_tencent_kline
+        synthesis = build_full_synthesis(
+            report['stock_analyses'], report['summary'],
+            report['report_date'], fetch_kline_fn=get_tencent_kline
+        )
+        report['synthesis'] = synthesis
+        print('[OK] 综合研判层已生成')
+    except Exception as e:
+        print(f'[WARN] 综合研判层生成失败（不阻塞报告）: {e}')
+        report['synthesis'] = {}
+    
     with open(ANALYSIS_FILE, 'w', encoding='utf-8') as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     
