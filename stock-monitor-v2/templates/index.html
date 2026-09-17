@@ -2237,26 +2237,34 @@
                 });
         }
         
-        // 第一步：触发生成
+        // 第一步：触发生成（30s超时+重试2次，防浏览器连接队列堵塞导致假超时）
         title.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> 正在启动生成...';
         content.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-secondary);"><i class="fas fa-sync-alt fa-spin" style="font-size:2.5rem;margin-bottom:16px;display:block;color:#f5576c;"></i>正在采集最新行情、新闻、情绪数据...<br><small style="color:var(--text-muted);margin-top:8px;display:block;">生成在后台进行，完成后自动显示，约需 15-40 秒</small><div style="margin-top:20px;font-size:0.8rem;color:var(--text-muted);"><i class="fas fa-info-circle"></i> 包含：实时行情 + 财联社/东财新闻 + 市场情绪 + 事件追踪 + 解禁预警</div></div>';
         
-        API.DeepAnalysis.generate(stockCode)
-            .then(result => {
-                if (result.success) {
-                    if (result.status === 'generating') {
-                        // 已进入生成队列，开始轮询
-                        poll();
+        function tryGenerate(attempt) {
+            API.DeepAnalysis.generate(stockCode)
+                .then(result => {
+                    if (result.success) {
+                        if (result.status === 'generating' || result.status === 'queued') {
+                            poll();
+                        } else {
+                            showError('服务响应异常: ' + JSON.stringify(result));
+                        }
                     } else {
-                        showError('服务响应异常: ' + JSON.stringify(result));
+                        showError('触发失败: ' + (result.error || '未知错误'));
                     }
-                } else {
-                    showError('触发失败: ' + (result.error || '未知错误'));
-                }
-            })
-            .catch(err => {
-                showError('请求失败: ' + err.message);
-            });
+                })
+                .catch(err => {
+                    if (attempt < 2) {
+                        // 第1次超时/失败，等3秒重试（服务器可能只是暂时忙）
+                        title.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> 第${attempt + 1}次尝试无响应，重试中...`;
+                        setTimeout(() => tryGenerate(attempt + 1), 3000);
+                    } else {
+                        showError('请求失败: ' + err.message + '（已重试2次，请检查服务器是否运行）');
+                    }
+                });
+        }
+        tryGenerate(0);
     }
     
     // 简单的Markdown转HTML

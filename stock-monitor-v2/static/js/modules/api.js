@@ -162,7 +162,7 @@ const DeepAnalysisAPI = {
     async generate(stockCode) {
         return apiFetch(`/api/deep-analysis/generate/${stockCode}`, {
             method: 'POST',
-            timeout: 15000
+            timeout: 30000
         });
     },
     

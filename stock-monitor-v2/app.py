@@ -765,9 +765,20 @@ def get_hot_sectors():
         })
 
 
+# ========== 新闻缓存（90秒TTL，防慢请求堵死浏览器连接） ==========
+_news_cache = {'data': None, 'time': 0}
+
 @app.route('/api/news')
 def get_news():
-    """获取结构化财联社新闻 (头条/题材/投资日历/持仓相关)"""
+    """获取结构化财联社新闻 (头条/题材/投资日历/持仓相关)
+    带90秒缓存：首次请求实时抓取（12-20s），后续请求直接返回缓存
+    解决：新闻接口是页面加载最慢的请求，长期占住浏览器连接导致其他请求排队超时"""
+    global _news_cache
+    import time as _t
+    now = _t.time()
+    if _news_cache['data'] and now - _news_cache['time'] < 90:
+        return jsonify(_news_cache['data'])
+    
     try:
         # 从用户持仓中提取相关板块
         from utils.news_data import get_stock_sectors
@@ -788,6 +799,8 @@ def get_news():
             limit=30,
             portfolio_sectors=list(portfolio_sectors)
         )
+        _news_cache['data'] = result
+        _news_cache['time'] = now
         return jsonify(result)
     except Exception as e:
         print(f"获取新闻失败: {e}")
@@ -862,8 +875,12 @@ def _load_emotion_sentiment():
     }
 
 def _trigger_emotion_scan():
-    """后台线程跑一次情绪扫描（不阻塞请求）"""
+    """后台线程跑一次情绪扫描（不阻塞请求）
+    用HEAVY_TASK_SEM串行化：另一个重任务在跑时直接跳过，避免GIL争抢饿死请求"""
     if _sentiment_scanning['active']:
+        return
+    if not HEAVY_TASK_SEM.acquire(blocking=False):
+        print('[Sentiment API] 跳过一次情绪扫描（其他重任务进行中）')
         return
     _sentiment_scanning['active'] = True
     
@@ -877,6 +894,7 @@ def _trigger_emotion_scan():
             print(f'[Sentiment API] 后台情绪扫描失败: {e}')
         finally:
             _sentiment_scanning['active'] = False
+            HEAVY_TASK_SEM.release()
     
     import threading
     threading.Thread(target=_scan, daemon=True).start()
@@ -901,8 +919,12 @@ def _maybe_refresh_sentiment(max_age_sec=1200):
 _event_scanning = {'active': False}
 
 def _trigger_event_scan():
-    """后台线程跑一次事件分析（财联社电报+东财新闻+板块归因），不阻塞请求"""
+    """后台线程跑一次事件分析（财联社电报+东财新闻+板块归因），不阻塞请求
+    用HEAVY_TASK_SEM串行化：另一个重任务在跑时直接跳过"""
     if _event_scanning['active']:
+        return
+    if not HEAVY_TASK_SEM.acquire(blocking=False):
+        print('[Event API] 跳过事件扫描（其他重任务进行中）')
         return
     _event_scanning['active'] = True
     
@@ -918,6 +940,7 @@ def _trigger_event_scan():
             print(f'[Event API] 后台事件分析失败: {e}')
         finally:
             _event_scanning['active'] = False
+            HEAVY_TASK_SEM.release()
     
     threading.Thread(target=_scan, daemon=True).start()
 
@@ -2545,7 +2568,10 @@ def get_deep_analysis(stock_code):
 # 盘中生成任务状态（内存 dict，重启后清空）
 GEN_STATUS = {}  # code -> {'status': 'queued'/'generating'/'done'/'error', 'started': ts, 'error': msg}
 GEN_SEMAPHORE = threading.Semaphore(2)  # 最多同时生成2只，其余排队，防止CPU打满请求饿死
-APP_VERSION = '3.3.2'
+# 全局重任务串行化：情绪扫描/事件扫描/类型补算同时只允许一个跑
+# 这些任务全是 akshare+pandas 重CPU活，并发跑会把 GIL 抢光导致请求超时
+HEAVY_TASK_SEM = threading.Semaphore(1)
+APP_VERSION = '3.3.3'
 import time as _time
 
 @app.route('/api/deep-analysis/generate/<stock_code>', methods=['POST'])
@@ -2581,10 +2607,7 @@ def generate_deep_analysis_single(stock_code):
             GEN_SEMAPHORE.acquire()
             try:
                 GEN_STATUS[stock_code] = {'status': 'generating', 'started': _time.time()}
-                # 情绪数据超20分钟则后台刷新（不阻塞，本次用现有数据，下次生成生效）
-                _maybe_refresh_sentiment()
-                # 事件数据超1小时则后台刷新（财联社电报+板块归因，同样不阻塞）
-                _maybe_refresh_events()
+                # 优先生成报告（用户在等），情绪/事件刷新放后面慢慢跑
                 from deep_analysis import generate_deep_report
                 report_content = generate_deep_report(stock)
                 
@@ -2597,6 +2620,10 @@ def generate_deep_analysis_single(stock_code):
                 
                 GEN_STATUS[stock_code] = {'status': 'done', 'finished': _time.time(), 'report_date': today}
                 print(f"[DeepAnalysis Generate] {stock_code} 盘中报告已生成")
+                
+                # 报告生成完后再刷新情绪/事件数据（HEAVY_TASK_SEM保证不与其他重任务并发）
+                _maybe_refresh_sentiment()
+                _maybe_refresh_events()
             except Exception as e:
                 import traceback
                 traceback.print_exc()
