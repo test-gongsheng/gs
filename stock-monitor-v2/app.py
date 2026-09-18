@@ -2630,9 +2630,8 @@ def generate_deep_analysis_single(stock_code):
                 GEN_STATUS[stock_code] = {'status': 'done', 'finished': _time.time(), 'report_date': today}
                 print(f"[DeepAnalysis Generate] {stock_code} 盘中报告已生成")
                 
-                # 报告生成完后再刷新情绪/事件数据（HEAVY_TASK_SEM保证不与其他重任务并发）
-                _maybe_refresh_sentiment()
-                _maybe_refresh_events()
+                # 不在这里触发情绪/事件刷新——127项事件扫描会饿死请求线程导致前端超时
+                # 情绪/事件数据由每日cron定时刷新，不阻塞用户交互路径
             except Exception as e:
                 import traceback
                 traceback.print_exc()
