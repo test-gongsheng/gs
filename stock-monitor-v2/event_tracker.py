@@ -1105,7 +1105,11 @@ def format_event_for_report(stock_code: str) -> List[str]:
             for ev, s, ev_date, _age in concept_all[:2]:
                 d2 = dir_cn.get(s.get('expected', 'neutral'), '中性')
                 t2 = ev_date.strftime('%Y-%m-%d') if ev_date else ''
-                lines.append(f"- 🔷 [{d2}·板块联动] 【{ev['type']}】{ev.get('latest_news', '')[:70]}")
+                # 清洗高亮标签；标题不含事件关键词时（靠正文误匹配）不展示标题
+                ev_title = (ev.get('latest_news', '') or '').replace('<em>', '').replace('</em>', '')
+                kw_hit = any(k in ev_title for k in (ev.get('keywords') or []))
+                title_part = f" {ev_title[:70]}" if (ev_title and kw_hit) else ''
+                lines.append(f"- 🔷 [{d2}·板块联动] 【{ev['type']}】{title_part}".rstrip())
                 lines.append(f"   传导逻辑：{s.get('logic', '')}")
                 if t2:
                     lines.append(f"   📅 {t2}")
