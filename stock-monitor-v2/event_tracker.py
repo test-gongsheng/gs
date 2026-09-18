@@ -123,6 +123,25 @@ EVENT_SECTOR_MAP = {
              'confidence': 0.5},
         ],
     },
+    '半导体扩产': {
+        'keywords': ['存储芯片', '存储器', 'HBM', 'DRAM', 'NAND', '长鑫', '长江存储',
+                     '存储涨价', '晶圆厂', '晶圆代工', '扩产', '洁净室', '洁净厂房',
+                     '半导体设备', '半导体投资', '先进封装', '封测'],
+        'impact_paths': [
+            {'sectors': ['半导体-存储'],
+             'direction': 'positive',
+             'logic': '存储景气上行→涨价+扩产，盈利改善',
+             'confidence': 0.8},
+            {'sectors': ['半导体设备与服务'],
+             'direction': 'positive',
+             'logic': '晶圆厂/存储扩产→洁净室与厂务工程需求→订单增长',
+             'confidence': 0.85},
+            {'sectors': ['半导体-GPU'],
+             'direction': 'positive',
+             'logic': '算力基建联动→国产芯片需求扩张',
+             'confidence': 0.6},
+        ],
+    },
     '解禁': {
         'keywords': ['解禁', '限售股', '首发原股东', '战略配售'],
         'impact_paths': [],  # 由解禁模块专门处理
@@ -136,7 +155,7 @@ EVENT_LEVELS = {
                  'score': 90},
     'high': {'keywords': ['监管', '立法', '出口管制', '降准', '降息', '解禁'],
              'score': 70},
-    'medium': {'keywords': ['发布', '上市', '收购', '合作', '突破'],
+    'medium': {'keywords': ['发布', '上市', '收购', '合作', '突破', '扩产', '涨价', '晶圆'],
                'score': 50},
 }
 
@@ -973,6 +992,36 @@ def format_event_for_report(stock_code: str) -> List[str]:
     
     # 个股级自动发现事件
     stock_evts = data.get('stock_events', {}).get(stock_code, [])
+
+    # 概念级事件（产业链联动）——新鲜度过滤后供行业原因注入
+    from datetime import datetime as _dt
+    def _parse_news_time(s):
+        if not s:
+            return None
+        s = s.strip()
+        for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d'):
+            try:
+                return _dt.strptime(s, fmt)
+            except ValueError:
+                pass
+        return None
+
+    _now = _dt.now()
+    EVENT_STALE_DAYS = 7   # 7天无更新即过期
+    EVENT_DEAD_DAYS = 3    # 超3天且无跟进/已证伪也清理
+    concept_all = []       # (event, stock_impact, date, age) 新鲜概念事件
+    for ev in data.get('events', []):
+        ev_date = _parse_news_time(ev.get('latest_time', ''))
+        age_days = (_now - ev_date).days if ev_date else 0
+        if ev_date and age_days > EVENT_STALE_DAYS:
+            continue
+        if ev_date and age_days > EVENT_DEAD_DAYS:
+            if ev.get('count', 1) <= 1 or '证伪' in (ev.get('trend_conclusion') or ''):
+                continue
+        for s in ev.get('impacted_stocks', []):
+            if s['code'] == stock_code:
+                concept_all.append((ev, s, ev_date, age_days))
+                break  # 每个事件对本股只取一条传导逻辑
     
     # 异动原因标签（东财风格：标签云）
     tags = []
@@ -1001,7 +1050,7 @@ def format_event_for_report(stock_code: str) -> List[str]:
         lines.append('**业绩亮点：** ' + ' ｜ '.join(fin_lines[1:]))
         lines.append('')
     
-    if stock_evts:
+    if stock_evts or concept_all:
         level_icon = {'critical': '🔴', 'high': '🟠', 'medium': '⚪'}
         dir_cn = {'positive': '偏利好', 'negative': '偏利空', 'neutral': '中性'}
         n_crit = sum(1 for e in stock_evts if e['level'] == 'critical')
@@ -1011,7 +1060,8 @@ def format_event_for_report(stock_code: str) -> List[str]:
         if n_crit: summary_bits.append(f'{n_crit}项重大风险')
         if n_neg: summary_bits.append(f'{n_neg}项偏利空')
         if n_pos: summary_bits.append(f'{n_pos}项偏利好')
-        lines.append(f"**近期重大动态（自动发现{len(stock_evts)}项**：{'、'.join(summary_bits) if summary_bits else '均为中性'}）**")
+        if stock_evts:
+            lines.append(f"**近期重大动态（自动发现{len(stock_evts)}项**：{'、'.join(summary_bits) if summary_bits else '均为中性'}）**")
         
         # 行业原因 vs 公司原因 分组——按内容判定，不按来源通道
         # 公司动作关键词：合作/适配/订单/签署/中标/发布/回购/减持/解禁/财报等
@@ -1039,7 +1089,7 @@ def format_event_for_report(stock_code: str) -> List[str]:
         sector_evts = [e for e in stock_evts if is_sector_event(e)]
         company_evts = [e for e in stock_evts if not is_sector_event(e)]
         
-        if sector_evts:
+        if sector_evts or concept_all:
             lines.append('')
             lines.append('**行业原因：**')
             for i, e in enumerate(sector_evts[:4], 1):
@@ -1051,6 +1101,14 @@ def format_event_for_report(stock_code: str) -> List[str]:
                     lines.append(f"   {e['content'][:260]}")
                 if t:
                     lines.append(f"   📅 {t} · {e.get('source', '')}")
+            # 板块联动：概念级产业链事件注入（如存储扩产→洁净室工程需求）
+            for ev, s, ev_date, _age in concept_all[:2]:
+                d2 = dir_cn.get(s.get('expected', 'neutral'), '中性')
+                t2 = ev_date.strftime('%Y-%m-%d') if ev_date else ''
+                lines.append(f"- 🔷 [{d2}·板块联动] 【{ev['type']}】{ev.get('latest_news', '')[:70]}")
+                lines.append(f"   传导逻辑：{s.get('logic', '')}")
+                if t2:
+                    lines.append(f"   📅 {t2}")
         
         if company_evts:
             lines.append('')
@@ -1069,42 +1127,8 @@ def format_event_for_report(stock_code: str) -> List[str]:
         lines.append('**近期重大动态：** 近5日无重大事件信号，走势主要由板块和市场情绪驱动')
         lines.append('')
 
-    # 相关事件
-    related = []
-    for ev in data.get('events', []):
-        for s in ev.get('impacted_stocks', []):
-            if s['code'] == stock_code:
-                related.append((ev, s))
-
-    # 事件新鲜度：超过7天无新消息的概念事件不再显示（避免旧宏观主题每天拿当日股价假验证）
-    from datetime import datetime as _dt
-    def _parse_news_date(s):
-        if not s:
-            return None
-        s = s.strip()
-        for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d'):
-            try:
-                return _dt.strptime(s, fmt)
-            except ValueError:
-                pass
-        return None
-
-    _now = _dt.now()
-    EVENT_STALE_DAYS = 7  # 7天无更新即过期
-    EVENT_DEAD_DAYS = 3   # 超过3天且无量价验证价值的事件也清理（无后续跟进/已证伪）
-
-    related_fresh = []
-    for ev, s in related:
-        ev_date = _parse_news_date(ev.get('latest_time', ''))
-        age_days = (_now - ev_date).days if ev_date else 0
-        # 过期事件：跳过不显示
-        if ev_date and age_days > EVENT_STALE_DAYS:
-            continue
-        # 死事件：超3天 且 (仅1条孤闻 或 整体结论已证伪) → 不再追踪
-        if ev_date and age_days > EVENT_DEAD_DAYS:
-            if ev.get('count', 1) <= 1 or '证伪' in (ev.get('trend_conclusion') or ''):
-                continue
-        related_fresh.append((ev, s, ev_date, age_days))
+    # 风险类概念事件进入追踪视图（联动类已注入行业原因，不重复展示）
+    related_fresh = [(ev, s, d, a) for ev, s, d, a in concept_all if s.get('expected') == 'negative']
 
     if related_fresh:
         lines.append(f"**重大事件追踪：**")
