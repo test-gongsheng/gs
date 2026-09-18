@@ -2527,6 +2527,8 @@ def get_deep_analysis(stock_code):
         
         # 如果今天的报告不存在，尝试找最近的报告
         report_content = None
+        actual_date = today
+        is_stale = False
         if os.path.exists(report_file):
             with open(report_file, 'r', encoding='utf-8') as f:
                 report_content = f.read()
@@ -2540,13 +2542,20 @@ def get_deep_analysis(stock_code):
                 files.sort(key=os.path.getmtime, reverse=True)
                 with open(files[0], 'r', encoding='utf-8') as f:
                     report_content = f.read()
+                # 提取文件名中的实际日期
+                fname = os.path.basename(files[0])
+                date_match = re.search(r'(\d{4}-\d{2}-\d{2})', fname)
+                if date_match:
+                    actual_date = date_match.group(1)
+                is_stale = (actual_date != today)
         
         if report_content:
             return jsonify({
                 'success': True,
                 'stock_code': stock_code,
                 'stock_name': stock.get('name', ''),
-                'report_date': today,
+                'report_date': actual_date,
+                'is_stale': is_stale,
                 'content': report_content,
                 'has_report': True
             })
