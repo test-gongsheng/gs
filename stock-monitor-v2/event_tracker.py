@@ -1022,6 +1022,32 @@ def format_event_for_report(stock_code: str) -> List[str]:
             if s['code'] == stock_code:
                 concept_all.append((ev, s, ev_date, age_days))
                 break  # 每个事件对本股只取一条传导逻辑
+
+    # Layer-LLM：每日AI关联分析结果（curated_impacts.json，由定时任务生成）
+    curated_path = os.path.join(DATA_DIR, 'curated_impacts.json')
+    if os.path.exists(curated_path):
+        try:
+            with open(curated_path, encoding='utf-8') as f:
+                curated = json.load(f)
+            if curated.get('date') == _now.strftime('%Y-%m-%d'):
+                seen_themes = {ev.get('type') for ev, _, _, _ in concept_all}
+                for imp in curated.get('impacts', []):
+                    theme = imp.get('theme', 'AI关联')
+                    if theme in seen_themes:
+                        continue
+                    for st in imp.get('stocks', []):
+                        if st.get('code') == stock_code:
+                            ev_like = {'type': theme,
+                                       'latest_news': imp.get('news_title', ''),
+                                       'keywords': [theme]}
+                            s_like = {'expected': st.get('direction', 'neutral'),
+                                      'logic': st.get('logic', '')}
+                            concept_all.append((ev_like, s_like,
+                                                _parse_news_time(imp.get('news_time', '')), 0))
+                            seen_themes.add(theme)
+                            break
+        except Exception:
+            pass
     
     # 异动原因标签（东财风格：标签云）
     tags = []

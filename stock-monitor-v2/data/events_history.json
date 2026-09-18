@@ -1,14 +1,14 @@
 [
   {
     "type": "AI安全监管",
-    "level": "high",
+    "level": "medium",
     "keywords": [
       "AI安全"
     ],
-    "first_news": "英国国王查尔斯三世将与英伟达、Open<em>AI</em>高管讨论<em>AI安全</em>",
-    "latest_news": "四连板中新赛克：<em>AI安全</em>产品营收占比不超2%",
-    "latest_time": "2026-09-15 20:15:37",
-    "count": 13,
+    "first_news": "亚马逊首次公开回应<em>AI安全</em>争论：<em>安全</em>与发展并非二选一",
+    "latest_news": "<em>AI安全</em>论战白热化：Met<em>a</em> CEO扎克伯格公开反对“<em>AI</em>减速论”",
+    "latest_time": "2026-09-16 15:46:48",
+    "count": 16,
     "impact_paths": [
       {
         "sectors": [
@@ -67,10 +67,10 @@
         "expected": "negative",
         "logic": "监管收紧→合规成本上升→应用端承压",
         "confidence": 0.6,
-        "actual_change": -0.85,
-        "verdict": "pending",
-        "gap_score": 0,
-        "price": 12.81
+        "actual_change": 1.64,
+        "verdict": "contrarian",
+        "gap_score": 1,
+        "price": 13.02
       },
       {
         "code": "688795",
@@ -78,10 +78,10 @@
         "expected": "positive",
         "logic": "限制对华芯片出口→国产替代逻辑强化",
         "confidence": 0.75,
-        "actual_change": 8.68,
+        "actual_change": 3.65,
         "verdict": "confirmed",
         "gap_score": 1,
-        "price": 395.58
+        "price": 410.0
       },
       {
         "code": "301308",
@@ -89,10 +89,10 @@
         "expected": "positive",
         "logic": "限制对华芯片出口→国产替代逻辑强化",
         "confidence": 0.75,
-        "actual_change": -1.14,
-        "verdict": "invalidated",
-        "gap_score": -1,
-        "price": 335.09
+        "actual_change": 3.54,
+        "verdict": "confirmed",
+        "gap_score": 1,
+        "price": 346.96
       },
       {
         "code": "300442",
@@ -100,16 +100,16 @@
         "expected": "neutral",
         "logic": "算力基建长期需求不变，短期情绪波动",
         "confidence": 0.5,
-        "actual_change": -0.54,
-        "verdict": "as_expected",
+        "actual_change": 1.69,
+        "verdict": "deviated",
         "gap_score": 0,
-        "price": 62.24
+        "price": 63.29
       }
     ],
-    "status": "invalidated",
+    "status": "contrarian",
     "first_date": "2026-09-07",
-    "tracking_days": 11,
-    "trend_conclusion": "预期被证伪，市场定价了其他逻辑",
+    "tracking_days": 12,
+    "trend_conclusion": "出现预期差，存在隐藏逻辑在对冲，值得深挖",
     "timeline": [
       {
         "date": "2026-09-07",
@@ -322,14 +322,14 @@
   },
   {
     "type": "地缘冲突",
-    "level": "medium",
+    "level": "high",
     "keywords": [
       "中东"
     ],
-    "first_news": "日韩股市收盘，日股上涨，韩股下跌",
-    "latest_news": "“需求+库存+价格”三维共振，制冷剂市场中长期景气向好，化工ETF博时(158006)有望持续受益",
-    "latest_time": "2026-09-17 13:57:20",
-    "count": 2,
+    "first_news": "西部货物进<em>出口</em>经海南可享受免退税红利",
+    "latest_news": "西部货物进<em>出口</em>经海南可享受免退税红利",
+    "latest_time": "2026-09-18 12:06:20",
+    "count": 1,
     "impact_paths": [
       {
         "sectors": [
@@ -359,10 +359,10 @@
         "expected": "positive",
         "logic": "避险情绪→大宗商品涨价",
         "confidence": 0.7,
-        "actual_change": -2.97,
-        "verdict": "invalidated",
-        "gap_score": -1,
-        "price": 16.33
+        "actual_change": 2.57,
+        "verdict": "confirmed",
+        "gap_score": 0.8566666666666666,
+        "price": 16.75
       },
       {
         "code": "601600",
@@ -370,10 +370,10 @@
         "expected": "positive",
         "logic": "避险情绪→大宗商品涨价",
         "confidence": 0.7,
-        "actual_change": -1.72,
-        "verdict": "invalidated",
-        "gap_score": -1,
-        "price": 9.15
+        "actual_change": 2.07,
+        "verdict": "confirmed",
+        "gap_score": 0.69,
+        "price": 9.35
       },
       {
         "code": "688795",
@@ -381,10 +381,10 @@
         "expected": "negative",
         "logic": "风险偏好下降→科技股承压",
         "confidence": 0.65,
-        "actual_change": 8.7,
+        "actual_change": 3.65,
         "verdict": "contrarian",
         "gap_score": 1,
-        "price": 395.68
+        "price": 410.0
       },
       {
         "code": "00285",
@@ -420,10 +420,10 @@
         "price": 0
       }
     ],
-    "status": "invalidated",
+    "status": "contrarian",
     "first_date": "2026-09-15",
-    "tracking_days": 3,
-    "trend_conclusion": "预期被证伪，市场定价了其他逻辑"
+    "tracking_days": 4,
+    "trend_conclusion": "出现预期差，存在隐藏逻辑在对冲，值得深挖"
   },
   {
     "type": "芯片出口管制",
@@ -463,10 +463,10 @@
         "expected": "positive",
         "logic": "进口受限→国产替代加速",
         "confidence": 0.85,
-        "actual_change": -0.84,
-        "verdict": "pending",
-        "gap_score": 0,
-        "price": 23.64
+        "actual_change": 9.98,
+        "verdict": "confirmed",
+        "gap_score": 1,
+        "price": 26.0
       },
       {
         "code": "688795",
@@ -474,10 +474,10 @@
         "expected": "positive",
         "logic": "进口受限→国产替代加速",
         "confidence": 0.85,
-        "actual_change": 8.68,
+        "actual_change": 3.65,
         "verdict": "confirmed",
         "gap_score": 1,
-        "price": 395.58
+        "price": 410.0
       },
       {
         "code": "301308",
@@ -485,10 +485,10 @@
         "expected": "positive",
         "logic": "进口受限→国产替代加速",
         "confidence": 0.85,
-        "actual_change": -1.14,
-        "verdict": "invalidated",
-        "gap_score": -1,
-        "price": 335.09
+        "actual_change": 3.54,
+        "verdict": "confirmed",
+        "gap_score": 1,
+        "price": 346.96
       },
       {
         "code": "00285",
@@ -513,9 +513,86 @@
         "price": 0
       }
     ],
-    "status": "invalidated",
+    "status": "confirmed",
     "first_date": "2026-09-17",
+    "tracking_days": 2,
+    "trend_conclusion": "预期验证，趋势延续"
+  },
+  {
+    "type": "半导体扩产",
+    "level": "medium",
+    "keywords": [
+      "扩产",
+      "半导体设备"
+    ],
+    "first_news": "韩国<em>芯片出口</em>增长近两倍，创历史同期最高水平，科创半导体ETF华夏(588170)跟踪指数收跌0.59%",
+    "latest_news": "存储<em>芯片</em>概念表现活跃",
+    "latest_time": "2026-09-18 10:45:10",
+    "count": 2,
+    "impact_paths": [
+      {
+        "sectors": [
+          "半导体-存储"
+        ],
+        "direction": "positive",
+        "logic": "存储景气上行→涨价+扩产，盈利改善",
+        "confidence": 0.8
+      },
+      {
+        "sectors": [
+          "半导体设备与服务"
+        ],
+        "direction": "positive",
+        "logic": "晶圆厂/存储扩产→洁净室与厂务工程需求→订单增长",
+        "confidence": 0.85
+      },
+      {
+        "sectors": [
+          "半导体-GPU"
+        ],
+        "direction": "positive",
+        "logic": "算力基建联动→国产芯片需求扩张",
+        "confidence": 0.6
+      }
+    ],
+    "impacted_stocks": [
+      {
+        "code": "301308",
+        "sector": "半导体-存储",
+        "expected": "positive",
+        "logic": "存储景气上行→涨价+扩产，盈利改善",
+        "confidence": 0.8,
+        "actual_change": 3.54,
+        "verdict": "confirmed",
+        "gap_score": 1,
+        "price": 346.96
+      },
+      {
+        "code": "601133",
+        "sector": "半导体设备与服务",
+        "expected": "positive",
+        "logic": "晶圆厂/存储扩产→洁净室与厂务工程需求→订单增长",
+        "confidence": 0.85,
+        "actual_change": 9.98,
+        "verdict": "confirmed",
+        "gap_score": 1,
+        "price": 26.0
+      },
+      {
+        "code": "688795",
+        "sector": "半导体-GPU",
+        "expected": "positive",
+        "logic": "算力基建联动→国产芯片需求扩张",
+        "confidence": 0.6,
+        "actual_change": 3.65,
+        "verdict": "confirmed",
+        "gap_score": 1,
+        "price": 410.0
+      }
+    ],
+    "status": "confirmed",
+    "first_date": "2026-09-18",
     "tracking_days": 1,
-    "trend_conclusion": "预期被证伪，市场定价了其他逻辑"
+    "trend_conclusion": "预期验证，趋势延续"
   }
 ]
