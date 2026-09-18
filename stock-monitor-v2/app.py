@@ -2580,7 +2580,7 @@ GEN_SEMAPHORE = threading.Semaphore(2)  # 最多同时生成2只，其余排队�
 # 全局重任务串行化：情绪扫描/事件扫描/类型补算同时只允许一个跑
 # 这些任务全是 akshare+pandas 重CPU活，并发跑会把 GIL 抢光导致请求超时
 HEAVY_TASK_SEM = threading.Semaphore(1)
-APP_VERSION = '3.3.3'
+APP_VERSION = '3.3.4'
 import time as _time
 
 @app.route('/api/deep-analysis/generate/<stock_code>', methods=['POST'])
