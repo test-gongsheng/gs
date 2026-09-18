@@ -1076,15 +1076,47 @@ def format_event_for_report(stock_code: str) -> List[str]:
             if s['code'] == stock_code:
                 related.append((ev, s))
 
-    if related:
+    # 事件新鲜度：超过7天无新消息的概念事件不再显示（避免旧宏观主题每天拿当日股价假验证）
+    from datetime import datetime as _dt
+    def _parse_news_date(s):
+        if not s:
+            return None
+        s = s.strip()
+        for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d'):
+            try:
+                return _dt.strptime(s, fmt)
+            except ValueError:
+                pass
+        return None
+
+    _now = _dt.now()
+    EVENT_STALE_DAYS = 7  # 7天无更新即过期
+    EVENT_DEAD_DAYS = 3   # 超过3天且无量价验证价值的事件也清理（无后续跟进/已证伪）
+
+    related_fresh = []
+    for ev, s in related:
+        ev_date = _parse_news_date(ev.get('latest_time', ''))
+        age_days = (_now - ev_date).days if ev_date else 0
+        # 过期事件：跳过不显示
+        if ev_date and age_days > EVENT_STALE_DAYS:
+            continue
+        # 死事件：超3天 且 (仅1条孤闻 或 整体结论已证伪) → 不再追踪
+        if ev_date and age_days > EVENT_DEAD_DAYS:
+            if ev.get('count', 1) <= 1 or '证伪' in (ev.get('trend_conclusion') or ''):
+                continue
+        related_fresh.append((ev, s, ev_date, age_days))
+
+    if related_fresh:
         lines.append(f"**重大事件追踪：**")
-        for ev, s in related:
+        for ev, s, ev_date, age_days in related_fresh:
             status_icon = {
                 'confirmed': '✅',
                 'contrarian': '🔥',
                 'invalidated': '❌',
                 'tracking': '⏳',
             }.get(ev.get('status', ''), '⏳')
+
+            date_tag = f"📅{ev_date.strftime('%m-%d')} " if ev_date else ''
 
             expected_cn = {'positive': '预期利好', 'negative': '预期利空', 'neutral': '预期中性'}.get(s.get('expected'), '?')
             verdict_cn = {
@@ -1095,7 +1127,7 @@ def format_event_for_report(stock_code: str) -> List[str]:
                 'as_expected': '符合',
             }.get(s.get('verdict'), '?')
 
-            lines.append(f"- {status_icon} 【{ev['type']}】{expected_cn} → 实际{s.get('actual_change', 0):+.1f}% → {verdict_cn}")
+            lines.append(f"- {status_icon} {date_tag}【{ev['type']}】{expected_cn} → 实际{s.get('actual_change', 0):+.1f}% → {verdict_cn}")
             lines.append(f"  逻辑：{s.get('logic', '')}")
             if ev.get('trend_conclusion'):
                 lines.append(f"  结论：{ev['trend_conclusion']}")
