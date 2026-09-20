@@ -360,24 +360,52 @@ def enrich_events_with_fulltext(events: List[Dict], max_events: int = 6):
 
 
 # ========== 新闻采集 ==========
-def _fetch_akshare_with_timeout(timeout_sec=15) -> Optional[List[Dict]]:
-    """akshare调用带超时保护（防止卡死）
+# 主源：财联社（电报全量窗口 + 要闻精选，同源自编辑权重高）
+# 备用/兜底：东财搜索（原备用通道 + 5个持仓敏感主题补漏）
+CLS_TELEGRAPH_LIMIT = 300   # 电报滚动流窗口：拓宽以降低关键新闻被挤出窗口的概率
+CLS_IMPORTANT_LIMIT = 80    # 要闻精选条数
+
+
+def _fetch_akshare_with_timeout(timeout_sec=18) -> Optional[List[Dict]]:
+    """财联社采集（主源）：电报+要闻双通道，带超时保护
     signal.alarm只能在主线程用，后台线程改用线程join超时"""
     import threading as _td
     result = [None]
     def _call():
         try:
             import akshare as ak
-            df = ak.stock_info_global_cls(symbol="电报")
-            if df is not None and len(df) > 0:
-                news = []
-                for _, row in df.head(100).iterrows():
-                    news.append({
-                        'title': str(row.get('标题', '')),
-                        'content': str(row.get('内容', ''))[:500],
-                        'time': str(row.get('发布日期', '')),
-                        'source': '财联社',
-                    })
+            news = []
+            # 通道1：电报（滚动全量）
+            try:
+                df = ak.stock_info_global_cls(symbol="电报")
+                if df is not None and len(df) > 0:
+                    for _, row in df.head(CLS_TELEGRAPH_LIMIT).iterrows():
+                        news.append({
+                            'title': str(row.get('标题', '')),
+                            'content': str(row.get('内容', ''))[:500],
+                            'time': str(row.get('发布日期', '')),
+                            'source': '财联社',
+                        })
+            except Exception as e:
+                print(f'[财联社-电报] 失败: {e}')
+            # 通道2：要闻（同源自编辑精选，产业新闻密度更高）
+            try:
+                df2 = ak.stock_info_global_cls(symbol="要闻")
+                if df2 is not None and len(df2) > 0:
+                    seen = {n['title'] for n in news}
+                    for _, row in df2.head(CLS_IMPORTANT_LIMIT).iterrows():
+                        t = str(row.get('标题', ''))
+                        if t and t not in seen:
+                            seen.add(t)
+                            news.append({
+                                'title': t,
+                                'content': str(row.get('内容', ''))[:500],
+                                'time': str(row.get('发布日期', '')),
+                                'source': '财联社-要闻',
+                            })
+            except Exception as e:
+                print(f'[财联社-要闻] 失败(不影响电报通道): {e}')
+            if news:
                 result[0] = news
         except Exception as e:
             print(f'[财联社] akshare失败: {e}')
@@ -390,9 +418,10 @@ def _fetch_akshare_with_timeout(timeout_sec=15) -> Optional[List[Dict]]:
     return result[0]
 
 
-# ========== 主题补源 ==========
-# 财联社电报流是匀速滚动的大杂烩，产业链关键新闻（如长鑫扩产）可能被挤出采集窗口。
-# 用持仓敏感主题定向搜索东财作为补源，保证"半导体扩产"等主题始终有原材料。
+# ========== 主题补源（兜底，非主源） ==========
+# 财联社电报流是24小时匀速滚动的大杂烩（日均数百条），产业链关键新闻（如长鑫扩产）
+# 理论上仍可能恰好落在采集窗口之外。此层仅按5个持仓敏感主题做定向补漏，
+# 主源（财联社）命中时这些条目会因去重自然让位，不改变财联社的主要信源地位。
 THEME_TOPUP_KEYWORDS = ['长鑫', '长江存储', '存储芯片', '洁净室', '晶圆厂 扩产']
 
 
@@ -453,7 +482,7 @@ def fetch_cls_telegraph() -> List[Dict]:
     news = []
 
     # 方案1：akshare（15秒超时）
-    ak_news = _fetch_akshare_with_timeout(15)
+    ak_news = _fetch_akshare_with_timeout()
     if ak_news:
         print(f'[财联社] akshare获取 {len(ak_news)} 条')
         return _theme_topup(ak_news)
