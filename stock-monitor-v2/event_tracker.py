@@ -210,6 +210,14 @@ STOCK_CONCEPT_TAGS = {
     '09988':  ['阿里', '阿里云', '通义', '电商', 'AI应用'],
 }
 
+# 泛行业标签：匹配到这些词 alone 不足以把"同业公司个股快讯"挂到本股
+# （如"深圳瑞捷：半导体洁净室业务..."对江波龙无直接意义）
+GENERIC_CONCEPT_TAGS = {'半导体', '新能源', '算力', 'AI应用', '有色', '消费电子',
+                        '机器人', '存储', '芯片', 'AI', '汽车', '电动车', '大模型'}
+
+# 个股事件保留时长：超期清理，防旧闻无限累积
+STOCK_EVENT_TTL_DAYS = 14
+
 
 def extract_concept_events(stock_code: str, concept_tags: List[str], news_pool: List[Dict]) -> List[Dict]:
     """板块级事件归因：新闻标题含概念标签时，归到对应持仓股。
@@ -222,6 +230,11 @@ def extract_concept_events(stock_code: str, concept_tags: List[str], news_pool: 
             continue
         matched = [kw for kw in concept_tags if kw in title]
         if not matched:
+            continue
+        # 泛标签同业守卫：标题为"某公司：..."式个股快讯时，仅命中泛行业词不挂接本股
+        # （同业公司公告对本股无直接意义；真相关的产业链逻辑走概念联动通道呈现）
+        if re.match(r'^[^:：\s]{2,8}[:：]', title) and \
+                not any(kw not in GENERIC_CONCEPT_TAGS for kw in matched):
             continue
         seen_titles.add(title)
         # 跳过纯行情播报类（与个股级一致的降噪规则）
@@ -457,8 +470,9 @@ def _load_topup_keywords() -> List[str]:
         return _TOPUP_STATIC_FALLBACK
 
 
-def _eastmoney_search(kw: str, page_size: int = 15) -> List[Dict]:
-    """东财资讯搜索单关键词，返回标准化新闻列表"""
+def _eastmoney_search(kw: str, page_size: int = 15, max_age_days: int = 7) -> List[Dict]:
+    """东财资讯搜索单关键词，返回标准化新闻列表
+    仅保留 max_age_days 天内的新闻——补漏通道只捞近期遗漏，不做考古"""
     items = []
     try:
         encoded = requests.utils.quote(json.dumps({
@@ -475,11 +489,20 @@ def _eastmoney_search(kw: str, page_size: int = 15) -> List[Dict]:
             articles = inner.get('list', []) if isinstance(inner, dict) else inner
             for art in (articles if isinstance(articles, list) else []):
                 title = art.get('title', '')
+                art_date = art.get('date', '')
+                # 日期过滤：丢弃过旧新闻（防8月旧闻混入当日池）
+                if title and art_date:
+                    try:
+                        art_dt = datetime.strptime(art_date[:19], '%Y-%m-%d %H:%M:%S')
+                        if (datetime.now() - art_dt).days > max_age_days:
+                            continue
+                    except ValueError:
+                        pass
                 if title:
                     items.append({
                         'title': title,
                         'content': (art.get('content', '') or '')[:500],
-                        'time': art.get('date', ''),
+                        'time': art_date,
                         'source': art.get('mediaName', '东方财富'),
                         'code': art.get('code', ''),
                     })
@@ -932,6 +955,12 @@ def run_event_analysis(stocks: List[Dict]) -> Dict:
         'news_count': len(news),
     }
 
+    # 个股事件TTL清理：仅保留14天内事件，防旧闻无限累积（渲染层另有10天兜底）
+    _ttl_cut = (datetime.now() - timedelta(days=STOCK_EVENT_TTL_DAYS)).strftime('%Y-%m-%d')
+    for _code in list(stock_events.keys()):
+        stock_events[_code] = [e for e in stock_events[_code]
+                               if (e.get('time', '') or '')[:10] >= _ttl_cut]
+
     # 保存完整报告
     filepath = os.path.join(DATA_DIR, 'event_impact.json')
     with open(filepath, 'w', encoding='utf-8') as f:
@@ -1082,6 +1111,8 @@ def format_event_for_report(stock_code: str) -> List[str]:
     # 个股级自动发现事件
     stock_evts = data.get('stock_events', {}).get(stock_code, [])
 
+    stock_evts = data.get('stock_events', {}).get(stock_code, [])
+
     # 概念级事件（产业链联动）——新鲜度过滤后供行业原因注入
     from datetime import datetime as _dt
     def _parse_news_time(s):
@@ -1096,6 +1127,12 @@ def format_event_for_report(stock_code: str) -> List[str]:
         return None
 
     _now = _dt.now()
+
+    # 个股事件渲染期时效兜底：仅展示10天内事件（源头另有14天TTL清理，双保险）
+    _render_cutoff = _now - timedelta(days=10)
+    stock_evts = [e for e in (stock_evts or [])
+                  if (_parse_news_time((e.get('time') or '')[:19]) or _now) >= _render_cutoff]
+
     EVENT_STALE_DAYS = 7   # 7天无更新即过期
     EVENT_DEAD_DAYS = 3    # 超3天且无跟进/已证伪也清理
     concept_all = []       # (event, stock_impact, date, age) 新鲜概念事件

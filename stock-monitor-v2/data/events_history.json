@@ -5,10 +5,10 @@
     "keywords": [
       "AI安全"
     ],
-    "first_news": "亚马逊首次公开回应<em>AI安全</em>争论：<em>安全</em>与发展并非二选一",
-    "latest_news": "<em>AI安全</em>争论愈演愈烈 呼吁减速的<em>A</em>nthrop<em>i</em>c为何仍在扩张算力？",
-    "latest_time": "2026-09-17 18:57:34",
-    "count": 10,
+    "first_news": "<em>A</em>nthrop<em>i</em>c聘请埃森哲开展<em>AI安全</em>测试",
+    "latest_news": "让<em>大模型</em>“边<em>生</em>成边识别”风险，蚂蚁<em>开源大模型</em>“安全护栏”",
+    "latest_time": "2026-09-14 18:03:19",
+    "count": 11,
     "impact_paths": [
       {
         "sectors": [
@@ -135,10 +135,10 @@
     "keywords": [
       "新能源"
     ],
-    "first_news": "专家：2026年中国汽车<em>出口</em>增量有望创历史新高",
-    "latest_news": "专家：2026年中国汽车<em>出口</em>增量有望创历史新高",
-    "latest_time": "2026-09-18 21:17:09",
-    "count": 1,
+    "first_news": "关于自动驾驶<em>大模型</em>、动力电池！新能<em>源</em>汽车政策有新动向",
+    "latest_news": "【早报】时隔3年多 美联储重启加息；美股、原油、黄金全线跳水；多家A股公司 披露回购进展",
+    "latest_time": "2026-09-17 07:12:25",
+    "count": 17,
     "impact_paths": [
       {
         "sectors": [
@@ -176,7 +176,7 @@
     ],
     "status": "confirmed",
     "first_date": "2026-09-15",
-    "tracking_days": 5,
+    "tracking_days": 6,
     "trend_conclusion": "预期验证，趋势延续"
   },
   {
@@ -522,13 +522,12 @@
     "type": "半导体扩产",
     "level": "medium",
     "keywords": [
-      "扩产",
       "半导体设备"
     ],
-    "first_news": "韩国<em>芯片出口</em>增长近两倍，创历史同期最高水平，科创半导体ETF华夏(588170)跟踪指数收跌0.59%",
-    "latest_news": "金智科技(002090.SZ)：中标国家电网、南方电网及上海华力项目，合计金额约1.62亿元",
-    "latest_time": "2026-09-16 17:39:44",
-    "count": 55,
+    "first_news": "全链条涨价！<em>半导体设备</em>供不应求",
+    "latest_news": "<em>半导体设备</em>ETF国泰（159516）<em>标</em>的指数大涨近4%，凸显配置价值",
+    "latest_time": "2026-09-18 15:53:42",
+    "count": 11,
     "impact_paths": [
       {
         "sectors": [
