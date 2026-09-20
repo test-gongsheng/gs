@@ -627,7 +627,13 @@ def format_sentiment_for_report(stock_code: str) -> List[str]:
                      f"广度/涨停统计非最终收盘数据")
         lines.append('')
     data_date = data.get('date', '')
-    date_tag = f"（数据时间：{data_date}）" if data_date else ''
+    gen_at = data.get('generated_at', '')
+    sess = data.get('session', '')
+    if gen_at:
+        sess_tag = '收盘扫描' if sess == 'close' else '盘中扫描'
+        date_tag = f"（数据时间：{gen_at} · {sess_tag}）"
+    else:
+        date_tag = f"（数据时间：{data_date}）" if data_date else ''
     lines.append(f"**市场情绪周期：** {data['stage']}（评分 {data['sentiment_score']}/100，"
                  f"较昨日{data.get('score_change', 0):+.0f}分）{date_tag}")
     lines.append(f"- {data['stage_advice']}")

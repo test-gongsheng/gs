@@ -876,7 +876,8 @@ def _load_emotion_sentiment():
 
 def _trigger_emotion_scan():
     """后台线程跑一次情绪扫描（不阻塞请求）
-    用HEAVY_TASK_SEM串行化：另一个重任务在跑时直接跳过，避免GIL争抢饿死请求"""
+    用HEAVY_TASK_SEM串行化：另一个重任务在跑时直接跳过，避免GIL争抢饿死请求
+    扫描完成后自动调度今日报告重生成（与事件扫描防抖合并，只跑一次）"""
     if _sentiment_scanning['active']:
         return
     if not HEAVY_TASK_SEM.acquire(blocking=False):
@@ -890,6 +891,7 @@ def _trigger_emotion_scan():
             data = load_data()
             generate_sentiment_report(data.get('stocks', []))
             print('[Sentiment API] 后台情绪扫描完成')
+            _schedule_report_regen()
         except Exception as e:
             print(f'[Sentiment API] 后台情绪扫描失败: {e}')
         finally:
@@ -900,7 +902,8 @@ def _trigger_emotion_scan():
     threading.Thread(target=_scan, daemon=True).start()
 
 def _maybe_refresh_sentiment(max_age_sec=1200):
-    """情绪数据超龄则后台异步刷新（不阻塞，本次生成仍用现有数据，下次生效）"""
+    """情绪数据超龄则后台异步刷新（不阻塞，本次生成仍用现有数据，下次生效）
+    仅在交易时段自动触发；非交易时段收盘数据天然有效，不浪费扫描"""
     try:
         import os as _os, time as _t
         f = _os.path.join(_os.path.dirname(__file__), 'data', 'market_sentiment.json')
@@ -909,10 +912,71 @@ def _maybe_refresh_sentiment(max_age_sec=1200):
             return
         age = _t.time() - _os.path.getmtime(f)
         if age > max_age_sec:
+            if not _is_trading_hours_now():
+                return
             print(f'[DeepAnalysis] 情绪数据已{age/60:.0f}分钟未更新，触后台刷新')
             _trigger_emotion_scan()
     except Exception:
         pass
+
+
+def _is_trading_hours_now() -> bool:
+    """当前是否处于A股交易时段（周一~周五 09:00-16:05）"""
+    now = datetime.now()
+    if now.weekday() >= 5:
+        return False
+    mins = now.hour * 60 + now.minute
+    return 9 * 60 <= mins <= 16 * 60 + 5
+
+
+# ========== 扫描完成 → 今日报告自动重生成（实时闭环核心） ==========
+_report_regen_state = {'timer': None, 'running': False, 'last_done': ''}
+
+
+def _schedule_report_regen(delay: int = 8):
+    """扫描完成后调度今日报告重生成（防抖：情绪+事件扫描完成只触发一次）"""
+    import threading
+    old = _report_regen_state.get('timer')
+    if old and old.is_alive():
+        old.cancel()
+    t = threading.Timer(delay, _regenerate_today_reports)
+    t.daemon = True
+    _report_regen_state['timer'] = t
+    t.start()
+
+
+def _regenerate_today_reports():
+    """基于最新扫描数据后台重生成今日深度报告（不阻塞请求）"""
+    if _report_regen_state['running']:
+        return
+    if not HEAVY_TASK_SEM.acquire(blocking=False):
+        print('[ReportRegen] 跳过今日报告重生成（其他重任务进行中），30秒后重试')
+        _schedule_report_regen(delay=30)
+        return
+    _report_regen_state['running'] = True
+
+    def _run():
+        try:
+            today = datetime.now().strftime('%Y-%m-%d')
+            print(f'[ReportRegen] 基于最新扫描数据重生成今日({today})报告...')
+            result = subprocess.run(
+                [sys.executable, 'deep_analysis.py'],
+                cwd=os.path.dirname(__file__),
+                capture_output=True, text=True, timeout=600
+            )
+            if result.returncode == 0:
+                _report_regen_state['last_done'] = today
+                print('[ReportRegen] ✅ 今日报告重生成完成，页面刷新即可见最新数据')
+            else:
+                print(f'[ReportRegen] ⚠️ 重生成失败: {result.stderr[:300]}')
+        except Exception as e:
+            print(f'[ReportRegen] 出错: {e}')
+        finally:
+            _report_regen_state['running'] = False
+            HEAVY_TASK_SEM.release()
+
+    import threading
+    threading.Thread(target=_run, daemon=True).start()
 
 
 # ========== 事件引擎后台刷新（与情绪扫描同模式） ==========
@@ -936,6 +1000,7 @@ def _trigger_event_scan():
             report = run_event_analysis(_d.get('stocks', []))
             print(f"[Event API] 后台事件分析完成: {report.get('news_count', 0)}条新闻, "
                   f"{len(report.get('stock_events', {}))}只股票有事件")
+            _schedule_report_regen()
         except Exception as e:
             print(f'[Event API] 后台事件分析失败: {e}')
         finally:
@@ -955,6 +1020,8 @@ def _maybe_refresh_events(max_age_sec=3600):
             return
         age = _t.time() - _os.path.getmtime(f)
         if age > max_age_sec:
+            if not _is_trading_hours_now():
+                return
             print(f'[DeepAnalysis] 事件数据已{age/60:.0f}分钟未更新，触后台刷新')
             _trigger_event_scan()
     except Exception:
@@ -970,9 +1037,11 @@ def get_sentiment():
         if _sentiment_api_cache['data'] and now - _sentiment_api_cache['time'] < SENTIMENT_API_TTL:
             return jsonify(_sentiment_api_cache['data'])
         
-        # 2. 读新引擎数据文件
+        # 2. 读新引擎数据文件（返回前检查新鲜度：交易时段超龄自动后台刷新+重生成报告）
         result = _load_emotion_sentiment()
         if result:
+            _maybe_refresh_sentiment()
+            _maybe_refresh_events()
             _sentiment_api_cache['data'] = result
             _sentiment_api_cache['time'] = now
             return jsonify(result)
@@ -989,6 +1058,43 @@ def get_sentiment():
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/data-freshness')
+def data_freshness():
+    """数据新鲜度状态。前端页面加载时查询：
+    交易时段数据超龄会自动触发后台扫描+今日报告重生成，前端随后自动刷新页面"""
+    try:
+        import os as _os, time as _t, glob as _glob
+        now = datetime.now()
+        today = now.strftime('%Y-%m-%d')
+
+        def _age_min(path):
+            return round((_t.time() - _os.path.getmtime(path)) / 60) if _os.path.exists(path) else None
+
+        base = _os.path.join(_os.path.dirname(__file__), 'data')
+        emotion_age = _age_min(_os.path.join(base, 'market_sentiment.json'))
+        events_age = _age_min(_os.path.join(base, 'event_impact.json'))
+        reports_n = len(_glob.glob(_os.path.join(
+            _os.path.dirname(__file__), 'reports', f'deep_analysis_*_{today}.md')))
+        scanning = bool(_report_regen_state.get('running')
+                        or _sentiment_scanning.get('active')
+                        or _event_scanning.get('active'))
+        # 页面打开即触发新鲜度检查（交易时段才会真扫描）
+        _maybe_refresh_sentiment()
+        _maybe_refresh_events()
+        return jsonify({
+            'success': True,
+            'trading_hours': _is_trading_hours_now(),
+            'emotion_age_min': emotion_age,
+            'events_age_min': events_age,
+            'today_reports': reports_n,
+            'scanning': scanning,
+            'stale': (emotion_age is not None and emotion_age > 20 and _is_trading_hours_now()),
+            'time': now.strftime('%H:%M:%S'),
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 
 # ========== 南向资金 API ==========
 from utils.southbound_capital import (
@@ -2505,6 +2611,9 @@ def get_deep_analysis(stock_code):
     """获取指定股票的深度分析报告（Markdown格式）
     轻量路径：直读文件不抢全局锁，保证高负载下也能快速返回"""
     try:
+        # 打开报告页时顺带检查数据新鲜度（交易时段超龄→自动后台扫描并重生成今日报告）
+        _maybe_refresh_sentiment()
+        _maybe_refresh_events()
         # 轻量读 stocks.json（不抢 data_file_lock）
         stock = None
         try:

@@ -3305,6 +3305,35 @@ document.addEventListener('DOMContentLoaded', () => {
     // 直接调用初始化（已经在 DOMContentLoaded 回调中）
     console.log('[DOMContentLoaded] 页面加载完成，开始初始化...');
     init();
+
+    // ===== 实时数据新鲜度闭环 =====
+    // 交易时段打开页面时若数据超龄，后端 /api/data-freshness 会触发后台扫描+今日报告重生成；
+    // 前端每30秒轮询一次，检测到数据已新鲜且后台任务结束 → 自动刷新页面（无需手动操作）
+    (function freshnessAutoReload() {
+        let wasStale = false;
+        let polls = 0;
+        function poll() {
+            fetch('/api/data-freshness').then(r => r.json()).then(d => {
+                if (!d.success || !d.trading_hours) return;
+                polls++;
+                const stale = d.stale || d.today_reports === 0;
+                if (stale && !wasStale) {
+                    wasStale = true;
+                    console.log('[Freshness] 数据超龄，后端后台生成中', d);
+                    if (typeof showNotification === 'function') {
+                        showNotification('检测到数据非最新，正在后台生成（约3-4分钟），完成后自动刷新页面', 'info');
+                    }
+                }
+                if (wasStale && !d.scanning && d.emotion_age_min !== null && d.emotion_age_min <= 5 && d.today_reports > 0) {
+                    console.log('[Freshness] 最新数据已就绪，自动刷新页面');
+                    window.location.reload();
+                    return;
+                }
+                if (polls < 20) setTimeout(poll, 30000);
+            }).catch(() => {});
+        }
+        setTimeout(poll, 15000);
+    })();
     // 数据导入功能在import.js中初始化 - v2
     console.log('Checking initDataImport...', typeof initDataImport);
     if (typeof initDataImport === 'function') {
