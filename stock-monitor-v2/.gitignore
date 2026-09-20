@@ -41,3 +41,18 @@ __pycache__/
 *.pyc
 reports/*.json
 portfolio_analysis_latest.json
+
+# ===== 生成产物（禁止走git同步——本地实例自行生成，各自权威） =====
+# 情绪/事件/新闻池：由情绪引擎、事件引擎、每日16:35全链路任务实时生成
+data/market_sentiment.json
+data/event_impact.json
+data/events_history.json
+data/sentiment_history.json
+data/position_tactics_hist.json
+data/news_pool_*.json
+data/southbound.db
+data/southbound/southbound_history.json
+# 报告与日志：由每日任务/页面实时生成
+reports/*.md
+reports/*.log
+reports/portfolio_analysis_latest.json
