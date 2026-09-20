@@ -1,9 +1,11 @@
 {
-  "date": "2026-09-18",
+  "date": "2026-09-20",
+  "generated_at": "2026-09-20 10:29",
+  "session": "close",
   "sentiment_score": 57.7,
   "stage": "发酵期",
   "stage_advice": "连板梯队成形，主线清晰，赚钱效应扩散。策略：积极参与主线",
-  "score_change": 7.2,
+  "score_change": 0.0,
   "market_breadth": {
     "up": 48,
     "down": 5,

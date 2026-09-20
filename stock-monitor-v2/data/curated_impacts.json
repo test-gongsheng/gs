@@ -1,89 +1,110 @@
 {
- "date": "2026-09-18",
- "impacts": [
-  {
-   "theme": "AI安全治理争论升温",
-   "news_title": "亚马逊首次公开回应AI安全争论：安全与发展并非二选一",
-   "news_time": "2026-09-18 01:21",
-   "summary": "亚马逊、Palantir等相继就AI安全表态，叠加OpenAI模型越界事件披露，AI监管收紧预期升温，全球AI板块情绪波动加大。",
-   "direction": "negative",
-   "stocks": [
+  "date": "2026-09-18",
+  "impacts": [
     {
-     "code": "300442",
-     "direction": "negative",
-     "logic": "AI安全监管争论→市场对海外云厂商资本开支持续性产生分歧→智算中心(AIDC)租赁需求预期承压，润泽作为批发型IDC直接暴露于AI资本开支情绪。",
-     "confidence": "medium"
+      "theme": "AI安全治理争论升温",
+      "news_title": "亚马逊首次公开回应AI安全争论：安全与发展并非二选一",
+      "news_time": "2026-09-18 01:21",
+      "summary": "亚马逊、Palantir等相继就AI安全表态，叠加OpenAI模型越界事件披露，AI监管收紧预期升温，全球AI板块情绪波动加大。",
+      "direction": "negative",
+      "stocks": [
+        {
+          "code": "300442",
+          "direction": "negative",
+          "logic": "AI安全监管争论→市场对海外云厂商资本开支持续性产生分歧→智算中心(AIDC)租赁需求预期承压，润泽作为批发型IDC直接暴露于AI资本开支情绪。",
+          "confidence": "medium"
+        },
+        {
+          "code": "09988",
+          "direction": "negative",
+          "logic": "全球AI治理趋严情绪→阿里云AI资本开支与算力扩张节奏或受估值层面压制，短期情绪面偏空。",
+          "confidence": "medium"
+        }
+      ]
     },
     {
-     "code": "09988",
-     "direction": "negative",
-     "logic": "全球AI治理趋严情绪→阿里云AI资本开支与算力扩张节奏或受估值层面压制，短期情绪面偏空。",
-     "confidence": "medium"
-    }
-   ]
-  },
-  {
-   "theme": "英伟达指引芯片销量翻倍",
-   "news_title": "英伟达预计明年芯片销量将翻倍，AI芯片、国产芯片等板块概念走强",
-   "news_time": "2026-09-18 10:40",
-   "summary": "英伟达预计明年芯片销量翻倍，确认AI算力需求超级周期延续，算力基建产业链景气度获锚定。",
-   "direction": "positive",
-   "stocks": [
-    {
-     "code": "300442",
-     "direction": "positive",
-     "logic": "英伟达销量指引翻倍→云厂商AI资本开支高景气延续→批发型AIDC智算中心上架率与扩容需求有保障。",
-     "confidence": "medium"
+      "theme": "英伟达指引芯片销量翻倍",
+      "news_title": "英伟达预计明年芯片销量将翻倍，AI芯片、国产芯片等板块概念走强",
+      "news_time": "2026-09-18 10:40",
+      "summary": "英伟达预计明年芯片销量翻倍，确认AI算力需求超级周期延续，算力基建产业链景气度获锚定。",
+      "direction": "positive",
+      "stocks": [
+        {
+          "code": "300442",
+          "direction": "positive",
+          "logic": "英伟达销量指引翻倍→云厂商AI资本开支高景气延续→批发型AIDC智算中心上架率与扩容需求有保障。",
+          "confidence": "medium"
+        },
+        {
+          "code": "00285",
+          "direction": "positive",
+          "logic": "全球AI服务器出货放量→比亚迪电子AI服务器组装与数据中心部件订单弹性释放。",
+          "confidence": "medium"
+        },
+        {
+          "code": "002050",
+          "direction": "positive",
+          "logic": "算力基建扩张→数据中心散热密度提升→液冷需求放量，三花智控数据中心液冷业务受益。",
+          "confidence": "medium"
+        }
+      ]
     },
     {
-     "code": "00285",
-     "direction": "positive",
-     "logic": "全球AI服务器出货放量→比亚迪电子AI服务器组装与数据中心部件订单弹性释放。",
-     "confidence": "medium"
+      "theme": "华为昇腾960迭代超预期",
+      "news_title": "昇腾960迭代超预期催化芯片板块大涨 广发基金芯片系列ETF交投活跃",
+      "news_time": "2026-09-18 13:24",
+      "summary": "华为昇腾960迭代进度超预期，国产AI算力链情绪显著升温。",
+      "direction": "positive",
+      "stocks": [
+        {
+          "code": "688795",
+          "direction": "positive",
+          "logic": "昇腾迭代超预期→国产AI算力主线确定性增强→摩尔线程作为国产GPU核心标的，订单预期与估值情绪共振。",
+          "confidence": "medium"
+        },
+        {
+          "code": "300442",
+          "direction": "positive",
+          "logic": "国产算力芯片成熟度提升→国产智算集群建设加速→对IDC机房与算力基础设施的配套需求增加。",
+          "confidence": "medium"
+        }
+      ]
     },
     {
-     "code": "002050",
-     "direction": "positive",
-     "logic": "算力基建扩张→数据中心散热密度提升→液冷需求放量，三花智控数据中心液冷业务受益。",
-     "confidence": "medium"
-    }
-   ]
-  },
-  {
-   "theme": "华为昇腾960迭代超预期",
-   "news_title": "昇腾960迭代超预期催化芯片板块大涨 广发基金芯片系列ETF交投活跃",
-   "news_time": "2026-09-18 13:24",
-   "summary": "华为昇腾960迭代进度超预期，国产AI算力链情绪显著升温。",
-   "direction": "positive",
-   "stocks": [
-    {
-     "code": "688795",
-     "direction": "positive",
-     "logic": "昇腾迭代超预期→国产AI算力主线确定性增强→摩尔线程作为国产GPU核心标的，订单预期与估值情绪共振。",
-     "confidence": "medium"
+      "theme": "华为芯片研发进展强化国产替代",
+      "news_title": "华为公布芯片研发最新进展，科创芯片设计指数涨超3.5%，天弘科创芯片设计ETF联接基金一键布局芯片龙头",
+      "news_time": "2026-09-18 14:15",
+      "summary": "华为披露芯片研发最新进展，芯片自主可控逻辑再获强化。",
+      "direction": "positive",
+      "stocks": [
+        {
+          "code": "688795",
+          "direction": "positive",
+          "logic": "华为芯片研发突破→国产芯片自主可控情绪强化→国产GPU替代空间与政策支持预期升温，摩尔线程直接受益。",
+          "confidence": "medium"
+        }
+      ]
     },
     {
-     "code": "300442",
-     "direction": "positive",
-     "logic": "国产算力芯片成熟度提升→国产智算集群建设加速→对IDC机房与算力基础设施的配套需求增加。",
-     "confidence": "medium"
+      "theme": "长鑫存储进军NAND闪存",
+      "news_title": "长鑫存储被曝将进军闪存：计划北京新厂建NAND研发生产线（路透社）",
+      "news_time": "2026-09-18 14:30",
+      "summary": "路透社援引三名知情人士：国内DRAM龙头长鑫存储正筹备进入NAND Flash市场，计划在北京新建工厂内设立NAND研发生产线并成立研究院；若计划推进，长鑫产能版图继续扩张，晶圆厂建设与厂务工程需求同步增长。",
+      "direction": "positive",
+      "stocks": [
+        {
+          "code": "601133",
+          "direction": "positive",
+          "logic": "长鑫扩产(北京NAND新产线+DRAM持续扩产)→晶圆厂建设需求→洁净室系统集成与厂务工程订单→柏诚股份订单预期增强",
+          "confidence": "high"
+        },
+        {
+          "code": "301308",
+          "direction": "positive",
+          "logic": "长鑫进军NAND+存储产能扩张→国产存储供应链景气→存储模组需求受益",
+          "confidence": "medium"
+        }
+      ]
     }
-   ]
-  },
-  {
-   "theme": "华为芯片研发进展强化国产替代",
-   "news_title": "华为公布芯片研发最新进展，科创芯片设计指数涨超3.5%，天弘科创芯片设计ETF联接基金一键布局芯片龙头",
-   "news_time": "2026-09-18 14:15",
-   "summary": "华为披露芯片研发最新进展，芯片自主可控逻辑再获强化。",
-   "direction": "positive",
-   "stocks": [
-    {
-     "code": "688795",
-     "direction": "positive",
-     "logic": "华为芯片研发突破→国产芯片自主可控情绪强化→国产GPU替代空间与政策支持预期升温，摩尔线程直接受益。",
-     "confidence": "medium"
-    }
-   ]
-  }
- ]
+  ]
 }

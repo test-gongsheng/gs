@@ -534,8 +534,13 @@ def generate_sentiment_report(stocks: List[Dict]) -> Dict:
     stock_sentiments = analyze_portfolio_sentiment(stocks)
 
     # 汇总
+    _now = datetime.now()
+    # 盘中/收盘标记：工作日15:05前扫描为盘中快照（广度/涨停统计不完整），否则视为收盘数据
+    _session = 'intraday' if (_now.weekday() < 5 and _now.strftime('%H:%M') < '15:05') else 'close'
     report = {
         'date': today,
+        'generated_at': _now.strftime('%Y-%m-%d %H:%M'),
+        'session': _session,
         'sentiment_score': score,
         'stage': stage,
         'stage_advice': advice,
@@ -588,6 +593,14 @@ def _load_latest_sentiment() -> Optional[Dict]:
     return None
 
 
+def _is_after_close_now() -> bool:
+    """当前时刻能否取到收盘数据（周末=能，工作日15:05后=能）"""
+    now = datetime.now()
+    if now.weekday() >= 5:
+        return True
+    return now.strftime('%H:%M') >= '15:05'
+
+
 def format_sentiment_for_report(stock_code: str) -> List[str]:
     """格式化个股情绪分析，供deep_analysis.py引用"""
     filepath = os.path.join(DATA_DIR, 'market_sentiment.json')
@@ -598,6 +611,21 @@ def format_sentiment_for_report(stock_code: str) -> List[str]:
         data = json.load(f)
 
     lines = []
+    # 新鲜度守卫：盘中快照不得进入收盘后生成的报告——盘后/周末重扫一次（行情接口即返回最近收盘数据）
+    if data.get('session') == 'intraday' and _is_after_close_now():
+        print(f"[情绪] 检测到盘中快照({data.get('generated_at','?')})，盘后重扫...")
+        try:
+            from deep_analysis import load_portfolio
+            fresh = generate_sentiment_report(load_portfolio())
+            if fresh:
+                data = fresh
+        except Exception as e:
+            print(f'[情绪] 盘后重扫失败，沿用现有数据: {e}')
+
+    if data.get('session') == 'intraday':
+        lines.append(f"> ⚠️ 情绪数据为盘中快照（{data.get('generated_at', '时间未知')}），"
+                     f"广度/涨停统计非最终收盘数据")
+        lines.append('')
     data_date = data.get('date', '')
     date_tag = f"（数据时间：{data_date}）" if data_date else ''
     lines.append(f"**市场情绪周期：** {data['stage']}（评分 {data['sentiment_score']}/100，"

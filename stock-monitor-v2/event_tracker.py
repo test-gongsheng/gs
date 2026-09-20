@@ -201,7 +201,7 @@ STOCK_CONCEPT_TAGS = {
     '300316': ['半导体设备', '碳化硅', '光伏设备', '晶盛'],
     '300442': ['算力', '数据中心', 'IDC', '液冷', '润泽'],
     '301308': ['存储芯片', '江波龙', 'DRAM', 'NAND', '半导体'],
-    '601133': ['半导体', '洁净室', '中芯', '晶圆厂', '柏诚'],
+    '601133': ['半导体', '洁净室', '中芯', '长鑫', '长江存储', '存储芯片', '晶圆厂', '柏诚'],
     '601600': ['铝业', '氧化铝', '有色', '中铝'],
     '000878': ['铜业', '电解铜', '有色', '云铜'],
     '000559': ['汽车零部件', '线控底盘', '机器人关节', '万向'],
@@ -390,11 +390,65 @@ def _fetch_akshare_with_timeout(timeout_sec=15) -> Optional[List[Dict]]:
     return result[0]
 
 
+# ========== 主题补源 ==========
+# 财联社电报流是匀速滚动的大杂烩，产业链关键新闻（如长鑫扩产）可能被挤出采集窗口。
+# 用持仓敏感主题定向搜索东财作为补源，保证"半导体扩产"等主题始终有原材料。
+THEME_TOPUP_KEYWORDS = ['长鑫', '长江存储', '存储芯片', '洁净室', '晶圆厂 扩产']
+
+
+def _eastmoney_search(kw: str, page_size: int = 15) -> List[Dict]:
+    """东财资讯搜索单关键词，返回标准化新闻列表"""
+    items = []
+    try:
+        encoded = requests.utils.quote(json.dumps({
+            "uid": "", "keyword": kw, "type": ["cmsArticleWebOld"],
+            "client": "web", "clientVersion": "curr", "clientType": "web",
+            "param": {"cmsArticleWebOld": {"searchScope": "default", "sort": "default", "pageIndex": 1, "pageSize": page_size}}
+        }, ensure_ascii=False))
+        url = f'https://search-api-web.eastmoney.com/search/jsonp?cb=jQuery&param={encoded}'
+        resp = _session.get(url, timeout=8)
+        match = re.search(r'jQuery\((.*)\)', resp.text)
+        if match:
+            data = json.loads(match.group(1))
+            inner = data.get('result', {}).get('cmsArticleWebOld', [])
+            articles = inner.get('list', []) if isinstance(inner, dict) else inner
+            for art in (articles if isinstance(articles, list) else []):
+                title = art.get('title', '')
+                if title:
+                    items.append({
+                        'title': title,
+                        'content': (art.get('content', '') or '')[:500],
+                        'time': art.get('date', ''),
+                        'source': art.get('mediaName', '东方财富'),
+                        'code': art.get('code', ''),
+                    })
+    except Exception as e:
+        print(f'[东财] "{kw}" 失败: {e}')
+    return items
+
+
+def _theme_topup(news: List[Dict]) -> List[Dict]:
+    """主题补源：按持仓敏感主题定向搜索，合并去重进新闻池"""
+    seen = {n.get('title', '') for n in news}
+    extra = []
+    for kw in THEME_TOPUP_KEYWORDS:
+        for item in _eastmoney_search(kw):
+            if item['title'] and item['title'] not in seen:
+                seen.add(item['title'])
+                extra.append(item)
+        time.sleep(0.3)
+    if extra:
+        print(f'[主题补源] 补充 {len(extra)} 条产业链相关新闻')
+        news.extend(extra)
+    return news
+
+
 def fetch_cls_telegraph() -> List[Dict]:
     """
     财联社电报采集
     方案1：akshare（带超时保护）
     方案2：东财新闻搜索（备用）
+    两路结果都会做主题补源
     """
     news = []
 
@@ -402,44 +456,17 @@ def fetch_cls_telegraph() -> List[Dict]:
     ak_news = _fetch_akshare_with_timeout(15)
     if ak_news:
         print(f'[财联社] akshare获取 {len(ak_news)} 条')
-        return ak_news
+        return _theme_topup(ak_news)
 
     # 方案2：东财新闻搜索（多关键词）
-    keywords = ['AI安全', '芯片出口', '解禁', '降准降息', '人工智能监管']
-    for kw in keywords[:3]:  # 限制关键词数量避免太慢
-        try:
-            encoded = requests.utils.quote(json.dumps({
-                "uid": "", "keyword": kw, "type": ["cmsArticleWebOld"],
-                "client": "web", "clientVersion": "curr", "clientType": "web",
-                "param": {"cmsArticleWebOld": {"searchScope": "default", "sort": "default", "pageIndex": 1, "pageSize": 20}}
-            }, ensure_ascii=False))
-            url = f'https://search-api-web.eastmoney.com/search/jsonp?cb=jQuery&param={encoded}'
-            resp = _session.get(url, timeout=8)
-            match = re.search(r'jQuery\((.*)\)', resp.text)
-            if match:
-                data = json.loads(match.group(1))
-                inner = data.get('result', {}).get('cmsArticleWebOld', [])
-                # inner 可能是 list 或 dict（含 list key）
-                if isinstance(inner, dict):
-                    articles = inner.get('list', [])
-                else:
-                    articles = inner  # 直接就是 list
-                for art in articles:
-                    title = art.get('title', '')
-                    if not any(n['title'] == title for n in news):
-                        news.append({
-                            'title': title,
-                            'content': art.get('content', '')[:500],
-                            'time': art.get('date', ''),
-                            'source': art.get('mediaName', '东方财富'),
-                            'code': art.get('code', ''),
-                        })
-            print(f'[东财] "{kw}" 获取 {len(news)} 条累计')
-        except Exception as e:
-            print(f'[东财] "{kw}" 失败: {e}')
+    for kw in ['AI安全', '芯片出口', '解禁', '降准降息', '人工智能监管'][:3]:
+        got = _eastmoney_search(kw)
+        have = {n.get('title', '') for n in news}
+        news.extend([g for g in got if g['title'] not in have])
+        print(f'[东财] "{kw}" 累计 {len(news)} 条')
         time.sleep(0.5)
 
-    return news[:50]  # 限制总量
+    return _theme_topup(news)[:100]  # 限制总量
 
 
 def fetch_stock_news(stock_codes: List[str], stock_names: Dict[str, str] = None) -> Dict[str, List[Dict]]:
@@ -1029,7 +1056,17 @@ def format_event_for_report(stock_code: str) -> List[str]:
         try:
             with open(curated_path, encoding='utf-8') as f:
                 curated = json.load(f)
-            if curated.get('date') == _now.strftime('%Y-%m-%d'):
+            # 新鲜度：3个自然日内有效（覆盖周五数据在周末/周一早间继续可用，
+            # 直至下一次收盘扫描生成新的当日策展）
+            _c_ok = False
+            _c_date = curated.get('date', '')
+            if _c_date:
+                try:
+                    _c_dt = _dt.strptime(_c_date, '%Y-%m-%d')
+                    _c_ok = (_now - _c_dt).days <= 3
+                except ValueError:
+                    _c_ok = False
+            if _c_ok:
                 seen_themes = {ev.get('type') for ev, _, _, _ in concept_all}
                 for imp in curated.get('impacts', []):
                     theme = imp.get('theme', 'AI关联')

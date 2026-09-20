@@ -6,9 +6,9 @@
       "AI安全"
     ],
     "first_news": "亚马逊首次公开回应<em>AI安全</em>争论：<em>安全</em>与发展并非二选一",
-    "latest_news": "<em>AI安全</em>论战白热化：Met<em>a</em> CEO扎克伯格公开反对“<em>AI</em>减速论”",
-    "latest_time": "2026-09-16 15:46:48",
-    "count": 16,
+    "latest_news": "<em>AI安全</em>争论愈演愈烈 呼吁减速的<em>A</em>nthrop<em>i</em>c为何仍在扩张算力？",
+    "latest_time": "2026-09-17 18:57:34",
+    "count": 10,
     "impact_paths": [
       {
         "sectors": [
@@ -108,7 +108,7 @@
     ],
     "status": "contrarian",
     "first_date": "2026-09-07",
-    "tracking_days": 12,
+    "tracking_days": 14,
     "trend_conclusion": "出现预期差，存在隐藏逻辑在对冲，值得深挖",
     "timeline": [
       {
@@ -133,11 +133,11 @@
     "type": "新能源政策",
     "level": "medium",
     "keywords": [
-      "光伏"
+      "新能源"
     ],
-    "first_news": "中企在阿塞拜疆投资建设的大型光伏项目正式并网",
-    "latest_news": "中企在阿塞拜疆投资建设的大型光伏项目正式并网",
-    "latest_time": "2026-09-17 16:04:04",
+    "first_news": "专家：2026年中国汽车<em>出口</em>增量有望创历史新高",
+    "latest_news": "专家：2026年中国汽车<em>出口</em>增量有望创历史新高",
+    "latest_time": "2026-09-18 21:17:09",
     "count": 1,
     "impact_paths": [
       {
@@ -157,10 +157,10 @@
         "expected": "positive",
         "logic": "政策支持→行业景气度提升",
         "confidence": 0.7,
-        "actual_change": -1.39,
-        "verdict": "invalidated",
-        "gap_score": -1,
-        "price": 40.36
+        "actual_change": 5.85,
+        "verdict": "confirmed",
+        "gap_score": 1,
+        "price": 42.72
       },
       {
         "code": "002594",
@@ -168,16 +168,16 @@
         "expected": "positive",
         "logic": "政策支持→行业景气度提升",
         "confidence": 0.7,
-        "actual_change": 1.2,
-        "verdict": "confirmed",
-        "gap_score": 0.39999999999999997,
-        "price": 84.97
+        "actual_change": -0.79,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 84.3
       }
     ],
-    "status": "invalidated",
+    "status": "confirmed",
     "first_date": "2026-09-15",
-    "tracking_days": 3,
-    "trend_conclusion": "预期被证伪，市场定价了其他逻辑"
+    "tracking_days": 5,
+    "trend_conclusion": "预期验证，趋势延续"
   },
   {
     "type": "降息降准",
@@ -515,7 +515,7 @@
     ],
     "status": "confirmed",
     "first_date": "2026-09-17",
-    "tracking_days": 2,
+    "tracking_days": 4,
     "trend_conclusion": "预期验证，趋势延续"
   },
   {
@@ -526,9 +526,9 @@
       "半导体设备"
     ],
     "first_news": "韩国<em>芯片出口</em>增长近两倍，创历史同期最高水平，科创半导体ETF华夏(588170)跟踪指数收跌0.59%",
-    "latest_news": "存储<em>芯片</em>概念表现活跃",
-    "latest_time": "2026-09-18 10:45:10",
-    "count": 2,
+    "latest_news": "金智科技(002090.SZ)：中标国家电网、南方电网及上海华力项目，合计金额约1.62亿元",
+    "latest_time": "2026-09-16 17:39:44",
+    "count": 55,
     "impact_paths": [
       {
         "sectors": [
@@ -592,7 +592,88 @@
     ],
     "status": "confirmed",
     "first_date": "2026-09-18",
-    "tracking_days": 1,
+    "tracking_days": 3,
     "trend_conclusion": "预期验证，趋势延续"
+  },
+  {
+    "type": "数据安全",
+    "level": "medium",
+    "keywords": [
+      "黑客"
+    ],
+    "first_news": "<em>AI安全</em>担忧再升级？谷歌<em>AI</em>首次“越狱”：Gem<em>i</em>n<em>i</em>曾黑入三家公司",
+    "latest_news": "<em>AI安全</em>担忧再升级？谷歌<em>AI</em>首次“越狱”：Gem<em>i</em>n<em>i</em>曾黑入三家公司",
+    "latest_time": "2026-09-19 09:31:01",
+    "count": 1,
+    "impact_paths": [
+      {
+        "sectors": [
+          "数据中心/IDC",
+          "互联网-平台",
+          "互联网-电商"
+        ],
+        "direction": "negative",
+        "logic": "安全事件→信任危机→短期承压",
+        "confidence": 0.6
+      },
+      {
+        "sectors": [
+          "AI应用-NLP"
+        ],
+        "direction": "neutral",
+        "logic": "安全需求上升但监管也收紧",
+        "confidence": 0.5
+      }
+    ],
+    "impacted_stocks": [
+      {
+        "code": "300442",
+        "sector": "数据中心/IDC",
+        "expected": "negative",
+        "logic": "安全事件→信任危机→短期承压",
+        "confidence": 0.6,
+        "actual_change": 1.69,
+        "verdict": "contrarian",
+        "gap_score": 1,
+        "price": 63.29
+      },
+      {
+        "code": "00700",
+        "sector": "互联网-平台",
+        "expected": "negative",
+        "logic": "安全事件→信任危机→短期承压",
+        "confidence": 0.6,
+        "actual_change": 0,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 0
+      },
+      {
+        "code": "09988",
+        "sector": "互联网-电商",
+        "expected": "negative",
+        "logic": "安全事件→信任危机→短期承压",
+        "confidence": 0.6,
+        "actual_change": 0,
+        "verdict": "pending",
+        "gap_score": 0,
+        "price": 0
+      },
+      {
+        "code": "300229",
+        "sector": "AI应用-NLP",
+        "expected": "neutral",
+        "logic": "安全需求上升但监管也收紧",
+        "confidence": 0.5,
+        "actual_change": 1.64,
+        "verdict": "deviated",
+        "gap_score": 0,
+        "price": 13.02
+      }
+    ],
+    "status": "contrarian",
+    "first_date": "2026-09-19",
+    "tracking_days": 2,
+    "trend_conclusion": "出现预期差，存在隐藏逻辑在对冲，值得深挖"
   }
 ]
