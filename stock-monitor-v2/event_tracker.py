@@ -419,10 +419,42 @@ def _fetch_akshare_with_timeout(timeout_sec=18) -> Optional[List[Dict]]:
 
 
 # ========== 主题补源（兜底，非主源） ==========
-# 财联社电报流是24小时匀速滚动的大杂烩（日均数百条），产业链关键新闻（如长鑫扩产）
-# 理论上仍可能恰好落在采集窗口之外。此层仅按5个持仓敏感主题做定向补漏，
-# 主源（财联社）命中时这些条目会因去重自然让位，不改变财联社的主要信源地位。
-THEME_TOPUP_KEYWORDS = ['长鑫', '长江存储', '存储芯片', '洁净室', '晶圆厂 扩产']
+# 财联社电报流是24小时匀速滚动的大杂烩（日均数百条），产业链关键新闻理论上仍可能
+# 恰好落在采集窗口之外。此层按持仓档案(holding_profiles.json)的敏感主题做定向补漏，
+# 主源（财联社）命中时这些条目去重后自然让位，不改变财联社的主要信源地位。
+# 关键词动态推导：全部持仓的 sensitive_themes 并集 → 超过单日窗口则按日轮换，
+# 新增持仓只要档案里写了敏感主题，自动纳入补漏，无需改代码。
+_TOPUP_STATIC_FALLBACK = ['长鑫', '长江存储', '存储芯片', '洁净室', '晶圆厂 扩产']
+_TOPUP_WINDOW = 18  # 单日补漏关键词上限（控制采集耗时）
+_GENERIC_TERMS = {'国产', '政策', '价格', '数据', '行业', '市场'}
+
+
+def _load_topup_keywords() -> List[str]:
+    """从持仓档案 sensitive_themes 推导补漏关键词，全持仓覆盖，新增持仓自动生效"""
+    try:
+        prof_file = os.path.join(DATA_DIR, 'holding_profiles.json')
+        with open(prof_file, encoding='utf-8') as f:
+            profiles = json.load(f)
+        profiles = profiles.get('profiles', profiles)
+        terms: List[str] = []
+        for _code, d in profiles.items():
+            for t in (d.get('sensitive_themes') or []):
+                t = str(t).strip()
+                if not t:
+                    continue
+                base = re.split(r'[（(]', t)[0].strip()
+                if len(base) >= 2 and base not in _GENERIC_TERMS and base not in terms:
+                    terms.append(base)
+        if not terms:
+            return _TOPUP_STATIC_FALLBACK
+        if len(terms) > _TOPUP_WINDOW:
+            # 按日轮换切片：全部主题周期性覆盖，单日采集量可控
+            start = (datetime.now().timetuple().tm_yday * 7) % len(terms)
+            terms = (terms[start:] + terms[:start])[:_TOPUP_WINDOW]
+        return terms
+    except Exception as e:
+        print(f'[主题补漏] 持仓档案读取失败，用静态兜底词: {e}')
+        return _TOPUP_STATIC_FALLBACK
 
 
 def _eastmoney_search(kw: str, page_size: int = 15) -> List[Dict]:
@@ -457,17 +489,18 @@ def _eastmoney_search(kw: str, page_size: int = 15) -> List[Dict]:
 
 
 def _theme_topup(news: List[Dict]) -> List[Dict]:
-    """主题补源：按持仓敏感主题定向搜索，合并去重进新闻池"""
+    """主题补漏：按持仓敏感主题定向搜索，合并去重进新闻池"""
     seen = {n.get('title', '') for n in news}
     extra = []
-    for kw in THEME_TOPUP_KEYWORDS:
+    kws = _load_topup_keywords()
+    for kw in kws:
         for item in _eastmoney_search(kw):
             if item['title'] and item['title'] not in seen:
                 seen.add(item['title'])
                 extra.append(item)
         time.sleep(0.3)
     if extra:
-        print(f'[主题补源] 补充 {len(extra)} 条产业链相关新闻')
+        print(f'[主题补漏] {len(kws)}个关键词补充 {len(extra)} 条产业链相关新闻')
         news.extend(extra)
     return news
 
