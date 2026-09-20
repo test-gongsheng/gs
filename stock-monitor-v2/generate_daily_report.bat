@@ -1,38 +1,37 @@
 @echo off
-chcp 65001 >nul
 REM ============================================================
-REM æ¯æ—¥æŒä»“åˆ†æžæŠ¥å‘Šç”Ÿæˆï¼ˆWindowsç‰ˆï¼Œç­‰ä»·äºŽ generate_daily_report.shï¼‰
-REM æµç¨‹ï¼šæƒ…ç»ªå¼•æ“Ž â†’ äº‹ä»¶å¼•æ“Ž â†’ æ·±åº¦æŠ¥å‘Šï¼ˆå¼•ç”¨æƒ…ç»ª+äº‹ä»¶æ•°æ®ï¼‰
-REM ç”±è®¡åˆ’ä»»åŠ¡"StockDailyReports"æ¯æ—¥ 16:35 è‡ªåŠ¨è°ƒç”¨ï¼Œä¹Ÿå¯æ‰‹åŠ¨åŒå‡»æ‰§è¡Œ
+REM Ã¿ÈÕ³Ö²Ö·ÖÎö±¨¸æÉú³É£¨Windows°æ£¬µÈ¼ÛÓÚ generate_daily_report.sh£©
+REM Á÷³Ì£ºÇéÐ÷ÒýÇæ ¡ú ÊÂ¼þÒýÇæ ¡ú Éî¶È±¨¸æ£¨ÒýÓÃÇéÐ÷+ÊÂ¼þÊý¾Ý£©
+REM ÓÉ¼Æ»®ÈÎÎñ"StockDailyReports"Ã¿ÈÕ 16:35 ×Ô¶¯µ÷ÓÃ£¬Ò²¿ÉÊÖ¶¯Ë«»÷Ö´ÐÐ
 REM ============================================================
 
 set "SCRIPT_DIR=%~dp0"
 cd /d "%SCRIPT_DIR%"
 
-REM æœ¬åœ°åŒ–å®‰å…¨çš„æ—¥æœŸï¼ˆyyyyMMddï¼‰
+REM ±¾µØ»¯°²È«µÄÈÕÆÚ£¨yyyyMMdd£©
 for /f %%i in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd"') do set "TODAY=%%i"
 if not exist "%SCRIPT_DIR%reports" mkdir "%SCRIPT_DIR%reports"
 set "LOG_FILE=%SCRIPT_DIR%reports\cron_%TODAY%.log"
 
-REM Pythonï¼šä¼˜å…ˆæœ¬åœ° venvï¼Œå…¶æ¬¡ç³»ç»Ÿ PATH ä¸­çš„ python
+REM Python£ºÓÅÏÈ±¾µØ venv£¬Æä´ÎÏµÍ³ PATH ÖÐµÄ python
 set "PY=python"
 if exist "%SCRIPT_DIR%venv\Scripts\python.exe" set "PY=%SCRIPT_DIR%venv\Scripts\python.exe"
 
-echo [%date% %time%] å¼€å§‹ç”ŸæˆæŒä»“åˆ†æžæŠ¥å‘Šï¼ˆæƒ…ç»ª-äº‹ä»¶-æ·±åº¦ï¼‰... >> "%LOG_FILE%"
+echo [%date% %time%] ¿ªÊ¼Éú³É³Ö²Ö·ÖÎö±¨¸æ£¨ÇéÐ÷-ÊÂ¼þ-Éî¶È£©... >> "%LOG_FILE%"
 
-echo [%date% %time%] [1/3] è¿è¡Œå¸‚åœºæƒ…ç»ªå¼•æ“Ž... >> "%LOG_FILE%"
+echo [%date% %time%] [1/3] ÔËÐÐÊÐ³¡ÇéÐ÷ÒýÇæ... >> "%LOG_FILE%"
 %PY% emotion_engine.py >> "%LOG_FILE%" 2>&1
 
-echo [%date% %time%] [2/3] è¿è¡Œäº‹ä»¶é©±åŠ¨å¼•æ“Ž... >> "%LOG_FILE%"
+echo [%date% %time%] [2/3] ÔËÐÐÊÂ¼þÇý¶¯ÒýÇæ... >> "%LOG_FILE%"
 %PY% event_tracker.py >> "%LOG_FILE%" 2>&1
 
-echo [%date% %time%] [3/3] ç”Ÿæˆæ·±åº¦åˆ†æžæŠ¥å‘Š... >> "%LOG_FILE%"
+echo [%date% %time%] [3/3] Éú³ÉÉî¶È·ÖÎö±¨¸æ... >> "%LOG_FILE%"
 %PY% deep_analysis.py >> "%LOG_FILE%" 2>&1
 
 if %errorlevel% equ 0 (
-    echo [%date% %time%] æŠ¥å‘Šç”ŸæˆæˆåŠŸ >> "%LOG_FILE%"
+    echo [%date% %time%] ±¨¸æÉú³É³É¹¦ >> "%LOG_FILE%"
 ) else (
-    echo [%date% %time%] æŠ¥å‘Šç”Ÿæˆå¤±è´¥ï¼ˆè¯¦è§ä¸Šæ–¹æ—¥å¿—ï¼‰ >> "%LOG_FILE%"
+    echo [%date% %time%] ±¨¸æÉú³ÉÊ§°Ü£¨Ïê¼ûÉÏ·½ÈÕÖ¾£© >> "%LOG_FILE%"
 )
 echo --- >> "%LOG_FILE%"
-echo å®Œæˆã€‚æ—¥å¿—ï¼šreports\cron_%TODAY%.log
+echo Íê³É¡£ÈÕÖ¾£ºreports\cron_%TODAY%.log
