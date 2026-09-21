@@ -394,46 +394,52 @@ def get_stock_kline(code: str, market: str = 'A股', days: int = 90, max_retries
 
 
 def get_tencent_kline(code: str, market: str = 'A股', days: int = 90, max_retries: int = 1) -> List[Dict]:
-    """从腾讯获取K线数据（备用）"""
+    """从腾讯获取K线数据（备用）
+    主用 proxy.finance.qq.com（不易触发WAF），失败回退 web.ifzq.gtimg.cn
+    注意：腾讯K线行格式为 [date, open, close, high, low, volume]——index3=high, index4=low"""
     tencent_code = normalize_tencent_code(code, market)
-    
-    url = f"http://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
-    params = {'param': f"{tencent_code},day,,,{days},qfq"}
-    
-    for attempt in range(max_retries):
-        try:
-            response = _session.get(url, params=params, timeout=15)
-            data = response.json()
-            
-            kline_key = f"{tencent_code}"
-            if 'data' in data and kline_key in data['data']:
-                kline_data = data['data'][kline_key].get('qfqday', []) or data['data'][kline_key].get('day', [])
-                
-                result = []
-                for item in kline_data:
-                    if len(item) >= 6:
-                        result.append({
-                            'date': item[0],
-                            'open': float(item[1]),
-                            'close': float(item[2]),
-                            'low': float(item[3]),
-                            'high': float(item[4]),
-                            'volume': int(float(item[5]))
-                        })
-                
-                if result:
-                    return result
+
+    hosts = [
+        'https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get',
+        'http://web.ifzq.gtimg.cn/appstock/app/fqkline/get',
+    ]
+
+    for host in hosts:
+        for attempt in range(max_retries):
+            try:
+                response = _session.get(host, params={'param': f"{tencent_code},day,,,{days},qfq"}, timeout=15)
+                data = response.json()
+
+                kline_key = f"{tencent_code}"
+                if 'data' in data and kline_key in data['data']:
+                    kline_data = data['data'][kline_key].get('qfqday', []) or data['data'][kline_key].get('day', [])
+
+                    result = []
+                    for item in kline_data:
+                        if len(item) >= 6:
+                            result.append({
+                                'date': item[0],
+                                'open': float(item[1]),
+                                'close': float(item[2]),
+                                'high': float(item[3]),
+                                'low': float(item[4]),
+                                'volume': int(float(item[5]))
+                            })
+
+                    if result:
+                        return result
+                    elif attempt < max_retries - 1:
+                        import time
+                        time.sleep(0.3 * (attempt + 1))
                 elif attempt < max_retries - 1:
                     import time
                     time.sleep(0.3 * (attempt + 1))
-            elif attempt < max_retries - 1:
-                import time
-                time.sleep(0.3 * (attempt + 1))
-        except Exception as e:
-            if attempt < max_retries - 1:
-                import time
-                time.sleep(0.5 * (attempt + 1))
-    
+            except Exception as e:
+                print(f'[腾讯K线] {host} 失败 {code} (尝试{attempt+1}/{max_retries}): {e}')
+                if attempt < max_retries - 1:
+                    import time
+                    time.sleep(0.5 * (attempt + 1))
+
     return []
 
 
