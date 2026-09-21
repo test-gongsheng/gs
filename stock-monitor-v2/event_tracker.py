@@ -218,6 +218,143 @@ GENERIC_CONCEPT_TAGS = {'半导体', '新能源', '算力', 'AI应用', '有色'
 # 个股事件保留时长：超期清理，防旧闻无限累积
 STOCK_EVENT_TTL_DAYS = 14
 
+# ========== 宏观主题映射 ==========
+# 宏观事件（政策/地缘/产业趋势）标题常不含任何股票名，常规个股匹配全漏。
+# 映射层：新闻命中主题关键词 → 挂接到该主题关联的持仓股 + 概念板块。
+# 2026-09真实案例：特朗普发帖"组建AI部队+任命AI沙皇"（周末宏观事件），
+# 无映射层导致完全没进系统，但涉及 AI军备 主题下5只持仓。
+# 持仓代码已核对 data/stocks.json（14只实际持仓）。
+MACRO_THEMES = {
+    'AI军备': {
+        'keywords': ['AI部队', '人工智能部队', 'AI沙皇', '智能部队', '算力竞赛',
+                     'AI军费', 'AI主权', 'AI政策', '军事AI', '国防AI'],
+        'stocks': ['688795', '300442', '300229', '00700', '09988'],
+        'concepts': ['国产算力', 'AI应用', '算力'],
+    },
+    '机器人产业': {
+        'keywords': ['机器人IPO', '人形机器人', '机器人门槛', '具身智能',
+                     '机器人量产', 'Optimus', '机器人产业链', '机器人板块'],
+        'stocks': ['002050', '00285', '000559'],
+        'concepts': ['机器人'],
+    },
+    '出口管制': {
+        'keywords': ['出口管制', '实体清单', '芯片禁令', 'EDA管制', '技术封锁',
+                     '芯片制裁', '对华芯片', '半导体出口'],
+        'stocks': ['688795', '300316', '300442'],
+        'concepts': ['半导体', '国产芯片'],
+    },
+    '存储周期': {
+        'keywords': ['DRAM', 'NAND', '存储芯片', '存储涨价', '合约价', 'HBM',
+                     '存储器', '长鑫', '长江存储', '存储扩产'],
+        'stocks': ['301308', '601133'],
+        'concepts': ['存储', '半导体'],
+    },
+    '算力基建': {
+        'keywords': ['数据中心', 'IDC', '智算中心', '液冷', 'AI服务器',
+                     '数据中心用电', 'AIDC', '算力基建', '算力中心'],
+        'stocks': ['300442', '601133'],
+        'concepts': ['算力', 'IDC'],
+    },
+    '地缘冲突': {
+        'keywords': ['空袭', '导弹', '军事冲突', '海峡', '战争', '制裁',
+                     '台海', '南海', '中东冲突', '俄乌'],
+        'stocks': [],
+        'concepts': [],
+    },
+    '宏观政策': {
+        'keywords': ['降准', '降息', 'LPR', '降准降息', '央行', '财政政策',
+                     '货币政策', 'MLF', '流动性', '发改委'],
+        'stocks': [],
+        'concepts': [],
+    },
+}
+
+
+def _match_macro_themes(title: str, content: str = '') -> List[str]:
+    """新闻标题/正文命中哪些宏观主题，返回主题名列表"""
+    text = (title or '') + ' ' + (content or '')
+    hits = []
+    for theme_name, cfg in MACRO_THEMES.items():
+        if any(kw in text for kw in cfg['keywords']):
+            hits.append(theme_name)
+    return hits
+
+
+def _infer_theme_direction(title: str) -> str:
+    """主题事件方向推断：复用全局限定词"""
+    pos = sum(1 for w in POSITIVE_WORDS if w in title)
+    neg = sum(1 for w in NEGATIVE_WORDS if w in title)
+    if pos > neg:
+        return 'positive'
+    elif neg > pos:
+        return 'negative'
+    return 'neutral'
+
+
+def _attach_macro_theme_events(news_pool: List[Dict], stock_events: Dict[str, List[Dict]],
+                               stocks: List[Dict]) -> int:
+    """宏观主题映射：新闻命中主题关键词 → 生成主题事件挂到该主题关联的持仓股。
+
+    - 标题前缀【主题名】，类型 industry（板块事件级）
+    - 去重：同主题同自然日只挂一次（避免"特朗普AI"十条新闻挂十次）
+    - 同时检查 stock_events 已有事件，防止跨日重复挂接
+    返回挂接的事件数。
+    """
+    attached = 0
+    # (theme, date) → True，同主题同日只挂一次
+    theme_day_fired: set = set()
+
+    for news in (news_pool or []):
+        title = (news.get('title', '') or '').replace('<em>', '').replace('</em>', '')
+        if not title:
+            continue
+        content = (news.get('content', '') or '')[:300]
+        news_time = news.get('time', '') or ''
+        news_date = news_time[:10]  # 自然日
+
+        hit_themes = _match_macro_themes(title, content)
+        if not hit_themes:
+            continue
+
+        for theme_name in hit_themes:
+            dedup_key = (theme_name, news_date)
+            if dedup_key in theme_day_fired:
+                continue
+
+            cfg = MACRO_THEMES[theme_name]
+            matched_kws = [kw for kw in cfg['keywords']
+                           if kw in title or kw in content]
+            direction = _infer_theme_direction(title)
+
+            # 主题事件本体
+            theme_event = {
+                'level': 'high',
+                'label': '主题事件',
+                'title': f"【{theme_name}】{title}",
+                'time': news_time,
+                'source': news.get('source', ''),
+                'direction': direction,
+                'matched': matched_kws,
+                'content': content[:200],
+                'theme': theme_name,
+            }
+
+            # 挂到主题关联的每只持仓股
+            for stock_code in cfg['stocks']:
+                existing = stock_events.setdefault(stock_code, [])
+                # 跨日去重：同主题同标题不重复挂
+                if any(e.get('title') == theme_event['title'] for e in existing):
+                    continue
+                existing.append(dict(theme_event))
+                attached += 1
+
+            theme_day_fired.add(dedup_key)
+
+    if attached:
+        print(f'[宏观主题] 映射生成 {attached} 条主题事件 '
+              f'（主题: {sorted(set(t for t, _ in theme_day_fired))}）')
+    return attached
+
 
 def extract_concept_events(stock_code: str, concept_tags: List[str], news_pool: List[Dict]) -> List[Dict]:
     """板块级事件归因：新闻标题含概念标签时，归到对应持仓股。
@@ -331,6 +468,100 @@ def extract_stock_events(stock_code: str, stock_name: str, news_list: List[Dict]
     order = {'critical': 0, 'high': 1, 'medium': 2}
     events.sort(key=lambda e: (order.get(e['level'], 9), e.get('time', '')), reverse=False)
     return events
+
+
+# ========== 回购公告永久归档 ==========
+# 问题：事件14天TTL会清掉旧回购公告，导致回购聚合信号只累计到近14天。
+# 案例：301308 江波龙 8月10日"拟8亿回购"公告被TTL清除，信号只累计到0.5亿。
+# 方案：回购类公告（标题含"回购"且含金额）单独归档到 buyback_archive.json，
+#       不受TTL限制，deep_analysis.py 的回购聚合信号改读此档案+近90天事件合并。
+BUYBACK_ARCHIVE_FILE = os.path.join(DATA_DIR, 'buyback_archive.json')
+
+# 回购金额提取正则（与 deep_analysis.py buyback_signal 同口径）
+_BUYBACK_AMOUNT_RE = re.compile(r'回购[^\n]{0,60}?(\d+(?:\.\d+)?)\s*(亿|万)元')
+_BUYBACK_PLAN_RE = re.compile(r'(?:拟回购|计划回购|回购预案|回购计划)[^\n]{0,60}?(\d+(?:\.\d+)?)\s*(亿|万)元')
+
+
+def _extract_buyback_amounts(text: str) -> Dict:
+    """从文本中提取回购金额，返回 {executed: float(亿元), planned: float(亿元)}"""
+    def _to_yi(v: float, unit: str) -> float:
+        return v if unit == '亿' else v / 10000.0
+
+    executed = 0.0
+    planned = 0.0
+    seen = set()
+    for m in _BUYBACK_PLAN_RE.finditer(text):
+        key = (m.group(1), m.group(2))
+        if key in seen:
+            continue
+        seen.add(key)
+        planned = max(planned, _to_yi(float(m.group(1)), m.group(2)))
+    for m in _BUYBACK_AMOUNT_RE.finditer(text):
+        key = (m.group(1), m.group(2))
+        if key in seen:
+            continue
+        seen.add(key)
+        executed += _to_yi(float(m.group(1)), m.group(2))
+    return {'executed': round(executed, 4), 'planned': round(planned, 4)}
+
+
+def _archive_buyback_events(stock_events: Dict[str, List[Dict]]):
+    """扫描个股事件中的回购公告，归档到 buyback_archive.json（永久累积，不受TTL限制）。
+
+    归档格式：{code: [{title, time, executed_yi, planned_yi, source}]}
+    同标题去重：已归档过的回购公告不重复写入。
+    """
+    try:
+        archive = {}
+        if os.path.exists(BUYBACK_ARCHIVE_FILE):
+            with open(BUYBACK_ARCHIVE_FILE, 'r', encoding='utf-8') as f:
+                archive = json.load(f)
+
+        new_entries = 0
+        for code, events in (stock_events or {}).items():
+            for e in (events or []):
+                title = e.get('title', '') or ''
+                if '回购' not in title:
+                    continue
+                text = f"{title}\n{e.get('content', '') or ''}"
+                amounts = _extract_buyback_amounts(text)
+                if amounts['executed'] <= 0 and amounts['planned'] <= 0:
+                    continue
+                # 已归档去重
+                existing_titles = {a.get('title') for a in archive.get(code, [])}
+                if title in existing_titles:
+                    continue
+                archive.setdefault(code, []).append({
+                    'title': title,
+                    'time': e.get('time', ''),
+                    'executed_yi': amounts['executed'],
+                    'planned_yi': amounts['planned'],
+                    'source': e.get('source', ''),
+                })
+                new_entries += 1
+
+        if new_entries:
+            # 按时间排序，最新在前
+            for code in archive:
+                archive[code].sort(key=lambda x: x.get('time', ''), reverse=True)
+            with open(BUYBACK_ARCHIVE_FILE, 'w', encoding='utf-8') as f:
+                json.dump(archive, f, ensure_ascii=False, indent=2)
+            print(f'[回购归档] 新增 {new_entries} 条回购公告到 buyback_archive.json')
+        return archive
+    except Exception as e:
+        print(f'[回购归档] 失败（不影响主流程）: {e}')
+        return {}
+
+
+def load_buyback_archive() -> Dict[str, List[Dict]]:
+    """读取回购归档，供 deep_analysis.py 回购聚合信号使用"""
+    try:
+        if os.path.exists(BUYBACK_ARCHIVE_FILE):
+            with open(BUYBACK_ARCHIVE_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
 
 
 # ========== 全文抓取 ==========
@@ -872,6 +1103,19 @@ def run_event_analysis(stocks: List[Dict]) -> Dict:
     # 1. 采集新闻
     print('[1/5] 采集财联社/东财新闻...')
     news = fetch_cls_telegraph()
+
+    # 1.0 头条/要闻通道：财联社首页头条位（与电报流互补）
+    # 2026-09-21案例：机器人IPO门槛收紧（08:57发布）只在头条/深度通道，电报池0命中
+    try:
+        from utils.headline_feed import fetch_cls_headlines, headlines_to_news_pool
+        _headline_pool = headlines_to_news_pool(fetch_cls_headlines())
+        _existing = {n['title'] for n in news}
+        _added = [h for h in _headline_pool if h['title'] not in _existing]
+        if _added:
+            print(f'[头条通道] 补充 {_added.__len__()} 条头条/要闻/深度稿')
+            news.extend(_added)
+    except Exception as _hl_err:
+        print(f'[头条通道] 获取失败（不影响主流程）: {_hl_err}')
     name_map = {s['code']: s.get('name', '') for s in stocks}
     stock_news = fetch_stock_news(stock_codes, name_map)
     
@@ -905,6 +1149,14 @@ def run_event_analysis(stocks: List[Dict]) -> Dict:
             existing.extend(added)
             if added:
                 print(f"  [{s.get('name')}] 板块归因 +{len(added)} 条: {[e['matched'][0] for e in added[:3]]}")
+
+    # 1.7 宏观主题映射：宏观事件→主题→持仓
+    # 2026-09案例：特朗普"组建AI部队"（周末宏观事件，标题无股票名）完全漏掉
+    print('[1.7/5] 宏观主题映射扫描...')
+    _attach_macro_theme_events(news, stock_events, stocks)
+
+    # 1.8 回购公告永久归档（不受14天TTL限制，供deep_analysis回购聚合信号读取）
+    _archive_buyback_events(stock_events)
 
     # 2. 识别事件
     print('[2/5] 识别重大事件...')
@@ -1344,6 +1596,31 @@ def format_event_for_report(stock_code: str) -> List[str]:
 
 # ========== 主函数 ==========
 if __name__ == '__main__':
+    # ---- 宏观主题映射单测 ----
+    print('=' * 50)
+    print('宏观主题映射自测')
+    _test_cases = [
+        ('特朗普称将组建"人工智能部队" 并任命AI沙皇统筹美军AI战略', 'AI军备'),
+        ('机器人IPO门槛收紧？投行一线求证', '机器人产业'),
+        ('美国商务部将12家中国芯片企业列入实体清单', '出口管制'),
+        ('长鑫科技DDR5量产 DRAM合约价连续三月上涨', '存储周期'),
+        ('国家数据局：全国智算中心用电规模同比翻倍', '算力基建'),
+        ('央行宣布降准0.5个百分点 释放流动性1万亿', '宏观政策'),
+        ('中东局势升级 伊朗遭导弹空袭', '地缘冲突'),
+        ('某公司发布新款手机', None),  # 不命中任何主题
+    ]
+    _pass = 0
+    for _title, _expect in _test_cases:
+        _hits = _match_macro_themes(_title)
+        _got = _hits[0] if _hits else None
+        _ok = (_got == _expect) or (_expect in _hits if _expect else not _hits)
+        _status = '✓' if _ok else '✗'
+        print(f'  {_status} "{_title[:35]}" → {_hits} (期望: {_expect})')
+        if _ok:
+            _pass += 1
+    print(f'  通过 {_pass}/{len(_test_cases)}')
+    print('=' * 50)
+
     from deep_analysis import load_portfolio
     stocks = load_portfolio()
     report = run_event_analysis(stocks)

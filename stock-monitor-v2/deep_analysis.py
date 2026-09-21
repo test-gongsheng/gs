@@ -536,19 +536,50 @@ def _load_event_impact() -> Dict:
 
 def buyback_signal(code: str) -> Optional[str]:
     """
-    回购追踪（C-1）：扫描 event_impact.json 中该股近90天新闻标题+正文，
+    回购追踪（C-1）：合并两个数据源——
+    1. buyback_archive.json：事件引擎永久归档的回购公告（不受14天TTL限制）
+    2. event_impact.json 近90天个股事件：兜底捕捉最新尚未归档的回购动态
     正则提取回购金额并累计；识别'计划/拟回购'额度后计算执行比例。
     提取不到任何回购金额时返回 None（调用方不展示该信号）。
     """
+    cutoff = datetime.now() - timedelta(days=90)
+
+    # ---- 数据源1：永久回购归档 ----
+    archived_executed = 0.0
+    archived_planned = 0.0
+    archive_hits = 0
+    try:
+        _archive_file = os.path.join(os.path.dirname(__file__), 'data', 'buyback_archive.json')
+        if os.path.exists(_archive_file):
+            with open(_archive_file, 'r', encoding='utf-8') as _af:
+                _archive = json.load(_af)
+            for entry in (_archive.get(code) or []):
+                t = _parse_news_dt(entry.get('time', ''))
+                # 归档只保留近90天内的条目（与信号窗口一致）
+                if t is not None and t >= cutoff:
+                    archived_executed += entry.get('executed_yi', 0)
+                    archived_planned = max(archived_planned, entry.get('planned_yi', 0))
+                    archive_hits += 1
+    except Exception:
+        pass
+
+    # ---- 数据源2：近90天事件（兜底，归档可能滞后一天） ----
     data = _load_event_impact()
     events = (data.get('stock_events') or {}).get(code) or []
-    cutoff = datetime.now() - timedelta(days=90)
 
     amount_re = re.compile(r'回购[^\n]{0,60}?(\d+(?:\.\d+)?)\s*(亿|万)元')
     plan_re = re.compile(r'(?:拟回购|计划回购|回购预案|回购计划)[^\n]{0,60}?(\d+(?:\.\d+)?)\s*(亿|万)元')
 
     def _to_yi(v: float, unit: str) -> float:
         return v if unit == '亿' else v / 10000.0
+
+    # 已归档标题集合，用于去重（同一公告不双计）
+    try:
+        _archived_titles = {e.get('title', '') for e in
+                            (json.load(open(_archive_file, encoding='utf-8')).get(code) or [])
+                            } if os.path.exists(_archive_file) else set()
+    except Exception:
+        _archived_titles = set()
 
     executed = 0.0
     planned = 0.0
@@ -557,7 +588,10 @@ def buyback_signal(code: str) -> Optional[str]:
         t = _parse_news_dt(e.get('time', ''))
         if t is None or t < cutoff:
             continue
-        text = f"{e.get('title', '')}\n{e.get('content', '')}"
+        title = e.get('title', '')
+        if title in _archived_titles:
+            continue  # 已归档，不重复累计
+        text = f"{title}\n{e.get('content', '')}"
         # 标题与正文常重复同一金额，按事件内 (数值,单位) 去重，防止双计
         seen_amt = set()
         for m in plan_re.finditer(text):
@@ -574,7 +608,12 @@ def buyback_signal(code: str) -> Optional[str]:
             executed += _to_yi(float(m.group(1)), m.group(2))
             hits += 1
 
-    if hits == 0 and planned <= 0:
+    # ---- 合并两源 ----
+    executed += archived_executed
+    planned = max(planned, archived_planned)
+    total_hits = hits + archive_hits
+
+    if total_hits == 0 and planned <= 0:
         return None
     if executed > 0 and planned > 0:
         return (f"回购追踪：近90日累计回购约{executed:.1f}亿元"
