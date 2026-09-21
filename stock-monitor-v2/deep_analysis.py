@@ -14,7 +14,9 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 
 # ========== 配置 ==========
-REPORTS_DIR = os.path.join(os.path.dirname(__file__), 'reports')
+BASE_DIR = os.path.dirname(__file__)
+REPORTS_DIR = os.path.join(BASE_DIR, 'reports')
+DATA_DIR = os.path.join(BASE_DIR, 'data')  # __main__ 里事件引擎刷新依赖此常量（此前缺失导致刷新静默失败）
 os.makedirs(REPORTS_DIR, exist_ok=True)
 
 _session = requests.Session()
@@ -498,6 +500,385 @@ def generate_scenarios(current_price: float, avg_cost: float, indicators: Dict) 
     }
 
 
+# ========== 研报级增强：聚合信号与一致预期（A/C/D 需求） ==========
+
+# A/H 两地上市映射（A股代码 -> 腾讯格式H股代码）；2026-09-21 已用 utils 行情逐一核验名称与价格可取
+AH_H_MAP = {
+    '301308': '09976',  # 江波龙 / 江波龙(H)
+    '601600': '02600',  # 中国铝业 / 中国铝业(H)
+    '002594': '01211',  # 比亚迪 / 比亚迪股份(H)
+}
+
+
+def _parse_news_dt(s: str) -> Optional[datetime]:
+    """解析新闻/事件时间字符串，失败返回 None"""
+    if not s:
+        return None
+    s = str(s).strip()[:19]
+    for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d'):
+        try:
+            return datetime.strptime(s, fmt)
+        except ValueError:
+            pass
+    return None
+
+
+def _load_event_impact() -> Dict:
+    """读取 data/event_impact.json，失败返回空 dict"""
+    try:
+        path = os.path.join(DATA_DIR, 'event_impact.json')
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f'[聚合信号] event_impact.json 读取失败: {e}')
+        return {}
+
+
+def buyback_signal(code: str) -> Optional[str]:
+    """
+    回购追踪（C-1）：扫描 event_impact.json 中该股近90天新闻标题+正文，
+    正则提取回购金额并累计；识别'计划/拟回购'额度后计算执行比例。
+    提取不到任何回购金额时返回 None（调用方不展示该信号）。
+    """
+    data = _load_event_impact()
+    events = (data.get('stock_events') or {}).get(code) or []
+    cutoff = datetime.now() - timedelta(days=90)
+
+    amount_re = re.compile(r'回购[^\n]{0,60}?(\d+(?:\.\d+)?)\s*(亿|万)元')
+    plan_re = re.compile(r'(?:拟回购|计划回购|回购预案|回购计划)[^\n]{0,60}?(\d+(?:\.\d+)?)\s*(亿|万)元')
+
+    def _to_yi(v: float, unit: str) -> float:
+        return v if unit == '亿' else v / 10000.0
+
+    executed = 0.0
+    planned = 0.0
+    hits = 0
+    for e in events:
+        t = _parse_news_dt(e.get('time', ''))
+        if t is None or t < cutoff:
+            continue
+        text = f"{e.get('title', '')}\n{e.get('content', '')}"
+        # 标题与正文常重复同一金额，按事件内 (数值,单位) 去重，防止双计
+        seen_amt = set()
+        for m in plan_re.finditer(text):
+            key = (m.group(1), m.group(2))
+            if key in seen_amt:
+                continue
+            seen_amt.add(key)
+            planned = max(planned, _to_yi(float(m.group(1)), m.group(2)))
+        for m in amount_re.finditer(text):
+            key = (m.group(1), m.group(2))
+            if key in seen_amt:
+                continue
+            seen_amt.add(key)
+            executed += _to_yi(float(m.group(1)), m.group(2))
+            hits += 1
+
+    if hits == 0 and planned <= 0:
+        return None
+    if executed > 0 and planned > 0:
+        return (f"回购追踪：近90日累计回购约{executed:.1f}亿元"
+                f"（占{planned:.1f}亿计划额的{executed / planned * 100:.0f}%）")
+    if executed > 0:
+        return f"回购追踪：近90日累计回购约{executed:.1f}亿元"
+    return f"回购追踪：近90日披露回购计划约{planned:.1f}亿元（尚在执行初期，暂无落地金额）"
+
+
+def ah_premium_signal(code: str, a_price: float) -> Optional[str]:
+    """
+    A/H 比价（C-2，仅 AH_H_MAP 中的持仓）：H股价按 utils 汇率折人民币后与A股价比较。
+    汇率取 utils.exchange_rate.get_cny_hkd_rate()（1 CNY = ? HKD），失败兜底 1.0836。
+    返回如 "A/H价格比1.26，H股较A股折价21%"；H股贵于A股时明确标注倒挂。
+    """
+    h_code = AH_H_MAP.get(code)
+    if not h_code or not a_price or a_price <= 0:
+        return None
+    h_quote = get_tencent_quote(h_code, '港股')
+    if not h_quote or not h_quote.get('price'):
+        return None
+    rate = None
+    try:
+        from utils.exchange_rate import get_cny_hkd_rate
+        rate = get_cny_hkd_rate()
+    except Exception:
+        rate = None
+    if not rate or rate <= 0:
+        rate = 1.0836  # 近似口径：1 CNY ≈ 1.0836 HKD（1 HKD ≈ 0.923 CNY）
+    h_price_cny = h_quote['price'] / rate
+    if h_price_cny <= 0:
+        return None
+    ratio = a_price / h_price_cny
+    if ratio >= 1:
+        discount = (1 - 1 / ratio) * 100
+        return (f"A/H比价：A/H价格比{ratio:.2f}，H股（¥{h_price_cny:.2f}等值）"
+                f"较A股折价{discount:.0f}%")
+    premium = (1 / ratio - 1) * 100
+    return (f"A/H比价：A/H价格比{ratio:.2f}，H股（¥{h_price_cny:.2f}等值）"
+            f"较A股溢价{premium:.0f}%（A/H倒挂，H股更贵）")
+
+
+def unlock_signal_90d(code: str, current_price: float) -> Optional[str]:
+    """
+    未来解禁（C-3）：akshare stock_restricted_release_queue_em 拉取解禁队列，
+    统计未来90天解禁（日期/数量/市值）。接口不可用或无解禁时返回 None。
+    """
+    try:
+        import akshare as ak
+        df = ak.stock_restricted_release_queue_em(symbol=code)
+        if df is None or df.empty:
+            return None
+        today = datetime.now().strftime('%Y-%m-%d')
+        end = (datetime.now() + timedelta(days=90)).strftime('%Y-%m-%d')
+        future = df[(df['解禁时间'].astype(str) >= today) & (df['解禁时间'].astype(str) <= end)]
+        if future.empty:
+            return None
+        shares_total = 0.0
+        mv_total = 0.0
+        first_date = None
+        for _, row in future.iterrows():
+            d = str(row.get('解禁时间', ''))[:10]
+            first_date = d if first_date is None else min(first_date, d)
+            try:
+                shares_total += float(row.get('实际解禁数量') or 0)
+            except (TypeError, ValueError):
+                pass
+            try:
+                mv_total += float(row.get('实际解禁数量市值') or 0)
+            except (TypeError, ValueError):
+                pass
+        if mv_total <= 0 and shares_total > 0 and current_price > 0:
+            mv_total = shares_total * current_price
+        ratio_txt = ''
+        try:
+            ratios = [float(r) for r in future['占总市值比例'].tolist() if str(r) not in ('nan', 'None')]
+            if ratios:
+                ratio_txt = f"，合计占总市值{sum(ratios) * 100:.1f}%"
+        except Exception:
+            pass
+        return (f"未来解禁：未来90天{len(future)}笔解禁（最近{first_date}），"
+                f"合计约{shares_total / 10000:.0f}万股（约{mv_total / 100000000:.1f}亿元{ratio_txt}）")
+    except Exception as e:
+        print(f'[聚合信号] 解禁队列获取失败 {code}: {e}')
+        return None
+
+
+# 未抓取标记：区分"调用方未传参"与"抓取结果本身就是None"（如港股无覆盖），避免重复请求
+_NOT_FETCHED = object()
+
+
+def render_consensus_section(code: str, cons=_NOT_FETCHED) -> List[str]:
+    """
+    投行一致预期章节（B需求，卖方研报写法，全中文）。
+    数据源：utils/consensus.get_consensus（同花顺盈利预测+东财研报）。
+    数据不可得时整章降级为"暂无机构一致预期数据"，绝不编造。
+    传入 cons 可避免重复请求（与综合研判章节共用同一份数据）。
+    """
+    lines: List[str] = []
+    if cons is _NOT_FETCHED:
+        try:
+            from utils.consensus import get_consensus
+            cons = get_consensus(code)
+        except Exception as e:
+            print(f'[一致预期] 模块异常 {code}: {e}')
+            cons = None
+
+    if not cons:
+        lines.append('**一致预期：** 暂无机构一致预期数据（该股可能无机构覆盖或为港股，相关接口无数据）。')
+        lines.append('')
+        return lines
+
+    years = cons.get('years') or []
+    cur = years[0] if years else {}
+    yoy = cons.get('profit_yoy_pct')
+
+    # 1) 一致预期
+    if cur:
+        yoy_txt = f"（同比{'+' if yoy and yoy >= 0 else ''}{yoy:.1f}%）" if yoy is not None else ''
+        eps_txt = ''
+        if cur.get('eps_mean') is not None:
+            eps_txt = f"、EPS均值{cur['eps_mean']:.2f}元"
+        lines.append(
+            f"**一致预期：** {cons.get('org_count', 0)}家机构预测{cur.get('year', '')}年"
+            f"净利润均值{cur.get('profit_mean', 0):.2f}亿元{yoy_txt}{eps_txt}。"
+        )
+        if len(years) > 1:
+            nxt = years[1]
+            lines.append(
+                f"- 远期预测：{nxt.get('year', '')}年净利均值{nxt.get('profit_mean', 0):.2f}亿元"
+                f"（{nxt.get('org_count', 0)}家），{years[2].get('year', '')}年净利均值"
+                f"{years[2].get('profit_mean', 0):.2f}亿元（{years[2].get('org_count', 0)}家）。"
+                if len(years) > 2 else
+                f"- 远期预测：{nxt.get('year', '')}年净利均值{nxt.get('profit_mean', 0):.2f}亿元"
+                f"（{nxt.get('org_count', 0)}家）。"
+            )
+    # 2) 分歧度
+    div = cons.get('divergence')
+    if div is not None and cur:
+        div_txt = f"**分歧度：** 最高预测{cur.get('profit_max', 0):.2f}亿 vs 最低预测{cur.get('profit_min', 0):.2f}亿，"
+        if div >= 2:
+            div_txt += f"相差{div:.2f}倍——预测分歧大，中期盈利路径不确定，一致预期的置信度打折。"
+        else:
+            div_txt += f"相差{div:.2f}倍，预测区间相对收敛。"
+        lines.append(div_txt)
+        bb = cons.get('bull_bear')
+        if bb and bb.get('high') and bb.get('low'):
+            lines.append(
+                f"- 多空代表（当年研报EPS预测）：最乐观{bb['high']['org']}"
+                f"（{bb['high']['eps']:.2f}元，{bb['high']['date']}）vs "
+                f"最谨慎{bb['low']['org']}（{bb['low']['eps']:.2f}元，{bb['low']['date']}）。"
+            )
+    # 3) 评级
+    ratings = cons.get('rating_90d') or {}
+    total_r = cons.get('rating_total_90d', 0)
+    if total_r > 0:
+        parts = '、'.join(f"{k}{v}" for k, v in sorted(ratings.items(), key=lambda x: -x[1]))
+        lines.append(f"**评级（近90天）：** 共{total_r}家，{parts}。")
+    else:
+        lines.append('**评级（近90天）：** 暂无新研报覆盖。')
+    for r in (cons.get('recent_reports') or [])[:3]:
+        lines.append(f"- {r['date']} {r['org']}【{r['rating']}】{r['title']}")
+    lines.append('')
+    return lines
+
+
+def render_verdict_section(code: str, market: str, current_price: float,
+                           kline: List[Dict], indicators: Dict,
+                           consensus: Optional[Dict] = None) -> List[str]:
+    """
+    综合研判章节（D需求）：纯规则引擎，不调用LLM。
+    四象限输入：①事件面（近10日个股+概念事件利好/利空净值）②资金面（近5日主力净流入）
+              ③技术面（MA20 + 中轴价格位置）④估值面（一致预期分歧度，缺失跳过）。
+    判定：偏多 / 中性偏谨慎 / 偏空注意防守（禁止无条件下强多/强空）。
+    传入 consensus 可避免重复请求（与投行一致预期章节共用同一份数据）。
+    """
+    reasons: List[str] = []
+    score = 0
+
+    # ① 事件面
+    data = _load_event_impact()
+    cutoff = datetime.now() - timedelta(days=10)
+    pos = neg = 0
+    for e in (data.get('stock_events') or {}).get(code) or []:
+        t = _parse_news_dt(e.get('time', ''))
+        if t is None or t < cutoff:
+            continue
+        if e.get('direction') == 'positive':
+            pos += 1
+        elif e.get('direction') == 'negative':
+            neg += 1
+    for ev in data.get('events') or []:
+        t = _parse_news_dt(ev.get('latest_time', ''))
+        if t is None or t < cutoff:
+            continue
+        for s in ev.get('impacted_stocks') or []:
+            if s.get('code') == code:
+                if s.get('expected') == 'positive':
+                    pos += 1
+                elif s.get('expected') == 'negative':
+                    neg += 1
+                break
+    ev_net = pos - neg
+    ev_score = 1 if ev_net >= 1 else (-1 if ev_net <= -1 else 0)
+    score += ev_score
+    reasons.append(
+        f"事件面：近10日该股+所属概念事件净值{ev_net:+d}"
+        f"（偏利好{pos}项 / 偏利空{neg}项）"
+        + ("，消息面有明确催化。" if ev_score > 0 else "，消息面存在压制。" if ev_score < 0 else "，消息面平淡。")
+    )
+
+    # ② 资金面
+    fund_sum = None
+    fund_pos_days = 0
+    fund_days = 0
+    if market != '港股':
+        try:
+            from utils.fund_flow import get_fund_flow
+            fflow = get_fund_flow(code, market, days=5)
+        except Exception:
+            fflow = None
+        if fflow:
+            recent5 = fflow[-5:]
+            fund_sum = sum(item['main'] for item in recent5)
+            fund_days = len(recent5)
+            fund_pos_days = sum(1 for item in recent5 if item['main'] > 0)
+            fund_score = 1 if fund_sum > 0 else -1
+            score += fund_score
+            reasons.append(
+                f"资金面：近{fund_days}日主力净流入合计{fund_sum / 100000000:+.2f}亿"
+                f"（{fund_pos_days}日为正）"
+                + ("，资金在进场。" if fund_score > 0 else "，资金在撤离。")
+            )
+        else:
+            reasons.append('资金面：流向数据暂不可用，该象限不计分。')
+
+    # ③ 技术面
+    ma20 = (indicators.get('ma') or {}).get('20')
+    axis_price = None
+    try:
+        from utils.stock_quote import calculate_axis_price
+        axis = calculate_axis_price(kline) if kline else {}
+        axis_price = axis.get('axis_price')
+    except Exception:
+        axis_price = None
+
+    tech_bits = []
+    if ma20 and current_price > 0:
+        dev = (current_price - ma20) / ma20 * 100
+        score += 1 if current_price >= ma20 else -1
+        tech_bits.append(
+            f"{'站上' if current_price >= ma20 else '跌破'}MA20（{dev:+.1f}%）"
+        )
+    if axis_price and current_price > 0:
+        dev_axis = (current_price - axis_price) / axis_price * 100
+        score += 1 if current_price >= axis_price else -1
+        tech_bits.append(
+            f"中轴价格¥{axis_price:.2f}上方{dev_axis:+.1f}%"
+            if current_price >= axis_price else
+            f"跌破中轴价格¥{axis_price:.2f}（{dev_axis:+.1f}%）"
+        )
+    if tech_bits:
+        reasons.append(f"技术面：现价¥{current_price:.2f}，" + '，'.join(tech_bits) + '。')
+    else:
+        reasons.append(f"技术面：现价¥{current_price:.2f}，均线/中轴数据不足，该象限弱化处理。")
+
+    # ④ 估值面（一致预期分歧度，共用已抓取的数据避免重复请求）
+    div = (consensus or {}).get('divergence')
+    if div is not None:
+        if div >= 2:
+            score -= 1
+            reasons.append(f"估值面：机构预测分歧度{div:.2f}倍（≥2倍），一致预期内部打架，按不确定处理。")
+        else:
+            reasons.append(f"估值面：机构预测分歧度{div:.2f}倍，盈利路径共识尚可。")
+    else:
+        reasons.append('估值面：无一致预期数据，该象限不计分。')
+
+    # 判定（保守规则 + 硬条件兜底）
+    deep_below_axis = bool(axis_price and current_price < axis_price * 0.92)
+    fund_all_out = bool(fund_sum is not None and fund_days > 0 and fund_pos_days == 0 and fund_sum < 0)
+    bull_combo = (ev_net >= 1 and fund_sum is not None and fund_sum > 0 and ma20
+                  and current_price >= ma20)
+    if ev_net <= -2 or fund_all_out or deep_below_axis:
+        verdict = '偏空，注意防守'
+    elif bull_combo:
+        verdict = '偏多'
+    elif score >= 2:
+        verdict = '偏多'
+    elif score <= -2:
+        verdict = '偏空，注意防守'
+    else:
+        verdict = '中性偏谨慎'
+
+    lines = [
+        f"**综合研判：{verdict}。**",
+        '',
+        '**为什么是这个判断（四象限规则引擎，非AI拍脑袋）：**',
+    ]
+    for i, r in enumerate(reasons, 1):
+        lines.append(f"{i}. {r}")
+    lines.append('')
+    return lines
+
+
 # ========== 报告生成 ==========
 
 def generate_deep_report(stock: Dict, report_date: str = None) -> str:
@@ -763,7 +1144,7 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
         print(f'[DeepAnalysis] 情绪章节生成失败: {e}')
         traceback.print_exc()
     
-    # ===== 事件影响追踪（含解禁风险） =====
+    # ===== 事件影响追踪（含解禁风险 + 聚合信号） =====
     try:
         from event_tracker import format_event_for_report
         event_lines = format_event_for_report(stock['code'])
@@ -771,16 +1152,52 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
         lines.append(f"")
         for el in event_lines:
             lines.append(el)
-        lines.append(f"")
+        # C需求：消息面聚合信号（回购追踪 / A/H比价 / 未来解禁），全部真实数据，取不到就不显示
+        agg_signals = []
+        try:
+            _bb = buyback_signal(code)
+            if _bb:
+                agg_signals.append(_bb)
+        except Exception as _e:
+            print(f'[聚合信号] 回购追踪异常 {code}: {_e}')
+        try:
+            _ah = ah_premium_signal(code, current_price)
+            if _ah:
+                agg_signals.append(_ah)
+        except Exception as _e:
+            print(f'[聚合信号] A/H比价异常 {code}: {_e}')
+        try:
+            _uk = unlock_signal_90d(code, current_price)
+            if _uk:
+                agg_signals.append(_uk)
+        except Exception as _e:
+            print(f'[聚合信号] 未来解禁异常 {code}: {_e}')
+        if agg_signals:
+            lines.append('**聚合信号（近90日维度）：**')
+            for sig in agg_signals:
+                lines.append(f"- {sig}")
+            lines.append('')
     except Exception as e:
         pass  # 事件模块未运行时不阻塞报告
+
+    # ===== 投行一致预期（B需求：卖方研报级机构预测/分歧度/评级） =====
+    lines.append(f"## 六、投行一致预期（机构盈利预测与评级）")
+    lines.append(f"")
+    try:
+        from utils.consensus import get_consensus as _get_consensus
+        _cons = _get_consensus(code)
+    except Exception as _e:
+        print(f'[一致预期] 抓取失败 {code}: {_e}')
+        _cons = None
+    for cl in render_consensus_section(code, _cons):
+        lines.append(cl)
     
     # 持仓实战分析（豆包式综合研判层）
     try:
         from tactics import generate_position_tactics
         tactics_lines = generate_position_tactics(stock, kline)
         if tactics_lines:
-            lines.append(f"## 六、持仓实战分析")
+            lines.append(f"## 七、持仓实战分析")
             lines.append(f"")
             for tl in tactics_lines:
                 lines.append(tl)
@@ -789,7 +1206,7 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
         print(f'[Tactics] 实战分析生成失败: {e}')
     
     # 风险提示
-    lines.append(f"## 七、短期风险提示")
+    lines.append(f"## 八、短期风险提示")
     lines.append(f"")
     risks = []
     
@@ -811,13 +1228,22 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
     
     # 消息面
     if news_list:
-        lines.append(f"## 七、近期消息摘要")
+        lines.append(f"## 九、近期消息摘要")
         lines.append(f"")
         for i, news in enumerate(news_list[:5], 1):
             lines.append(f"{i}. **{news['title']}**（{news['source']} {news['time']}）")
             if news['content']:
                 lines.append(f"   {news['content'][:100]}...")
         lines.append(f"")
+    
+    # ===== 综合研判（D需求：四象限规则引擎，报告收尾、免责声明之前） =====
+    try:
+        lines.append(f"## 十、综合研判")
+        lines.append(f"")
+        for vl in render_verdict_section(code, market, current_price, kline, indicators, _cons):
+            lines.append(vl)
+    except Exception as _e:
+        print(f'[综合研判] 生成失败 {code}: {_e}')
     
     # 免责声明
     lines.append(f"---")
