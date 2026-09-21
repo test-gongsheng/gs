@@ -1195,6 +1195,33 @@ def run_event_analysis(stocks: List[Dict]) -> Dict:
         if event.get('status') == 'tracking':
             verify_event_impact(event, quotes)
 
+    # 5.5 事件有效性验证闭环（d1/d3/d5 到期槽位回填 + 命中率汇总）
+    # ① high/medium 主题事件自动进观察清单（event_price=当日收盘，取不到则None待回填）
+    # ② 跑一轮到期验证：命中/落空/未兑现 + 总结论 + stats 命中率
+    print('[4.5/5] 事件有效性验证闭环...')
+    try:
+        from utils import event_verifier
+        _filed = 0
+        for s in stocks:
+            code = s['code']
+            px_today = (quotes.get(code) or {}).get('price') or None
+            for e in (stock_events.get(code) or []):
+                if (e.get('title') or '').startswith('【') and e.get('level') in ('high', 'medium'):
+                    # 基线口径：仅当日事件用今日收盘；历史事件传None，
+                    # 由验证器从K线回填事件日真实收盘（避免基线错配成今日价）
+                    evt_day = (e.get('time') or '')[:10]
+                    px = px_today if evt_day == today else None
+                    if event_verifier.file_watchlist_event(
+                            code, e['title'], e.get('direction', 'positive'),
+                            e.get('level', 'medium'), px, e.get('source', ''),
+                            (e.get('time') or '')[:19] or None):
+                        _filed += 1
+        if _filed:
+            print(f'[事件验证] 自动建档 {_filed} 条 high/medium 主题事件')
+        event_verifier.run_verification()
+    except Exception as _ev_err:
+        print(f'[事件验证] 闭环挂接失败（不影响主流程）: {_ev_err}')
+
     # 6. 保存
     print('[5/5] 保存分析结果...')
     _save_events(history)
@@ -1427,7 +1454,8 @@ def format_event_for_report(stock_code: str) -> List[str]:
                         if st.get('code') == stock_code:
                             ev_like = {'type': theme,
                                        'latest_news': imp.get('news_title', ''),
-                                       'keywords': [theme]}
+                                       'keywords': [theme],
+                                       '_curated': True}
                             s_like = {'expected': st.get('direction', 'neutral'),
                                       'logic': st.get('logic', '')}
                             concept_all.append((ev_like, s_like,
@@ -1503,6 +1531,52 @@ def format_event_for_report(stock_code: str) -> List[str]:
         sector_evts = [e for e in stock_evts if is_sector_event(e)]
         company_evts = [e for e in stock_evts if not is_sector_event(e)]
         
+        # 事件验证闭环：一次加载该股全部验证记录，供每条事件的"验证结论"段匹配
+        try:
+            from utils import event_verifier as _evv
+            _watch_cache = _evv.verifications_for_code(stock_code)
+        except Exception:
+            _evv = None
+            _watch_cache = []
+    
+        def _three_part(e: Dict, impact_logic: str = '', sector_link: bool = False) -> List[str]:
+            """三段式渲染：要点（一句话事实）/ 影响路径（为什么影响这只股）/ 验证结论（d1/d3/d5闭环）"""
+            out = []
+            title = (e.get('title', '') or '').replace('<em>', '').replace('</em>', '')
+            content = (e.get('content', '') or '').strip()
+            # 要点：一句话事实（标题去掉【主题】前缀）
+            fact = re.sub(r'^【.+?】', '', title).strip()
+            out.append(f"   要点：{fact[:90]}")
+            # 影响路径：主题事件走产业链传导，公司事件用正文细节
+            theme = e.get('theme')
+            if theme and theme in MACRO_THEMES:
+                concepts = ' / '.join(MACRO_THEMES[theme].get('concepts') or [])
+                path = f"主题【{theme}】经「{concepts}」产业链传导至本股"
+                if content:
+                    path += f"；{content[:110]}"
+            elif impact_logic:
+                path = impact_logic
+            elif content:
+                path = content[:140]
+            else:
+                path = '标题关键词命中，暂无正文级传导细节'
+            out.append(f"   影响路径：{path}")
+            # 验证结论：必须标题真相交才算匹配（防兜底误配）；否则如实说明未建档
+            if _evv:
+                m = _evv._match_from(_watch_cache, stock_code, title)
+                if m is not None:
+                    mt = _evv._strip_theme(m.get('title', ''))[:20]
+                    et = _evv._strip_theme(title)[:20]
+                    if mt and et and (mt in et or et in mt):
+                        out.append(f"   验证结论：{_evv.format_verify_status(m)}")
+                    elif sector_link:
+                        out.append("   验证结论：板块级联动事件，未单独入个股验证清单")
+                    else:
+                        out.append("   验证结论：观察清单中有该股其他事件在验，本条事件未单独建档")
+                else:
+                    out.append("   验证结论：未入观察清单（low级或普通联动事件，不触发d1/d3/d5验证）")
+            return out
+    
         if sector_evts or concept_all:
             lines.append('')
             lines.append('**行业原因：**')
@@ -1511,12 +1585,13 @@ def format_event_for_report(stock_code: str) -> List[str]:
                 d = dir_cn.get(e['direction'], '中性')
                 t = (e.get('time', '') or '')[:10]
                 lines.append(f"{i}. {icon} [{d}] {e['title']}")
-                if e.get('content'):
-                    lines.append(f"   {e['content'][:260]}")
+                lines.extend(_three_part(e))
                 if t:
                     lines.append(f"   📅 {t} · {e.get('source', '')}")
             # 板块联动：概念级产业链事件注入（如存储扩产→洁净室工程需求）
-            for ev, s, ev_date, _age in concept_all[:2]:
+            # Layer-LLM策展条目优先展示（定时任务的产业链关联推理优先级高于自动归因）
+            _concept_render = sorted(concept_all, key=lambda _x: 0 if _x[0].get('_curated') else 1)
+            for ev, s, ev_date, _age in _concept_render[:2]:
                 d2 = dir_cn.get(s.get('expected', 'neutral'), '中性')
                 t2 = ev_date.strftime('%Y-%m-%d') if ev_date else ''
                 # 清洗高亮标签；标题不含事件关键词时（靠正文误匹配）不展示标题
@@ -1524,23 +1599,24 @@ def format_event_for_report(stock_code: str) -> List[str]:
                 kw_hit = any(k in ev_title for k in (ev.get('keywords') or []))
                 title_part = f" {ev_title[:70]}" if (ev_title and kw_hit) else ''
                 lines.append(f"- 🔷 [{d2}·板块联动] 【{ev['type']}】{title_part}".rstrip())
-                lines.append(f"   传导逻辑：{s.get('logic', '')}")
+                lines.extend(_three_part(
+                    {'title': ev_title or ev['type'], 'content': '', 'theme': None},
+                    impact_logic=f"传导逻辑：{s.get('logic', '')}", sector_link=True))
                 if t2:
                     lines.append(f"   📅 {t2}")
-        
-        if company_evts:
+            
+            if company_evts:
+                lines.append('')
+                lines.append('**公司原因：**')
+                for i, e in enumerate(company_evts[:5], 1):
+                    icon = level_icon.get(e['level'], '⚪')
+                    d = dir_cn.get(e['direction'], '中性')
+                    t = (e.get('time', '') or '')[:10]
+                    lines.append(f"{i}. {icon} [{d}] {e['title']}")
+                    lines.extend(_three_part(e))
+                    if t:
+                        lines.append(f"   📅 {t} · {e.get('source', '')}")
             lines.append('')
-            lines.append('**公司原因：**')
-            for i, e in enumerate(company_evts[:5], 1):
-                icon = level_icon.get(e['level'], '⚪')
-                d = dir_cn.get(e['direction'], '中性')
-                t = (e.get('time', '') or '')[:10]
-                lines.append(f"{i}. {icon} [{d}] {e['title']}")
-                if e.get('content'):
-                    lines.append(f"   {e['content'][:260]}")
-                if t:
-                    lines.append(f"   📅 {t} · {e.get('source', '')}")
-        lines.append('')
     else:
         lines.append('**近期重大动态：** 近5日无重大事件信号，走势主要由板块和市场情绪驱动')
         lines.append('')

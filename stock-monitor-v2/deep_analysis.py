@@ -390,6 +390,58 @@ def calculate_all_indicators(kline: List[Dict]) -> Dict:
     }
 
 
+def _key_levels_with_basis(kline: List[Dict]) -> List[tuple]:
+    """关键价位+依据表（全部基于真实K线计算，禁编造）：
+    返回 [(label, price, basis), ...]，按价位降序，供报告表格渲染"""
+    if not kline or len(kline) < 5:
+        return []
+    rows = []
+    recent5 = kline[-5:]
+    recent20 = kline[-20:] if len(kline) >= 20 else kline
+    recent60 = kline[-60:] if len(kline) >= 60 else kline
+
+    hi5 = max(recent5, key=lambda d: d['high'])
+    lo5 = min(recent5, key=lambda d: d['low'])
+    hi20 = max(recent20, key=lambda d: d['high'])
+    lo20 = min(recent20, key=lambda d: d['low'])
+    rows.append(('近端压力', round(hi5['high'], 2), f"近5日高点（{hi5['date'][5:]}）"))
+    rows.append(('中期压力', round(hi20['high'], 2), f"近20日高点（{hi20['date'][5:]}，前高）"))
+
+    if len(kline) >= 20:
+        ma20 = sum(d['close'] for d in kline[-20:]) / 20
+        rows.append(('MA20', round(ma20, 2), '20日收盘均值，趋势分水岭'))
+    if len(kline) >= 60:
+        ma60 = sum(d['close'] for d in kline[-60:]) / 60
+        rows.append(('MA60', round(ma60, 2), '60日收盘均值，中期牛熊线'))
+
+    # 中轴价格（用户核心指标）：与报告其他章节同口径，用完整K线计算
+    try:
+        from utils.stock_quote import calculate_axis_price
+        axis = calculate_axis_price(kline)
+        if axis.get('axis_price'):
+            rows.append(('中轴价格', axis['axis_price'],
+                         f"{axis['days']}日中位数×0.4+VWAP×0.4+均值×0.2"))
+    except Exception:
+        pass
+
+    cur = kline[-1]['close']
+    rows.append(('整数关口', float(int(cur)), f'¥{int(cur)}整数位心理关口'))
+    rows.append(('近端支撑', round(lo5['low'], 2), f"近5日低点（{lo5['date'][5:]}）"))
+    rows.append(('中期支撑', round(lo20['low'], 2), f"近20日低点（{lo20['date'][5:]}，前低）"))
+
+    # 箱体：近20日20%/80%分位（平台上沿/下沿）
+    if len(kline) >= 20:
+        lows20 = sorted(d['low'] for d in recent20)
+        highs20 = sorted(d['high'] for d in recent20)
+        box_b = round(lows20[int(len(lows20) * 0.2)], 2)
+        box_t = round(highs20[int(len(highs20) * 0.8)], 2)
+        rows.append(('箱体下沿', box_b, '近20日低点20%分位（平台下沿）'))
+        rows.append(('箱体上沿', box_t, '近20日高点80%分位（平台上沿）'))
+
+    rows.sort(key=lambda r: r[1], reverse=True)
+    return rows
+
+
 # ========== 综合分析 ==========
 
 def analyze_technical(indicators: Dict, current_price: float) -> Dict:
@@ -825,6 +877,32 @@ def render_verdict_section(code: str, market: str, current_price: float,
         + ("，消息面有明确催化。" if ev_score > 0 else "，消息面存在压制。" if ev_score < 0 else "，消息面平淡。")
     )
 
+    # ①-b 事件验证闭环命中率（d1/d3/d5已结案样本，纯参考，不改四象限分值）
+    try:
+        from utils import event_verifier
+        _stats = event_verifier.load_stats()
+        _hit_bits = []
+        _st = (_stats.get('stocks') or {}).get(code)
+        if _st and _st.get('total'):
+            _hit_bits.append(
+                f"该股已结案{_st['total']}次，命中率{_st['hit_rate'] * 100:.0f}%"
+                f"（有效{_st['hits']}/部分兑现{_st['partial']}/证伪{_st['falsified']}）")
+        _theme_seen = set()
+        for _e in event_verifier.verifications_for_code(code):
+            _tn = event_verifier._theme_of(_e.get('title', ''))
+            if _tn in _theme_seen or _tn == '个股事件':
+                continue
+            _theme_seen.add(_tn)
+            _tb = (_stats.get('themes') or {}).get(_tn)
+            if _tb and _tb.get('total'):
+                _hit_bits.append(
+                    f"主题【{_tn}】近{_tb['total']}次信号命中率{_tb['hit_rate'] * 100:.0f}%"
+                    f"（部分兑现{_tb['partial']}/证伪{_tb['falsified']}）")
+        if _hit_bits:
+            reasons.append('事件验证命中率（d1/d3/d5闭环，仅统计已结案样本）：' + '；'.join(_hit_bits) + '。')
+    except Exception:
+        pass  # 验证闭环数据缺失时不阻塞研判
+
     # ② 资金面
     fund_sum = None
     fund_pos_days = 0
@@ -1126,7 +1204,21 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
         lines.append(f"")
     
     sr = indicators.get('support_resistance', {})
-    if sr:
+    kl_rows = _key_levels_with_basis(kline)
+    if kl_rows:
+        lines.append(f"**关键价位与依据（基于近60日真实K线计算）：**")
+        lines.append(f"")
+        lines.append(f"| 位置 | 价位 | 依据 |")
+        lines.append(f"|------|------|------|")
+        for label, price, basis in kl_rows:
+            lines.append(f"| {label} | ¥{price:.2f} | {basis} |")
+        if sr:
+            lines.append(f"")
+            lines.append(f"- 箱体区间: ¥{sr['box_bottom']}-¥{sr['box_top']}；"
+                         f"现价 ¥{current_price:.2f} 处于"
+                         f"{'箱体上半区' if current_price >= (sr['box_bottom'] + sr['box_top']) / 2 else '箱体下半区'}。")
+        lines.append(f"")
+    elif sr:
         lines.append(f"**关键价格区间：**")
         lines.append(f"- 近期支撑: ¥{sr['support_near']}（近5日低点）/ ¥{sr['support_mid']}（近20日低点）/ ¥{sr['support_strong']}（整数关）")
         lines.append(f"- 近期压力: ¥{sr['resistance_near']}（近5日高点）/ ¥{sr['resistance_far']}（近20日高点）")
@@ -1244,24 +1336,85 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
     except Exception as e:
         print(f'[Tactics] 实战分析生成失败: {e}')
     
-    # 风险提示
+    # 风险提示（多源清单：负向事件/高波动/深破中轴/解禁/AH折价/技术信号，3-5条）
     lines.append(f"## 八、短期风险提示")
     lines.append(f"")
     risks = []
-    
+
+    # ① 负向事件（事件引擎近10日 direction=negative）
+    try:
+        _ev_data = _load_event_impact()
+        _cutoff = datetime.now() - timedelta(days=10)
+        _neg_evts = []
+        for _e in (_ev_data.get('stock_events') or {}).get(code) or []:
+            _t = _parse_news_dt(_e.get('time', ''))
+            if _e.get('direction') == 'negative' and (_t is None or _t >= _cutoff):
+                _neg_evts.append(_e)
+        if _neg_evts:
+            risks.append(f"**事件风险：** 近10日有 {len(_neg_evts)} 项偏利空事件"
+                         f"（如「{_neg_evts[0].get('title', '')[:26]}」），情绪面受压制，"
+                         f"关注事件验证闭环给出的d1/d3/d5判定再决定去留。")
+    except Exception as _e:
+        print(f'[风险提示] 负向事件聚合失败 {code}: {_e}')
+
+    # ② 深破中轴（用户中轴价格策略核心风控线：偏离 < -8%）
+    try:
+        from utils.stock_quote import calculate_axis_price as _calc_axis
+        _axis = _calc_axis(kline) if kline else {}
+        _ap = _axis.get('axis_price')
+        if _ap and current_price < _ap * 0.92:
+            _dev = (current_price - _ap) / _ap * 100
+            risks.append(f"**中轴偏离：** 现价 ¥{current_price:.2f} 较深跌破中轴价 ¥{_ap:.2f}"
+                         f"（{_dev:+.1f}%），按中轴价格策略属趋势性走弱信号，谨慎加仓。")
+    except Exception as _e:
+        print(f'[风险提示] 中轴偏离计算失败 {code}: {_e}')
+
+    # ③ 高波动评分（近60日年化波动率 > 60% 为高波动阈值）
+    if kline and len(kline) >= 20:
+        _closes = [d['close'] for d in kline[-60:]]
+        _avg = sum(_closes) / len(_closes)
+        if _avg > 0:
+            _var = sum((c - _avg) ** 2 for c in _closes) / len(_closes)
+            _vol_ann = (_var ** 0.5) / _avg * (252 ** 0.5) * 100
+            if _vol_ann > 60:
+                risks.append(f"**波动风险：** 近60日年化波动率约 {_vol_ann:.0f}%"
+                             f"（高于60%高波动阈值），日内振幅大，补仓与做T需预留缓冲带。")
+
+    # ④ 解禁预警（未来90天，akshare接口，取不到自动跳过）
+    try:
+        _uk = unlock_signal_90d(code, current_price)
+        if _uk:
+            risks.append(f"**解禁风险：** {_uk}")
+    except Exception as _e:
+        print(f'[风险提示] 解禁信号失败 {code}: {_e}')
+
+    # ⑤ A/H 折价（仅 AH_H_MAP 中的A股持仓）
+    try:
+        _ah = ah_premium_signal(code, current_price)
+        if _ah:
+            risks.append(f"**A/H比价风险：** {_ah}，跨市场定价分歧可能带来波动。")
+    except Exception as _e:
+        print(f'[风险提示] A/H信号失败 {code}: {_e}')
+
+    # ⑥ 技术/回撤类（既有规则保留，补齐到3条）
+    _tech_risks = []
     if indicators.get('macd') and indicators['macd'].get('hist', 0) < 0:
-        risks.append("**技术风险：** MACD处于空头区域，短期动能向下。")
+        _tech_risks.append("**技术风险：** MACD处于空头区域，短期动能向下。")
     if indicators.get('rsi') and indicators['rsi'].get('rsi14', 50) < 35:
-        risks.append("**超卖风险：** RSI进入超卖区，虽可能反弹，但也可能延续弱势。")
+        _tech_risks.append("**超卖风险：** RSI进入超卖区，虽可能反弹，但也可能延续弱势。")
     if indicators.get('volume') and indicators['volume'].get('ratio_5d', 1) < 0.6:
-        risks.append("**流动性风险：** 量能萎缩，交投清淡，大单进出可能造成较大冲击。")
+        _tech_risks.append("**流动性风险：** 量能萎缩，交投清淡，大单进出可能造成较大冲击。")
     if avg_cost > 0 and current_price < avg_cost * 0.85:
-        risks.append("**回撤风险：** 当前浮亏较深，若继续下跌可能触发止损情绪集中释放。")
-    
+        _tech_risks.append("**回撤风险：** 当前浮亏较深，若继续下跌可能触发止损情绪集中释放。")
+    for _tr in _tech_risks:
+        if len(risks) >= 5:
+            break
+        risks.append(_tr)
+
     if not risks:
         risks.append("**一般性风险：** 市场整体波动、板块轮动、宏观经济政策变化等。")
-    
-    for risk in risks:
+
+    for risk in risks[:5]:
         lines.append(f"{risk}")
     lines.append(f"")
     
@@ -1284,6 +1437,38 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
     except Exception as _e:
         print(f'[综合研判] 生成失败 {code}: {_e}')
     
+    # 信息来源清单（本报告实际引用的数据源，一行一个）
+    src_list = [
+        '腾讯财经 qt.gtimg.cn（实时行情/盘中快照）',
+        '腾讯K线 proxy.finance.qq.com（历史K线/均线/关键价位/中轴价格）',
+        '东方财富（个股新闻/主力资金流向）',
+        '财联社电报+头条通道（事件引擎：个股/板块/宏观主题事件）',
+    ]
+    try:
+        if _cons:
+            src_list.append('东方财富研报一致预期（机构盈利预测/评级/分歧度）')
+    except Exception:
+        pass
+    try:
+        from utils import event_verifier as _evv4
+        if _evv4.load_watchlist():
+            src_list.append('事件验证闭环 data/event_verification.json（d1/d3/d5有效性验证/命中率）')
+    except Exception:
+        pass
+    try:
+        from event_tracker import load_buyback_archive
+        if load_buyback_archive().get(code):
+            src_list.append('回购公告归档 buyback_archive.json（近90日回购聚合信号）')
+    except Exception:
+        pass
+    if any('主力净流入' in l for l in lines):
+        src_list.append('主力资金流向已实际渲染（东财fflow接口）')
+    lines.append(f"## 十一、信息来源清单")
+    lines.append(f"")
+    for _s in src_list:
+        lines.append(f"- {_s}")
+    lines.append(f"")
+
     # 免责声明
     lines.append(f"---")
     lines.append(f"**免责声明：** 以上内容由AI辅助生成，仅用于信息整理和投研辅助，不构成投资建议。历史数据不代表未来表现，请基于自身风险承受能力独立判断。")
