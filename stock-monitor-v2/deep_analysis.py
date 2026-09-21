@@ -83,6 +83,28 @@ def _safe_float(s):
         return 0
 
 
+def is_trading_time(market: str = 'A股') -> bool:
+    """判断当前是否处于交易时段（周一至周五；A股 9:30-11:30/13:00-15:00，港股 9:30-12:00/13:00-16:00）"""
+    now = datetime.now()
+    if now.weekday() >= 5:
+        return False
+    minutes = now.hour * 60 + now.minute
+    if market == '港股':
+        return (9 * 60 + 30 <= minutes <= 12 * 60) or (13 * 60 <= minutes <= 16 * 60)
+    return (9 * 60 + 30 <= minutes <= 11 * 60 + 30) or (13 * 60 <= minutes <= 15 * 60)
+
+
+def _format_amount(amount_yuan: float) -> str:
+    """成交额格式化：元 -> 亿/万"""
+    if not amount_yuan or amount_yuan <= 0:
+        return 'N/A'
+    if amount_yuan >= 100000000:
+        return f"{amount_yuan / 100000000:.2f}亿"
+    if amount_yuan >= 10000:
+        return f"{amount_yuan / 10000:.0f}万"
+    return f"{amount_yuan:.0f}元"
+
+
 def get_tencent_quote(code: str, market: str = 'A股') -> Optional[Dict]:
     """腾讯实时行情（支持A股和港股）"""
     try:
@@ -98,12 +120,12 @@ def get_tencent_quote(code: str, market: str = 'A股') -> Optional[Dict]:
             return None
         
         is_hk = tc.startswith('hk')
-        
+
         # A股和港股的字段位置不同
         if is_hk:
             # 港股字段映射（腾讯港股API格式与A股不同）
             # 实测: parts[31]=涨跌额, parts[32]=涨跌幅%, parts[33]=最高, parts[34]=最低
-            #       parts[36]=成交量, parts[37]=成交额
+            #       parts[36]=成交量, parts[37]=成交额(港元,全额)
             price = _safe_float(parts[3])
             prev_close = _safe_float(parts[4])
             open_price = _safe_float(parts[5])
@@ -113,8 +135,11 @@ def get_tencent_quote(code: str, market: str = 'A股') -> Optional[Dict]:
             low = _safe_float(parts[34]) if len(parts) > 34 else 0
             volume = int(_safe_float(parts[36])) if len(parts) > 36 else 0
             turnover = _safe_float(parts[37]) if len(parts) > 37 else 0
+            amount = turnover  # 港股成交额为全额（元）
+            turnover_rate = None  # 腾讯港股接口无换手率
         else:
             # A股字段映射
+            # 实测: parts[37]=成交额(万元), parts[38]=换手率(%)
             price = _safe_float(parts[3])
             prev_close = _safe_float(parts[4])
             open_price = _safe_float(parts[5])
@@ -124,6 +149,8 @@ def get_tencent_quote(code: str, market: str = 'A股') -> Optional[Dict]:
             change = _safe_float(parts[31]) if len(parts) > 31 else 0
             change_pct = _safe_float(parts[32]) if len(parts) > 32 else 0
             turnover = _safe_float(parts[37]) if len(parts) > 37 else 0
+            amount = turnover * 10000  # A股成交额单位为万元，转为元
+            turnover_rate = _safe_float(parts[38]) if len(parts) > 38 else None
         
         return {
             'name': parts[1],
@@ -136,6 +163,8 @@ def get_tencent_quote(code: str, market: str = 'A股') -> Optional[Dict]:
             'change': change,
             'change_percent': change_pct,
             'turnover': turnover,
+            'amount': amount,
+            'turnover_rate': turnover_rate,
             'market_cap': 0,
             'pe_ttm': 0,
             'pb': 0,
@@ -159,12 +188,13 @@ def get_tencent_kline(code: str, market: str = 'A股', days: int = 120) -> List[
             result = []
             for item in kline_data:
                 if len(item) >= 6:
+                    # 腾讯K线行格式: [date, open, close, high, low, volume]——index3=high, index4=low
                     result.append({
                         'date': item[0],
                         'open': float(item[1]),
                         'close': float(item[2]),
-                        'low': float(item[3]),
-                        'high': float(item[4]),
+                        'high': float(item[3]),
+                        'low': float(item[4]),
                         'volume': int(float(item[5]))
                     })
             return result
@@ -495,8 +525,13 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
     volume_shares = quote["volume"] * 100 if market != "港股" else quote["volume"]
     volume = volume_shares
     
-    # 2. 获取K线数据
-    kline = get_tencent_kline(code, market, days=120)
+    # 2. 获取K线数据（优先 utils 版：proxy.finance.qq.com 通道可用，且高低价字段已修正）
+    try:
+        from utils.stock_quote import get_stock_kline as _util_kline
+        kline = _util_kline(code, market, days=120, max_retries=2)
+    except Exception as _ke:
+        print(f"[K线] utils通道异常，回退本地通道 {code}: {_ke}")
+        kline = get_tencent_kline(code, market, days=120)
     
     # 3. 计算技术指标
     indicators = calculate_all_indicators(kline) if kline else {}
@@ -525,6 +560,49 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
     lines.append(f"")
     suffix = 'HK' if market == '港股' else ('SH' if code.startswith('6') else 'SZ')
     lines.append(f"**{name} {code}.{suffix}** · {report_date} · 研究讨论，不构成投资建议")
+    lines.append(f"")
+    
+    # ===== 持仓状态（实时联动，对标豆包盘中报告头部） =====
+    if shares > 0 and avg_cost > 0:
+        head_pnl_pct = (current_price - avg_cost) / avg_cost * 100
+        head_pnl_wan = (current_price - avg_cost) * shares / 10000
+        lines.append(f"## 持仓状态")
+        lines.append(f"")
+        if head_pnl_pct >= 0:
+            lines.append(f"**浮盈 +{head_pnl_pct:.1f}%**（约 {head_pnl_wan:.2f} 万元）· 持仓 {shares:,} 股 / 成本 ¥{avg_cost:.2f}")
+        else:
+            head_back_pct = (avg_cost - current_price) / current_price * 100
+            lines.append(f"**浮亏 {head_pnl_pct:.1f}%**（约 {abs(head_pnl_wan):.2f} 万元）· 回本需 **+{head_back_pct:.1f}%** · 持仓 {shares:,} 股 / 成本 ¥{avg_cost:.2f}")
+        lines.append(f"")
+    elif shares > 0:
+        lines.append(f"## 持仓状态")
+        lines.append(f"")
+        lines.append(f"持仓 {shares:,} 股，成本已为负值（历史盈利覆盖），当前市值约 {current_price * shares / 10000:.2f} 万元。")
+        lines.append(f"")
+    
+    # ===== 盘中快照（交易时段为盘中口径，非交易时段标注收盘快照） =====
+    ma20_val = None
+    if kline and len(kline) >= 20:
+        ma20_val = sum(d['close'] for d in kline[-20:]) / 20
+    in_trade = is_trading_time(market)
+    snapshot_label = '盘中快照' if in_trade else '收盘快照'
+    now_str = datetime.now().strftime('%H:%M')
+    lines.append(f"## {snapshot_label}（{now_str}）")
+    lines.append(f"")
+    if not in_trade:
+        lines.append(f"> 非交易时段，以下数据为最近收盘口径。")
+        lines.append(f"")
+    lines.append(f"| 项目 | 数值 |")
+    lines.append(f"|------|------|")
+    lines.append(f"| 现价 | ¥{current_price:.2f}（{'+' if change_pct >= 0 else ''}{change_pct:.2f}%） |")
+    lines.append(f"| 盘中区间 | ¥{low:.2f} — ¥{high:.2f} |")
+    lines.append(f"| 成交额 | {_format_amount(quote.get('amount'))} |")
+    _tr = quote.get('turnover_rate')
+    lines.append(f"| 换手率 | {f'{_tr:.2f}%' if _tr is not None else 'N/A'} |")
+    if ma20_val:
+        _pos_pct = (current_price - ma20_val) / ma20_val * 100
+        _pos_txt = f"上方 {_pos_pct:.2f}%" if _pos_pct >= 0 else f"下方 {abs(_pos_pct):.2f}%"
+        lines.append(f"| MA20位置 | {_pos_txt}（MA20 ¥{ma20_val:.2f}） |")
     lines.append(f"")
     
     # 核心结论
@@ -568,10 +646,40 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
     # 今日行情与量能
     lines.append(f"## 一、今日行情、量能与资金流向")
     lines.append(f"")
-    lines.append(f"**价格走势：** {report_date} 收盘 ¥{current_price:.2f}，{'涨' if change >= 0 else '跌'} {abs(change_pct):.2f}%，日内区间 ¥{low:.2f}-¥{high:.2f}。")
+    lines.append(f"**价格走势：** {report_date} {'盘中' if in_trade else '收盘'} ¥{current_price:.2f}，{'涨' if change >= 0 else '跌'} {abs(change_pct):.2f}%，日内区间 ¥{low:.2f}-¥{high:.2f}。")
     if indicators.get('volume'):
         vol = indicators['volume']
         lines.append(f"**量能分析：** 今日成交约 {vol['today_vol']/10000:.1f}万手（约¥{vol['today_vol']*current_price/10000:.0f}万），近5日均量约 {vol['avg_5d']/10000:.1f}万手，量比约 {vol['ratio_5d']:.2f}，属于**{vol['status']}**。")
+    
+    # ===== 资金流向（东财fflow接口；服务器IP可能被封，需优雅降级） =====
+    lines.append(f"**资金流向：**")
+    if market == '港股':
+        lines.append(f"- 港股资金流暂不支持。")
+    else:
+        try:
+            from utils.fund_flow import get_fund_flow
+            fflow = get_fund_flow(code, market, days=5)
+        except Exception as _fe:
+            print(f'[DeepAnalysis] 资金流模块异常 {code}: {_fe}')
+            fflow = None
+        if fflow:
+            recent_flow = fflow[-5:]
+            for item in recent_flow:
+                v = item['main'] / 100000000
+                sign = '+' if v >= 0 else ''
+                today_tag = '（今日盘中）' if item.get('is_today') else ''
+                lines.append(f"- {item['date'][5:]}：主力净流入 {sign}{v:.2f} 亿{today_tag}")
+            turns = []
+            for i in range(1, len(recent_flow)):
+                prev_d, cur_d = recent_flow[i-1], recent_flow[i]
+                if prev_d['main'] < 0 <= cur_d['main']:
+                    turns.append(f"{cur_d['date'][5:]} 由净流出转为净流入")
+                elif prev_d['main'] >= 0 > cur_d['main']:
+                    turns.append(f"{cur_d['date'][5:]} 由净流入转为净流出")
+            if turns:
+                lines.append(f"- 趋势转折：{'；'.join(turns)}。")
+        else:
+            lines.append(f"- 资金流向数据暂不可用（数据源受限）")
     lines.append(f"")
     
     # 技术面分析
@@ -715,7 +823,7 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
     lines.append(f"---")
     lines.append(f"**免责声明：** 以上内容由AI辅助生成，仅用于信息整理和投研辅助，不构成投资建议。历史数据不代表未来表现，请基于自身风险承受能力独立判断。")
     lines.append(f"")
-    lines.append(f"**数据来源：** 腾讯财经（实时行情/K线）、东方财富（新闻）。")
+    lines.append(f"**数据来源：** 腾讯财经（实时行情/K线）、东方财富（新闻/资金流向）。")
     
     return '\n'.join(lines)
 
