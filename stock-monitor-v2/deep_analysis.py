@@ -569,7 +569,7 @@ def render_sector_divergence(code: str, market: str, stock_change_pct: float) ->
 
     fresh = _get_fresh_sector_change(sector) if sector else None
     if fresh:
-        refs.append((f"{fresh[0]}板块（当日情绪引擎均涨幅）", fresh[1]))
+        refs.append((f"{fresh[0]}板块", fresh[1]))
         seen.add(fresh[0])
 
     if market == '港股':
@@ -1585,7 +1585,9 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
     
     if indicators.get('volume'):
         vol = indicators['volume']
-        lines.append(f"**量能分析：** 今日成交约 {vol['today_vol']/10000:.1f}万手（约¥{vol['today_vol']*current_price/10000:.0f}万），近5日均量约 {vol['avg_5d']/10000:.1f}万手，量比约 {vol['ratio_5d']:.2f}，属于**{vol['status']}**。")
+        _amt = vol['today_vol'] * 100 * current_price  # today_vol单位为手，×100换算成股
+        _amt_txt = f"¥{_amt/100000000:.2f}亿" if _amt >= 100000000 else f"¥{_amt/10000:.0f}万"
+        lines.append(f"**量能分析：** 今日成交约 {vol['today_vol']/10000:.1f}万手（约{_amt_txt}），近5日均量约 {vol['avg_5d']/10000:.1f}万手，量比约 {vol['ratio_5d']:.2f}，属于**{vol['status']}**。**")
     
     # ===== 资金流向（东财fflow接口；服务器IP可能被封，需优雅降级） =====
     lines.append(f"**资金流向：**")
@@ -1774,9 +1776,13 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
         lines.append(cl)
     
     # 持仓实战分析（豆包式综合研判层）
+    # 注意：必须传入带【本次实时现价】的持仓副本——stocks.json 里的 current_price
+    # 是旧快照，直接用会导致市值/浮亏/压力支撑位判定整段过期（与报告头部自相矛盾）
     try:
         from tactics import generate_position_tactics
-        tactics_lines = generate_position_tactics(stock, kline)
+        _stock_tactics = dict(stock)
+        _stock_tactics['current_price'] = current_price
+        tactics_lines = generate_position_tactics(_stock_tactics, kline)
         if tactics_lines:
             lines.append(f"## 七、持仓实战分析")
             lines.append(f"")

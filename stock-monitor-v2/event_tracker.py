@@ -1427,6 +1427,18 @@ def format_event_for_report(stock_code: str) -> List[str]:
     stock_evts = [e for e in (stock_evts or [])
                   if (_parse_news_time((e.get('time') or '')[:19]) or _now) >= _render_cutoff]
 
+    # 同源新闻命中多主题时会在不同通道各产生一条（如iPhone17新闻同时挂【算力基建】
+    # 与【存储周期】），逐条同文案渲染属噪音且虚增事件计数——按去主题前缀标题判重
+    _seen_evt_keys = set()
+    _deduped_evts = []
+    for _e in (stock_evts or []):
+        _key = re.sub(r'^【.+?】', '', _e.get('title', '') or '').strip()[:40]
+        if _key and _key in _seen_evt_keys:
+            continue
+        _seen_evt_keys.add(_key)
+        _deduped_evts.append(_e)
+    stock_evts = _deduped_evts
+
     EVENT_STALE_DAYS = 7   # 7天无更新即过期
     EVENT_DEAD_DAYS = 3    # 超3天且无跟进/已证伪也清理
     concept_all = []       # (event, stock_impact, date, age) 新鲜概念事件
