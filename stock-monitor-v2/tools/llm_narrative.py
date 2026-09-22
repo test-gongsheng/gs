@@ -56,8 +56,10 @@ def load_llm_cfg():
         }
 
 
-def chat(cfg, prompt, max_tokens=8000, timeout=180, retries=1, think=False):
-    thinking = ({"type": "enabled", "budget_tokens": 6000}
+def chat(cfg, prompt, max_tokens=None, timeout=300, retries=1, think=False):
+    if max_tokens is None:
+        max_tokens = 16000 if think else 8000
+    thinking = ({"type": "enabled", "budget_tokens": 8000}
                 if think else {"type": "disabled"})
     body = {
         "model": cfg["model"],
@@ -221,8 +223,12 @@ def main():
     for code in codes:
         try:
             fname, stat = enhance_one(code, cfg, think=think)
-            ok.append(code)
-            print(f"[OK] {code} -> {fname} ({stat})")
+            if fname is None:
+                fail.append(code)
+                print(f"[FAIL] {code}: {stat}")
+            else:
+                ok.append(code)
+                print(f"[OK] {code} -> {fname} ({stat})")
         except Exception as e:  # noqa: BLE001
             fail.append(code)
             print(f"[FAIL] {code}: {e}")
