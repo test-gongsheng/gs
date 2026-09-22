@@ -270,6 +270,8 @@ def calculate_rsi(prices: List[float], period: int = 14) -> float:
     losses = [abs(min(d, 0)) for d in deltas[-period:]]
     avg_gain = sum(gains) / period if gains else 0.001
     avg_loss = sum(losses) / period if losses else 0.001
+    if avg_loss == 0:
+        return 100.0 if avg_gain > 0 else 50.0
     rs = avg_gain / avg_loss
     rsi = 100 - (100 / (1 + rs))
     return round(rsi, 2)
