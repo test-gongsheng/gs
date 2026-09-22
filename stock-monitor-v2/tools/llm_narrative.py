@@ -56,11 +56,13 @@ def load_llm_cfg():
         }
 
 
-def chat(cfg, prompt, max_tokens=8000, timeout=180, retries=1):
+def chat(cfg, prompt, max_tokens=8000, timeout=180, retries=1, think=False):
+    thinking = ({"type": "enabled", "budget_tokens": 6000}
+                if think else {"type": "disabled"})
     body = {
         "model": cfg["model"],
         "max_tokens": max_tokens,
-        "thinking": {"type": "disabled"},
+        "thinking": thinking,
         "messages": [{"role": "user", "content": prompt}],
     }
     last = None
@@ -179,7 +181,7 @@ def inject(text, section_md):
     return before.rstrip() + "\n\n" + section_md + "\n\n" + text[idx:]
 
 
-def enhance_one(code, cfg):
+def enhance_one(code, cfg, think=False):
     f = latest_report(code)
     if not f:
         return None, "无报告文件"
@@ -190,7 +192,7 @@ def enhance_one(code, cfg):
     prompt = PROMPT_TMPL.format(code=code, name=name, report=report[:12000],
                                 impacts=impacts_txt, head=SECTION_HEAD)
     t0 = time.time()
-    section = chat(cfg, prompt)
+    section = chat(cfg, prompt, think=think)
     if not section.strip():
         return None, "LLM返回空"
     new_text = inject(report, section)
@@ -201,6 +203,7 @@ def enhance_one(code, cfg):
 
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    think = "--think" in sys.argv
     if args:
         codes = args
     else:
@@ -217,7 +220,7 @@ def main():
     ok, fail = [], []
     for code in codes:
         try:
-            fname, stat = enhance_one(code, cfg)
+            fname, stat = enhance_one(code, cfg, think=think)
             ok.append(code)
             print(f"[OK] {code} -> {fname} ({stat})")
         except Exception as e:  # noqa: BLE001

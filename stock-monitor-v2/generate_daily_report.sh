@@ -22,9 +22,9 @@ python3 event_tracker.py >> "$LOG_FILE" 2>&1
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] [3/4] 生成深度分析报告..." >> "$LOG_FILE"
 python3 deep_analysis.py >> "$LOG_FILE" 2>&1
 
-# 4. LLM大模型增强（注入《AI实时研判》章节，失败自动降级为模板报告）
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] [4/4] LLM大模型研判增强..." >> "$LOG_FILE"
-python3 tools/llm_narrative.py >> "$LOG_FILE" 2>&1
+# 4. LLM大模型增强（注入《AI实时研判》章节，--think深度思考模式=最高质量，失败自动降级为模板报告）
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] [4/4] LLM大模型研判增强（深度思考模式）..." >> "$LOG_FILE"
+python3 tools/llm_narrative.py --think >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 报告生成成功" >> "$LOG_FILE"
