@@ -193,9 +193,9 @@ echo [Info] %RESTORE_COUNT% files restored
 echo.
 
 :: ============================================================
-:: Step 6: Start Service
+:: Step 6: Start Service + Regenerate Reports
 :: ============================================================
-echo [Step 6/6] Start service...
+echo [Step 6/6] Start service ^& regenerate reports...
 
 if exist "%REPO_DIR%\venv\Scripts\python.exe" (
     start /B "" "%REPO_DIR%\venv\Scripts\python.exe" "%REPO_DIR%\app.py" > "%REPO_DIR%\app.log" 2>&1
@@ -213,6 +213,14 @@ if %ERRORLEVEL%==0 (
 )
 
 echo.
+
+echo [Info] Regenerating daily reports with new code (a few minutes)...
+if exist "%REPO_DIR%\generate_daily_report.bat" (
+    call "%REPO_DIR%\generate_daily_report.bat" >nul 2>nul
+    echo [OK] Reports regenerated
+) else (
+    echo [Skip] generate_daily_report.bat not found
+)
 
 :: Cleanup
 rmdir /S /Q "%TEMP_DIR%" 2>nul
