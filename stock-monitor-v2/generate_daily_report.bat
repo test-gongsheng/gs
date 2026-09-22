@@ -1,37 +1,39 @@
 @echo off
 REM ============================================================
-REM Ã¿ÈÕ³Ö²Ö·ÖÎö±¨¸æÉú³É£¨Windows°æ£¬µÈ¼ÛÓÚ generate_daily_report.sh£©
-REM Á÷³Ì£ºÇéÐ÷ÒýÇæ ¡ú ÊÂ¼þÒýÇæ ¡ú Éî¶È±¨¸æ£¨ÒýÓÃÇéÐ÷+ÊÂ¼þÊý¾Ý£©
-REM ÓÉ¼Æ»®ÈÎÎñ"StockDailyReports"Ã¿ÈÕ 16:35 ×Ô¶¯µ÷ÓÃ£¬Ò²¿ÉÊÖ¶¯Ë«»÷Ö´ÐÐ
+REM Ã¿ï¿½Õ³Ö²Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É£ï¿½Windowsï¿½æ£¬ï¿½È¼ï¿½ï¿½ï¿½ generate_daily_report.shï¿½ï¿½
+REM ï¿½ï¿½ï¿½Ì£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½È±ï¿½ï¿½æ£¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½+ï¿½Â¼ï¿½ï¿½ï¿½ï¿½Ý£ï¿½
+REM ï¿½É¼Æ»ï¿½ï¿½ï¿½ï¿½ï¿½"StockDailyReports"Ã¿ï¿½ï¿½ 16:35 ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½Ã£ï¿½Ò²ï¿½ï¿½ï¿½Ö¶ï¿½Ë«ï¿½ï¿½Ö´ï¿½ï¿½
 REM ============================================================
 
 set "SCRIPT_DIR=%~dp0"
 cd /d "%SCRIPT_DIR%"
 
-REM ±¾µØ»¯°²È«µÄÈÕÆÚ£¨yyyyMMdd£©
+REM ï¿½ï¿½ï¿½Ø»ï¿½ï¿½ï¿½È«ï¿½ï¿½ï¿½ï¿½ï¿½Ú£ï¿½yyyyMMddï¿½ï¿½
 for /f %%i in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd"') do set "TODAY=%%i"
 if not exist "%SCRIPT_DIR%reports" mkdir "%SCRIPT_DIR%reports"
 set "LOG_FILE=%SCRIPT_DIR%reports\cron_%TODAY%.log"
 
-REM Python£ºÓÅÏÈ±¾µØ venv£¬Æä´ÎÏµÍ³ PATH ÖÐµÄ python
+REM Pythonï¿½ï¿½ï¿½ï¿½ï¿½È±ï¿½ï¿½ï¿½ venvï¿½ï¿½ï¿½ï¿½ï¿½ÏµÍ³ PATH ï¿½Ðµï¿½ python
 set "PY=python"
 if exist "%SCRIPT_DIR%venv\Scripts\python.exe" set "PY=%SCRIPT_DIR%venv\Scripts\python.exe"
 
-echo [%date% %time%] ¿ªÊ¼Éú³É³Ö²Ö·ÖÎö±¨¸æ£¨ÇéÐ÷-ÊÂ¼þ-Éî¶È£©... >> "%LOG_FILE%"
+echo [%date% %time%] ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½É³Ö²Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ£¨ï¿½ï¿½ï¿½ï¿½-ï¿½Â¼ï¿½-ï¿½ï¿½È£ï¿½... >> "%LOG_FILE%"
 
-echo [%date% %time%] [1/3] ÔËÐÐÊÐ³¡ÇéÐ÷ÒýÇæ... >> "%LOG_FILE%"
+echo [%date% %time%] [1/3] ï¿½ï¿½ï¿½ï¿½ï¿½Ð³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½... >> "%LOG_FILE%"
 %PY% emotion_engine.py >> "%LOG_FILE%" 2>&1
 
-echo [%date% %time%] [2/3] ÔËÐÐÊÂ¼þÇý¶¯ÒýÇæ... >> "%LOG_FILE%"
+echo [%date% %time%] [2/3] ï¿½ï¿½ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½... >> "%LOG_FILE%"
 %PY% event_tracker.py >> "%LOG_FILE%" 2>&1
 
-echo [%date% %time%] [3/3] Éú³ÉÉî¶È·ÖÎö±¨¸æ... >> "%LOG_FILE%"
+echo [%date% %time%] [3/3] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½... >> "%LOG_FILE%"
 %PY% deep_analysis.py >> "%LOG_FILE%" 2>&1
 
 if %errorlevel% equ 0 (
-    echo [%date% %time%] ±¨¸æÉú³É³É¹¦ >> "%LOG_FILE%"
+    echo [%date% %time%] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É³É¹ï¿½ >> "%LOG_FILE%"
 ) else (
-    echo [%date% %time%] ±¨¸æÉú³ÉÊ§°Ü£¨Ïê¼ûÉÏ·½ÈÕÖ¾£© >> "%LOG_FILE%"
+    echo [%date% %time%] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½ï¿½ï¿½ï¿½ï¿½Ï·ï¿½ï¿½ï¿½Ö¾ï¿½ï¿½ >> "%LOG_FILE%"
 )
+echo [%date% %time%] [4/4] LLM narrative enhancement (deep-thinking ~5min/stock; auto-skip if no KIMI_API_KEY)... >> "%LOG_FILE%"
+%PY% tools\llm_narrative.py --think >> "%LOG_FILE%" 2>&1
 echo --- >> "%LOG_FILE%"
-echo Íê³É¡£ÈÕÖ¾£ºreports\cron_%TODAY%.log
+echo ï¿½ï¿½É¡ï¿½ï¿½ï¿½Ö¾ï¿½ï¿½reports\cron_%TODAY%.log
