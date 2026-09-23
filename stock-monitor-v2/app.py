@@ -965,6 +965,16 @@ def _regenerate_today_reports():
                 capture_output=True, text=True, timeout=600
             )
             if result.returncode == 0:
+                # 重生成会覆盖报告全文，必须接力LLM增强，否则AI研判节被洗掉
+                try:
+                    llm = subprocess.run(
+                        [sys.executable, 'tools/llm_narrative.py'],
+                        cwd=os.path.dirname(__file__),
+                        capture_output=True, text=True, timeout=900
+                    )
+                    print(f'[ReportRegen] LLM增强: {llm.stdout.strip().splitlines()[-1] if llm.stdout.strip() else "无输出"}')
+                except Exception as e:
+                    print(f'[ReportRegen] LLM增强跳过: {e}')
                 _report_regen_state['last_done'] = today
                 print('[ReportRegen] ✅ 今日报告重生成完成，页面刷新即可见最新数据')
             else:

@@ -56,10 +56,10 @@ def load_llm_cfg():
         }
 
 
-def chat(cfg, prompt, max_tokens=None, timeout=300, retries=1, think=False):
+def chat(cfg, prompt, max_tokens=None, timeout=300, retries=1, think=False, budget=8000):
     if max_tokens is None:
-        max_tokens = 16000 if think else 8000
-    thinking = ({"type": "enabled", "budget_tokens": 8000}
+        max_tokens = (budget + 8000) if think else 8000
+    thinking = ({"type": "enabled", "budget_tokens": budget}
                 if think else {"type": "disabled"})
     body = {
         "model": cfg["model"],
@@ -140,9 +140,10 @@ PROMPT_TMPL = """你是卖方研报级A股分析师。基于以下材料，为{c
 硬性规则：
 - 只能使用材料中出现的数字与事实，禁止编造任何数据；材料没有的不要写
 - 事件条目注明来源与时间；间接关联（如行业新闻→该股订单/毛利）必须给出推理链
-- 双面论证：利多与压制都要写，只讲利好是低质量输出
+- 双面论证：利多与压制都要写透。压制小节必须结构化：逐条编号（①②③...），每条含具体数字/事实+来源，禁止含糊带过
+- 进展链：同一事件在近3日多日/多源出现（如首曝→跟进→验证命中），用「日期+事件→日期+进展」的时间线呈现，禁止平铺
 - 弱相关、判断不了的不写
-- 全文不超过600字，语言精炼，不要AI腔套话"""
+- 全文不超过1200字，语言精炼，不要AI腔套话"""
 
 
 def extract_name(report_text, code):
@@ -183,7 +184,7 @@ def inject(text, section_md):
     return before.rstrip() + "\n\n" + section_md + "\n\n" + text[idx:]
 
 
-def enhance_one(code, cfg, think=False):
+def enhance_one(code, cfg, think=False, budget=16000):
     f = latest_report(code)
     if not f:
         return None, "无报告文件"
@@ -194,7 +195,7 @@ def enhance_one(code, cfg, think=False):
     prompt = PROMPT_TMPL.format(code=code, name=name, report=report[:12000],
                                 impacts=impacts_txt, head=SECTION_HEAD)
     t0 = time.time()
-    section = chat(cfg, prompt, think=think)
+    section = chat(cfg, prompt, think=think, budget=budget)
     if not section.strip():
         return None, "LLM返回空"
     new_text = inject(report, section)
@@ -204,8 +205,15 @@ def enhance_one(code, cfg, think=False):
 
 
 def main():
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    think = "--think" in sys.argv
+    _argv = sys.argv[1:]
+    think = "--think" in _argv
+    budget = 16000
+    skip = set()
+    for i, a in enumerate(_argv):
+        if a == "--budget" and i + 1 < len(_argv):
+            budget = int(_argv[i + 1])
+            skip.update({i, i + 1})
+    args = [a for j, a in enumerate(_argv) if j not in skip and not a.startswith("--")]
     if args:
         codes = args
     else:
@@ -222,7 +230,7 @@ def main():
     ok, fail = [], []
     for code in codes:
         try:
-            fname, stat = enhance_one(code, cfg, think=think)
+            fname, stat = enhance_one(code, cfg, think=think, budget=budget)
             if fname is None:
                 fail.append(code)
                 print(f"[FAIL] {code}: {stat}")
