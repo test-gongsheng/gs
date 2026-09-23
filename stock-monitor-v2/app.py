@@ -2766,8 +2766,21 @@ def generate_deep_analysis_single(stock_code):
                 with open(report_file, 'w', encoding='utf-8') as f:
                     f.write(report_content)
                 
-                GEN_STATUS[stock_code] = {'status': 'done', 'finished': _time.time(), 'report_date': today}
+                GEN_STATUS[stock_code] = {'status': 'generating', 'started': _time.time()}
                 print(f"[DeepAnalysis Generate] {stock_code} 盘中报告已生成")
+                # 接力深度AI研判（--think单只约4.5分钟）；status保持generating让前端继续等
+                try:
+                    import subprocess as _sp
+                    llm = _sp.run(
+                        [sys.executable, 'tools/llm_narrative.py', '--think', stock_code],
+                        cwd=os.path.dirname(__file__),
+                        capture_output=True, text=True, timeout=900
+                    )
+                    tail = llm.stdout.strip().splitlines()[-1] if llm.stdout.strip() else '无输出'
+                    print(f'[DeepAnalysis Generate] {stock_code} AI研判完成: {tail}')
+                except Exception as e:
+                    print(f'[DeepAnalysis Generate] {stock_code} AI研判跳过: {e}')
+                GEN_STATUS[stock_code] = {'status': 'done', 'finished': _time.time(), 'report_date': today}
                 
                 # 不在这里触发情绪/事件刷新——127项事件扫描会饿死请求线程导致前端超时
                 # 情绪/事件数据由每日cron定时刷新，不阻塞用户交互路径
