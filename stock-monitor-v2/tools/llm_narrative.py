@@ -138,19 +138,51 @@ PROMPT_TMPL = """你是卖方研报级A股分析师。基于以下材料，为{c
 【今日事件关联池（已做过产业链映射）】
 {impacts}
 
-请只输出Markdown章节，章节标题必须是「{head}」，包含四个小节：
+【国际投行观点（当日大摩/高盛/中金等）】
+{ib}
+
+请只输出Markdown章节，章节标题必须是「{head}」，开篇先给「### 0. 核心结论」三条（每条一行：定性/关键位/操作），然后包含四个小节：
 ### 1. 消息面与事件驱动（近3日）
 ### 2. 利多与压制
-### 3. 综合研判与持仓视角（衔接报告中的中轴价格与浮动仓策略）
+### 3. 综合研判与持仓视角（衔接报告中的中轴价格与浮动仓策略，必须给估值锚：按现价与一致预期净利计算PE，与盈利增速对比判断贵不贵）
 ### 4. 未来3日观察点
 
 硬性规则：
 - 只能使用材料中出现的数字与事实，禁止编造任何数据；材料没有的不要写
 - 事件条目注明来源与时间；间接关联（如行业新闻→该股订单/毛利）必须给出推理链
+- 投行观点与持仓映射部分如命中本股，必须引用并注明机构与多空态度；未命中不写
 - 双面论证：利多与压制都要写透。压制小节必须结构化：逐条编号（①②③...），每条含具体数字/事实+来源，禁止含糊带过
 - 进展链：同一事件在近3日多日/多源出现（如首曝→跟进→验证命中），用「日期+事件→日期+进展」的时间线呈现，禁止平铺
 - 弱相关、判断不了的不写
 - 全文不少于2000字、不超过2600字，展开写透，语言精炼，不要AI腔套话"""
+
+
+def load_ib(code, name=""):
+    """从当日国际投行分析提取：宏观主题 + 本股契合度段落。"""
+    f = REPORTS / "ib_analysis_latest.md"
+    if not f.exists():
+        return ""
+    try:
+        txt = f.read_text(encoding="utf-8")
+    except Exception:
+        return ""
+    out = []
+    # 宏观主题（前5条）
+    m = re.search(r"### 主要投资主题\n(.+?)(?:\n---|\n## )", txt, re.S)
+    if m:
+        themes = re.findall(r"^\d+\.\s*\*\*(.+?)\*\*（(.+?)）", m.group(1), re.M)
+        if themes:
+            out.append("宏观主题：" + "；".join(f"{t}（{s}）" for t, s in themes[:5]))
+    # 本股契合度：扫描 #### 块，命中代码或名字就整段取
+    for blk in re.split(r"(?=#### )", txt):
+        first = blk.splitlines()[0] if blk.splitlines() else ""
+        if not first.startswith("####"):
+            continue
+        lines = blk.splitlines()
+        hits = [ln for ln in lines if code in ln or (name and name[:4] in ln)]
+        if hits:
+            out.append(first.replace("####", "").strip() + "：" + " / ".join(h.strip("- ") for h in hits[:3]))
+    return "\n".join(out)
 
 
 def extract_name(report_text, code):
@@ -191,7 +223,7 @@ def inject(text, section_md):
     return before.rstrip() + "\n\n" + section_md + "\n\n" + text[idx:]
 
 
-def enhance_one(code, cfg, think=False, budget=12000):
+def enhance_one(code, cfg, think=False, budget=20000):
     f = latest_report(code)
     if not f:
         return None, "无报告文件"
@@ -199,8 +231,9 @@ def enhance_one(code, cfg, think=False, budget=12000):
     name = extract_name(report, code)
     impacts = load_impacts(code)
     impacts_txt = json.dumps(impacts, ensure_ascii=False, indent=1) if impacts else "（今日无关联事件）"
-    prompt = PROMPT_TMPL.format(code=code, name=name, report=report[:12000],
-                                impacts=impacts_txt, head=SECTION_HEAD)
+    ib_txt = load_ib(code, name) or "（今日投行观点未命中本股）"
+    prompt = PROMPT_TMPL.format(code=code, name=name, report=report[:18000],
+                                impacts=impacts_txt, ib=ib_txt, head=SECTION_HEAD)
     t0 = time.time()
     section = chat(cfg, prompt, think=think, budget=budget)
     if not section.strip():
@@ -228,7 +261,7 @@ def enhance_one(code, cfg, think=False, budget=12000):
 def main():
     _argv = sys.argv[1:]
     think = "--think" in _argv
-    budget = 12000
+    budget = 20000
     skip = set()
     for i, a in enumerate(_argv):
         if a == "--budget" and i + 1 < len(_argv):
