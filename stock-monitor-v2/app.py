@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from flask import Flask, render_template, jsonify, request, make_response
+from flask import Flask, render_template, jsonify, request, make_response, g
 import json
 import os
 import sys
@@ -14,6 +14,40 @@ from utils.news_data import get_cls_structured_news
 from utils.southbound_capital import get_southbound_overall_history, get_southbound_signal, get_southbound_stock_history
 
 app = Flask(__name__)
+
+# ========== 公网访问口令 ==========
+# 防全网扫描器暴露持仓数据。data/access_token.txt 存在即启用（文件不入git）。
+# 127.0.0.1/::1 豁免（服务器本机cron与SSH隧道不受影响）；
+# 外部首次访问需带 ?token=xxx，校验通过种180天cookie，之后直接访问。
+def _load_access_token():
+    try:
+        p = os.path.join(os.path.dirname(__file__), 'data', 'access_token.txt')
+        t = open(p, encoding='utf-8').read().strip()
+        return t or None
+    except Exception:
+        return None
+
+ACCESS_TOKEN = _load_access_token()
+
+@app.before_request
+def _access_gate():
+    if not ACCESS_TOKEN:
+        return None
+    ip = request.remote_addr or ''
+    if ip.startswith('127.') or ip in ('::1', 'localhost'):
+        return None
+    if request.cookies.get('smv2_token') == ACCESS_TOKEN:
+        return None
+    if request.args.get('token') == ACCESS_TOKEN:
+        g._grant_token_cookie = True
+        return None
+    return jsonify({'error': '未授权访问：请使用带口令的完整链接打开'}), 403
+
+@app.after_request
+def _grant_token_cookie(response):
+    if getattr(g, '_grant_token_cookie', False):
+        response.set_cookie('smv2_token', ACCESS_TOKEN, max_age=180 * 24 * 3600, httponly=True, samesite='Lax')
+    return response
 
 # 数据文件锁，防止并发读写导致数据丢失
 data_file_lock = threading.Lock()

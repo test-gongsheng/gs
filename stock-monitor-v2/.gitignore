@@ -59,3 +59,4 @@ data/southbound/southbound_history.json
 reports/*.md
 reports/*.log
 reports/portfolio_analysis_latest.json
+data/access_token.txt
