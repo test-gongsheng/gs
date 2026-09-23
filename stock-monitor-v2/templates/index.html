@@ -2277,6 +2277,12 @@
     // 简单的Markdown转HTML
     function markdownToHtml(md) {
         if (!md) return '';
+        // 先提取【重点】标记（转义前提取，防止尖括号被转义）
+        const hlSegs = [];
+        md = md.replace(/【重点】([\s\S]*?)【\/重点】/g, function(m, p1) {
+            hlSegs.push(p1);
+            return '\u0001HL' + (hlSegs.length - 1) + '\u0001';
+        });
         let html = md
             // 转义HTML
             .replace(/&/g, '&amp;')
@@ -2314,7 +2320,12 @@
         
         // 处理表格包装
         html = html.replace(/(<tr>.*?<\/tr>)/gs, '<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:0.85rem;">$1</table>');
-        
+
+        // 恢复【重点】段为红色高亮样式
+        html = html.replace(/\u0001HL(\d+)\u0001/g, function(m, i) {
+            return '<span style="background:rgba(230,57,70,0.22);color:#ff7b7b;padding:2px 6px;border-radius:4px;font-weight:700;border-left:3px solid #e63946;">' + hlSegs[i] + '</span>';
+        });
+
         return html;
     }
     
