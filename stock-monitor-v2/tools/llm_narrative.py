@@ -23,8 +23,11 @@ import time
 import urllib.request
 from pathlib import Path
 
+_CACHE = {}
+
 ROOT = Path(__file__).resolve().parent.parent
 REPORTS = ROOT / "reports"
+DATA = ROOT / "data"
 CURATED = ROOT / "data" / "curated_impacts.json"
 OPENCLAW_CFG = Path("/root/.openclaw/openclaw.json")
 
@@ -81,8 +84,12 @@ def chat(cfg, prompt, max_tokens=None, timeout=300, retries=1, think=False, budg
                 },
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=timeout) as r:
+            eff_timeout = max(timeout, 900) if think else timeout
+            with urllib.request.urlopen(req, timeout=eff_timeout) as r:
                 d = json.load(r)
+            usage = d.get('usage') or {}
+            if usage:
+                _CACHE['last_usage'] = usage
             return "".join(
                 b.get("text", "") for b in d.get("content", []) if b.get("type") == "text"
             )
@@ -184,7 +191,7 @@ def inject(text, section_md):
     return before.rstrip() + "\n\n" + section_md + "\n\n" + text[idx:]
 
 
-def enhance_one(code, cfg, think=False, budget=16000):
+def enhance_one(code, cfg, think=False, budget=12000):
     f = latest_report(code)
     if not f:
         return None, "无报告文件"
@@ -201,13 +208,27 @@ def enhance_one(code, cfg, think=False, budget=16000):
     new_text = inject(report, section)
     if new_text != report:
         f.write_text(new_text, encoding="utf-8")
-    return f.name, f"{time.time()-t0:.0f}s/{len(section)}字"
+    # 用量回显+落盘累计（data/已gitignore）
+    usage = _CACHE.get('last_usage') or {}
+    if usage:
+        try:
+            import datetime as _dt
+            ufile = DATA / f"llm_usage_{_dt.date.today()}.json"
+            udata = json.loads(ufile.read_text(encoding='utf-8')) if ufile.exists() else {'calls': 0, 'input': 0, 'output': 0}
+            udata['calls'] += 1
+            udata['input'] += usage.get('input_tokens', 0)
+            udata['output'] += usage.get('output_tokens', 0)
+            ufile.write_text(json.dumps(udata, ensure_ascii=False), encoding='utf-8')
+        except Exception:
+            pass
+    ustr = f" | in {usage.get('input_tokens','?')}/out {usage.get('output_tokens','?')}" if usage else ''
+    return f.name, f"{time.time()-t0:.0f}s/{len(section)}字{ustr}"
 
 
 def main():
     _argv = sys.argv[1:]
     think = "--think" in _argv
-    budget = 16000
+    budget = 12000
     skip = set()
     for i, a in enumerate(_argv):
         if a == "--budget" and i + 1 < len(_argv):
