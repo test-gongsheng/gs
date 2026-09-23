@@ -2394,63 +2394,49 @@ def check_report_exists():
 @app.route('/api/reports/generate', methods=['POST'])
 def generate_report():
     """
-    手动触发生成持仓深度分析报告
-    调用 deep_analysis.py 生成报告
+    手动触发生成持仓深度分析报告（深度版）
+    流程：deep_analysis.py 重建14只正文 → tools/llm_narrative.py --think 深度AI研判
+    全程后台异步执行（约60-70分钟），接口立即返回；期间勿重复点击
     """
     try:
-        print("[Report Generate] 开始生成深度分析报告...")
-        
-        import subprocess
-        import sys
-        
-        script_path = os.path.join(os.path.dirname(__file__), 'deep_analysis.py')
-        
-        # 检查脚本是否存在
-        if not os.path.exists(script_path):
-            return jsonify({
-                'success': False,
-                'error': f'生成脚本不存在: {script_path}'
-            }), 500
-        
-        # 执行生成脚本
-        result = subprocess.run(
-            [sys.executable, script_path],
-            cwd=os.path.dirname(__file__),
-            capture_output=True,
-            text=True,
-            timeout=600  # 10分钟超时（深度分析需要更长时间）
-        )
-        
-        if result.returncode == 0:
-            print("[Report Generate] 深度分析报告生成成功")
-            
-            # 获取生成的文件信息
-            report_dir = os.path.join(os.path.dirname(__file__), 'reports')
-            today = datetime.now().strftime('%Y-%m-%d')
-            import glob
-            files = glob.glob(os.path.join(report_dir, f'deep_analysis_*_{today}.md'))
-            
-            return jsonify({
-                'success': True,
-                'message': f'深度分析报告生成成功，共 {len(files)} 份',
-                'stdout': result.stdout[:500] if result.stdout else '',
-                'report_count': len(files)
-            })
-        else:
-            error_msg = result.stderr[:500] if result.stderr else '生成失败'
-            print(f"[Report Generate] 生成失败: {error_msg}")
-            return jsonify({
-                'success': False,
-                'error': error_msg,
-                'stdout': result.stdout[:500] if result.stdout else ''
-            }), 500
-            
-    except subprocess.TimeoutExpired:
-        print("[Report Generate] 生成超时")
+        if _report_regen_state.get('running'):
+            return jsonify({'success': False, 'error': '已有生成任务进行中，请等待完成后再点击'}), 409
+        if not HEAVY_TASK_SEM.acquire(blocking=False):
+            return jsonify({'success': False, 'error': '系统正忙（扫描或生成中），请稍后重试'}), 409
+
+        _report_regen_state['running'] = True
+
+        def _bg_deep_gen():
+            try:
+                print('[ManualGen] 深度生成启动：重建14只正文（deep_analysis.py）...')
+                r1 = subprocess.run(
+                    [sys.executable, 'deep_analysis.py'],
+                    cwd=os.path.dirname(__file__),
+                    capture_output=True, text=True, timeout=900
+                )
+                if r1.returncode != 0:
+                    print(f'[ManualGen] ⚠️ 正文生成失败: {r1.stderr[:300]}')
+                    return
+                print('[ManualGen] 正文完成，接力深度LLM研判（--think，单只约4.5分钟×14）...')
+                r2 = subprocess.run(
+                    [sys.executable, 'tools/llm_narrative.py', '--think'],
+                    cwd=os.path.dirname(__file__),
+                    capture_output=True, text=True, timeout=7200
+                )
+                tail = r2.stdout.strip().splitlines()[-1] if r2.stdout.strip() else '无输出'
+                print(f'[ManualGen] ✅ 深度生成全部完成: {tail}')
+            except Exception as e:
+                print(f'[ManualGen] 出错: {e}')
+            finally:
+                _report_regen_state['running'] = False
+                HEAVY_TASK_SEM.release()
+
+        import threading
+        threading.Thread(target=_bg_deep_gen, daemon=True).start()
         return jsonify({
-            'success': False,
-            'error': '报告生成超时，请稍后重试'
-        }), 504
+            'success': True,
+            'message': '深度生成已在后台启动：14只报告将依次重建正文+深度AI研判（约60-70分钟），逐只完成后刷新页面即可查看'
+        })
     except Exception as e:
         print(f"[Report Generate] 异常: {e}")
         import traceback
