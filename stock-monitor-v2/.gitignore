@@ -24,6 +24,7 @@ server.log
 # Data & Reports (large files)
 reports/portfolio_analysis_2*.json
 data/*.json.bak
+data/*.json.bak-*
 
 # IDE
 .vscode/

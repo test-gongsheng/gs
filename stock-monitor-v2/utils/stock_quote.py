@@ -241,6 +241,7 @@ def get_stock_quotes(stocks: List[Dict]) -> Dict[str, Dict]:
             change = float(parts[31]) if len(parts) > 31 and parts[31] else (price - prev_close)
             change_percent = float(parts[32]) if len(parts) > 32 and parts[32] else 0
             volume = int(float(parts[36])) if len(parts) > 36 and parts[36] else 0
+            quote_time = parts[30] if len(parts) > 30 and parts[30] else ''
             
             original_code, market = code_map[tencent_code]
             
@@ -254,6 +255,7 @@ def get_stock_quotes(stocks: List[Dict]) -> Dict[str, Dict]:
                 'change': change,
                 'change_percent': change_percent,
                 'volume': volume,
+                'quote_time': quote_time,
                 'market': market
             }
             
@@ -304,6 +306,7 @@ def get_quote_from_tencent(code: str, market: str = 'A股') -> Optional[Dict]:
         change = float(parts[31]) if len(parts) > 31 and parts[31] else (price - prev_close)
         change_percent = float(parts[32]) if len(parts) > 32 and parts[32] else 0
         volume = int(float(parts[36])) if len(parts) > 36 and parts[36] else 0
+        quote_time = parts[30] if len(parts) > 30 and parts[30] else ''
         
         return {
             'name': name,
@@ -315,6 +318,7 @@ def get_quote_from_tencent(code: str, market: str = 'A股') -> Optional[Dict]:
             'change': change,
             'change_percent': change_percent,
             'volume': volume,
+            'quote_time': quote_time,
             'market': market
         }
         

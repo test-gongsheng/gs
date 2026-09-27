@@ -641,20 +641,43 @@ def generate_portfolio_analysis_v2() -> Dict:
     
     report_date = datetime.now().strftime('%Y-%m-%d')
     
-    # 第一步：强制重置所有股票价格并获取实时价格
+    # 第一步：获取所有股票实时价格并【写回stocks.json】
+    # 【根因修复 2026-09-27】原逻辑先清零再取值、且只用于报告不写回，
+    # 导致 git 里的持仓价格长期陈旧（阿里显示89.16 vs 实际108.4），
+    # 所有盈亏/买卖点/中轴偏离计算全部失真。现改为：取价成功才覆盖、失败保留旧价、
+    # 每日16:05跑批时自愈写回，价格链路彻底闭环。
     print(f"[实时数据] 获取 {len(stocks)} 只股票的实时价格...")
+    price_fresh_count = 0
     for stock in stocks:
         code = stock['code']
         market = stock['market']
-        # 【强制】先重置价格为0，确保一定会获取实时价格
-        stock['current_price'] = 0
+        old_price = stock.get('current_price', 0)
         realtime_price = get_realtime_price(code, market)
         if realtime_price > 0:
             stock['current_price'] = realtime_price
+            shares = stock.get('shares', 0)
+            if shares > 0:
+                stock['market_value'] = round(realtime_price * shares, 2)
+            price_fresh_count += 1
             print(f"[实时数据] {code} 价格: RMB{realtime_price:.2f}")
         else:
-            print(f"[WARN] {code} 获取实时价格失败，将使用0")
-    print("[实时数据] 价格更新完成")
+            # 【修复】不再清零——保留旧价，报告与持仓文件都不出现0
+            print(f"[WARN] {code} 获取实时价格失败，保留旧价 RMB{old_price:.2f}")
+    print(f"[实时数据] 价格更新完成，成功 {price_fresh_count}/{len(stocks)}")
+
+    # 【写回】有任一成功取价则备份并持久化到 stocks.json
+    if price_fresh_count > 0:
+        try:
+            from app import save_data as _app_save_data
+            from utils.price_refresh import _backup as _price_backup
+            from app import DATA_FILE as _DATA_FILE
+            _bak = _price_backup(_DATA_FILE)
+            if _app_save_data(data):
+                print(f"[价格写回] 已备份({_bak})并持久化 {price_fresh_count} 只最新价格到 stocks.json")
+            else:
+                print("[价格写回][WARN] save_data 返回失败，本次价格未持久化（不影响报告生成）")
+        except Exception as e:
+            print(f"[价格写回][WARN] 持久化失败（不影响报告生成）: {e}")
     
     # 第二步：预加载所有股票的中轴价格并存储
     print(f"[预加载] 开始计算 {len(stocks)} 只股票的中轴价格...")
