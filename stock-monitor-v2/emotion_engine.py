@@ -584,6 +584,54 @@ def _save_sentiment(data: Dict):
     with open(history_file, 'w', encoding='utf-8') as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
 
+    # 板块分项历史（情绪分位数的数据底座：每只持仓板块每日一条得分）
+    sector_hist_file = os.path.join(DATA_DIR, 'sector_sentiment_history.json')
+    sector_hist: Dict[str, list] = {}
+    if os.path.exists(sector_hist_file):
+        with open(sector_hist_file, 'r', encoding='utf-8') as f:
+            sector_hist = json.load(f)
+    for s in data.get('sectors') or []:
+        sec = s.get('sector')
+        if not sec:
+            continue
+        # 板块得分：平均涨幅 + 涨停加分（涨停是情绪强度的边际信号）
+        score = round((s.get('avg_change') or 0) + 2.0 * (s.get('limit_up_count') or 0), 2)
+        sector_hist.setdefault(sec, []).append({
+            'date': data['date'], 'score': score,
+            'avg_change': s.get('avg_change'), 'limit_up_count': s.get('limit_up_count'),
+        })
+        sector_hist[sec] = sector_hist[sec][-60:]  # 每板块留60条
+    with open(sector_hist_file, 'w', encoding='utf-8') as f:
+        json.dump(sector_hist, f, ensure_ascii=False, indent=2)
+
+
+def sector_sentiment_percentile(stock_code: str) -> Optional[Dict]:
+    """持仓股所属板块的当日情绪分位数（近60日历史内的位置）。
+
+    Returns:
+        {'sector': str, 'today_score': float, 'percentile': float(0-100),
+         'samples': int}  历史不足10条时返回 None（调用方降级处理）
+    """
+    sector_hist_file = os.path.join(DATA_DIR, 'sector_sentiment_history.json')
+    if not os.path.exists(sector_hist_file):
+        return None
+    with open(sector_hist_file, 'r', encoding='utf-8') as f:
+        sector_hist = json.load(f)
+
+    sector = SECTOR_MAP.get(stock_code)
+    if not sector:
+        return None
+    hist = sector_hist.get(sector) or []
+    if len(hist) < 10:
+        return None
+    today = hist[-1]
+    score = today.get('score')
+    if score is None:
+        return None
+    below = sum(1 for h in hist if (h.get('score') or 0) <= score)
+    percentile = round(below / len(hist) * 100, 1)
+    return {'sector': sector, 'today_score': score, 'percentile': percentile, 'samples': len(hist)}
+
 
 def _load_latest_sentiment() -> Optional[Dict]:
     filepath = os.path.join(DATA_DIR, 'market_sentiment.json')

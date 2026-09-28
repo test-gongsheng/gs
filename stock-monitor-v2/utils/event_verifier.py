@@ -395,6 +395,69 @@ def render_verification_line(code: str, title_hint: str) -> str:
     return format_verify_status(ev)
 
 
+def effectiveness_profile(code: str) -> Dict[str, Dict]:
+    """事件有效性档案：对某只个股，按主题统计历史事件的事后应验情况。
+
+    从 watchlist 中筛出该股全部已结案/部分结案记录，按 _theme_of 分组：
+      {主题: {'total': n, 'hit_rate': 0.x, 'avg_d1_pct': +x.x,
+              'avg_move_pct': +x.x, 'direction': 'positive'|'negative'|None,
+              'latest': 'YYYY-MM-DD', 'sample_note': str}}
+    - avg_d1_pct：原始 d1 涨跌幅均值（%）——回答"这类事件发生后次日该股平均怎么走"
+    - avg_move_pct：按事件方向归一后的均值（positive事件取+d1，negative取-d1）——
+      回答"事件方向判断平均有多准"，>0 说明该类事件的历史方向判断总体应验
+    - direction：该主题下事件的主导方向（出现次数最多者）
+    样本不足（<2）的主题不出现在结果里，避免1次命中100%误导决策。
+    """
+    out: Dict[str, Dict] = {}
+    groups: Dict[str, List[Dict]] = {}
+    for e in verifications_for_code(code):
+        v = e.get('verify') or {}
+        d1 = v.get('d1')
+        if not d1 or d1.get('pct') is None:
+            continue  # 只统计已有d1实盘的样本（d1是最快、样本量最大的验证点）
+        theme = _theme_of(e.get('title', ''))
+        groups.setdefault(theme, []).append(e)
+
+    for theme, evs in groups.items():
+        if len(evs) < 2:
+            continue
+        hits = partial = 0
+        d1_sum = 0.0
+        move_sum = 0.0
+        dirs: Dict[str, int] = {}
+        latest = ''
+        for e in evs:
+            v = e.get('verify') or {}
+            d1 = v.get('d1') or {}
+            pct = float(d1.get('pct') or 0)
+            d1_sum += pct
+            direction = e.get('direction') or 'neutral'
+            dirs[direction] = dirs.get(direction, 0) + 1
+            if direction == 'positive':
+                move_sum += pct
+            elif direction == 'negative':
+                move_sum -= pct
+            verdict = d1.get('verdict')
+            if verdict == 'hit':
+                hits += 1
+            elif verdict == 'partial':
+                partial += 1
+            ed = e.get('event_date') or ''
+            if ed > latest:
+                latest = ed
+        total = len(evs)
+        dom_dir = max(dirs.items(), key=lambda x: x[1])[0] if dirs else None
+        out[theme] = {
+            'total': total,
+            'hit_rate': round((hits + partial * 0.5) / total, 2),
+            'avg_d1_pct': round(d1_sum / total, 2),
+            'avg_move_pct': round(move_sum / total, 2),
+            'direction': dom_dir,
+            'latest': latest,
+        }
+    return out
+
+
 if __name__ == '__main__':
     print('=' * 60)
     print('事件验证引擎自测')

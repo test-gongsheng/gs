@@ -53,6 +53,8 @@ data/position_tactics_hist.json
 data/news_pool_*.json
 data/buyback_archive.json
 data/event_verification.json
+data/tech_snapshot_*.json
+data/sector_sentiment_history.json
 data/event_verification_stats.json
 data/southbound.db
 data/southbound/southbound_history.json

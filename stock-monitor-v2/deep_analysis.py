@@ -1278,8 +1278,9 @@ def render_verdict_section(code: str, market: str, current_price: float,
                            consensus: Optional[Dict] = None) -> List[str]:
     """
     综合研判章节（D需求）：纯规则引擎，不调用LLM。
-    四象限输入：①事件面（近10日个股+概念事件利好/利空净值）②资金面（近5日主力净流入）
-              ③技术面（MA20 + 中轴价格位置）④估值面（一致预期分歧度，缺失跳过）。
+    五象限输入：①事件面（近10日个股+概念事件利好/利空净值）②资金面（近5日主力净流入）
+              ③技术面（MA20 + 中轴价格位置）④估值面（一致预期分歧度，缺失跳过）
+              ⑤情绪面（板块情绪分位数：过热减分/冰点加分）。
     判定：偏多 / 中性偏谨慎 / 偏空注意防守（禁止无条件下强多/强空）。
     传入 consensus 可避免重复请求（与投行一致预期章节共用同一份数据）。
     """
@@ -1318,7 +1319,7 @@ def render_verdict_section(code: str, market: str, current_price: float,
         + ("，消息面有明确催化。" if ev_score > 0 else "，消息面存在压制。" if ev_score < 0 else "，消息面平淡。")
     )
 
-    # ①-b 事件验证闭环命中率（d1/d3/d5已结案样本，纯参考，不改四象限分值）
+    # ①-b 事件验证闭环命中率（d1/d3/d5已结案样本，纯参考展示，不直接改分）
     try:
         from utils import event_verifier
         _stats = event_verifier.load_stats()
@@ -1410,6 +1411,33 @@ def render_verdict_section(code: str, market: str, current_price: float,
     else:
         reasons.append('估值面：无一致预期数据，该象限不计分。')
 
+    # ⑤ 情绪面（板块情绪分位数：过热减分/冰点加分，挂钩浮动仓策略）
+    try:
+        from emotion_engine import sector_sentiment_percentile
+        _ssp = sector_sentiment_percentile(code)
+        if _ssp is not None:
+            _pct = _ssp['percentile']
+            _sec = _ssp['sector']
+            _today = _ssp['today_score']
+            if _pct >= 85:
+                score -= 1
+                reasons.append(
+                    f"情绪面：{_sec}板块情绪分位{_pct:.0f}%（过热区，近60日最高分档），"
+                    f"现价情绪溢价已高，事件催化兑现大半，浮动仓不宜追高，以持有/兑现为主。")
+            elif _pct <= 15:
+                score += 1
+                reasons.append(
+                    f"情绪面：{_sec}板块情绪分位{_pct:.0f}%（冰点区，近60日最低分档），"
+                    f"恐慌释放较充分，若无新增利空，错杀窗口利于逢低布局浮动仓。")
+            else:
+                reasons.append(
+                    f"情绪面：{_sec}板块情绪分位{_pct:.0f}%（中性区间），"
+                    f"情绪既非亢奋也非恐慌，事件驱动按自身逻辑定价。")
+        else:
+            reasons.append('情绪面：板块情绪历史数据不足（累计<10个交易日），暂不分位。')
+    except Exception:
+        reasons.append('情绪面：情绪引擎数据不可用，该象限不计分。')
+
     # 判定（保守规则 + 硬条件兜底）
     deep_below_axis = bool(axis_price and current_price < axis_price * 0.92)
     fund_all_out = bool(fund_sum is not None and fund_days > 0 and fund_pos_days == 0 and fund_sum < 0)
@@ -1429,11 +1457,137 @@ def render_verdict_section(code: str, market: str, current_price: float,
     lines = [
         f"**综合研判：{verdict}。**",
         '',
-        '**为什么是这个判断（四象限规则引擎，非AI拍脑袋）：**',
+        '**为什么是这个判断（五象限规则引擎，非AI拍脑袋）：**',
     ]
     for i, r in enumerate(reasons, 1):
         lines.append(f"{i}. {r}")
     lines.append('')
+    return lines
+
+
+# ========== 指标快照（技术面瘦身：只输出相对昨日变化的信号） ==========
+
+def _tech_snapshot_path(code: str) -> str:
+    return os.path.join(DATA_DIR, f'tech_snapshot_{code}.json')
+
+
+def _load_tech_snapshot(code: str) -> Optional[Dict]:
+    try:
+        with open(_tech_snapshot_path(code), 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def _save_tech_snapshot(code: str, state: Dict) -> None:
+    try:
+        state['saved_at'] = datetime.now().strftime('%Y-%m-%d %H:%M')
+        with open(_tech_snapshot_path(code), 'w', encoding='utf-8') as f:
+            json.dump(state, f, ensure_ascii=False)
+    except Exception as e:
+        print(f'[技术快照] 保存失败 {code}: {e}')
+
+
+def _current_tech_state(indicators: Dict, tech_analysis: Dict, pattern: str) -> Dict:
+    """提取当日技术面状态签名（用于次日对比）"""
+    ma = indicators.get('ma') or {}
+    macd = indicators.get('macd') or {}
+    rsi = indicators.get('rsi') or {}
+    return {
+        'pattern': pattern,
+        'ma_trend': indicators.get('ma_trend', ''),
+        'above_ma20': bool(ma.get('20') and True),  # 占位，真实比较用price_vs_ma
+        'macd_signal': macd.get('signal', ''),
+        'macd_hist_sign': 'pos' if (macd.get('hist') or 0) >= 0 else 'neg',
+        'rsi_zone': 'overbought' if (rsi.get('rsi14') or 50) > 70 else 'oversold' if (rsi.get('rsi14') or 50) < 30 else 'neutral',
+        'tech_status': tech_analysis.get('status', ''),
+    }
+
+
+def render_changed_signals(code: str, indicators: Dict, tech_analysis: Dict,
+                           pattern: str, current_price: float) -> List[str]:
+    """
+    只输出相对昨日有变化的技术信号；无快照（首次运行）则输出全部并标注基线。
+    这是技术面瘦身核心：日均线值每日机械罗列是噪音，变化才有信息量。
+    """
+    lines: List[str] = []
+    prev = _load_tech_snapshot(code)
+    cur = _current_tech_state(indicators, tech_analysis, pattern)
+    baseline = prev is None
+
+    ma = indicators.get('ma') or {}
+    macd = indicators.get('macd') or {}
+    rsi = indicators.get('rsi') or {}
+
+    changes: List[str] = []
+
+    def _diff(field: str, label: str, fmt_old_new) -> None:
+        if baseline:
+            return
+        old, new = prev.get(field), cur.get(field)
+        if old != new:
+            changes.append(fmt_old_new(old, new))
+
+    # 三日形态由调用方输出（generate_deep_report 的章节头），这里只负责变化项
+    if baseline:
+        lines.append(f"（首日建立技术基线，今日起只播报变化项）")
+
+    # MA趋势变化（多头/空头/缠绕）
+    if baseline:
+        if ma:
+            pos = []
+            for n in ('5', '10', '20', '60'):
+                v = ma.get(n)
+                if v:
+                    pos.append(f"MA{n}{'↑' if current_price >= v else '↓'}")
+            changes.append(f"均线基线：{'/'.join(pos)}，排列 {cur['ma_trend']}")
+    elif prev.get('ma_trend') != cur['ma_trend']:
+        changes.append(f"均线排列由「{prev.get('ma_trend', '?')}」转为「{cur['ma_trend']}」")
+
+    # 现价穿越MA20/MA60（由快照中的上下关系判断）
+    if not baseline and ma:
+        for n in ('20', '60'):
+            v = ma.get(n)
+            if not v:
+                continue
+            key = f'px_above_ma{n}'
+            now_above = current_price >= v
+            was_above = prev.get(key)
+            if was_above is not None and was_above != now_above:
+                changes.append(f"现价{'站上' if now_above else '跌破'}MA{n}（¥{v:.2f}）")
+            cur[key] = now_above  # 写回供保存
+
+    # MACD信号变化
+    if baseline:
+        changes.append(f"MACD基线：{cur['macd_signal']}（DIF={macd.get('dif')}, DEA={macd.get('dea')}, 柱={macd.get('hist')}）")
+    else:
+        if prev.get('macd_signal') != cur['macd_signal']:
+            changes.append(f"MACD信号由「{prev.get('macd_signal', '?')}」转为「{cur['macd_signal']}」")
+        if prev.get('macd_hist_sign') != cur['macd_hist_sign']:
+            changes.append(f"MACD柱状图由{'红' if cur['macd_hist_sign'] == 'pos' else '绿'}翻"
+                           f"{'绿' if cur['macd_hist_sign'] == 'neg' else '红'}")
+
+    # RSI区间变化（只在跨阈值时播报）
+    if baseline:
+        changes.append(f"RSI(14)基线：{rsi.get('rsi14')}（{cur['rsi_zone']}）")
+    elif prev.get('rsi_zone') != cur['rsi_zone']:
+        zn = {'overbought': '超买区(>70)', 'oversold': '超卖区(<30)', 'neutral': '中性区'}
+        changes.append(f"RSI(14)={rsi.get('rsi14')} 由{zn.get(prev.get('rsi_zone'), '?')}进入{zn.get(cur['rsi_zone'])}")
+
+    if changes:
+        lines.append("**信号变化（相对昨日）：**" if not baseline else "**基线快照：**")
+        for c in changes:
+            lines.append(f"- {c}")
+    else:
+        lines.append("**信号变化：** 今日各指标状态与昨日一致，无新增穿越/翻转信号（均线、MACD、RSI均延续既有状态）。")
+    lines.append("")
+
+    # 保存今日状态（含价格与MA关系，供明日穿越检测）
+    for n in ('20', '60'):
+        v = (indicators.get('ma') or {}).get(n)
+        if v and current_price > 0:
+            cur[f'px_above_ma{n}'] = current_price >= v
+    _save_tech_snapshot(code, cur)
     return lines
 
 
@@ -1589,8 +1743,80 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
     lines.append(f"| 所属板块 | {sector} |")
     lines.append(f"")
     
-    # 今日行情与量能
-    lines.append(f"## 一、今日行情、量能与资金流向")
+    # ===== 事件影响追踪（含解禁风险 + 聚合信号 + 事件有效性档案） =====
+    try:
+        from event_tracker import format_event_for_report
+        event_lines = format_event_for_report(stock['code'])
+        lines.append(f"## 一、事件影响追踪")
+        lines.append(f"")
+        for el in event_lines:
+            lines.append(el)
+
+        # 事件有效性档案：该股历史同类事件的事后应验统计（命中率+次日平均走势）
+        try:
+            from utils.event_verifier import effectiveness_profile
+            _profile = effectiveness_profile(code)
+            if _profile:
+                lines.append('**事件有效性档案（该股历史同类事件的事后应验，d1实盘口径）：**')
+                lines.append('')
+                lines.append('| 事件主题 | 样本数 | 方向命中率 | 次日平均涨跌 | 事件方向平均应验 | 最近发生 |')
+                lines.append('|------|------|------|------|------|------|')
+                for _theme, _p in sorted(_profile.items(), key=lambda x: -x[1]['total']):
+                    _hr = f"{_p['hit_rate']*100:.0f}%"
+                    _d1 = f"{_p['avg_d1_pct']:+.2f}%"
+                    _mv = f"{_p['avg_move_pct']:+.2f}%"
+                    _dir_cn = {'positive': '利好', 'negative': '利空', 'neutral': '中性', None: '—'}.get(_p['direction'], '—')
+                    lines.append(f"| {_theme} | {_p['total']} | {_hr} | {_d1} | {_mv}（{_dir_cn}类） | {_p['latest']} |")
+                lines.append('')
+                lines.append('- 命中率=事件发生后d1涨跌幅达预期方向(≥2%)的比例；'
+                             '「事件方向平均应验」按事件标注方向归一（利好事件取+次日涨跌、利空取-），'
+                             '持续为负说明该类事件的方向判断对该股基本失灵，看到同类新闻应降低权重。')
+                lines.append('')
+        except Exception as _e:
+            print(f'[事件档案] 生成失败 {code}: {_e}')
+        # C需求：消息面聚合信号（回购追踪 / A/H比价 / 未来解禁），全部真实数据，取不到就不显示
+        agg_signals = []
+        try:
+            _bb = buyback_signal(code)
+            if _bb:
+                agg_signals.append(_bb)
+        except Exception as _e:
+            print(f'[聚合信号] 回购追踪异常 {code}: {_e}')
+        try:
+            _ah = ah_premium_signal(code, current_price)
+            if _ah:
+                agg_signals.append(_ah)
+        except Exception as _e:
+            print(f'[聚合信号] A/H比价异常 {code}: {_e}')
+        try:
+            _uk = unlock_signal_90d(code, current_price)
+            if _uk:
+                agg_signals.append(_uk)
+        except Exception as _e:
+            print(f'[聚合信号] 未来解禁异常 {code}: {_e}')
+        if agg_signals:
+            lines.append('**聚合信号（近90日维度）：**')
+            for sig in agg_signals:
+                lines.append(f"- {sig}")
+            lines.append('')
+    except Exception as e:
+        pass  # 事件模块未运行时不阻塞报告
+
+    # ===== 市场情绪对持仓的影响（第三、四层） =====
+    try:
+        from emotion_engine import format_sentiment_for_report
+        sentiment_lines = format_sentiment_for_report(stock['code'])
+        lines.append(f"## 二、市场情绪对持仓的影响——{stock.get('name', stock['code'])}")
+        lines.append(f"")
+        for sl in sentiment_lines:
+            lines.append(sl)
+        lines.append(f"")
+    except Exception as e:
+        import traceback
+        print(f'[DeepAnalysis] 情绪章节生成失败: {e}')
+        traceback.print_exc()
+    
+    lines.append(f"## 三、今日行情、量能与资金流向")
     lines.append(f"")
     lines.append(f"**价格走势：** {report_date} {'盘中' if in_trade else '收盘'} ¥{current_price:.2f}，{'涨' if change >= 0 else '跌'} {abs(change_pct):.2f}%，日内区间 ¥{low:.2f}-¥{high:.2f}。")
     
@@ -1638,45 +1864,32 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
             lines.append(f"- 资金流向数据暂不可用（数据源受限）")
     lines.append(f"")
     
-    # 技术面分析
-    lines.append(f"## 二、技术面分析")
+    # 技术面（瘦身版：三日形态+信号变化+关键价位执行参考，砍掉机械指标罗列）
+    lines.append(f"## 四、执行参考（技术面）")
     lines.append(f"")
-    
-    # ===== 三日形态定性（模块②：近3日日线规则引擎） =====
+
+    # ===== 三日形态定性（模块②：近3日日线规则引擎，本质是变化检测，保留） =====
+    _pattern = '未知'
     try:
         _pattern, _basis = classify_3day_pattern(code, market)
-        lines.append(f"**三日形态定性：{_pattern}**")
-        lines.append(f"")
+        lines.append(f"**三日形态：{_pattern}**")
         for _b in _basis:
             lines.append(f"- {_b}")
         lines.append(f"")
     except Exception as _e:
         print(f'[三日形态] 生成失败 {code}: {_e}')
-    
-    if indicators.get('ma'):
-        ma = indicators['ma']
-        lines.append(f"**均线系统：**")
-        lines.append(f"- MA5: ¥{ma['5']:.2f} {'↑' if current_price >= ma['5'] else '↓'}")
-        lines.append(f"- MA10: ¥{ma['10']:.2f} {'↑' if current_price >= ma['10'] else '↓'}")
-        lines.append(f"- MA20: ¥{ma['20']:.2f} {'↑' if current_price >= ma['20'] else '↓'}")
-        lines.append(f"- MA60: ¥{ma['60']:.2f} {'↑' if current_price >= ma['60'] else '↓'}")
-        lines.append(f"- 均线排列: **{indicators.get('ma_trend', '未知')}**")
-        lines.append(f"")
-    
-    if indicators.get('macd'):
-        macd = indicators['macd']
-        lines.append(f"**MACD指标：** DIF={macd['dif']}, DEA={macd['dea']}, 柱状图={macd['hist']}。信号：**{macd['signal']}**。")
-        lines.append(f"")
-    
-    if indicators.get('rsi'):
-        rsi = indicators['rsi']
-        lines.append(f"**RSI指标：** RSI(6)={rsi['rsi6']}, RSI(14)={rsi['rsi14']}。{'超买区' if rsi['rsi14'] > 70 else '超卖区' if rsi['rsi14'] < 30 else '中性区'}。")
-        lines.append(f"")
-    
+
+    # ===== 信号变化（指标快照对比：均线/MACD/RSI 只播报相对昨日的变化，不再逐日罗列） =====
+    try:
+        for _sl in render_changed_signals(code, indicators, tech_analysis, _pattern, current_price):
+            lines.append(_sl)
+    except Exception as _e:
+        print(f'[信号变化] 生成失败 {code}: {_e}')
+
     sr = indicators.get('support_resistance', {})
     kl_rows = _key_levels_with_basis(kline)
     if kl_rows:
-        lines.append(f"**关键价位与依据（基于近60日真实K线计算）：**")
+        lines.append(f"**关键价位与依据（执行参考，基于近60日真实K线计算）：**")
         lines.append(f"")
         lines.append(f"| 位置 | 价位 | 依据 |")
         lines.append(f"|------|------|------|")
@@ -1694,16 +1907,16 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
         lines.append(f"- 近期压力: ¥{sr['resistance_near']}（近5日高点）/ ¥{sr['resistance_far']}（近20日高点）")
         lines.append(f"- 箱体区间: ¥{sr['box_bottom']}-¥{sr['box_top']}")
         lines.append(f"")
-    
-    # 信号汇总
+
+    # 信号汇总（规则引擎新增信号，非逐日重复项）
     if tech_analysis.get('signals'):
-        lines.append(f"**技术信号汇总：**")
+        lines.append(f"**其他信号：**")
         for sig in tech_analysis['signals']:
             lines.append(f"- {sig}")
         lines.append(f"")
-    
+
     # 综合评估与情景推演
-    lines.append(f"## 三、综合评估与情景推演")
+    lines.append(f"## 五、综合评估与情景推演")
     lines.append(f"")
     lines.append(f"**当前技术状态: {tech_analysis.get('status', '震荡')}**")
     lines.append(f"")
@@ -1731,56 +1944,6 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
             lines.append(f"- 关注 ¥{scenarios.get('optimistic', {}).get('target', sr.get('resistance_near', current_price*1.05))} 附近的压力，注意止盈节奏。")
     lines.append(f"")
     
-    # ===== 市场情绪对持仓的影响（第三、四层） =====
-    try:
-        from emotion_engine import format_sentiment_for_report
-        sentiment_lines = format_sentiment_for_report(stock['code'])
-        lines.append(f"## 四、市场情绪对持仓的影响——{stock.get('name', stock['code'])}")
-        lines.append(f"")
-        for sl in sentiment_lines:
-            lines.append(sl)
-        lines.append(f"")
-    except Exception as e:
-        import traceback
-        print(f'[DeepAnalysis] 情绪章节生成失败: {e}')
-        traceback.print_exc()
-    
-    # ===== 事件影响追踪（含解禁风险 + 聚合信号） =====
-    try:
-        from event_tracker import format_event_for_report
-        event_lines = format_event_for_report(stock['code'])
-        lines.append(f"## 五、事件影响追踪")
-        lines.append(f"")
-        for el in event_lines:
-            lines.append(el)
-        # C需求：消息面聚合信号（回购追踪 / A/H比价 / 未来解禁），全部真实数据，取不到就不显示
-        agg_signals = []
-        try:
-            _bb = buyback_signal(code)
-            if _bb:
-                agg_signals.append(_bb)
-        except Exception as _e:
-            print(f'[聚合信号] 回购追踪异常 {code}: {_e}')
-        try:
-            _ah = ah_premium_signal(code, current_price)
-            if _ah:
-                agg_signals.append(_ah)
-        except Exception as _e:
-            print(f'[聚合信号] A/H比价异常 {code}: {_e}')
-        try:
-            _uk = unlock_signal_90d(code, current_price)
-            if _uk:
-                agg_signals.append(_uk)
-        except Exception as _e:
-            print(f'[聚合信号] 未来解禁异常 {code}: {_e}')
-        if agg_signals:
-            lines.append('**聚合信号（近90日维度）：**')
-            for sig in agg_signals:
-                lines.append(f"- {sig}")
-            lines.append('')
-    except Exception as e:
-        pass  # 事件模块未运行时不阻塞报告
-
     # ===== 投行一致预期（B需求：卖方研报级机构预测/分歧度/评级） =====
     lines.append(f"## 六、投行一致预期（机构盈利预测与评级）")
     lines.append(f"")
@@ -1902,7 +2065,7 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
                 lines.append(f"   {news['content'][:100]}...")
         lines.append(f"")
     
-    # ===== 综合研判（D需求：四象限规则引擎，报告收尾、免责声明之前） =====
+    # ===== 综合研判（D需求：五象限规则引擎，报告收尾、免责声明之前） =====
     try:
         lines.append(f"## 十、综合研判")
         lines.append(f"")
