@@ -1241,7 +1241,25 @@ def render_consensus_section(code: str, cons=_NOT_FETCHED, current_price: float 
                 f"（{bb['high']['eps']:.2f}元，{bb['high']['date']}）vs "
                 f"最谨慎{bb['low']['org']}（{bb['low']['eps']:.2f}元，{bb['low']['date']}）。"
             )
-    # 3) 评级
+    # 3) 分机构盈利预测明细表（近180天覆盖机构，每机构取最新研报口径）
+    org_eps = cons.get('org_eps') or []
+    if org_eps:
+        years_hdr = sorted({y for o in org_eps for y in o.get('eps', {}).keys()})
+        hdr = '| 机构 | 评级 | 研报日期 | ' + ' | '.join(f'{y}E EPS(元)' for y in years_hdr) + ' |'
+        sep = '|' + '---|' * (3 + len(years_hdr))
+        lines.append(hdr)
+        lines.append(sep)
+        for o in org_eps:
+            cells = [o.get('org', ''), o.get('rating', ''), o.get('date', '')]
+            for y in years_hdr:
+                v = o.get('eps', {}).get(y)
+                cells.append(f'{v:.2f}' if v is not None else '—')
+            lines.append('| ' + ' | '.join(cells) + ' |')
+        lines.append('')
+        lines.append(f"- 上表为近180天覆盖该股的分机构盈利预测（东财研报口径，每机构取最新一份）；"
+                     f"同花顺盈利预测为{cons.get('org_count', 0)}家机构汇总，因部分机构未发东财收录研报，"
+                     f"两家口径的机构数可能不一致。")
+    # 4) 评级
     ratings = cons.get('rating_90d') or {}
     total_r = cons.get('rating_total_90d', 0)
     if total_r > 0:

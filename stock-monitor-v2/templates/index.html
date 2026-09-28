@@ -2277,7 +2277,7 @@
     // 简单的Markdown转HTML
     function markdownToHtml(md) {
         if (!md) return '';
-        // 先提取【重点】标记（转义前提取，防止尖括号被转义）
+        // 先提取【重点】标记(转义前提取,防止尖括号被转义)
         const hlSegs = [];
         md = md.replace(/【重点】([\s\S]*?)【\/重点】/g, function(m, p1) {
             hlSegs.push(p1);
@@ -2297,13 +2297,38 @@
             // 斜体
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
             // 代码
-            .replace(/`([^`]+)`/g, '<code style="background:rgba(102,126,234,0.15);padding:2px 6px;border-radius:4px;color:#a5b4fc;">$1</code>')
-            // 表格（简单处理：将 | 分隔的行转为表格）
-            .replace(/\n\|(.+?)\|\n/g, function(match, p1) {
-                const cells = p1.split('|').map(c => c.trim()).filter(c => c);
-                if (cells.length === 0) return match;
-                return '<tr>' + cells.map(c => `<td style="padding:8px 12px;border:1px solid rgba(255,255,255,0.1);">${c}</td>`).join('') + '</tr>';
-            })
+            .replace(/`([^`]+)`/g, '<code style="background:rgba(102,126,234,0.15);padding:2px 6px;border-radius:4px;color:#a5b4fc;">$1</code>');
+
+        // 表格：整块提取（连续的 | 开头行），避免逐行正则吃掉行间换行导致隔行失效
+        const tableHtmls = [];
+        html = html.replace(/(^|\n)((?:[ \t]*\|[^\n]*\|[ \t]*\n?)+)/gm, function(m, pre, block) {
+            const lines = block.split('\n').map(l => l.trim()).filter(l => /^\|.*\|$/.test(l));
+            if (lines.length < 2) return m;
+            const sepRe = /^\|[\s:|-]+\|$/;
+            const isSep = i => sepRe.test(lines[i]);
+            let bodyStart = 1;
+            if (lines.length > 1 && isSep(1)) bodyStart = 2;
+            if (bodyStart >= lines.length) return m;
+            const parseCells = line => line.slice(1, -1).split('|').map(c => c.trim());
+            const headerCells = parseCells(lines[0]);
+            const bodyLines = [];
+            for (let i = bodyStart; i < lines.length; i++) {
+                if (isSep(i)) continue;
+                bodyLines.push(parseCells(lines[i]));
+            }
+            if (!bodyLines.length) return m;
+            let t = '<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:0.85rem;"><thead><tr>';
+            t += headerCells.map(c => '<th style="padding:8px 12px;border:1px solid rgba(255,255,255,0.15);background:rgba(102,126,234,0.18);color:#e0e7ff;text-align:left;white-space:nowrap;">' + c + '</th>').join('');
+            t += '</tr></thead><tbody>';
+            for (const row of bodyLines) {
+                t += '<tr>' + row.map(c => '<td style="padding:8px 12px;border:1px solid rgba(255,255,255,0.1);color:var(--text-secondary);">' + c + '</td>').join('') + '</tr>';
+            }
+            t += '</tbody></table>';
+            tableHtmls.push(t);
+            return pre + '\u0002T' + (tableHtmls.length - 1) + '\u0002';
+        });
+
+        html = html
             // 水平线
             .replace(/^---$/gim, '<hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:20px 0;">')
             // 列表项
@@ -2314,12 +2339,14 @@
             .replace(/\n\n/g, '</p><p style="margin:12px 0;line-height:1.8;color:var(--text-secondary);">')
             // 单行换行
             .replace(/\n/g, '<br>');
-        
+
         // 包裹在段落中
         html = '<div style="font-size:0.9rem;line-height:1.8;"><p style="margin:12px 0;line-height:1.8;color:var(--text-secondary);">' + html + '</p></div>';
-        
-        // 处理表格包装
-        html = html.replace(/(<tr>.*?<\/tr>)/gs, '<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:0.85rem;">$1</table>');
+
+        // 恢复表格占位符（整体表格HTML，避免被段落/换行处理破坏）
+        html = html.replace(/\u0002T(\d+)\u0002/g, function(m, i) {
+            return tableHtmls[+i];
+        });
 
         // 恢复【重点】段为红色高亮样式
         html = html.replace(/\u0001HL(\d+)\u0001/g, function(m, i) {

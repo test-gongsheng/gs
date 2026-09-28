@@ -81,12 +81,15 @@ def _fetch_profit_forecast_ths(code: str) -> Optional[List[Dict]]:
 
 def _fetch_research_reports_em(code: str) -> Optional[Dict]:
     """
-    东方财富个股研报：近90天评级分布 + 最新3份研报 + 当年分机构盈利预测（EPS口径）。
+    东方财富个股研报：近90天评级分布 + 最新3份研报 + 当年多空代表机构 + 分机构盈利预测明细。
 
     Returns:
         {'rating_90d': {'买入': x, '增持': y, ...}, 'rating_total_90d': n,
          'recent_reports': [{'title','org','rating','date'} x3],
-         'bull_bear': {'high': {'org','eps','date','title'}, 'low': {...}}  # 当年研报EPS最高/最低机构
+         'bull_bear': {'high': {...}, 'low': {...}},       # 当年研报EPS最高/最低机构
+         'org_eps': [                                       # 分机构最新盈利预测（近180天，每机构取最新一份）
+           {'org': '爱建证券', 'rating': '买入', 'date': '2026-08-13',
+            'eps': {'2026': 47.2, '2027': 51.78, '2028': 53.75}}, ...]
         }
         失败返回 None。
     """
@@ -142,11 +145,43 @@ def _fetch_research_reports_em(code: str) -> Optional[Dict]:
         except Exception as e:
             print(f"[一致预期] 多空代表机构提取失败 {code}: {e}")
 
+        # 分机构盈利预测明细：近180天研报，每机构取最新一份的各年EPS预测
+        org_eps = []
+        try:
+            cutoff180 = pd.Timestamp(datetime.now() - timedelta(days=180))
+            recent180 = df[df['日期'] >= cutoff180].sort_values('日期', ascending=False)
+            seen_orgs = set()
+            for _, row in recent180.iterrows():
+                org = str(row.get('机构', '')).strip()
+                if not org or org in seen_orgs:
+                    continue
+                eps_map = {}
+                for col in df.columns:
+                    m = re.match(r'^(\d{4})-盈利预测-收益$', str(col))
+                    if m:
+                        val = row.get(col)
+                        try:
+                            fval = float(val)
+                            if fval > 0:
+                                eps_map[m.group(1)] = round(fval, 2)
+                        except (TypeError, ValueError):
+                            pass
+                seen_orgs.add(org)
+                org_eps.append({
+                    'org': org,
+                    'rating': str(row.get('东财评级', '')),
+                    'date': row['日期'].strftime('%Y-%m-%d'),
+                    'eps': eps_map,
+                })
+        except Exception as e:
+            print(f"[一致预期] 分机构预测提取失败 {code}: {e}")
+
         return {
             'rating_90d': rating_counts,
             'rating_total_90d': int(len(recent)),
             'recent_reports': recent_reports,
             'bull_bear': bull_bear,
+            'org_eps': org_eps,
         }
     except Exception as e:
         print(f"[一致预期] 东财研报获取失败 {code}: {e}")
@@ -226,6 +261,7 @@ def get_consensus(code: str) -> Optional[Dict]:
         'rating_90d': reports['rating_90d'] if reports else {},
         'rating_total_90d': reports['rating_total_90d'] if reports else 0,
         'recent_reports': reports['recent_reports'] if reports else [],
+        'org_eps': reports['org_eps'] if reports else [],
         'divergence': None,
         'bull_bear': reports['bull_bear'] if reports else None,
     }
