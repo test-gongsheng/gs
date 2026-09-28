@@ -13,7 +13,7 @@
     <script>
         // 自动缓存清除机制 - 使用固定版本号
         (function() {
-            const APP_VERSION = '3.3.4';  // 深度报告旧缓存警示+日期显示
+            const APP_VERSION = '3.3.5';  // markdownToHtml表格整块解析重写(修复隔行失效)+分机构一致预期表
             const storedVersion = localStorage.getItem('app_version');
             
             if (storedVersion !== APP_VERSION) {
