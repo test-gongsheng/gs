@@ -2872,6 +2872,7 @@ async function loadPortfolioAnalysis() {
         
         appState.portfolioAnalysis = result.data;
         renderPortfolioAnalysis();
+        renderForwardRadar(result.data);
     } catch (error) {
         console.error('[DEBUG] 加载持仓分析出错:', error);
         // 出错时也显示暂无数据
@@ -2885,6 +2886,31 @@ async function loadPortfolioAnalysis() {
             contentEl.innerHTML = '<div style="text-align:center;padding:20px;color:#999;font-size:12px;">暂无分析报告<br><span style="font-size:11px;">每日收盘后自动生成</span></div>';
         }
     }
+}
+
+// 渲染前瞻雷达（组合级宏观日程 + 统计横幅）
+function renderForwardRadar(reportData) {
+    const el = document.getElementById('forwardRadarContent');
+    if (!el) return;
+    const fo = reportData && reportData.forward_outlook;
+    if (!fo || (!fo.macro_schedule || fo.macro_schedule.length === 0)) {
+        el.innerHTML = '<div style="font-size:0.75rem;color:#999;padding:8px;">暂无前瞻日程</div>';
+        return;
+    }
+    const stats = fo.stats || {};
+    el.innerHTML = `
+        <div style="display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap;">
+            <span style="font-size:0.75rem;color:#3b82f6;">🔭 ${stats.stocks_with_catalysts || 0}只有前瞻点</span>
+            <span style="font-size:0.75rem;color:#f59e0b;">共${stats.total_catalysts || 0}条</span>
+            <span style="font-size:0.7rem;color:#666;">更新 ${fo.as_of || ''}</span>
+        </div>
+        ${(fo.macro_schedule || []).map(m => `
+            <div style="font-size:0.78rem;color:var(--text-primary);line-height:1.5;margin:4px 0;">
+                <span style="color:#666;">${m.time || ''}</span> ${m.title}
+                ${m.source ? `<span style="color:#555;font-size:0.7rem;">[${m.source}]</span>` : ''}
+            </div>
+        `).join('')}
+    `;
 }
 
 // 渲染持仓股分析报告
@@ -3108,6 +3134,37 @@ function showStockAnalysisDetail(code) {
                         <div style="font-size: 1.2rem; font-weight: 600; margin-top: 4px;">${currency}${pivotPrice.toFixed(2)}</div>
                     </div>
                 </div>
+                
+                <!-- 🔥 事件与情绪（用户优先级P0：事件+情绪最重要，排最前） -->
+                ${(stockAnalysis.events_sentiment && stockAnalysis.events_sentiment.event_count > 0) ? `
+                <div style="background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.3); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 6px;">🔥 事件与情绪（近10天）</div>
+                    <div style="display: flex; gap: 14px; margin-bottom: 6px;">
+                        <span style="font-size: 0.85rem; color: #10b981;">看多 ${stockAnalysis.events_sentiment.bullish || 0}</span>
+                        <span style="font-size: 0.85rem; color: #ef4444;">看空 ${stockAnalysis.events_sentiment.bearish || 0}</span>
+                        <span style="font-size: 0.85rem; color: var(--text-secondary);">净额 ${stockAnalysis.events_sentiment.net > 0 ? '+' : ''}${stockAnalysis.events_sentiment.net}</span>
+                    </div>
+                    ${stockAnalysis.events_sentiment.latest_title ? `<div style="font-size: 0.8rem; color: var(--text-primary); line-height: 1.5;">最新：${stockAnalysis.events_sentiment.latest_title}${stockAnalysis.events_sentiment.latest_direction === 'negative' ? ' <span style="color:#ef4444;">[利空]</span>' : stockAnalysis.events_sentiment.latest_direction === 'positive' ? ' <span style="color:#10b981;">[利好]</span>' : ''}</div>` : ''}
+                </div>
+                ` : ''}
+                
+                <!-- 🔭 前瞻催化剂（未来盯什么，非事后复盘） -->
+                ${(() => {
+                    const fo = appState.portfolioAnalysis && appState.portfolioAnalysis.forward_outlook;
+                    const sc = fo && fo.stocks ? fo.stocks[stockAnalysis.code] : null;
+                    if (!sc || !sc.catalysts || sc.catalysts.length === 0) return '';
+                    const typeColor = {'解禁': '#ef4444', '验证节点': '#f59e0b', '事件跟踪': '#3b82f6'};
+                    return `
+                    <div style="background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.3); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 6px;">🔭 前瞻催化剂（接下来盯什么）</div>
+                        ${sc.catalysts.slice(0, 4).map(c => `
+                            <div style="font-size: 0.8rem; color: var(--text-primary); line-height: 1.5; margin: 4px 0; display: flex; gap: 6px; align-items: flex-start;">
+                                <span style="color: ${typeColor[c.type] || '#888'}; flex-shrink: 0;">[${c.type}]</span>
+                                <span>${c.title}${c.days_until != null ? ` <span style="color:#f59e0b;">${c.days_until}天后</span>` : ''}</span>
+                            </div>
+                        `).join('')}
+                    </div>`;
+                })()}
                 
                 <div style="margin-bottom: 16px;">
                     <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">偏离中轴</div>

@@ -42,6 +42,29 @@ SECTOR_MAP = {
 
 # ========== 事件-板块映射表 ==========
 # 重大事件类型 → 影响的板块 → 预期方向
+# ========== 货币政策语境感知（2026-09-29 加息预期环境下的方向纠错） ==========
+# 背景：宽松模板(降息降准→利好成长股)在收紧周期里会被反向新闻误触发——
+# 如"华尔街之狼：加息是个错误"这类评论，语境实为加息预期，方向应与宽松相反。
+MONETARY_TIGHTEN_KW = ['加息', '升息', '紧缩', '收紧', '鹰派', '缩表', '高利率',
+                       '利率不降', '维持利率', 'higher for longer', '加息周期']
+MONETARY_EASE_KW = ['降息', '降准', '宽松', '放水', '下调利率', 'LPR下调', '流动性投放']
+
+
+def monetary_context(title: str) -> str:
+    """货币政策语境判定：'tightening'(收紧/加息) / 'easing'(宽松) / 'none'(不明)"""
+    t = (title or '').lower()
+    if any(k in t for k in MONETARY_TIGHTEN_KW):
+        return 'tightening'
+    if any(k in t for k in MONETARY_EASE_KW):
+        return 'easing'
+    return 'none'
+
+
+def flip_direction(d: str) -> str:
+    """方向取反：positive<->negative，neutral不变"""
+    return {'positive': 'negative', 'negative': 'positive'}.get(d, d)
+
+
 EVENT_SECTOR_MAP = {
     'AI安全监管': {
         'keywords': ['AI安全', '人工智能安全', 'AI监管', '算法监管', 'AI立法', '人工智能立法',
@@ -296,7 +319,12 @@ def _match_macro_themes(title: str, content: str = '') -> List[str]:
 
 
 def _infer_theme_direction(title: str) -> str:
-    """主题事件方向推断：复用全局限定词"""
+    """主题事件方向推断：货币政策语境优先，其次全局限定词"""
+    ctx = monetary_context(title)
+    if ctx == 'tightening':
+        return 'negative'
+    if ctx == 'easing':
+        return 'positive'
     pos = sum(1 for w in POSITIVE_WORDS if w in title)
     neg = sum(1 for w in NEGATIVE_WORDS if w in title)
     if pos > neg:
@@ -341,17 +369,24 @@ def _attach_macro_theme_events(news_pool: List[Dict], stock_events: Dict[str, Li
                            if kw in title or kw in content]
             direction = _infer_theme_direction(title)
 
-            # 主题事件本体
+            # 语境反转：宽松主题命中收紧语境 → 改名+挂到同一批股票，传导逻辑注明反转
+            eff_theme = theme_name
+            if theme_name == '降息降准' and monetary_context(title) == 'tightening':
+                eff_theme = '货币紧缩(加息预期)'
+                direction = 'negative'
+                matched_kws = matched_kws + ['语境:紧缩']
+
+            # 主题事件本体（语境反转时用反转后主题名，报告里不出现【降息降准】类误导标签）
             theme_event = {
                 'level': 'high',
                 'label': '主题事件',
-                'title': f"【{theme_name}】{title}",
+                'title': f"【{eff_theme}】{title}",
                 'time': news_time,
                 'source': news.get('source', ''),
                 'direction': direction,
                 'matched': matched_kws,
                 'content': content[:200],
-                'theme': theme_name,
+                'theme': eff_theme,
             }
 
             # 挂到主题关联的每只持仓股
@@ -363,7 +398,7 @@ def _attach_macro_theme_events(news_pool: List[Dict], stock_events: Dict[str, Li
                 existing.append(dict(theme_event))
                 attached += 1
 
-            theme_day_fired.add(dedup_key)
+            theme_day_fired.add((eff_theme, news_date))
 
     if attached:
         print(f'[宏观主题] 映射生成 {attached} 条主题事件 '
@@ -945,6 +980,15 @@ def identify_events(news_list: List[Dict]) -> List[Dict]:
             if not matched_kws:
                 continue
 
+            # 语境反转：宽松模板命中收紧语境时，事件改名并整体翻转传导方向
+            # （例："加息是个错误"评论 → 语境实为加息预期 → 对成长股应为利空而非利好）
+            _flip_ctx = (event_type == '降息降准'
+                         and monetary_context(title) == 'tightening')
+            eff_type = '货币紧缩(加息预期)' if _flip_ctx else event_type
+            ctx_note = '【语境反转】新闻语境实为加息/紧缩预期，方向与宽松模板相反：' if _flip_ctx else ''
+            if _flip_ctx:
+                matched_kws = matched_kws + ['语境:紧缩']
+
             # 判断重要性
             level = 'medium'
             for lvl, lvl_cfg in EVENT_LEVELS.items():
@@ -952,8 +996,8 @@ def identify_events(news_list: List[Dict]) -> List[Dict]:
                     level = lvl
                     break
 
-            # 检查是否已有同类型事件（避免重复）
-            existing = next((e for e in events if e['type'] == event_type), None)
+            # 检查是否已有同类型事件（避免重复）——反转后的事件与宽松事件分开计数
+            existing = next((e for e in events if e['type'] == eff_type), None)
             if existing:
                 # 更新为最新
                 existing['latest_news'] = title
@@ -961,7 +1005,7 @@ def identify_events(news_list: List[Dict]) -> List[Dict]:
                 existing['count'] = existing.get('count', 1) + 1
                 continue
 
-            # 推演影响路径
+            # 推演影响路径（反转语境下方向整体取反）
             impacted_stocks = []
             for path in config['impact_paths']:
                 for sector, sec_name in SECTOR_MAP.items():
@@ -969,20 +1013,25 @@ def identify_events(news_list: List[Dict]) -> List[Dict]:
                         impacted_stocks.append({
                             'code': sector,
                             'sector': sec_name,
-                            'expected': path['direction'],
-                            'logic': path['logic'],
+                            'expected': flip_direction(path['direction']) if _flip_ctx else path['direction'],
+                            'logic': ctx_note + path['logic'],
                             'confidence': path['confidence'],
                         })
 
+            eff_paths = ([{**p, 'direction': flip_direction(p['direction']),
+                           'logic': ctx_note + p['logic']}
+                          for p in config['impact_paths']] if _flip_ctx
+                         else config['impact_paths'])
+
             events.append({
-                'type': event_type,
+                'type': eff_type,
                 'level': level,
                 'keywords': matched_kws,
                 'first_news': title,
                 'latest_news': title,
                 'latest_time': news.get('time', ''),
                 'count': 1,
-                'impact_paths': config['impact_paths'],
+                'impact_paths': eff_paths,
                 'impacted_stocks': impacted_stocks,
                 'status': 'tracking',  # tracking / verified / invalidated
             })

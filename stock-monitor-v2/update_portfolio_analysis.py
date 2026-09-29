@@ -8,6 +8,7 @@
 import os
 import sys
 import json
+import re
 import traceback
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
@@ -742,7 +743,54 @@ def generate_portfolio_analysis_v2() -> Dict:
     
     # 板块分析
     sector_analysis = analyze_sector(stock_analyses)
-    
+
+    # 【2026-09-29 前瞻雷达】事件+情绪优先级升级：聚合未来催化剂
+    # （解禁倒计时/事件验证节点/跟踪中事件/宏观日程），让报告向前看而非只复盘
+    print("[前瞻雷达] 聚合未来催化剂...")
+    forward_outlook = {}
+    try:
+        from utils.forward_looking import build_forward_outlook
+        forward_outlook = build_forward_outlook(stocks)
+        print(f"[前瞻雷达] {forward_outlook.get('stats', {})}")
+    except Exception as e:
+        print(f"[前瞻雷达][WARN] 生成失败（不影响报告）: {e}")
+
+    # 【2026-09-29 事件/情绪摘要】每只股票挂接近10天事件净方向与条数，
+    # 报告前端据此把事件+情绪排在技术面之前
+    print("[事件摘要] 计算个股事件净方向...")
+    try:
+        import event_tracker as _et
+        _ei_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'event_impact.json')
+        _ei = {}
+        if os.path.exists(_ei_path):
+            with open(_ei_path, encoding='utf-8') as f:
+                _ei = json.load(f)
+        _now = datetime.now()
+        for sa in stock_analyses:
+            evts = _ei.get('stock_events', {}).get(sa['code'], [])
+            fresh = []
+            for e in evts:
+                ts = (e.get('time', '') or '')[:19]
+                try:
+                    dt = datetime.strptime(ts, '%Y-%m-%d %H:%M:%S')
+                except ValueError:
+                    continue
+                if (_now - dt).days <= 10:
+                    fresh.append(e)
+            bull = sum(1 for e in fresh if e.get('direction') == 'positive')
+            bear = sum(1 for e in fresh if e.get('direction') == 'negative')
+            sa['events_sentiment'] = {
+                'event_count': len(fresh),
+                'bullish': bull,
+                'bearish': bear,
+                'net': bull - bear,
+                'latest_title': (re.sub(r'^【.+?】', '', fresh[0]['title'])[:40]
+                                 if fresh else ''),
+                'latest_direction': fresh[0].get('direction', '') if fresh else '',
+            }
+    except Exception as e:
+        print(f"[事件摘要][WARN] 失败（不影响报告）: {e}")
+
     # 组合层面分析
     portfolio_analysis = analyze_portfolio_overall(
         stock_analyses, total_market_value, total_cost, total_pnl, total_pnl_percent, status_counts
@@ -770,6 +818,7 @@ def generate_portfolio_analysis_v2() -> Dict:
         'stock_analyses': stock_analyses,
         'sector_analysis': sector_analysis,
         'portfolio_analysis': portfolio_analysis,
+        'forward_outlook': forward_outlook,
         'alerts': alerts,
         'highlights': highlights
     }
