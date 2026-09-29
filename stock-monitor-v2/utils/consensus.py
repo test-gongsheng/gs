@@ -169,6 +169,7 @@ def _fetch_research_reports_em(code: str) -> Optional[Dict]:
                 seen_orgs.add(org)
                 org_eps.append({
                     'org': org,
+                    'type': classify_broker(org),  # A股外资行极少（如德意志银行覆盖比亚迪），命中即标国际投行
                     'rating': str(row.get('东财评级', '')),
                     'date': row['日期'].strftime('%Y-%m-%d'),
                     'eps': eps_map,

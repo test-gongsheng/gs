@@ -1161,8 +1161,66 @@ def unlock_signal_90d(code: str, current_price: float) -> Optional[str]:
 _NOT_FETCHED = object()
 
 
+# 国际投行关键词（新闻/电报扫描用，覆盖常见外资行中英文简称）
+INTL_IB_NEWS_KEYWORDS = (
+    '高盛', '摩根士丹利', '大摩', '摩根大通', '小摩', '瑞银', '花旗', '美银',
+    '汇丰', '野村', '大和', '星展', '麦格理', '巴克莱', '法巴', '德银', '德意志银行',
+    '瑞穗', '杰富瑞', '伯恩斯坦', '国际投行', '外资投行', '外资行', '外资机构', '大行评级',
+)
+
+
+def _name_variants(stock_name: str) -> List[str]:
+    """个股名称变体：'比亚迪' -> ['比亚迪']；'腾讯控股' -> ['腾讯控股', '腾讯']；'中国铝业' -> ['中国铝业']"""
+    n = str(stock_name or '').strip()
+    if not n:
+        return []
+    variants = [n]
+    for suf in ('控股', '股份', '集团', '科技', '有限公司'):
+        if n.endswith(suf) and len(n) - len(suf) >= 2:
+            variants.append(n[:-len(suf)])
+    return list(dict.fromkeys(variants))
+
+
+def _scan_intl_ib_telegraphs(stock_name: str, days: int = 7, max_hits: int = 3) -> List[Dict]:
+    """
+    扫描本地财联社电报池（data/news_pool_YYYY-MM-DD.json，近N天存在的文件）：
+    国际投行关键词 × 个股名称变体 双条件命中，返回带来源日期的摘录。
+    电报由事件引擎每日落盘；文件缺失/损坏时静默降级为空列表。
+    """
+    import glob
+    hits: List[Dict] = []
+    seen_titles = set()
+    variants = _name_variants(stock_name)
+    if not variants:
+        return hits
+    files = sorted(glob.glob(os.path.join(DATA_DIR, 'news_pool_*.json')), reverse=True)[:days]
+    for fp in files:
+        try:
+            pool = json.load(open(fp, encoding='utf-8'))
+        except Exception:
+            continue
+        for item in pool.get('news') or []:
+            title = re.sub(r'</?em>', '', str(item.get('title', '')))
+            if not title or title in seen_titles:
+                continue
+            if not any(k in title for k in INTL_IB_NEWS_KEYWORDS):
+                continue
+            if not any(v in title for v in variants):
+                continue
+            seen_titles.add(title)
+            hits.append({
+                'title': title,
+                'time': str(item.get('time', ''))[:16],
+                'source': item.get('source', '财联社'),
+            })
+        if len(hits) >= max_hits:
+            break
+    return hits[:max_hits]
+
+
 def render_consensus_section(code: str, cons=_NOT_FETCHED, current_price: float = None,
-                             market: str = 'A股', news_list: list = None) -> List[str]:
+                             market: str = 'A股', news_list: list = None,
+                             stock_name: str = '') -> List[str]:
     """
     投行一致预期章节（B需求，卖方研报写法，全中文）。
     A股：utils/consensus.get_consensus（同花顺盈利预测+东财研报，国内券商口径）。
@@ -1172,6 +1230,7 @@ def render_consensus_section(code: str, cons=_NOT_FETCHED, current_price: float 
     传入 cons 可避免重复请求（与综合研判章节共用同一份数据）。
     current_price：模块④市盈率列=现价/EPS均值；未传或≤0时不渲染PE列。
     news_list：A股个股新闻，用于摘录国际投行观点（港股直接有结构化数据，不需要）。
+    stock_name：个股名称，用于财联社电报池扫描时的名称匹配。
     """
     lines: List[str] = []
     if cons is _NOT_FETCHED:
@@ -1292,6 +1351,9 @@ def render_consensus_section(code: str, cons=_NOT_FETCHED, current_price: float 
         else:
             hdr = '| 机构 | 评级 | 研报日期 | ' + ' | '.join(f'{y}E EPS(元)' for y in years_hdr) + ' |'
             sep = '|' + '---|' * (3 + len(years_hdr))
+            if any(o.get('type') == '国际投行' for o in org_eps):
+                hdr = '| 机构 | 类型 | 评级 | 研报日期 | ' + ' | '.join(f'{y}E EPS(元)' for y in years_hdr) + ' |'
+                sep = '|' + '---|' * (4 + len(years_hdr))
         lines.append(hdr)
         lines.append(sep)
         for o in org_eps:
@@ -1300,6 +1362,8 @@ def render_consensus_section(code: str, cons=_NOT_FETCHED, current_price: float 
                 cells.append(o.get('type', ''))
                 tgt = o.get('target_price')
                 cells.append(f"{cur_sym}{tgt:.2f}" if tgt is not None else '—')
+            elif any(x.get('type') == '国际投行' for x in org_eps):
+                cells.append(o.get('type', ''))
             cells += [o.get('rating', ''), o.get('date', '')]
             for y in years_hdr:
                 v = o.get('eps', {}).get(y)
@@ -1324,20 +1388,30 @@ def render_consensus_section(code: str, cons=_NOT_FETCHED, current_price: float 
     for r in (cons.get('recent_reports') or [])[:3]:
         tp_tag = f" 目标价{cur_sym}{r['target_price']:.2f}" if is_hk and r.get('target_price') is not None else ''
         lines.append(f"- {r['date']} {r['org']}【{r['rating']}】{r['title']}{tp_tag}")
-    # 5) A股专属：公开新闻中的国际投行观点摘录（免费接口拿不到A股外资行结构化数据，用新闻监测补位）
-    if not is_hk and news_list:
-        ib_hits = [n for n in news_list
-                   if any(k in n.get('title', '') for k in (
-                       '高盛', '摩根士丹利', '大摩', '摩根大通', '小摩', '瑞银', '花旗', '美银',
-                       '汇丰', '野村', '大和', '星展', '麦格理', '巴克莱', '法巴', '德银', '瑞穗',
-                       '杰富瑞', '伯恩斯坦', '国际投行', '外资投行', '外资机构'))]
-        if ib_hits:
-            lines.append('**国际投行观点（个股新闻监测）：**')
-            for n in ib_hits[:3]:
-                t = str(n.get('time', ''))[:10]
-                src = n.get('source', '')
-                lines.append(f"- {t} {src}：{n['title']}")
-            lines.append('- 注：A股暂无免费结构化国际投行一致预期数据源，以上为公开新闻摘录，非汇总评级。')
+    # 5) A股专属：公开新闻中的国际投行观点摘录。
+    #    免费接口无A股外资行结构化一致预期，用两个通道补位：
+    #    ① 个股新闻（东财，实时） ② 财联社电报池（本地近7天，事件引擎每日落盘）
+    if not is_hk:
+        ib_items: List[Dict] = []
+        seen_t = set()
+        for n in (news_list or []):
+            t = str(n.get('title', ''))
+            if t and any(k in t for k in INTL_IB_NEWS_KEYWORDS):
+                ib_items.append({
+                    'title': t,
+                    'time': str(n.get('time', ''))[:10],
+                    'source': n.get('source', ''),
+                })
+                seen_t.add(t)
+        for h in _scan_intl_ib_telegraphs(stock_name):
+            if h['title'] not in seen_t:
+                ib_items.append(h)
+                seen_t.add(h['title'])
+        if ib_items:
+            lines.append('**国际投行观点（新闻监测）：**')
+            for it in ib_items[:4]:
+                lines.append(f"- {it['time']} {it['source']}：{it['title']}")
+            lines.append('- 注：A股暂无免费结构化国际投行一致预期数据源，以上为公开新闻/电报摘录，非汇总评级。')
     lines.append('')
     return lines
 
@@ -2027,7 +2101,7 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
     except Exception as _e:
         print(f'[一致预期] 抓取失败 {code}: {_e}')
         _cons = None
-    for cl in render_consensus_section(code, _cons, current_price, market, news_list):
+    for cl in render_consensus_section(code, _cons, current_price, market, news_list, name):
         lines.append(cl)
     
     # 持仓实战分析（豆包式综合研判层）
