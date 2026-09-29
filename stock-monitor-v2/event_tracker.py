@@ -898,12 +898,11 @@ def get_unlock_data(stock_code: str) -> List[Dict]:
 def analyze_unlock_risk(stock_code: str, stock_name: str = '') -> Dict:
     """
     解禁风险分析
-    返回：历史解禁影响 + 未来解禁预警
+    返回：未来解禁预警（只关注将要解禁的，不展示历史解禁影响）
     """
     records = get_unlock_data(stock_code)
     today = datetime.now().strftime('%Y-%m-%d')
 
-    past = [r for r in records if r['date'] <= today]
     future = [r for r in records if r['date'] > today]
 
     # 未来解禁预警
@@ -921,26 +920,10 @@ def analyze_unlock_risk(stock_code: str, stock_name: str = '') -> Dict:
                 'risk': risk_level,
             })
 
-    # 历史解禁影响（用于模式学习）
-    history = []
-    for r in past:
-        if r['after_20d_chg'] is not None:
-            history.append({
-                'date': r['date'],
-                'ratio': r['total_ratio'],
-                'before_20d': r['before_20d_chg'],
-                'after_20d': r['after_20d_chg'],
-                'pattern': ('提前下跌' if (r['before_20d_chg'] or 0) < -5 else '正常')
-                           + ('，解禁后大跌' if r['after_20d_chg'] < -10 else
-                              '，解禁后小跌' if r['after_20d_chg'] < 0 else
-                              '，解禁后上涨'),
-            })
-
     return {
         'code': stock_code,
         'name': stock_name,
         'future_warnings': warnings,
-        'history': history,
         'has_warning': len(warnings) > 0,
     }
 
@@ -1687,11 +1670,6 @@ def format_event_for_report(stock_code: str) -> List[str]:
                 risk_cn = {'HIGH': '🔴 高风险', 'MEDIUM': '🟡 中等', 'LOW': '🟢 低风险'}.get(w['risk'], '?')
                 lines.append(f"- {w['date']}（{w['days_until']}天后）：解禁{w['ratio']:.1f}%股本，{risk_cn}")
                 lines.append(f"  类型：{w['type']}，解禁市值约{w['mkt_cap']:.0f}万元")
-            lines.append('')
-        if unlock.get('history'):
-            lines.append(f"**历史解禁影响：**")
-            for h in unlock['history'][-3:]:
-                lines.append(f"- {h['date']}（解禁{h['ratio']:.1f}%）：{h['pattern']}")
             lines.append('')
 
     return lines if lines else ['暂无相关重大事件']
