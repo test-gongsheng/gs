@@ -603,6 +603,25 @@ def render_sector_divergence(code: str, market: str, stock_change_pct: float) ->
     word0 = '强于' if diff0 >= 0 else '弱于'
     extra = '，题材情绪独立于大盘运行' if abs(diff0) >= 3 else ''
     lines.append(f"- 判定：个股今日{word0}{first_name}{abs(diff0):.2f}个百分点{extra}。")
+
+    # 【归因分解 2026-09-29】把涨跌幅拆成 系统性(beta) + 个股超额 两部分——
+    # 回答"跌这么多是大盘带的还是个股自己的"这个用户最关心的问题，
+    # 避免把系统性大跌误归因于个股事件（或反之）。
+    abs_move = abs(stock_change_pct)
+    if abs_move >= 2 and abs(diff0) <= 2:
+        lines.append(f"- **归因：主因是系统性波动（大盘beta）**——"
+                     f"{'下跌' if stock_change_pct < 0 else '上涨'}{abs_move:.2f}%中"
+                     f"约{abs(first_pct):.2f}个百分点由{first_name}贡献，"
+                     f"个股自身因素（消息/资金/情绪）影响有限（超额{diff0:+.2f}pp），"
+                     f"不宜把当日{'跌' if stock_change_pct < 0 else '涨'}势简单归因于个股事件。")
+    elif abs_move >= 2 and diff0 <= -3:
+        lines.append(f"- **归因：个股利空为主导**——{first_name}仅{'+' if first_pct >= 0 else ''}{first_pct:.2f}%"
+                     f"，个股却{stock_change_pct:+.2f}%，超额{diff0:.2f}pp说明有独立于板块的"
+                     f"个股级压力（消息/减持/解禁/业绩），需重点排查公司层面事件。")
+    elif abs_move >= 2 and diff0 >= 3:
+        lines.append(f"- **归因：个股独立走强**——{first_name}{first_pct:+.2f}%背景下"
+                     f"个股{stock_change_pct:+.2f}%，超额+{diff0:.2f}pp，"
+                     f"驱动因素来自个股自身（订单/利好/资金抱团），板块环境并非主因。")
     lines.append('')
     return lines
 
@@ -1969,6 +1988,18 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
             lines.append(_dl)
     except Exception as _e:
         print(f'[板块背离] 生成失败 {code}: {_e}')
+    
+    # ===== 交易日历前瞻（长假窗口/下一交易日/关键日倒计时） =====
+    try:
+        from utils.trading_calendar import render_calendar_lines
+        _cal = render_calendar_lines()
+        if _cal:
+            lines.append('**日历前瞻：**')
+            for _cl in _cal:
+                lines.append(_cl)
+            lines.append('')
+    except Exception as _e:
+        print(f'[日历前瞻] 生成失败 {code}: {_e}')
     
     if indicators.get('volume'):
         vol = indicators['volume']
