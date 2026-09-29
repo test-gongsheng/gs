@@ -1161,28 +1161,38 @@ def unlock_signal_90d(code: str, current_price: float) -> Optional[str]:
 _NOT_FETCHED = object()
 
 
-def render_consensus_section(code: str, cons=_NOT_FETCHED, current_price: float = None) -> List[str]:
+def render_consensus_section(code: str, cons=_NOT_FETCHED, current_price: float = None,
+                             market: str = 'A股', news_list: list = None) -> List[str]:
     """
     投行一致预期章节（B需求，卖方研报写法，全中文）。
-    数据源：utils/consensus.get_consensus（同花顺盈利预测+东财研报）。
+    A股：utils/consensus.get_consensus（同花顺盈利预测+东财研报，国内券商口径）。
+    港股：utils/consensus.get_hk_consensus（东财港股盈利预测，含高盛/大摩/瑞银/花旗等
+          国际投行目标价与评级，分国际/中资两组统计）。
     数据不可得时整章降级为"暂无机构一致预期数据"，绝不编造。
     传入 cons 可避免重复请求（与综合研判章节共用同一份数据）。
     current_price：模块④市盈率列=现价/EPS均值；未传或≤0时不渲染PE列。
+    news_list：A股个股新闻，用于摘录国际投行观点（港股直接有结构化数据，不需要）。
     """
     lines: List[str] = []
     if cons is _NOT_FETCHED:
         try:
-            from utils.consensus import get_consensus
-            cons = get_consensus(code)
+            if market == '港股':
+                from utils.consensus import get_hk_consensus
+                cons = get_hk_consensus(code)
+            else:
+                from utils.consensus import get_consensus
+                cons = get_consensus(code)
         except Exception as e:
             print(f'[一致预期] 模块异常 {code}: {e}')
             cons = None
 
     if not cons:
-        lines.append('**一致预期：** 暂无机构一致预期数据（该股可能无机构覆盖或为港股，相关接口无数据）。')
+        lines.append('**一致预期：** 暂无机构一致预期数据（该股可能无机构覆盖，相关接口无数据）。')
         lines.append('')
         return lines
 
+    is_hk = cons.get('market') == '港股'
+    cur_sym = 'HK$' if is_hk else '¥'
     years = cons.get('years') or []
     cur = years[0] if years else {}
     yoy = cons.get('profit_yoy_pct')
@@ -1199,10 +1209,10 @@ def render_consensus_section(code: str, cons=_NOT_FETCHED, current_price: float 
         )
         # 模块④：一致预期表（含市盈率列 = 现价/EPS均值）
         if current_price and current_price > 0 and years:
-            in_trade_c = is_trading_time()
+            in_trade_c = is_trading_time(market)
             price_src = '腾讯实时行情现价' if in_trade_c else '最近收盘价（非交易时段快照）'
             lines.append('')
-            lines.append(f"| 年份 | 净利润均值(亿元) | 预测机构数 | EPS均值(元) | 市盈率(按¥{current_price:.2f}) |")
+            lines.append(f"| 年份 | 净利润均值(亿元) | 预测机构数 | EPS均值(元) | 市盈率(按{cur_sym}{current_price:.2f}) |")
             lines.append(f"|------|------|------|------|------|")
             for y in years:
                 eps = y.get('eps_mean')
@@ -1213,8 +1223,8 @@ def render_consensus_section(code: str, cons=_NOT_FETCHED, current_price: float 
                     f"{f'{eps:.2f}' if eps else '—'} | {pe_txt} |"
                 )
             lines.append('')
-            lines.append(f"- 市盈率口径：现价¥{current_price:.2f}（{price_src}）÷ 当年机构一致预期EPS均值；"
-                         f"'—'表示该年无EPS预测数据。")
+            lines.append(f"- 市盈率口径：现价{cur_sym}{current_price:.2f}（{price_src}）÷ 当年机构一致预期EPS均值；"
+                         f"'—'表示该年无EPS预测数据。" + ('EPS/净利为各券商原始币种口径，可能混用人民币与港币。' if is_hk else ''))
         if len(years) > 1:
             nxt = years[1]
             lines.append(
@@ -1241,24 +1251,68 @@ def render_consensus_section(code: str, cons=_NOT_FETCHED, current_price: float 
                 f"（{bb['high']['eps']:.2f}元，{bb['high']['date']}）vs "
                 f"最谨慎{bb['low']['org']}（{bb['low']['eps']:.2f}元，{bb['low']['date']}）。"
             )
+    # 2.5) 港股专属：国际投行目标价与分组统计
+    if is_hk:
+        tp = cons.get('target_price')
+        if tp and current_price and current_price > 0:
+            up_mean = (tp['mean'] - current_price) / current_price * 100
+            up_max = (tp['max'] - current_price) / current_price * 100
+            up_min = (tp['min'] - current_price) / current_price * 100
+            lines.append(
+                f"**目标价（近365天{tp['count']}份，港币）：** 均值{cur_sym}{tp['mean']:.2f}"
+                f"（较现价{'+' if up_mean >= 0 else ''}{up_mean:.1f}%）、"
+                f"最高{cur_sym}{tp['max']:.2f}（{'+' if up_max >= 0 else ''}{up_max:.1f}%）、"
+                f"最低{cur_sym}{tp['min']:.2f}（{'+' if up_min >= 0 else ''}{up_min:.1f}%）。"
+            )
+        def _grp_line(label: str, g: Dict) -> str:
+            tm = g.get('target_mean')
+            if tm is not None:
+                rng = (f"（区间{cur_sym}{g['target_min']:.2f}~{cur_sym}{g['target_max']:.2f}）"
+                       if g.get('target_min') is not None and g.get('target_max') is not None else '')
+                tgt_part = f"目标价均值{cur_sym}{tm:.2f}{rng}，"
+            else:
+                tgt_part = ''
+            return (f"**{label}（{g['count']}家）：** {tgt_part}"
+                    f"评级 看多{g['bull']}/中性{g['neutral']}/看空{g['bear']}。")
+
+        intl = cons.get('intl_summary')
+        cn = cons.get('cn_summary')
+        if intl:
+            lines.append(_grp_line('国际投行', intl))
+            lines.append(f"- 覆盖机构：{'、'.join(intl['names'])}。")
+        if cn:
+            lines.append(_grp_line('中资投行', cn))
     # 3) 分机构盈利预测明细表（近180天覆盖机构，每机构取最新研报口径）
     org_eps = cons.get('org_eps') or []
     if org_eps:
         years_hdr = sorted({y for o in org_eps for y in o.get('eps', {}).keys()})
-        hdr = '| 机构 | 评级 | 研报日期 | ' + ' | '.join(f'{y}E EPS(元)' for y in years_hdr) + ' |'
-        sep = '|' + '---|' * (3 + len(years_hdr))
+        if is_hk:
+            hdr = '| 机构 | 类型 | 目标价 | 评级 | 研报日期 | ' + ' | '.join(f'{y}E EPS(元)' for y in years_hdr) + ' |'
+            sep = '|' + '---|' * (5 + len(years_hdr))
+        else:
+            hdr = '| 机构 | 评级 | 研报日期 | ' + ' | '.join(f'{y}E EPS(元)' for y in years_hdr) + ' |'
+            sep = '|' + '---|' * (3 + len(years_hdr))
         lines.append(hdr)
         lines.append(sep)
         for o in org_eps:
-            cells = [o.get('org', ''), o.get('rating', ''), o.get('date', '')]
+            cells = [o.get('org', '')]
+            if is_hk:
+                cells.append(o.get('type', ''))
+                tgt = o.get('target_price')
+                cells.append(f"{cur_sym}{tgt:.2f}" if tgt is not None else '—')
+            cells += [o.get('rating', ''), o.get('date', '')]
             for y in years_hdr:
                 v = o.get('eps', {}).get(y)
                 cells.append(f'{v:.2f}' if v is not None else '—')
             lines.append('| ' + ' | '.join(cells) + ' |')
         lines.append('')
-        lines.append(f"- 上表为近180天覆盖该股的分机构盈利预测（东财研报口径，每机构取最新一份）；"
-                     f"同花顺盈利预测为{cons.get('org_count', 0)}家机构汇总，因部分机构未发东财收录研报，"
-                     f"两家口径的机构数可能不一致。")
+        if is_hk:
+            lines.append(f"- 上表为东财港股盈利预测口径，按券商最新更新排列（国际投行在前）；"
+                         f"EPS单位元/股，各券商币种口径可能混用人民币与港币；目标价为港币。")
+        else:
+            lines.append(f"- 上表为近180天覆盖该股的分机构盈利预测（东财研报口径，每机构取最新一份）；"
+                         f"同花顺盈利预测为{cons.get('org_count', 0)}家机构汇总，因部分机构未发东财收录研报，"
+                         f"两家口径的机构数可能不一致。")
     # 4) 评级
     ratings = cons.get('rating_90d') or {}
     total_r = cons.get('rating_total_90d', 0)
@@ -1268,7 +1322,22 @@ def render_consensus_section(code: str, cons=_NOT_FETCHED, current_price: float 
     else:
         lines.append('**评级（近90天）：** 暂无新研报覆盖。')
     for r in (cons.get('recent_reports') or [])[:3]:
-        lines.append(f"- {r['date']} {r['org']}【{r['rating']}】{r['title']}")
+        tp_tag = f" 目标价{cur_sym}{r['target_price']:.2f}" if is_hk and r.get('target_price') is not None else ''
+        lines.append(f"- {r['date']} {r['org']}【{r['rating']}】{r['title']}{tp_tag}")
+    # 5) A股专属：公开新闻中的国际投行观点摘录（免费接口拿不到A股外资行结构化数据，用新闻监测补位）
+    if not is_hk and news_list:
+        ib_hits = [n for n in news_list
+                   if any(k in n.get('title', '') for k in (
+                       '高盛', '摩根士丹利', '大摩', '摩根大通', '小摩', '瑞银', '花旗', '美银',
+                       '汇丰', '野村', '大和', '星展', '麦格理', '巴克莱', '法巴', '德银', '瑞穗',
+                       '杰富瑞', '伯恩斯坦', '国际投行', '外资投行', '外资机构'))]
+        if ib_hits:
+            lines.append('**国际投行观点（个股新闻监测）：**')
+            for n in ib_hits[:3]:
+                t = str(n.get('time', ''))[:10]
+                src = n.get('source', '')
+                lines.append(f"- {t} {src}：{n['title']}")
+            lines.append('- 注：A股暂无免费结构化国际投行一致预期数据源，以上为公开新闻摘录，非汇总评级。')
     lines.append('')
     return lines
 
@@ -1944,16 +2013,21 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
             lines.append(f"- 关注 ¥{scenarios.get('optimistic', {}).get('target', sr.get('resistance_near', current_price*1.05))} 附近的压力，注意止盈节奏。")
     lines.append(f"")
     
-    # ===== 投行一致预期（B需求：卖方研报级机构预测/分歧度/评级） =====
+    # ===== 投行一致预期（B需求：卖方研报级机构预测/分歧度/评级/目标价） =====
+    # 港股走 get_hk_consensus（东财港股盈利预测，含高盛/大摩/瑞银等国际投行目标价）；
+    # A股走 get_consensus（同花顺+东财，国内券商口径），另从个股新闻摘录国际投行观点
     lines.append(f"## 六、投行一致预期（机构盈利预测与评级）")
     lines.append(f"")
     try:
-        from utils.consensus import get_consensus as _get_consensus
-        _cons = _get_consensus(code)
+        if market == '港股':
+            from utils.consensus import get_hk_consensus as _get_cons
+        else:
+            from utils.consensus import get_consensus as _get_cons
+        _cons = _get_cons(code)
     except Exception as _e:
         print(f'[一致预期] 抓取失败 {code}: {_e}')
         _cons = None
-    for cl in render_consensus_section(code, _cons, current_price):
+    for cl in render_consensus_section(code, _cons, current_price, market, news_list):
         lines.append(cl)
     
     # 持仓实战分析（豆包式综合研判层）

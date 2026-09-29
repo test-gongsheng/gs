@@ -188,6 +188,255 @@ def _fetch_research_reports_em(code: str) -> Optional[Dict]:
         return None
 
 
+# ========== 港股一致预期（东财港股盈利预测，含国际投行目标价） ==========
+
+# 港股研报市场常见国际投行（按券商简称模糊匹配）
+INTL_BROKER_KEYWORDS = [
+    '高盛', '摩根士丹利', '摩根大通', '花旗', '瑞银', '美银', '汇丰', '野村',
+    '大和', '星展', '大华继显', '麦格理', '巴克莱', '法巴', '巴黎银行', '德银',
+    '德意志', '瑞穗', '杰富瑞', '富瑞', '桑福德', '伯恩斯坦', '汇丰前海',
+    '东英', '未来资产', '三星证券', '凯基', '元大', '富邦', '群益', '永丰金',
+]
+
+
+def classify_broker(name: str) -> str:
+    """券商分类：国际投行 / 中资。未命中外资名录的统一归中资及其他（含港资、台资）。"""
+    n = str(name or '')
+    for kw in INTL_BROKER_KEYWORDS:
+        if kw in n:
+            return '国际投行'
+    return '中资'
+
+
+def _norm_hk_code(code: str) -> str:
+    """归一化为东财港股接口的5位代码：'hk00700'/'00700'/'700' -> '00700'"""
+    digits = ''.join(ch for ch in str(code) if ch.isdigit())
+    return digits.zfill(5)[-5:]
+
+
+def _fetch_hk_forecast_et(code: str) -> Optional[List[Dict]]:
+    """
+    东财港股盈利预测（ak.stock_hk_profit_forecast_et）：分券商×财年多行。
+
+    Returns:
+        [{'year': '2026', 'broker': '高盛', 'type': '国际投行', 'profit_yi': 2475.86,
+          'eps': 29.73, 'rating': '买入', 'target_price': 670.0, 'date': '2026-08-31'}, ...]
+        利润已换算为亿元（源数据为百万元）；EPS已换算为元/股（源数据为分/仙）。
+        失败返回 None。
+    """
+    try:
+        import akshare as ak
+        df = ak.stock_hk_profit_forecast_et(symbol=_norm_hk_code(code))
+        if df is None or df.empty:
+            return None
+        rows = []
+        for _, r in df.iterrows():
+            try:
+                profit_m = float(r.get('纯利/亏损'))
+            except (TypeError, ValueError):
+                profit_m = None
+            try:
+                eps_raw = float(r.get('每股盈利'))
+            except (TypeError, ValueError):
+                eps_raw = None
+            try:
+                tgt = float(r.get('目标价'))
+                if tgt != tgt or tgt <= 0:  # NaN或非法值
+                    tgt = None
+            except (TypeError, ValueError):
+                tgt = None
+            broker = str(r.get('证券商', '')).strip()
+            if not broker:
+                continue
+            rows.append({
+                'year': str(r.get('财政年度', '')).strip(),
+                'broker': broker,
+                'type': classify_broker(broker),
+                'profit_yi': round(profit_m / 100, 2) if profit_m is not None else None,
+                'eps': round(eps_raw / 100, 2) if eps_raw is not None else None,
+                'rating': str(r.get('评级', '')).strip(),
+                'target_price': tgt,
+                'date': str(r.get('更新日期', ''))[:10],
+            })
+        return rows or None
+    except Exception as e:
+        print(f'[港股一致预期] 东财接口失败 {code}: {e}')
+        return None
+
+
+def _rating_side(rating: str) -> str:
+    """评级归一化：bullish / neutral / bearish"""
+    r = str(rating or '')
+    if any(k in r for k in ('买入', '增持', '优于大市', '跑赢', '推荐', '买进', '确信')):
+        return 'bullish'
+    if any(k in r for k in ('减持', '卖出', '跑输', '低配', '逊于', '沽出', '沽售')):
+        return 'bearish'
+    return 'neutral'
+
+
+def get_hk_consensus(code: str) -> Optional[Dict]:
+    """
+    港股投行一致预期（东财港股盈利预测，含国际投行目标价与评级）。
+
+    返回结构与 get_consensus 对齐（years/org_count/divergence/rating_90d/recent_reports/
+    org_eps/bull_bear），另增港股专属字段：
+      'target_price': {'mean','median','max','min','count'} | None
+      'intl_summary': {'count','target_mean','target_max','target_min','bull','neutral','bear','names'} | None
+      'cn_summary':   同上结构
+      'market': '港股'
+    纯利单位：亿元；EPS单位：元/股（各券商币种口径可能为人民币或港币，以原始研报为准）。
+    无数据/接口失败返回 None。
+    """
+    rows = _fetch_hk_forecast_et(code)
+    if not rows:
+        return None
+
+    today = datetime.now()
+
+    def _recent(row, days):
+        try:
+            d = datetime.strptime(row['date'], '%Y-%m-%d')
+            return (today - d).days <= days
+        except Exception:
+            return False
+
+    # 年度聚合（近365天更新的预测才参与）
+    years_agg = {}
+    for r in rows:
+        if not r['year'] or not _recent(r, 365):
+            continue
+        a = years_agg.setdefault(r['year'], {'profits': [], 'epses': [], 'brokers': set()})
+        if r['profit_yi'] is not None:
+            a['profits'].append(r['profit_yi'])
+            a['brokers'].add(r['broker'])
+        if r['eps'] is not None:
+            a['epses'].append(r['eps'])
+
+    years = []
+    for y in sorted(years_agg.keys()):
+        a = years_agg[y]
+        if not a['profits']:
+            continue
+        years.append({
+            'year': y,
+            'org_count': len(a['brokers']),
+            'profit_min': round(min(a['profits']), 2),
+            'profit_mean': round(sum(a['profits']) / len(a['profits']), 2),
+            'profit_max': round(max(a['profits']), 2),
+            'eps_min': round(min(a['epses']), 2) if a['epses'] else None,
+            'eps_mean': round(sum(a['epses']) / len(a['epses']), 2) if a['epses'] else None,
+            'eps_max': round(max(a['epses']), 2) if a['epses'] else None,
+        })
+
+    if not years:
+        return None
+
+    cur = years[0]
+    p_min, p_max = cur.get('profit_min'), cur.get('profit_max')
+    divergence = round(p_max / p_min, 2) if (p_min and p_max and p_min > 0) else None
+
+    # 多空代表（当年EPS最高/最低券商）
+    cur_year = cur['year']
+    cy_rows = [r for r in rows if r['year'] == cur_year and r['eps'] is not None and _recent(r, 365)]
+    bull_bear = None
+    if cy_rows:
+        hi = max(cy_rows, key=lambda x: x['eps'])
+        lo = min(cy_rows, key=lambda x: x['eps'])
+        bull_bear = {
+            'high': {'org': hi['broker'], 'eps': hi['eps'], 'date': hi['date'], 'title': f"{cur_year}财年盈利预测"},
+            'low': {'org': lo['broker'], 'eps': lo['eps'], 'date': lo['date'], 'title': f"{cur_year}财年盈利预测"},
+        }
+
+    # 分券商明细（每券商取最新一行，带各年EPS）
+    by_broker = {}
+    for r in sorted(rows, key=lambda x: x['date'], reverse=True):
+        if r['broker'] not in by_broker:
+            by_broker[r['broker']] = {
+                'org': r['broker'], 'type': r['type'], 'rating': r['rating'],
+                'date': r['date'], 'target_price': r['target_price'], 'eps': {},
+            }
+        if r['year'] and r['eps'] is not None and r['year'] not in by_broker[r['broker']]['eps']:
+            by_broker[r['broker']]['eps'][r['year']] = r['eps']
+    org_eps = sorted(by_broker.values(),
+                     key=lambda x: (x['type'] != '国际投行',
+                                    -(int(x['date'].replace('-', '')) if x['date'] else 0)))
+
+    # 近90天评级分布（原始评级 + 归一化阵营）
+    recent90 = [r for r in rows if _recent(r, 90) and r['rating'] and r['rating'] not in ('--', 'nan', 'None')]
+    side_cn = {'bullish': '看多', 'neutral': '中性', 'bearish': '看空'}
+    rating_90d, rating_side_90d = {}, {}
+    for r in recent90:
+        rating_90d[r['rating']] = rating_90d.get(r['rating'], 0) + 1
+        side = _rating_side(r['rating'])
+        rating_side_90d[side_cn[side]] = rating_side_90d.get(side_cn[side], 0) + 1
+
+    # 目标价统计（近365天）
+    def _tp_stats(sub):
+        tps = [r['target_price'] for r in sub if r['target_price'] is not None and _recent(r, 365)]
+        if not tps:
+            return None
+        tps_s = sorted(tps)
+        return {
+            'count': len(tps),
+            'mean': round(sum(tps) / len(tps), 2),
+            'median': round(tps_s[len(tps_s) // 2], 2),
+            'max': round(max(tps), 2),
+            'min': round(min(tps), 2),
+        }
+
+    intl_rows = [r for r in rows if r['type'] == '国际投行']
+    cn_rows = [r for r in rows if r['type'] != '国际投行']
+
+    def _grp_summary(sub):
+        if not sub:
+            return None
+        recent_sub = [r for r in sub if _recent(r, 365) and r['rating'] and r['rating'] not in ('--', 'nan', 'None')] or sub
+        sides = {'看多': 0, '中性': 0, '看空': 0}
+        for r in recent_sub:
+            sides[side_cn[_rating_side(r['rating'])]] += 1
+        st = _tp_stats(sub) or {}
+        return {
+            'count': len({r['broker'] for r in recent_sub}),
+            'target_mean': st.get('mean'),
+            'target_max': st.get('max'),
+            'target_min': st.get('min'),
+            'bull': sides['看多'], 'neutral': sides['中性'], 'bear': sides['看空'],
+            'names': sorted({r['broker'] for r in recent_sub}),
+        }
+
+    # 最新3条研报动态（每券商取最新一条且优先有效评级的行，避免同券商多财年行刷屏）
+    _best_by_broker: Dict[str, Dict] = {}
+    for r in sorted(rows, key=lambda x: x['date'], reverse=True):
+        b = r['broker']
+        has_rt = bool(r['rating']) and r['rating'] not in ('--', 'nan', 'None')
+        if b not in _best_by_broker:
+            _best_by_broker[b] = r
+        elif has_rt and (_best_by_broker[b]['rating'] in ('--', '', 'nan', 'None')):
+            _best_by_broker[b] = r
+    _recent_dedup = sorted(_best_by_broker.values(), key=lambda x: x['date'], reverse=True)[:3]
+    recent_reports = [{
+        'title': f"{r['year']}财年盈利预测", 'org': r['broker'], 'rating': r['rating'],
+        'date': r['date'], 'target_price': r['target_price'],
+    } for r in _recent_dedup]
+
+    return {
+        'market': '港股',
+        'years': years,
+        'org_count': cur.get('org_count', 0),
+        'profit_yoy_pct': None,
+        'rating_90d': rating_90d,
+        'rating_side_90d': rating_side_90d,
+        'rating_total_90d': len(recent90),
+        'recent_reports': recent_reports,
+        'org_eps': org_eps,
+        'divergence': divergence,
+        'bull_bear': bull_bear,
+        'target_price': _tp_stats(rows),
+        'intl_summary': _grp_summary(intl_rows),
+        'cn_summary': _grp_summary(cn_rows),
+    }
+
+
 def _parse_cn_amount(text: str) -> Optional[float]:
     """解析中文金额字符串（'1.28亿'/'-5653.97万'）为亿元数值"""
     if not text:
