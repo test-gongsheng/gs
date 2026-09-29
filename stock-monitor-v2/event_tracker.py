@@ -107,7 +107,8 @@ EVENT_SECTOR_MAP = {
         ],
     },
     '降息降准': {
-        'keywords': ['降准', '降息', 'LPR', '流动性', '货币政策', 'MLF'],
+        'keywords': ['降准', '降息', 'LPR', 'MLF', '逆回购', '流动性宽松',
+                     '流动性投放', '货币政策', '政策利率', '下调准备金'],
         'impact_paths': [
             {'sectors': ['半导体-GPU', '半导体-存储', '半导体设备与服务', 'AI应用-NLP',
                          '数据中心/IDC', '光伏设备', '新能源汽车'],
@@ -300,8 +301,8 @@ MACRO_THEMES = {
     },
     '宏观政策': {
         'keywords': ['降准', '降息', 'LPR', '降准降息', '央行', '财政政策',
-                     '货币政策', 'MLF', '流动性', '发改委', '国债', '长债',
-                     '债券抛售', '收益率', '美联储'],
+                     '货币政策', 'MLF', '逆回购', '流动性宽松', '流动性投放',
+                     '发改委', '国债', '长债', '债券抛售', '收益率', '美联储'],
         'stocks': [],
         'concepts': [],
     },
@@ -1036,6 +1037,45 @@ def identify_events(news_list: List[Dict]) -> List[Dict]:
                 'status': 'tracking',  # tracking / verified / invalidated
             })
 
+        # 【收紧事件主动生成】标题明确是加息/紧缩语境且涉央行级主体时，
+        # 即使没命中宽松模板关键词也生成"货币紧缩(加息预期)"事件——
+        # 避免收紧周期里事件雷达对最重要的宏观变量沉默（对称于宽松模板）。
+        if monetary_context(title) == 'tightening' and \
+                any(k in title for k in ('美联储', '央行', '货币政策', '利率决议', 'FOMC', '加息')):
+            _tight_cfg = EVENT_SECTOR_MAP.get('降息降准', {})
+            existing_t = next((e for e in events if e['type'] == '货币紧缩(加息预期)'), None)
+            if existing_t:
+                existing_t['latest_news'] = title
+                existing_t['latest_time'] = news.get('time', '')
+                existing_t['count'] = existing_t.get('count', 1) + 1
+            else:
+                _tt_paths = [{**p, 'direction': flip_direction(p['direction']),
+                              'logic': '【语境反转】紧缩/加息预期，方向与宽松模板相反：' + p['logic']}
+                             for p in _tight_cfg.get('impact_paths', [])]
+                _tt_stocks = []
+                for path in _tight_cfg.get('impact_paths', []):
+                    for sector, sec_name in SECTOR_MAP.items():
+                        if sec_name in path['sectors']:
+                            _tt_stocks.append({
+                                'code': sector,
+                                'sector': sec_name,
+                                'expected': flip_direction(path['direction']),
+                                'logic': '【语境反转】紧缩/加息预期，方向与宽松模板相反：' + path['logic'],
+                                'confidence': path['confidence'],
+                            })
+                events.append({
+                    'type': '货币紧缩(加息预期)',
+                    'level': 'medium',
+                    'keywords': [k for k in MONETARY_TIGHTEN_KW if k in title],
+                    'first_news': title,
+                    'latest_news': title,
+                    'latest_time': news.get('time', ''),
+                    'count': 1,
+                    'impact_paths': _tt_paths,
+                    'impacted_stocks': _tt_stocks,
+                    'status': 'tracking',
+                })
+
     return events
 
 
@@ -1652,12 +1692,24 @@ def format_event_for_report(stock_code: str) -> List[str]:
             _concept_render = sorted(concept_all, key=lambda _x: 0 if _x[0].get('_curated') else 1)
             for ev, s, ev_date, _age in _concept_render[:2]:
                 d2 = dir_cn.get(s.get('expected', 'neutral'), '中性')
+                eff_type = ev['type']
+                # 【渲染兜底】存量宽松事件做语境复核：宽松模板可能是旧关键词（如"流动性"）
+                # 从商品/债市新闻误匹配来的。收紧语境→反转方向并改名；非货币政策语境→降级中性。
+                # 与生成层（identify_events 语境反转）双保险，存量json不靠重跑也能自愈显示。
+                if eff_type == '降息降准':
+                    _ctx = monetary_context((ev.get('latest_news', '') or '') + (ev.get('first_news', '') or ''))
+                    if _ctx == 'tightening':
+                        eff_type = '货币紧缩(加息预期)'
+                        d2 = dir_cn.get(flip_direction(s.get('expected', 'neutral')), '中性')
+                    elif _ctx == 'none':
+                        d2 = '中性'
+                        eff_type = '降息降准(语境存疑)'
                 t2 = ev_date.strftime('%Y-%m-%d') if ev_date else ''
                 # 清洗高亮标签；标题不含事件关键词时（靠正文误匹配）不展示标题
                 ev_title = (ev.get('latest_news', '') or '').replace('<em>', '').replace('</em>', '')
                 kw_hit = any(k in ev_title for k in (ev.get('keywords') or []))
                 title_part = f" {ev_title[:70]}" if (ev_title and kw_hit) else ''
-                lines.append(f"- 🔷 [{d2}·板块联动] 【{ev['type']}】{title_part}".rstrip())
+                lines.append(f"- 🔷 [{d2}·板块联动] 【{eff_type}】{title_part}".rstrip())
                 lines.extend(_three_part(
                     {'title': ev_title or ev['type'], 'content': '', 'theme': None},
                     impact_logic=f"传导逻辑：{s.get('logic', '')}", sector_link=True))
