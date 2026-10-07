@@ -13,6 +13,12 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 
+# 假期窗口回补（非交易日新闻/事件补录），文件缺失时降级为无此功能
+try:
+    import holiday_catchup as _holiday_catchup
+except Exception:
+    _holiday_catchup = None
+
 # ========== 配置 ==========
 BASE_DIR = os.path.dirname(__file__)
 REPORTS_DIR = os.path.join(BASE_DIR, 'reports')
@@ -2243,10 +2249,14 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
             if news['content']:
                 lines.append(f"   {news['content'][:100]}...")
         lines.append(f"")
+
+    # 窗口期事件补录（非交易日）：长假/周末窗口由 holiday_catchup 自动回补后进池，这里按持仓匹配渲染
+    for _wl in _render_window_events_section(code, name):
+        lines.append(_wl)
     
     # ===== 综合研判（D需求：五象限规则引擎，报告收尾、免责声明之前） =====
     try:
-        lines.append(f"## 十、综合研判")
+        lines.append(f"## 十一、综合研判")
         lines.append(f"")
         for vl in render_verdict_section(code, market, current_price, kline, indicators, _cons):
             lines.append(vl)
@@ -2285,7 +2295,7 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
         src_list.append('东财日线 akshare（三日形态：涨跌幅/成交额/换手率，失败降级腾讯K线近似值）')
     if any('板块背离量化' in l for l in lines):
         src_list.append('基准指数实时行情（沪深300/创业板指/科创50/恒生指数，板块背离量化参照系）')
-    lines.append(f"## 十一、信息来源清单")
+    lines.append(f"## 十二、信息来源清单")
     lines.append(f"")
     for _s in src_list:
         lines.append(f"- {_s}")
@@ -2302,6 +2312,84 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
 
 # ========== 批量生成 ==========
 
+# 窗口期事件方向判断关键词（规则引擎，不编造：标题无明晰信号一律判中性/low）
+_WIN_POS_KW = ['盈利', '中标', '订单', '涨价', '扩产', '突破', '认证', '利好', '回升', '增长',
+               '创新高', '签约', '量产', '回购', '落地', '投产', '满产', '扩表']
+_WIN_NEG_KW = ['减持', '解禁', '处罚', '问询', '警示', '下滑', '亏损', '诉讼', '违约', '冲突',
+               '制裁', '管制', '加息', '退市', '风险', '调查', '叫停', '管制升级']
+
+
+def _window_impact_judgment(item: Dict) -> Tuple[str, str, str]:
+    """窗口期单条新闻的"事件→影响路径"方向判断。
+    返回 (方向, 置信度, 依据)。名称命中+信号词明确→medium；仅概念命中或信号模糊→low。"""
+    title = str(item.get('title', ''))
+    pos = [k for k in _WIN_POS_KW if k in title]
+    neg = [k for k in _WIN_NEG_KW if k in title]
+    via = item.get('via', '概念')
+    if pos and not neg:
+        direction = '偏利好'
+        conf = 'medium' if via == '名称' else 'low'
+    elif neg and not pos:
+        direction = '偏利空'
+        conf = 'medium' if via == '名称' else 'low'
+    else:
+        direction = '中性'
+        conf = 'low'
+    bits = []
+    if item.get('themes'):
+        bits.append(f"命中主题{'/'.join(item['themes'][:2])}")
+    if item.get('matched'):
+        bits.append(f"命中词{'/'.join(item['matched'][:3])}")
+    return direction, conf, ('；' + '，'.join(bits)) if bits else ''
+
+
+def _render_window_events_section(code: str, stock_name: str) -> List[str]:
+    """## 十、窗口期事件补录（非交易日）：读 holiday_catchup 最近一次回补标记，
+    从窗口期池文件里匹配该股新闻并给出方向判断。无回补记录或无命中时渲染占位说明。"""
+    lines: List[str] = []
+    try:
+        if _holiday_catchup is None:
+            return lines
+        last = _holiday_catchup.load_last_run()
+        if not last or not last.get('window_start'):
+            return lines
+        start, end = last['window_start'], last.get('window_end') or start
+        gap = last.get('gap_days')
+        items = _holiday_catchup.window_items_for_stock(code, stock_name, start, end, max_items=8)
+        lines.append(f"## 十、窗口期事件补录（非交易日）")
+        lines.append(f"")
+        lines.append(f"> 数据窗口：{start} ~ {end}（非交易日窗口{gap or '?'}天，由 holiday_catchup 自动回补）")
+        lines.append(f"")
+        if not items:
+            lines.append(f"窗口期未采集到该股相关重大事件。")
+            lines.append(f"")
+            return lines
+        for i, it in enumerate(items, 1):
+            direction, conf, logic = _window_impact_judgment(it)
+            lines.append(f"{i}. **{it['title']}**（{it.get('source', '')} {str(it.get('time', ''))[:10]}）")
+            lines.append(f"   → 影响判断：{direction}（置信度{conf}）{logic}")
+        lines.append(f"")
+    except Exception as e:
+        print(f'[窗口期事件补录] 渲染失败 {code}: {e}')
+    return lines
+
+
+def _maybe_holiday_catchup():
+    """报告生成前检测非交易日窗口缺口（≥2天）并自动回补新闻池与事件。
+    环境变量 HOLIDAY_CATCHUP=0 可禁用。任何失败只告警，绝不中断报告生成。"""
+    if os.environ.get('HOLIDAY_CATCHUP', '1') == '0':
+        return
+    try:
+        if _holiday_catchup is None:
+            return
+        info = _holiday_catchup.detect_gap()
+        gap = info.get('gap_days') or 0
+        if gap >= 2:
+            print(f'[DeepAnalysis] 检测到假期窗口缺口{gap}天，自动回补：{info.get("missing_dates")}')
+            _holiday_catchup.run_catchup()
+    except Exception as e:
+        print(f'[DeepAnalysis] 假期窗口回补失败（不影响报告）: {e}')
+
 def load_portfolio() -> List[Dict]:
     """加载持仓数据"""
     data_file = os.path.join(os.path.dirname(__file__), 'data', 'stocks.json')
@@ -2316,6 +2404,8 @@ def load_portfolio() -> List[Dict]:
 
 def generate_all_reports(target_codes: List[str] = None):
     """生成全部持仓深度报告"""
+    # 入口兜底：无论从脚本还是其他模块调用，都先保证窗口回补已执行（幂等，无缺口秒过）
+    _maybe_holiday_catchup()
     stocks = load_portfolio()
     if target_codes:
         stocks = [s for s in stocks if s['code'] in target_codes]
@@ -2350,7 +2440,10 @@ if __name__ == '__main__':
         run_event_analysis(_df.get('stocks', []))
     except Exception as e:
         print(f'[DeepAnalysis] 事件引擎刷新失败（用旧数据继续）: {e}')
-    
+
+    # 事件引擎刷新后再检测假期窗口缺口（避免合并进 event_impact.json 的窗口事件被刷新覆盖）
+    _maybe_holiday_catchup()
+
     if len(sys.argv) > 1:
         # 指定股票代码
         codes = sys.argv[1:]
