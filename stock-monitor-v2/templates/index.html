@@ -2190,7 +2190,7 @@
         
         _isRegenerating = true;
         let pollCount = 0;
-        const MAX_POLL = 180;  // 180次×2秒=360秒(6分钟)上限——单只深度生成含AI研判约4.5分钟，2分钟上限必误报(2026-10-14修复)
+        const MAX_POLL = 360;  // 360次×2秒=720秒(12分钟)上限——单只链路=正文生成(2-3分钟)+AI研判(约4.5分钟)，合计7分钟+
         
         function setBusy(busy) {
             _isRegenerating = busy;
@@ -2204,6 +2204,13 @@
         function showError(msg) {
             title.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 生成失败';
             content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);"><i class="fas fa-exclamation-triangle" style="font-size:2rem;margin-bottom:16px;display:block;"></i>${msg}<br><small style="color:var(--text-muted);">可点击右上角"实时生成"重试</small></div>`;
+            setBusy(false);
+        }
+        
+        function showStillRunning() {
+            // 超时≠失败：生成任务在后台继续跑，报告落盘后刷新即可看
+            title.innerHTML = '<i class="fas fa-clock"></i> 仍在后台生成';
+            content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary);"><i class="fas fa-info-circle" style="font-size:2rem;margin-bottom:16px;display:block;color:#f5576c;"></i>生成约需5-8分钟（正文+AI研判两段链路），已完成部分不会丢失。<br><strong>直接刷新页面，稍后回来点「实时生成」即可查看完整报告。</strong><br><small style="color:var(--text-muted);">或点击右上角"实时生成"继续等待</small></div>';
             setBusy(false);
         }
         
@@ -2233,7 +2240,8 @@
                     } else if (status === 'error') {
                         showError('生成出错: ' + (st.error || '未知错误'));
                     } else if (pollCount >= MAX_POLL) {
-                        showError('生成超时（超过2分钟），服务器可能繁忙，请稍后重试');
+                        // 前台等满12分钟：任务仍在后台跑，不再显示"失败"（2026-10-14修复）
+                        showStillRunning();
                     } else {
                         // 继续等待，更新提示
                         const dots = '.'.repeat((pollCount % 3) + 1);

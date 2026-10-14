@@ -214,19 +214,8 @@ if %ERRORLEVEL%==0 (
 
 echo.
 
-echo [Info] Regenerating 14 daily reports (5-10 min, NO output here is normal)...
-echo [Info] To watch progress, open ANOTHER window in this folder and run:
-echo [Info]   powershell "Get-Content reports\cron_*.log -Tail 20 -Wait"
-echo [Info] Started at %time%
+echo [Info] 深度报告不自动生成——请在网页界面手动点「实时生成」（2026-10-14 用户决策）
 echo.
-if exist "%REPO_DIR%\generate_daily_report.bat" (
-    call "%REPO_DIR%\generate_daily_report.bat"
-    echo.
-    echo [OK] Report generation finished at %time%. Last log lines:
-    powershell -NoProfile -Command "$f=(Get-ChildItem '%REPO_DIR%\reports\cron_*.log' | Sort-Object LastWriteTime -Descending)[0]; Get-Content $f.FullName -Tail 6"
-) else (
-    echo [Skip] generate_daily_report.bat not found
-)
 
 :: Cleanup
 rmdir /S /Q "%TEMP_DIR%" 2>nul
