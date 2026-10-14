@@ -2190,7 +2190,7 @@
         
         _isRegenerating = true;
         let pollCount = 0;
-        const MAX_POLL = 60;  // 60次×2秒=120秒上限
+        const MAX_POLL = 180;  // 180次×2秒=360秒(6分钟)上限——单只深度生成含AI研判约4.5分钟，2分钟上限必误报(2026-10-14修复)
         
         function setBusy(busy) {
             _isRegenerating = busy;

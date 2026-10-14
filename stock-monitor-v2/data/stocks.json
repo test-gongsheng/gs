@@ -127,11 +127,11 @@
       "name": "晶盛机电",
       "market": "A股",
       "sector": "光伏设备",
-      "current_price": 40.7,
+      "current_price": 35.88,
       "avg_cost": 38.782,
       "axis_price": 40.03,
       "shares": 13000,
-      "market_value": 529100.0,
+      "market_value": 466440.0,
       "priority": "P2",
       "status": "监控中",
       "stock_type": "high_vol",
@@ -140,10 +140,10 @@
       "atr_pct": 3.65,
       "stock_type_calculated": true,
       "stock_type_calc_time": "2026-09-22 08:51:20",
-      "change": -1.6,
-      "change_percent": -3.78,
-      "quote_time": "20260924161424",
-      "price_update_time": "2026-09-27T18:11:44"
+      "change": -2.39,
+      "change_percent": -6.25,
+      "quote_time": "20260930150000",
+      "price_update_time": "2026-10-08T08:55:00"
     },
     {
       "code": "300442",

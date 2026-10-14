@@ -2482,45 +2482,11 @@ def setup_cron_job():
         print(f"[Cron] 如需定时生成报告，请手动配置 crontab")
 
 
-def ensure_portfolio_analysis():
-    """启动时检查深度分析报告是否存在，不存在则自动生成"""
-    try:
-        report_dir = os.path.join(os.path.dirname(__file__), 'reports')
-        today = datetime.now().strftime('%Y-%m-%d')
-        import glob
-        files = glob.glob(os.path.join(report_dir, f'deep_analysis_*_{today}.md'))
-        
-        if files:
-            print(f"[Report] 今日深度分析报告已存在: {len(files)} 份")
-            return
-        
-        # 先检查 stocks.json 数据
-        data = load_data()
-        stocks = data.get('stocks', [])
-        print(f"[Report] 当前持仓股票数量: {len(stocks)}")
-        if stocks:
-            print(f"[Report] 前3只股票: {[s.get('code') for s in stocks[:3]]}")
-        
-        print("[Report] 深度分析报告不存在，正在自动生成...")
-        import subprocess
-        result = subprocess.run(
-            [sys.executable, 'deep_analysis.py'],
-            cwd=os.path.dirname(__file__),
-            capture_output=True,
-            text=True,
-            timeout=600
-        )
-        if result.returncode == 0:
-            print("[Report] ✅ 深度分析报告生成成功")
-            files = glob.glob(os.path.join(report_dir, f'deep_analysis_*_{today}.md'))
-            print(f"[Report] 生成报告数: {len(files)} 份")
-        else:
-            print(f"[Report] ⚠️ 报告生成失败: {result.stderr}")
-            print(f"[Report] stdout: {result.stdout}")
-    except Exception as e:
-        print(f"[Report] ⚠️ 检查/生成报告时出错: {e}")
-        import traceback
-        traceback.print_exc()
+@app.route('/api/portfolio-analysis/ensure', methods=['POST'])
+def ensure_portfolio_analysis_legacy():
+    """已废弃：启动自动全量生成已于2026-10-14移除（用户决策：手动实时生成为唯一入口）。
+    保留端点仅为兼容旧前端调用，直接返回成功不做事。"""
+    return jsonify({'success': True, 'message': '启动自动全量生成已禁用，请在界面手动点「实时生成」'})
 
 
 @app.route('/api/trades/import', methods=['POST'])
@@ -2851,14 +2817,9 @@ def generate_deep_analysis_batch():
 
 
 if __name__ == '__main__':
-    # 启动时检查报告文件——放后台线程，绝不阻塞服务器启动
-    # （之前同步跑subprocess最长卡10分钟，服务器期间完全不响应）
-    def _defer_ensure_reports():
-        try:
-            ensure_portfolio_analysis()
-        except Exception as e:
-            print(f'[Report] 后台生成检查失败: {e}')
-    threading.Thread(target=_defer_ensure_reports, daemon=True).start()
+    # 2026-10-14 用户决策：启动时不自动全量生成深度报告。
+    # 深度报告唯一入口=界面手动「实时生成」（点哪只生成哪只，含AI研判约4.5分钟/只）。
+    print('[Startup] 启动自动全量生成已禁用，深度报告请手动「实时生成」')
     
     # 启动时预加载中轴价格缓存
     preload_axis_cache()
