@@ -242,7 +242,7 @@ def get_hk_stock_short_selling(stock_code: str) -> Dict:
                 'estimated': False,
                 'data_pending': True,
                 'source': '港交所',
-                'update_date': yesterday,
+                'update_date': trade_date,
                 'note': '该股票昨日无沽空数据或不在港股通范围'
             }
         else:
