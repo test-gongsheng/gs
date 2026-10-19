@@ -66,3 +66,4 @@ data/access_token.txt
 
 # 宽基ETF资金流数据（每日全量快照，体积大，本地各自生成）
 data/etf_flow/
+data/market_regime.json

@@ -1,0 +1,13 @@
+{
+  "_comment": "宽基ETF资金流信号阈值。credit+bond合并：货币ETF不在交易所份额接口，credit池仅3只，bond池(国债/政金债/信用债/城投债50只)捕捉避险资金，两池合计5日净流入作为'固收同步流入'代理（设计文档3.2节C条件阶段1修正）。extreme_out_5d为v1.1增补：broad5日流出达该量级时豁免顶B/顶C。",
+  "broad_in_5d": 500,
+  "single_day": 300,
+  "breadth_day": 0.6,
+  "credit_bond_5d": 120,
+  "broad_out_5d": 500,
+  "single_day_out": 300,
+  "switch_gap": 200,
+  "position_pct_low": 40,
+  "position_pct_high": 77,
+  "extreme_out_5d": 1500
+}
