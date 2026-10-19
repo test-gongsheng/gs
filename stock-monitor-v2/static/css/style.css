@@ -4265,6 +4265,10 @@ body {
     border-bottom: 1px solid var(--border-color);
     transition: background 0.25s;
     min-height: 30px;
+    /* 吸顶于fixed顶栏之下：任何滚动位置都常驻可见，防止滑入顶栏被不透明背景遮蔽 */
+    position: sticky;
+    top: var(--header-height, 60px);
+    z-index: 1000;
 }
 .mrs-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .mrs-right { display: flex; align-items: center; gap: 10px; min-width: 0; flex-shrink: 1; }
