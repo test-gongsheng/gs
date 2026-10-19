@@ -4275,51 +4275,51 @@ body {
 .mrs-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .mrs-right { display: flex; align-items: center; gap: 10px; min-width: 0; flex-shrink: 1; }
 
-/* 常态/加载：亮灰底浅字 + 灰色左标——清晰可辨，不再隐身 */
+/* 常态/加载：深色底 + 浅灰文字左标——融入暗色界面但清晰可辨 */
 .mrs-bar.mrs-neutral, .mrs-bar.mrs-loading {
-    background: #3f4652;
-    color: #e8ecf1;
-    border-left-color: #9aa4b2;
+    background: rgba(148, 163, 184, 0.10);
+    color: #cbd5e1;
+    border-left-color: #64748b;
 }
-.mrs-bar.mrs-neutral .mrs-dot, .mrs-bar.mrs-loading .mrs-dot { background: #cbd5e1; }
+.mrs-bar.mrs-neutral .mrs-dot, .mrs-bar.mrs-loading .mrs-dot { background: #94a3b8; }
 
-/* 观察级：纯琥珀横幅深字——一眼锁定 */
+/* 观察级：琥珀色文字 + 同色左标 + 微光底——与暗色界面协调又醒目 */
 .mrs-bar.mrs-watch {
-    background: #f5c542;
-    color: #221a02;
-    border-bottom-color: #c79a1e;
-    border-left-color: #b45309;
+    background: rgba(245, 197, 66, 0.10);
+    color: #f5c542;
+    border-bottom-color: rgba(245, 197, 66, 0.25);
+    border-left-color: #f5c542;
 }
-.mrs-bar.mrs-watch .mrs-dot { background: #221a02; }
+.mrs-bar.mrs-watch .mrs-dot { background: #f5c542; box-shadow: 0 0 8px rgba(245,197,66,0.7); }
 
-/* 风格切换/风偏上升：同琥珀横幅 */
+/* 风格切换/风偏上升：同琥珀系 */
 .mrs-bar.mrs-switch {
-    background: #f5c542;
-    color: #221a02;
-    border-bottom-color: #c79a1e;
-    border-left-color: #b45309;
+    background: rgba(245, 197, 66, 0.10);
+    color: #f5c542;
+    border-bottom-color: rgba(245, 197, 66, 0.25);
+    border-left-color: #f5c542;
 }
-.mrs-bar.mrs-switch .mrs-dot { background: #221a02; }
+.mrs-bar.mrs-switch .mrs-dot { background: #f5c542; box-shadow: 0 0 8px rgba(245,197,66,0.7); }
 
-/* 底信号：纯绿横幅深字 + 呼吸微光 */
+/* 底信号：绿色系 + 呼吸微光 */
 .mrs-bar.mrs-bottom {
-    background: #22c55e;
-    color: #04150a;
-    border-bottom-color: #16a34a;
-    border-left-color: #14532d;
+    background: rgba(34, 197, 94, 0.12);
+    color: #4ade80;
+    border-bottom-color: rgba(34, 197, 94, 0.3);
+    border-left-color: #22c55e;
     animation: mrs-breathe-green 2.6s ease-in-out infinite;
 }
-.mrs-bar.mrs-bottom .mrs-dot { background: #04150a; }
+.mrs-bar.mrs-bottom .mrs-dot { background: #4ade80; box-shadow: 0 0 8px rgba(74,222,128,0.7); }
 
-/* 顶信号：纯红横幅白字 + 呼吸微光 */
+/* 顶信号：红色系 + 呼吸微光 */
 .mrs-bar.mrs-top {
-    background: #ef4444;
-    color: #ffffff;
-    border-bottom-color: #dc2626;
-    border-left-color: #7f1d1d;
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+    border-bottom-color: rgba(239, 68, 68, 0.3);
+    border-left-color: #ef4444;
     animation: mrs-breathe-red 2.6s ease-in-out infinite;
 }
-.mrs-bar.mrs-top .mrs-dot { background: #ffffff; }
+.mrs-bar.mrs-top .mrs-dot { background: #f87171; box-shadow: 0 0 8px rgba(248,113,113,0.7); }
 
 @keyframes mrs-breathe-green {
     0%, 100% { box-shadow: inset 0 0 0 0 rgba(74, 222, 128, 0); }
@@ -4478,3 +4478,24 @@ body {
 #marketSignalModal.mrs-modal-top .mrs-modal-regime { color: #f87171; }
 #marketSignalModal .mrs-modal-interp { font-size: 13px; line-height: 1.7; color: var(--text-primary); margin-bottom: 10px; }
 #marketSignalModal .mrs-modal-hits { font-size: 12px; color: var(--text-secondary); line-height: 1.8; }
+
+/* 判定逻辑详解区块（阶段3迭代：讲透信号逻辑） */
+.mrs-sec-logic { border-left: 3px solid rgba(245,197,66,0.55); }
+.mrs-logic-chain {
+    font-size: 13.5px; line-height: 1.75; color: var(--text-primary, #e2e8f0);
+    background: rgba(245,197,66,0.06); border-radius: 6px; padding: 10px 12px; margin-bottom: 10px;
+}
+.mrs-logic-tag {
+    display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px;
+    border-radius: 4px; margin-right: 8px; vertical-align: 1px;
+    background: rgba(245,197,66,0.18); color: #f5c542;
+}
+.mrs-logic-ahead {
+    font-size: 13px; line-height: 1.7; color: var(--text-secondary, #94a3b8);
+    background: rgba(100,116,139,0.10); border-radius: 6px; padding: 9px 12px; margin-top: 10px;
+}
+.mrs-logic-ahead .mrs-logic-tag { background: rgba(100,116,139,0.25); color: #cbd5e1; }
+.mrs-rule-explain {
+    display: block; font-size: 12px; color: var(--text-secondary, #94a3b8);
+    margin-top: 4px; line-height: 1.65; opacity: 0.92;
+}

@@ -3975,6 +3975,55 @@ function mrsRenderPanel() {
         return;
     }
 
+    // ===== 判定逻辑详解：推理链 + 规则人话解释 + 前瞻条件 =====
+    const RULE_EXPLAIN = [
+        ['底A', '机构级弹药进场：宽基ETF 5日净申购≥500亿且单日≥300亿，通常是机构资金在低位建仓，历史上多对应阶段底部区域。'],
+        ['底B', '广度验证：近5日中≥4天净流入、且当天净流入的宽基ETF只数占比≥60%，排除个别权重ETF虚胖，确认全板块真实吸筹。'],
+        ['底C', '关键排除项：若固收类ETF（信用债+利率债代理）5日吸金≥120亿，说明流入宽基的钱是"避险搬家"而非进攻性建仓，底部信号降级。'],
+        ['顶A', '机构撤退：宽基5日净赎回≥500亿且单日≥300亿，与底部规则互为镜像，高位放量流出是危险信号。'],
+        ['顶B', '共振确认：主题ETF 5日净流出≥100亿，宽基+主题一起跑=全面撤离而非风格轮动。'],
+        ['顶C', '避险确认：固收类ETF同步净流入≥120亿，资金躲进债市，顶部概率大增。'],
+        ['风格切换', '存量博弈：宽基流出、主题流入，差额≥200亿，市场从大盘蓝筹切向题材炒作，通常指数震荡、个股活跃。'],
+        ['风偏上升', '进攻信号：红利/低波（防守资产）流出、宽基流入，差额≥200亿，资金从"求稳"转向"求攻"，多出现在反弹初期。'],
+    ];
+    const REGIME_LOGIC = {
+        watch: {
+            chain: '宽基资金流入已达到"底部"量级，但固收类同步吸金说明大资金仍保留防守仓位——排除项未通过，按规则不能判"底"，定为"观察"。',
+            ahead: '升级为"底"：固收代理5日吸金回落至120亿以下、宽基5日维持500亿以上。退回"中性"：宽基5日净流入回落至200亿以下。',
+        },
+        bottom: {
+            chain: '宽基放量+广度验证通过，且固收未吸金（资金是真进攻而非避险）——三项底部条件全部满足，判定"底部区域"。',
+            ahead: '信号失效/降级：若固收转为吸金或宽基净流入明显回落，下一交易日降级为"观察"。',
+        },
+        top: {
+            chain: '宽基持续大额流出（+广度/主题/固收佐证），资金高位撤离，判定"顶部风险"。',
+            ahead: '解除条件：宽基5日净流出收敛至200亿以内、固收同步吸金停止。',
+        },
+        switch: {
+            chain: '资金从宽基撤出、转向主题，风格轮动特征明确，判定"风格切换"。',
+            ahead: '若主题流入也熄火、四池同步走弱，警惕全面退潮。',
+        },
+        neutral: {
+            chain: '四池资金均无显著异动，无明确信号，中性观察。',
+            ahead: '等待宽基单日/累计净流入突破阈值（+300亿/+500亿）再评估。',
+        },
+    };
+    const rl = REGIME_LOGIC[data.regime] || REGIME_LOGIC.neutral;
+    const logicHtml = `
+        <div class="mrs-logic-chain"><span class="mrs-logic-tag">推理</span>${mrsEsc(rl.chain)}</div>
+        ${(data.trigger_detail || []).map(t => {
+            const ex = RULE_EXPLAIN.find(([k]) => t.rule.indexOf(k) === 0);
+            return `<div class="mrs-trigger ${t.hit ? 'hit-true' : 'hit-false'}">
+                <span class="hit">${t.hit ? '✓' : '✗'}</span>
+                <span class="rule">${mrsEsc(t.rule)}</span>
+                <span class="detail">${mrsEsc(t.detail)}${ex ? `<span class="mrs-rule-explain">${ex[1]}</span>` : ''}</span>
+            </div>`;
+        }).join('')}
+        <div class="mrs-logic-ahead"><span class="mrs-logic-tag">前瞻</span>${mrsEsc(rl.ahead)}</div>`;
+    document.getElementById('mrsLogic').innerHTML = logicHtml;
+    const rlRegime = document.getElementById('mrsLogicRegime');
+    if (rlRegime) rlRegime.textContent = (MRS_META[data.regime] || MRS_META.neutral).name;
+
     // 四池资金流条：正红负绿，1日/5日金额标注
     const poolDefs = [
         ['broad', '宽基'], ['theme', '主题'], ['credit_bond', '固收代理'], ['style', '策略风格'],
