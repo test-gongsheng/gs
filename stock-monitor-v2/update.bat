@@ -200,7 +200,7 @@ echo [Step 6/6] Start service ^& regenerate reports...
 if exist "%REPO_DIR%\venv\Scripts\python.exe" (
     start /B "" "%REPO_DIR%\venv\Scripts\python.exe" "%REPO_DIR%\app.py" > "%REPO_DIR%\app.log" 2>&1
 ) else (
-    start /B "" python "%REPO_DIR%\app.py" > "%REPO_DIR%\app.log" 2>&1
+    start /B "" py "%REPO_DIR%\app.py" > "%REPO_DIR%\app.log" 2>&1
 )
 
 timeout /t 3 /nobreak >nul

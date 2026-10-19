@@ -14,7 +14,7 @@ if not exist "%SCRIPT_DIR%reports" mkdir "%SCRIPT_DIR%reports"
 set "LOG_FILE=%SCRIPT_DIR%reports\cron_%TODAY%.log"
 
 REM Python优先用 venv，其次系统 PATH 中的 python
-set "PY=python"
+set "PY=py"
 if exist "%SCRIPT_DIR%venv\Scripts\python.exe" set "PY=%SCRIPT_DIR%venv\Scripts\python.exe"
 
 echo [%date% %time%] 开始生成持仓分析报告（情绪-事件-深度）... >> "%LOG_FILE%"
