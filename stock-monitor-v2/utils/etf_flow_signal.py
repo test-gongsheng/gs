@@ -31,6 +31,11 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
+try:
+    sys.stdout.reconfigure(line_buffering=True)  # 跑批日志实时落盘（引导长流程可见进度）
+except Exception:
+    pass
+
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE not in sys.path:
     sys.path.insert(0, BASE)  # 支持 `python3 utils/etf_flow_signal.py` 直接运行
@@ -283,13 +288,64 @@ def current_streak_days(regime: dict) -> int:
     return max(1, len(days))
 
 
+def _bootstrap_full_history() -> bool:
+    """【首次运行引导】净流入历史不足60个交易日时（常见于全新部署机器），
+    一次性全量引导：份额回填(2024-01-01至今) → 全量ETF价格 → 重建历史。
+    各步骤独立容错，任一步失败仅警告、返回False（不中断每日任务，次日自动重试）。
+    历史已就绪的机器本函数直接返回True（零开销，不触发任何采集）。
+    """
+    import subprocess
+    hist_dates = set()
+    if os.path.exists(HIST_CSV):
+        hist_dates = set(pd.read_csv(HIST_CSV, dtype={"date": str})["date"])
+    if len(hist_dates) >= 60:
+        return True
+    print(f"[首次引导] 检测到ETF净流入历史不足（{len(hist_dates)}天 < 60天），"
+          f"开始一次性全量引导（约20~30分钟，仅首次运行）...")
+    steps = [
+        ("步骤1/3 回填2024年至今沪市ETF逐日份额",
+         [sys.executable, os.path.join(BASE, "tools", "backfill_etf_flow.py")], 2400),
+        ("步骤2/3 抓取全量ETF历史价格",
+         [sys.executable, os.path.join(BASE, "utils", "fetch_etf_prices.py")], 1800),
+    ]
+    for name, cmd, tmo in steps:
+        print(f"[首次引导] {name} ...")
+        try:
+            r = subprocess.run(cmd, cwd=BASE, timeout=tmo,
+                               capture_output=True, text=True,
+                               encoding="utf-8", errors="replace")
+            tail = (r.stdout or "").strip().splitlines()[-3:]
+            for line in tail:
+                print(f"  {line}")
+            if r.returncode != 0:
+                print(f"[警告] {name} 失败（code={r.returncode}，不影响主流程，"
+                      f"次日重试）: {(r.stderr or '').strip()[-200:]}")
+                return False
+        except Exception as e:
+            print(f"[警告] {name} 异常（不影响主流程，次日重试）: {e}")
+            return False
+    print("[首次引导] 步骤3/3 重建净流入历史 ...")
+    try:
+        from utils.etf_flow_calc import build_history
+        df = build_history()
+        print(f"[首次引导] 完成：历史共 {df['date'].nunique()} 天 × "
+              f"{df['pool'].nunique()} 池")
+        return True
+    except Exception as e:
+        print(f"[警告] 历史重建失败（不影响主流程，次日重试）: {e}")
+        return False
+
+
 def refresh_daily_data() -> None:
     """收盘跑批挂接点（阶段3）：确保信号基于最新交易日数据评估。
+    0) 【首次引导】历史不足60个交易日时先全量引导（见 _bootstrap_full_history）
     1) 最近两个自然日的份额文件都不存在时，自动采集（上交所T+1发布，当日晚上
        未必就绪，故同时尝试昨日）；2) 采集到的新份额只有在价格数据（sh000300）
        覆盖该日时才能计算净流入，此时重建历史；否则打印警告、沿用既有历史评估。
     任何异常仅打印警告，绝不影响每日任务主流程（优雅降级，与系统既有模式一致）。
     """
+    if not _bootstrap_full_history():
+        return  # 首次引导失败：本次跳过刷新，主流程继续（main内有历史缺失守卫）
     today = datetime.now().strftime("%Y%m%d")
     yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y%m%d")
     candidates = [today, yesterday]
@@ -337,7 +393,10 @@ def refresh_daily_data() -> None:
 
 
 def main() -> dict:
-    refresh_daily_data()  # 收盘跑批：缺数自动采集，失败优雅降级
+    refresh_daily_data()  # 收盘跑批：首次引导+缺数自动采集，失败优雅降级
+    if not os.path.exists(HIST_CSV):
+        print("[警告] ETF净流入历史不存在（首次引导未完成），本次跳过信号评估")
+        return {}
     hist = pd.read_csv(HIST_CSV, dtype={"date": str})
     cfg = load_config()
     latest = sorted(hist["date"].unique())[-1]
