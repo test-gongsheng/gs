@@ -1,37 +1,37 @@
 @echo off
 REM ============================================================
-REM Ã¿ï¿½Õ³Ö²Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É£ï¿½Windowsï¿½æ£¬ï¿½È¼ï¿½ï¿½ï¿½ generate_daily_report.shï¿½ï¿½
-REM ï¿½ï¿½ï¿½Ì£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½È±ï¿½ï¿½æ£¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½+ï¿½Â¼ï¿½ï¿½ï¿½ï¿½Ý£ï¿½
-REM ï¿½É¼Æ»ï¿½ï¿½ï¿½ï¿½ï¿½"StockDailyReports"Ã¿ï¿½ï¿½ 16:35 ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½Ã£ï¿½Ò²ï¿½ï¿½ï¿½Ö¶ï¿½Ë«ï¿½ï¿½Ö´ï¿½ï¿½
+REM Ã¿ÈÕ³Ö²Ö·ÖÎö±¨¸æÉú³É£¨Windows°æ£¬ÓÅÏÈÓÃ generate_daily_report.sh£©
+REM Á÷³Ì£ºÇéÐ÷ÒýÇæ -> ÊÂ¼þ×·×Ù -> Éî¶È·ÖÎö£¨º¬ÐÂÎÅ+ÊÂ¼þÊý¾Ý£©
+REM ¼Æ»®ÈÎÎñ"StockDailyReports"Ã¿ÈÕ 16:35 ×Ô¶¯ÔËÐÐ£¬Ò²¿ÉÊÖ¶¯Ë«»÷Ö´ÐÐ
 REM ============================================================
 
 set "SCRIPT_DIR=%~dp0"
 cd /d "%SCRIPT_DIR%"
 
-REM ï¿½ï¿½ï¿½Ø»ï¿½ï¿½ï¿½È«ï¿½ï¿½ï¿½ï¿½ï¿½Ú£ï¿½yyyyMMddï¿½ï¿½
+REM »ñÈ¡µ±Ç°ÍêÕûÈÕÆÚ£¨yyyyMMdd£©
 for /f %%i in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd"') do set "TODAY=%%i"
 if not exist "%SCRIPT_DIR%reports" mkdir "%SCRIPT_DIR%reports"
 set "LOG_FILE=%SCRIPT_DIR%reports\cron_%TODAY%.log"
 
-REM Pythonï¿½ï¿½ï¿½ï¿½ï¿½È±ï¿½ï¿½ï¿½ venvï¿½ï¿½ï¿½ï¿½ï¿½ÏµÍ³ PATH ï¿½Ðµï¿½ python
+REM PythonÓÅÏÈÓÃ venv£¬Æä´ÎÏµÍ³ PATH ÖÐµÄ python
 set "PY=python"
 if exist "%SCRIPT_DIR%venv\Scripts\python.exe" set "PY=%SCRIPT_DIR%venv\Scripts\python.exe"
 
-echo [%date% %time%] ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½É³Ö²Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ£¨ï¿½ï¿½ï¿½ï¿½-ï¿½Â¼ï¿½-ï¿½ï¿½È£ï¿½... >> "%LOG_FILE%"
+echo [%date% %time%] ¿ªÊ¼Éú³É³Ö²Ö·ÖÎö±¨¸æ£¨ÇéÐ÷-ÊÂ¼þ-Éî¶È£©... >> "%LOG_FILE%"
 
-echo [%date% %time%] [1/3] ï¿½ï¿½ï¿½ï¿½ï¿½Ð³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½... >> "%LOG_FILE%"
+echo [%date% %time%] [1/3] ÔËÐÐÇéÐ÷ÒýÇæ... >> "%LOG_FILE%"
 %PY% emotion_engine.py >> "%LOG_FILE%" 2>&1
 
-echo [%date% %time%] [2/3] ï¿½ï¿½ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½... >> "%LOG_FILE%"
+echo [%date% %time%] [2/3] ÔËÐÐÊÂ¼þ×·×Ù... >> "%LOG_FILE%"
 %PY% event_tracker.py >> "%LOG_FILE%" 2>&1
 
-echo [%date% %time%] [3/3] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½... >> "%LOG_FILE%"
+echo [%date% %time%] [3/3] Éú³ÉÉî¶È·ÖÎö... >> "%LOG_FILE%"
 %PY% deep_analysis.py >> "%LOG_FILE%" 2>&1
 
 if %errorlevel% equ 0 (
-    echo [%date% %time%] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É³É¹ï¿½ >> "%LOG_FILE%"
+    echo [%date% %time%] Éî¶È·ÖÎö³É¹¦ >> "%LOG_FILE%"
 ) else (
-    echo [%date% %time%] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½ï¿½ï¿½ï¿½ï¿½Ï·ï¿½ï¿½ï¿½Ö¾ï¿½ï¿½ >> "%LOG_FILE%"
+    echo [%date% %time%] Éî¶È·ÖÎöÊ§°Ü£¬ÏêÇé¼ûÉÏ·½ÈÕÖ¾ >> "%LOG_FILE%"
 )
 echo [%date% %time%] [4/4] LLM narrative enhancement (deep-thinking ~5min/stock; auto-skip if no KIMI_API_KEY)... >> "%LOG_FILE%"
 %PY% tools\llm_narrative.py --think >> "%LOG_FILE%" 2>&1
@@ -40,4 +40,4 @@ echo [%date% %time%] [5/5] Market regime signal engine (ETF flow, auto-collect +
 %PY% utils\etf_flow_signal.py >> "%LOG_FILE%" 2>&1
 if %errorlevel% neq 0 echo [%date% %time%] WARN: market regime engine failed (non-blocking) >> "%LOG_FILE%"
 echo --- >> "%LOG_FILE%"
-echo ï¿½ï¿½É¡ï¿½ï¿½ï¿½Ö¾ï¿½ï¿½reports\cron_%TODAY%.log
+echo Íê³É£¬ÈÕÖ¾£ºreports\cron_%TODAY%.log
