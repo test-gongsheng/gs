@@ -20,6 +20,20 @@ URL = ("https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get"
        "?param={mkt}{code},day,2024-01-01,2026-10-16,800,")
 
 
+def ensure_index_price() -> None:
+    """沪深300指数收盘价——信号引擎的历史分位与交易日历都依赖它，
+    且它不在ETF分类表内，必须单独保证存在（修复全新部署引导链缺口）。"""
+    fp = os.path.join(PRICE_DIR, "sh000300.csv")
+    if os.path.exists(fp):
+        return
+    bars = fetch_one("sh", "000300")
+    if bars:
+        pd.DataFrame(bars, columns=["date", "close"]).to_csv(fp, index=False)
+        print(f"[指数] 沪深300价格已抓取 {len(bars)} 根")
+    else:
+        print("[指数] 沪深300抓取失败（下次运行时自动重试）")
+
+
 def fetch_one(market: str, code: str) -> list:
     """抓取单只ETF日线，返回[(date, close), ...]；失败返回None"""
     url = URL.format(mkt=market, code=code)
@@ -36,6 +50,7 @@ def fetch_one(market: str, code: str) -> list:
 
 def main() -> None:
     os.makedirs(PRICE_DIR, exist_ok=True)
+    ensure_index_price()
     df = pd.read_csv(CLASS_CSV, dtype={"code": str})
     todo = []
     for _, row in df.iterrows():
