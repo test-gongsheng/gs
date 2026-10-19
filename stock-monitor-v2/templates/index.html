@@ -73,6 +73,52 @@
         </div>
     </header>
 
+    <!-- 市场红绿灯：宽基ETF资金流信号系统（阶段3，设计文档第五节） -->
+    <div id="mrsBar" class="mrs-bar mrs-loading" title="点击展开/收起信号依据">
+        <div class="mrs-left">
+            <span class="mrs-dot" id="mrsDot"></span>
+            <span class="mrs-name" id="mrsName">市场状态：加载中...</span>
+            <span class="mrs-strength" id="mrsStrength" style="display:none"></span>
+            <span class="mrs-unread" id="mrsUnread" style="display:none"></span>
+        </div>
+        <div class="mrs-right">
+            <span class="mrs-stale" id="mrsStale" style="display:none"></span>
+            <span class="mrs-asof" id="mrsAsof"></span>
+            <span class="mrs-interp" id="mrsInterp"></span>
+            <i class="fas fa-chevron-down mrs-caret" id="mrsCaret"></i>
+        </div>
+    </div>
+    <!-- 依据面板：Bloomberg终端风（深色底/高对比数字/纯色斑块，禁蓝紫渐变） -->
+    <div id="mrsPanel" class="mrs-panel" style="display:none">
+        <div class="mrs-panel-grid">
+            <div class="mrs-sec">
+                <div class="mrs-sec-title">四池资金流（亿元，红涨绿跌）</div>
+                <div id="mrsPools"></div>
+            </div>
+            <div class="mrs-sec">
+                <div class="mrs-sec-title">关键数字</div>
+                <div class="mrs-kv" id="mrsKeyNums"></div>
+            </div>
+        </div>
+        <div class="mrs-sec">
+            <div class="mrs-sec-title">触发依据（信号规则逐条核对）</div>
+            <div id="mrsTriggers"></div>
+        </div>
+        <div class="mrs-sec">
+            <div class="mrs-sec-title">历史信号及后市验证（近20条）</div>
+            <div class="mrs-hist-wrap">
+                <table class="mrs-hist-table">
+                    <thead>
+                        <tr><th>日期</th><th>信号</th><th>强度</th><th>其后5日</th><th>其后10日</th><th>其后20日</th></tr>
+                    </thead>
+                    <tbody id="mrsHistBody">
+                        <tr><td colspan="6" class="mrs-empty">暂无历史信号（收盘跑批后累积）</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- 顶部资产总览 -->
     <section class="asset-overview">
         <div class="asset-card total">
@@ -1328,6 +1374,25 @@
         </div>
     </div>
 
+    <!-- 市场红绿灯信号弹窗（阶段3：红/绿主题随信号，每日每方向只弹一次） -->
+    <div class="modal alert-modal" id="marketSignalModal">
+        <div class="modal-content">
+            <div class="modal-header alert-header" id="mrsModalHeader">
+                <i class="fas fa-traffic-light"></i>
+                <h3 id="mrsModalTitle">市场信号</h3>
+            </div>
+            <div class="modal-body">
+                <div class="alert-content" id="mrsModalContent">
+                    <!-- 动态生成 -->
+                </div>
+                <div class="alert-actions">
+                    <button class="btn-confirm" onclick="mrsViewEvidence()"><i class="fas fa-search"></i> 查看依据</button>
+                    <button class="btn-ignore" onclick="mrsDismissModal()"><i class="fas fa-times"></i> 知道了</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 新闻详情弹窗 -->
     <div class="modal" id="newsDetailModal">
         <div class="modal-content modal-large">
@@ -1531,7 +1596,7 @@
     <!-- 新模块: 状态管理 (Step 3) -->
     <script src="{{ url_for('static', filename='js/modules/state.js') }}?v={{ now }}"></script>
     <script src="{{ url_for('static', filename='js/southbound.js') }}?v={{ now }}"></script>
-    <script src="{{ url_for('static', filename='js/app.v3.2.4.js') }}?v=1776600001"></script>
+    <script src="{{ url_for('static', filename='js/app.v3.3.0.js') | autoversion }}"></script>
     <script src="{{ url_for('static', filename='js/import.js') }}?v=3.2.9-fix"></script>
     <script>
         // 保底渲染逻辑 - 确保持仓列表一定能显示

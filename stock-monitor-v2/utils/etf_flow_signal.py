@@ -14,18 +14,32 @@
 - 风格切换 = 宽基流出+主题流入（差额显著）；风偏上升 = 策略风格流出+宽基流入
 - 位置过滤：沪深300的750日价格分位（非PE分位，全本地可算，0-100与文档40/70对齐）
 
+阶段3新增（界面集成配套，设计文档第五节）：
+- 收盘跑批自动刷新：缺最近交易日份额文件时先自动采集（utils.etf_flow.save_daily_shares，
+  try/except包裹，失败仅警告不中断——优雅降级），份额就绪且价格数据覆盖当日时重建
+  净流入历史（utils.etf_flow_calc.build_history），再评估信号
+- 信号跃迁历史 data/etf_flow/signal_history.json：regime相对上一条发生状态跃迁时append
+  {date, regime, strength, interpretation, hs300_close}；hs300_close取当日沪深300收盘价
+  （data/etf_flow/prices/sh000300.csv，与750日分位同文件，全本地可算）
+
 输出 data/market_regime.json。
 """
 import json
 import os
+import sys
+from datetime import datetime, timedelta
 
 import pandas as pd
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE not in sys.path:
+    sys.path.insert(0, BASE)  # 支持 `python3 utils/etf_flow_signal.py` 直接运行
 FLOW_DIR = os.path.join(BASE, "data", "etf_flow")
 HIST_CSV = os.path.join(FLOW_DIR, "etf_flow_history.csv")
 CONFIG_JSON = os.path.join(BASE, "data", "etf_flow_config.json")
 REGIME_JSON = os.path.join(BASE, "data", "market_regime.json")
+SIGNAL_HISTORY_JSON = os.path.join(FLOW_DIR, "signal_history.json")  # 信号跃迁历史（不入git）
+HS300_PRICE_CSV = os.path.join(FLOW_DIR, "prices", "sh000300.csv")  # 与750日分位同源收盘价
 POOLS_3 = ["broad", "theme", "credit_bond"]  # 输出展示用三池（credit与bond合并展示）
 
 DEFAULT_CONFIG = {
@@ -199,13 +213,139 @@ def evaluate(hist: pd.DataFrame, date: str, cfg: dict) -> dict:
     }
 
 
+def load_hs300_closes() -> dict:
+    """沪深300收盘价 {date_str(YYYYMMDD): float}，取自 prices/sh000300.csv。
+    与750日价格分位同一文件（etf_flow_calc.hs300_price_pct），全本地、无网络依赖。
+    文件缺失返回空字典。
+    """
+    if not os.path.exists(HS300_PRICE_CSV):
+        return {}
+    df = pd.read_csv(HS300_PRICE_CSV, dtype={"date": str})
+    df["date"] = df["date"].str.replace("-", "")
+    return dict(zip(df["date"], df["close"].astype(float)))
+
+
+def hs300_close_on(date_str: str) -> "float | None":
+    """取指定交易日沪深300收盘价，无数据返回None"""
+    return load_hs300_closes().get(date_str)
+
+
+def load_signal_history() -> list:
+    """读取信号跃迁历史，文件不存在/损坏返回空列表"""
+    if not os.path.exists(SIGNAL_HISTORY_JSON):
+        return []
+    try:
+        with open(SIGNAL_HISTORY_JSON, encoding="utf-8") as f:
+            store = json.load(f)
+    except Exception as e:
+        print(f"[信号历史] 读取失败（按空历史处理）: {e}")
+        return []
+    if isinstance(store, dict):
+        return store.get("signals", [])
+    return store if isinstance(store, list) else []
+
+
+def update_signal_history(regime: dict) -> bool:
+    """状态跃迁检测：当日regime与历史最后一条不同则append新记录。
+    历史为空时直接写入首条（首次运行建立基线）。
+    返回是否发生跃迁（True=写入了新记录）。
+    """
+    signals = load_signal_history()
+    cur = {
+        "date": regime["asof_date"],
+        "regime": regime["regime"],
+        "strength": regime.get("strength", 0),
+        "interpretation": regime.get("interpretation", ""),
+        "hs300_close": hs300_close_on(regime["asof_date"]),  # fwd收益计算基准
+    }
+    if signals and signals[-1].get("regime") == cur["regime"]:
+        return False
+    signals.append(cur)
+    tmp = SIGNAL_HISTORY_JSON + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                   "signals": signals}, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, SIGNAL_HISTORY_JSON)  # 原子替换，防跑批中断写坏文件
+    print(f"[信号历史] 状态跃迁 {signals[-2]['regime'] if len(signals) > 1 else '(起始)'}"
+          f" -> {cur['regime']}（{cur['date']}），已记录")
+    return True
+
+
+def current_streak_days(regime: dict) -> int:
+    """当前regime已持续交易日数：最近一条跃迁记录日期→asof_date之间的交易日数
+    （用沪深300价格文件里的交易日序列计数，全本地）。无历史时返回1。"""
+    signals = load_signal_history()
+    if not signals:
+        return 1
+    last_date = signals[-1]["date"]
+    closes = load_hs300_closes()
+    days = sorted(d for d in closes if last_date <= d <= regime["asof_date"])
+    return max(1, len(days))
+
+
+def refresh_daily_data() -> None:
+    """收盘跑批挂接点（阶段3）：确保信号基于最新交易日数据评估。
+    1) 最近两个自然日的份额文件都不存在时，自动采集（上交所T+1发布，当日晚上
+       未必就绪，故同时尝试昨日）；2) 采集到的新份额只有在价格数据（sh000300）
+       覆盖该日时才能计算净流入，此时重建历史；否则打印警告、沿用既有历史评估。
+    任何异常仅打印警告，绝不影响每日任务主流程（优雅降级，与系统既有模式一致）。
+    """
+    today = datetime.now().strftime("%Y%m%d")
+    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y%m%d")
+    candidates = [today, yesterday]
+    existing = [d for d in candidates
+              if os.path.exists(os.path.join(FLOW_DIR, f"shares_{d}.csv"))]
+    hist_dates = set()
+    if os.path.exists(HIST_CSV):
+        hist_dates = set(pd.read_csv(HIST_CSV, dtype={"date": str})["date"])
+    # 份额文件已存在且净流入历史已覆盖 → 无需任何动作
+    if existing and all(d in hist_dates for d in existing):
+        return
+    fdate = None
+    if not existing:
+        print(f"[数据刷新] 份额快照缺失（{today}/{yesterday}），尝试自动采集...")
+        try:
+            from utils.etf_flow import save_daily_shares
+            for d in candidates:
+                fdate = save_daily_shares(d)
+                if fdate:
+                    break
+        except Exception as e:
+            print(f"[警告] 份额自动采集失败（不影响主流程，沿用既有历史）: {e}")
+            return
+        if not fdate:
+            print("[警告] 上交所份额数据未就绪（T+1发布），沿用既有历史评估")
+            return
+    else:
+        # 份额在、历史缺（常见于首次挂接），补齐差额日期
+        fdate = [d for d in existing if d not in hist_dates]
+        if not fdate:
+            return
+        fdate = fdate[-1]
+    # 价格数据必须覆盖新份额日期，否则净流入无法计算（全0日会污染信号）
+    closes = load_hs300_closes()
+    if fdate not in closes:
+        print(f"[警告] ETF价格数据未覆盖 {fdate}（收盘价抓取尚未更新），"
+              f"跳过历史重建，沿用既有历史评估")
+        return
+    try:
+        from utils.etf_flow_calc import build_history
+        print(f"[数据刷新] 份额/价格就绪，重建净流入历史（新增 {fdate}）...")
+        build_history()
+    except Exception as e:
+        print(f"[警告] 净流入历史重建失败（沿用既有历史评估）: {e}")
+
+
 def main() -> dict:
+    refresh_daily_data()  # 收盘跑批：缺数自动采集，失败优雅降级
     hist = pd.read_csv(HIST_CSV, dtype={"date": str})
     cfg = load_config()
     latest = sorted(hist["date"].unique())[-1]
     regime = evaluate(hist, latest, cfg)
+    regime["streak_days"] = current_streak_days(regime)  # 界面"连续天数"展示
     with open(REGIME_JSON, "w", encoding="utf-8") as f:
         json.dump(regime, f, ensure_ascii=False, indent=2)
+    update_signal_history(regime)  # 状态跃迁落盘（signal_history.json）
     print(json.dumps(regime, ensure_ascii=False, indent=2))
     return regime
 

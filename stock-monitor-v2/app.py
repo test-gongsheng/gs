@@ -2816,6 +2816,72 @@ def generate_deep_analysis_batch():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@app.route('/api/market/regime')
+def api_market_regime():
+    """市场红绿灯：宽基ETF资金流信号（阶段3，设计文档第五节）。
+    实时读 data/market_regime.json（收盘跑批刷新）；文件缺失返回neutral+unavailable，前端优雅降级。
+    """
+    regime_file = os.path.join(os.path.dirname(__file__), 'data', 'market_regime.json')
+    try:
+        if not os.path.exists(regime_file):
+            return jsonify({'success': True, 'regime': 'neutral', 'unavailable': True,
+                            'interpretation': '信号数据未生成（每日收盘跑批后自动刷新）'})
+        with open(regime_file, encoding='utf-8') as f:
+            data = json.load(f)
+        data['success'] = True
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({'success': False, 'regime': 'neutral', 'unavailable': True,
+                        'error': str(e)})
+
+
+@app.route('/api/market/regime/history')
+def api_market_regime_history():
+    """信号跃迁历史（新→旧最多20条），附其后5/10/20个交易日沪深300收益%。
+    收益口径：signal_history.json记hs300_close，用prices/sh000300.csv的交易日序列
+    定位N个交易日后的收盘价算涨跌幅；数据未走完（N日后无K线）返回null，前端显示"—"。
+    """
+    flow_dir = os.path.join(os.path.dirname(__file__), 'data', 'etf_flow')
+    hist_file = os.path.join(flow_dir, 'signal_history.json')
+    hs300_file = os.path.join(flow_dir, 'prices', 'sh000300.csv')
+    try:
+        import pandas as pd
+        closes = {}
+        if os.path.exists(hs300_file):
+            df = pd.read_csv(hs300_file, dtype={'date': str})
+            df['date'] = df['date'].str.replace('-', '')
+            closes = dict(zip(df['date'], df['close'].astype(float)))
+        dates_sorted = sorted(closes)
+
+        def fwd(d, n):
+            """信号日之后第n个交易日收盘相对信号日收盘的涨跌幅%（未走完返回None）"""
+            if not d or d not in closes:
+                return None
+            i = dates_sorted.index(d)
+            j = i + n
+            if j >= len(dates_sorted):
+                return None
+            return round((closes[dates_sorted[j]] / closes[d] - 1) * 100, 2)
+
+        if not os.path.exists(hist_file):
+            return jsonify({'success': True, 'signals': []})
+        with open(hist_file, encoding='utf-8') as f:
+            store = json.load(f)
+        signals = store.get('signals', []) if isinstance(store, dict) else store
+        out = [{
+            'date': s.get('date'),
+            'regime': s.get('regime'),
+            'strength': s.get('strength'),
+            'interpretation': s.get('interpretation'),
+            'hs300_fwd_5d': fwd(s.get('date'), 5),
+            'hs300_fwd_10d': fwd(s.get('date'), 10),
+            'hs300_fwd_20d': fwd(s.get('date'), 20),
+        } for s in reversed(signals[-20:])]
+        return jsonify({'success': True, 'signals': out})
+    except Exception as e:
+        return jsonify({'success': False, 'signals': [], 'error': str(e)})
+
+
 if __name__ == '__main__':
     # 2026-10-14 用户决策：启动时不自动全量生成深度报告。
     # 深度报告唯一入口=界面手动「实时生成」（点哪只生成哪只，含AI研判约4.5分钟/只）。

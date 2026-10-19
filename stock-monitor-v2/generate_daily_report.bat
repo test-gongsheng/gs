@@ -35,5 +35,9 @@ if %errorlevel% equ 0 (
 )
 echo [%date% %time%] [4/4] LLM narrative enhancement (deep-thinking ~5min/stock; auto-skip if no KIMI_API_KEY)... >> "%LOG_FILE%"
 %PY% tools\llm_narrative.py --think >> "%LOG_FILE%" 2>&1
+
+echo [%date% %time%] [5/5] Market regime signal engine (ETF flow, auto-collect + graceful degrade)... >> "%LOG_FILE%"
+%PY% utils\etf_flow_signal.py >> "%LOG_FILE%" 2>&1
+if %errorlevel% neq 0 echo [%date% %time%] WARN: market regime engine failed (non-blocking) >> "%LOG_FILE%"
 echo --- >> "%LOG_FILE%"
 echo ��ɡ���־��reports\cron_%TODAY%.log
