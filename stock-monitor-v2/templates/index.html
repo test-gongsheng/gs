@@ -1770,12 +1770,23 @@
                 renderIBAnalysis(ibAnalysisData);
             } else {
                 console.error('加载投行分析失败:', result.error);
-                document.getElementById('ibAnalysisContent').innerHTML = `
-                    <div class="ib-loading">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <span>加载失败，请稍后重试</span>
-                    </div>
-                `;
+                // 报告未生成（新部署/任务计划缺失）与真正的加载失败分开提示
+                if (result.error_code === 'not_generated') {
+                    document.getElementById('ibAnalysisContent').innerHTML = `
+                        <div class="ib-loading">
+                            <i class="fas fa-info-circle"></i>
+                            <span>暂无投行分析报告</span>
+                            ${result.hint ? `<div style="margin-top:8px;font-size:0.7rem;color:#9ca3af;line-height:1.7;text-align:left;padding:0 8px;">${result.hint}</div>` : ''}
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('ibAnalysisContent').innerHTML = `
+                        <div class="ib-loading">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>加载失败，请稍后重试</span>
+                        </div>
+                    `;
+                }
             }
         } catch (error) {
             console.error('加载投行分析错误:', error);

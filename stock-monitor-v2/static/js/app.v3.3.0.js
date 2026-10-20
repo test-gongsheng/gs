@@ -2726,39 +2726,50 @@ function renderSentiment() {
         gaugeNeedleEl.setAttribute('stroke', needleColors[index.class] || '#fff');
     }
     
-    // 2. 渲染多空力量条
-    updateForceBar('north', northSouth.north_inflow, 100);
-    updateForceBar('margin', margin.margin_change, 200);
-    updateForceBar('mainForce', capitalFlow.main_inflow, 150);
+    // 数据可用性判定（后端增强字段获取失败时为空对象，绝不把 undefined 渲染上屏）
+    const hasNorthSouth = !!northSouth;
+    const hasMargin = !!margin && margin.total_margin_balance !== undefined;
+    const hasFlow = !!capitalFlow && capitalFlow.main_inflow !== undefined;
     
-    // 3. 渲染北向资金卡片
-    updateCard('north', northSouth.north_inflow, northSouth.north_sentiment);
+    // 2. 渲染多空力量条
+    if (hasNorthSouth) updateForceBar('north', northSouth.north_inflow || 0, 100);
+    if (hasMargin) updateForceBar('margin', margin.margin_change, 200);
+    if (hasFlow) updateForceBar('mainForce', capitalFlow.main_inflow, 150);
+    
+    // 3. 渲染北向资金卡片（2024-08起交易所停止北向实时净买入披露，诚实标注）
+    if (hasNorthSouth) updateCard('north', northSouth.north_inflow || 0, northSouth.north_sentiment || '--');
     const northInflowEl = document.getElementById('northInflow');
     if (northInflowEl) {
-        if (northSouth.north_inflow === 0 && northSouth.north_sentiment === '待接入') {
-            northInflowEl.textContent = '待接入';
+        if (!hasNorthSouth || (northSouth.north_inflow === 0 && (northSouth.north_sentiment === '待接入' || northSouth.north_sentiment === '停止披露'))) {
+            northInflowEl.textContent = hasNorthSouth ? northSouth.north_sentiment : '--';
             northInflowEl.className = 'metric-value neutral';
         } else {
             northInflowEl.textContent = `${northSouth.north_inflow >= 0 ? '+' : ''}${northSouth.north_inflow}亿`;
             northInflowEl.className = `metric-value ${northSouth.north_inflow >= 0 ? 'up' : 'down'}`;
         }
     }
-    document.getElementById('northCumulative').textContent = `${northSouth.north_cumulative}亿`;
+    const northCumEl = document.getElementById('northCumulative');
+    if (northCumEl) {
+        northCumEl.textContent = (hasNorthSouth && northSouth.north_cumulative) ? `${northSouth.north_cumulative}亿` : '--';
+    }
     
     // 4. 渲染南向资金卡片
-    updateCard('south', northSouth.south_inflow, northSouth.south_sentiment);
+    if (hasNorthSouth) updateCard('south', northSouth.south_inflow || 0, northSouth.south_sentiment || '--');
     const southInflowEl = document.getElementById('southInflow');
     if (southInflowEl) {
-        if (northSouth.south_inflow === 0 && northSouth.south_sentiment === '待接入') {
-            southInflowEl.textContent = '待接入';
+        if (!hasNorthSouth || (northSouth.south_inflow === 0 && northSouth.south_sentiment === '待接入')) {
+            southInflowEl.textContent = hasNorthSouth ? '待接入' : '--';
             southInflowEl.className = 'metric-value neutral';
         } else {
             southInflowEl.textContent = `${northSouth.south_inflow >= 0 ? '+' : ''}${northSouth.south_inflow}亿`;
             southInflowEl.className = `metric-value ${northSouth.south_inflow >= 0 ? 'up' : 'down'}`;
         }
     }
-    document.getElementById('southSentiment').textContent = northSouth.south_sentiment;
-    document.getElementById('southSentiment').className = `metric-value ${northSouth.south_inflow >= 0 ? 'up' : 'down'}`;
+    const southSentEl = document.getElementById('southSentiment');
+    if (southSentEl) {
+        southSentEl.textContent = hasNorthSouth ? (northSouth.south_sentiment || '--') : '--';
+        southSentEl.className = `metric-value ${(northSouth?.south_inflow || 0) >= 0 ? 'up' : 'down'}`;
+    }
     
     // 渲染港股沽空数据
     const hkShort = northSouth.hk_short_selling || {};
@@ -2790,21 +2801,39 @@ function renderSentiment() {
     }
     
     // 5. 渲染融资融券卡片
-    updateCard('margin', margin.margin_change, margin.sentiment);
-    document.getElementById('marginBalance').textContent = `${margin.total_margin_balance}亿`;
-    document.getElementById('marginChange').textContent = `${margin.margin_change >= 0 ? '+' : ''}${margin.margin_change}亿 (${margin.margin_change_pct}%)`;
-    document.getElementById('marginChange').className = `metric-value ${margin.margin_change >= 0 ? 'up' : 'down'}`;
+    if (hasMargin) {
+        updateCard('margin', margin.margin_change, margin.sentiment);
+        document.getElementById('marginBalance').textContent = `${margin.total_margin_balance}亿`;
+        document.getElementById('marginChange').textContent = `${margin.margin_change >= 0 ? '+' : ''}${margin.margin_change}亿 (${margin.margin_change_pct}%)`;
+        document.getElementById('marginChange').className = `metric-value ${margin.margin_change >= 0 ? 'up' : 'down'}`;
+    } else {
+        const mb = document.getElementById('marginBalance');
+        if (mb) mb.textContent = '--';
+        const mc = document.getElementById('marginChange');
+        if (mc) { mc.textContent = '未接入'; mc.className = 'metric-value neutral'; }
+        const mt = document.getElementById('marginTrend');
+        if (mt) { mt.textContent = '--'; mt.className = 'trend-badge neutral'; }
+    }
     
     // 6. 渲染主力资金卡片
-    updateCard('mainForce', capitalFlow.main_inflow, capitalFlow.main_inflow >= 0 ? '看多' : '看空');
-    document.getElementById('superLargeFlow').textContent = `${capitalFlow.super_large >= 0 ? '+' : ''}${capitalFlow.super_large}亿`;
-    document.getElementById('superLargeFlow').className = `metric-value ${capitalFlow.super_large >= 0 ? 'up' : 'down'}`;
-    document.getElementById('largeFlow').textContent = `${capitalFlow.large >= 0 ? '+' : ''}${capitalFlow.large}亿`;
-    document.getElementById('largeFlow').className = `metric-value ${capitalFlow.large >= 0 ? 'up' : 'down'}`;
-    document.getElementById('mediumFlow').textContent = `${capitalFlow.medium >= 0 ? '+' : ''}${capitalFlow.medium}亿`;
-    document.getElementById('mediumFlow').className = `metric-value ${capitalFlow.medium >= 0 ? 'up' : 'down'}`;
-    document.getElementById('smallFlow').textContent = `${capitalFlow.small >= 0 ? '+' : ''}${capitalFlow.small}亿`;
-    document.getElementById('smallFlow').className = `metric-value ${capitalFlow.small >= 0 ? 'up' : 'down'}`;
+    if (hasFlow) {
+        updateCard('mainForce', capitalFlow.main_inflow, capitalFlow.main_inflow >= 0 ? '看多' : '看空');
+        document.getElementById('superLargeFlow').textContent = `${capitalFlow.super_large >= 0 ? '+' : ''}${capitalFlow.super_large}亿`;
+        document.getElementById('superLargeFlow').className = `metric-value ${capitalFlow.super_large >= 0 ? 'up' : 'down'}`;
+        document.getElementById('largeFlow').textContent = `${capitalFlow.large >= 0 ? '+' : ''}${capitalFlow.large}亿`;
+        document.getElementById('largeFlow').className = `metric-value ${capitalFlow.large >= 0 ? 'up' : 'down'}`;
+        document.getElementById('mediumFlow').textContent = `${capitalFlow.medium >= 0 ? '+' : ''}${capitalFlow.medium}亿`;
+        document.getElementById('mediumFlow').className = `metric-value ${capitalFlow.medium >= 0 ? 'up' : 'down'}`;
+        document.getElementById('smallFlow').textContent = `${capitalFlow.small >= 0 ? '+' : ''}${capitalFlow.small}亿`;
+        document.getElementById('smallFlow').className = `metric-value ${capitalFlow.small >= 0 ? 'up' : 'down'}`;
+    } else {
+        ['superLargeFlow', 'largeFlow', 'mediumFlow', 'smallFlow'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.textContent = '--'; el.className = 'metric-value neutral'; }
+        });
+        const mft = document.getElementById('mainForceTrend');
+        if (mft) { mft.textContent = '未接入'; mft.className = 'trend-badge neutral'; }
+    }
     
     // 7. 渲染市场宽度
     document.getElementById('upCount').textContent = breadth.up_count;

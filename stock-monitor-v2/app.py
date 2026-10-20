@@ -878,6 +878,16 @@ def _load_emotion_sentiment():
     breadth = d.get('market_breadth', {}) or {}
     lud = d.get('limit_up_down', {}) or {}
     
+    # 增强资金字段（2026-10-20接入真实数据源，失败时回退空对象由前端降级显示--）
+    try:
+        from utils.market_money import get_margin, get_capital_flow, get_north_south
+        _margin = get_margin() or {}
+        _flow = get_capital_flow() or {}
+        _ns = get_north_south()
+    except Exception as _e:
+        print(f'[情绪接口] 增强资金字段获取失败: {_e}')
+        _margin, _flow, _ns = {}, {}, {}
+    
     return {
         'success': True,
         'sentiment_index': {
@@ -893,10 +903,10 @@ def _load_emotion_sentiment():
             'stocks': (d.get('stocks') or [])[:30],
             'date': d.get('date', ''),
         },
-        # 旧版字段占位（新引擎不采集，前端优雅降级为空）
-        'margin': {},
-        'north_south': {},
-        'capital_flow': {},
+        # 增强资金字段（见函数头部说明）
+        'margin': _margin,
+        'north_south': _ns,
+        'capital_flow': _flow,
         'breadth': {
             'up_count': breadth.get('up', 0),
             'down_count': breadth.get('down', 0),
@@ -2175,10 +2185,19 @@ def get_ib_analysis():
                 'cached': False
             })
         else:
-            return jsonify({
+            missing = not os.path.exists(IB_ANALYSIS_FILE)
+            payload = {
                 'success': False,
                 'error': '分析报告不存在或解析失败'
-            }), 404
+            }
+            if missing:
+                # 报告文件未生成（常见于全新部署：reports/不入git）
+                payload['error_code'] = 'not_generated'
+                payload['hint'] = ('reports/ib_analysis_latest.md 不存在。'
+                                   '在仓库目录运行 python update_ib_analysis.py 生成'
+                                   '（联网检索国际投行观点，约1-2分钟），'
+                                   '或在 Windows 任务计划中加入每日定时生成。')
+            return jsonify(payload), 404
     except Exception as e:
         return jsonify({
             'success': False,
