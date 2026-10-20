@@ -230,13 +230,9 @@ echo.
 
 echo Data status:
 if exist "%REPO_DIR%\data\stocks.json" (
-    for %%F in ("%REPO_DIR%\data\stocks.json") do (
-        if %%~zF GTR 1000 (
-            echo   [OK] stocks.json exists (%%~zF bytes)
-        ) else (
-            echo   [WARN] stocks.json is empty - need to import!
-        )
-    )
+    echo   [OK] stocks.json exists
+) else (
+    echo   [WARN] stocks.json missing - need to import!
 )
 echo.
 echo Open browser: http://localhost:8888
