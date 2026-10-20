@@ -472,8 +472,10 @@ body {
 
 .stock-list {
   padding: 8px;
-  flex: 1;
-  overflow-y: auto;
+  /* flex:1会让列表拉伸填满侧栏高度，在列表与后续栏目间留下大段死空白；
+     改为内容高度自适应，让侧栏各栏目（市场红绿灯/国际投行/健康度）紧跟列表 */
+  flex: 0 0 auto;
+  overflow-y: visible;
   min-height: 200px;
 }
 
