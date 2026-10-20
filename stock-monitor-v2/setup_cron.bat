@@ -17,8 +17,8 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo [✓] Python路径: %PYTHON_PATH%
-echo [✓] 脚本目录: %SCRIPT_DIR%
+echo [成功] Python路径: %PYTHON_PATH%
+echo [成功] 脚本目录: %SCRIPT_DIR%
 echo.
 
 REM 创建日志目录
@@ -37,13 +37,13 @@ schtasks /create /tn "StockPortfolioAnalysis" ^
     /rl HIGHEST >nul 2>&1
 
 if errorlevel 1 (
-    echo [✗] 创建失败，尝试使用管理员权限...
+    echo [错误] 创建失败，尝试使用管理员权限...
     echo 请以管理员身份运行此脚本
     pause
     exit /b 1
 )
 
-echo [✓] 定时任务创建成功！
+echo [成功] 定时任务创建成功！
 echo.
 
 REM ============================================================
@@ -62,12 +62,12 @@ schtasks /create /tn "StockDailyReports" ^
     /rl HIGHEST >nul 2>&1
 
 if errorlevel 1 (
-    echo [✗] 全链路任务创建失败，请确认以管理员身份运行
+    echo [错误] 全链路任务创建失败，请确认以管理员身份运行
     pause
     exit /b 1
 )
 
-echo [✓] 全链路任务创建成功！
+echo [成功] 全链路任务创建成功！
 echo.
 
 REM 创建立即执行脚本
@@ -88,15 +88,15 @@ echo [4/4] 创建桌面快捷方式...
 set "DESKTOP=%USERPROFILE%\Desktop"
 (
 echo @echo off
-cd /d "%SCRIPT_DIR%"
-echo 正在生成持仓分析报告...
-%PYTHON_PATH% update_portfolio_analysis.py
+echo cd /d "%SCRIPT_DIR%"
+echo echo 正在生成持仓分析报告...
+echo %PYTHON_PATH% update_portfolio_analysis.py
 echo.
-echo 按任意键关闭...
-pause >nul
+echo echo 按任意键关闭...
+echo pause ^>nul
 ) > "%DESKTOP%\生成股票分析报告.bat"
 
-echo [✓] 桌面快捷方式已创建：生成股票分析报告.bat
+echo [成功] 桌面快捷方式已创建：生成股票分析报告.bat
 echo.
 echo ============================================
 echo   设置完成！
