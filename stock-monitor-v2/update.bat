@@ -170,6 +170,16 @@ if exist "%TEMP_DIR%\data_save" (
     rmdir /S /Q "%TEMP_DIR%\data_save" 2>nul
 )
 
+
+:: Refresh server-managed data files from repo (fix 2026-10-20: data_save restore above
+:: clobbers same-named repo files with stale local copies - market_regime.json stayed 10/16)
+:: Only git-tracked data paths; user-private files (stocks.json/db, news_pool, events, etc.) untouched.
+if exist "%TEMP_DIR%\extracted\gs-master\stock-monitor-v2\data\etf_flow" xcopy /E /I /Y "%TEMP_DIR%\extracted\gs-master\stock-monitor-v2\data\etf_flow" "%REPO_DIR%\data\etf_flow\" >nul 2>nul
+if exist "%TEMP_DIR%\extracted\gs-master\stock-monitor-v2\data\market_regime.json" copy /Y "%TEMP_DIR%\extracted\gs-master\stock-monitor-v2\data\market_regime.json" "%REPO_DIR%\data\market_regime.json" >nul
+if exist "%TEMP_DIR%\extracted\gs-master\stock-monitor-v2\data\etf_flow_config.json" copy /Y "%TEMP_DIR%\extracted\gs-master\stock-monitor-v2\data\etf_flow_config.json" "%REPO_DIR%\data\etf_flow_config.json" >nul
+if exist "%TEMP_DIR%\extracted\gs-master\stock-monitor-v2\data\curated_impacts.json" copy /Y "%TEMP_DIR%\extracted\gs-master\stock-monitor-v2\data\curated_impacts.json" "%REPO_DIR%\data\curated_impacts.json" >nul
+if exist "%TEMP_DIR%\extracted\gs-master\stock-monitor-v2\data\holding_profiles.json" copy /Y "%TEMP_DIR%\extracted\gs-master\stock-monitor-v2\data\holding_profiles.json" "%REPO_DIR%\data\holding_profiles.json" >nul
+
 echo [OK] Code updated
 echo.
 
