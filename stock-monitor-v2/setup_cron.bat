@@ -77,7 +77,20 @@ echo [✓] 全链路任务创建成功！
 echo.
 
 REM 创建立即执行脚本
-echo [3/3] 创建桌面快捷方式...
+echo [3/4] 创建国际投行观点任务，每日09:05执行（开盘前刷新投行观点）...
+schtasks /delete /tn "StockIBAnalysis" /f >nul 2>nul
+schtasks /create /tn "StockIBAnalysis" ^
+    /tr "cmd /c \"%SCRIPT_DIR%update_ib_analysis.bat\"" ^
+    /sc daily ^
+    /st 09:05 ^
+    /np ^
+    /rl HIGHEST >nul 2>nul
+
+if errorlevel 1 (
+    echo [警告] 投行观点任务创建失败，可在任务计划程序中手动添加
+)
+
+echo [4/4] 创建桌面快捷方式...
 set "DESKTOP=%USERPROFILE%\Desktop"
 (
 echo @echo off
@@ -98,10 +111,12 @@ echo.
 echo [定时任务]
 echo   ① StockPortfolioAnalysis  每日 16:05  组合分析（中轴价格健康度）
 echo   ② StockDailyReports       每日 16:35  全链路（情绪→事件→深度）
+echo   ③ StockIBAnalysis         每日 09:05  国际投行观点（开盘前）
 echo.
 echo [手动执行]
 echo   双击桌面"生成股票分析报告.bat"（组合分析）
 echo   双击 generate_daily_report.bat（全链路）
+echo   双击 update_ib_analysis.bat （国际投行观点）
 echo.
 echo [查看日志]
 echo   %SCRIPT_DIR%logs\analysis_cron.log   （组合分析）
