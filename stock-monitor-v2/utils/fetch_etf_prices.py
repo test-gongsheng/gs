@@ -17,26 +17,52 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PRICE_DIR = os.path.join(BASE, "data", "etf_flow", "prices")
 CLASS_CSV = os.path.join(BASE, "etf_flow_classification.csv")
 URL = ("https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get"
-       "?param={mkt}{code},day,2024-01-01,2026-10-16,800,")
+       "?param={mkt}{code},day,2024-01-01,{end},800,")
+
+
+def _today() -> str:
+    from datetime import datetime
+    return datetime.now().strftime("%Y-%m-%d")
+
+
+def merge_save(fp: str, bars: list) -> int:
+    """增量合并：本地已有数据时只追加新日期，返回新增根数。bars=[(date,close),...]"""
+    old = {}
+    if os.path.exists(fp):
+        try:
+            df = pd.read_csv(fp, dtype={"date": str})
+            old = dict(zip(df["date"], df["close"].astype(float)))
+        except Exception:
+            old = {}
+    merged = dict(old)
+    n_new = 0
+    for d, c in bars:
+        if d not in merged:
+            merged[d] = c
+            n_new += 1
+    if n_new > 0 or not os.path.exists(fp):
+        df = pd.DataFrame(sorted(merged.items()), columns=["date", "close"])
+        df.to_csv(fp, index=False)
+    return n_new
 
 
 def ensure_index_price() -> None:
     """沪深300指数收盘价——信号引擎的历史分位与交易日历都依赖它，
-    且它不在ETF分类表内，必须单独保证存在（修复全新部署引导链缺口）。"""
+    且它不在ETF分类表内，必须单独保证存在并每日增量更新（修复：原实现只在文件
+    缺失时抓一次，导致历史分位永远停留在首次抓取日，2026-10-20 用户实测数据日
+    停滞的根因之一）。"""
     fp = os.path.join(PRICE_DIR, "sh000300.csv")
-    if os.path.exists(fp):
-        return
     bars = fetch_one("sh", "000300")
     if bars:
-        pd.DataFrame(bars, columns=["date", "close"]).to_csv(fp, index=False)
-        print(f"[指数] 沪深300价格已抓取 {len(bars)} 根")
+        n = merge_save(fp, bars)
+        print(f"[指数] 沪深300价格已更新（新增 {n} 根，累计 {len(bars)} 根）")
     else:
         print("[指数] 沪深300抓取失败（下次运行时自动重试）")
 
 
 def fetch_one(market: str, code: str) -> list:
     """抓取单只ETF日线，返回[(date, close), ...]；失败返回None"""
-    url = URL.format(mkt=market, code=code)
+    url = URL.format(mkt=market, code=code, end=_today())
     req = urllib.request.Request(url, headers={"Referer": "https://gu.qq.com/"})
     try:
         with urllib.request.urlopen(req, timeout=20) as resp:
@@ -55,23 +81,28 @@ def main() -> None:
     todo = []
     for _, row in df.iterrows():
         fp = os.path.join(PRICE_DIR, f"{row['market']}{row['code']}.csv")
-        if not os.path.exists(fp):
-            todo.append((row["market"], row["code"], fp))
-    print(f"总数 {len(df)}，待抓取 {len(todo)}")
-    ok = fail = 0
+        # 增量模式：已存在的文件也每日追新（收盘价是流量计算的必需输入，停更即断档）
+        todo.append((row["market"], row["code"], fp))
+    print(f"总数 {len(df)}，增量更新 {len(todo)}")
+    ok = fail = skip = 0
     fails = []
+    total_new = 0
     for i, (market, code, fp) in enumerate(todo):
         bars = fetch_one(market, code)
         if bars:
-            pd.DataFrame(bars, columns=["date", "close"]).to_csv(fp, index=False)
-            ok += 1
+            n = merge_save(fp, bars)
+            total_new += n
+            if n:
+                ok += 1
+            else:
+                skip += 1
         else:
             fail += 1
             fails.append(market + code)
         if (i + 1) % 100 == 0:
-            print(f"进度 {i + 1}/{len(todo)} 成功{ok} 失败{fail}", flush=True)
-        time.sleep(0.25)
-    print(f"完成：成功 {ok}，失败 {fail}")
+            print(f"进度 {i + 1}/{len(todo)} 新增{ok} 无新bar{skip} 失败{fail}", flush=True)
+        time.sleep(0.2)
+    print(f"完成：新增 {ok}，无更新 {skip}，失败 {fail}，共新入 {total_new} 根K线")
     if fails:
         print("失败列表：" + ",".join(fails))
 

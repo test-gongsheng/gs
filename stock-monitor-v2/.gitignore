@@ -64,6 +64,6 @@ reports/*.log
 reports/portfolio_analysis_latest.json
 data/access_token.txt
 
-# 宽基ETF资金流数据（每日全量快照，体积大，本地各自生成）
-data/etf_flow/
-data/market_regime.json
+# 宽基ETF资金流：原始价格文件体积大（1600+只×逐日K线），不入git，本机每日增量抓取；
+# 份额快照与计算结果（流量历史/信号/market_regime）是卡片数据源，必须入git同步到用户机
+data/etf_flow/prices/

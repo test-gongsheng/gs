@@ -33,10 +33,13 @@ if %errorlevel% equ 0 (
 ) else (
     echo [%date% %time%] 深度分析失败，详情见上方日志 >> "%LOG_FILE%"
 )
-echo [%date% %time%] [4/4] LLM narrative enhancement (deep-thinking ~5min/stock; auto-skip if no KIMI_API_KEY)... >> "%LOG_FILE%"
+echo [%date% %time%] [4/6] LLM narrative enhancement (deep-thinking ~5min/stock; auto-skip if no KIMI_API_KEY)... >> "%LOG_FILE%"
 %PY% tools\llm_narrative.py --think >> "%LOG_FILE%" 2>&1
 
-echo [%date% %time%] [5/5] Market regime signal engine (ETF flow, auto-collect + graceful degrade)... >> "%LOG_FILE%"
+echo [%date% %time%] [5/6] ETF price incremental update (closes needed by flow calc)... >> "%LOG_FILE%"
+%PY% utils\fetch_etf_prices.py >> "%LOG_FILE%" 2>&1
+
+echo [%date% %time%] [6/6] Market regime signal engine (ETF flow, auto-collect + graceful degrade)... >> "%LOG_FILE%"
 %PY% utils\etf_flow_signal.py >> "%LOG_FILE%" 2>&1
 if %errorlevel% neq 0 echo [%date% %time%] WARN: market regime engine failed (non-blocking) >> "%LOG_FILE%"
 echo --- >> "%LOG_FILE%"
