@@ -4252,28 +4252,34 @@ body {
    Bloomberg终端风：深色底/高对比数字/纯色斑块，禁蓝紫渐变
    ======================================== */
 
-/* 顶栏状态条（通栏，所有tab可见） */
+/* 侧栏卡片外壳：与国际投行观点/持仓健康度卡片同风格 */
+.mrs-sidebar-card {
+    margin-top: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* 侧边栏卡片内状态条（持仓股列表与国际投行观点之间，v3.3.1起从顶部通栏移入） */
 .mrs-bar {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 8px 18px;
-    font-size: 14.5px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+    padding: 10px 14px;
+    font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     user-select: none;
-    border-bottom: 1px solid var(--border-color);
+    border: 1px solid var(--border-color);
     border-left: 5px solid transparent;
+    border-radius: 6px;
     transition: background 0.25s;
-    min-height: 40px;
-    /* 吸顶于fixed顶栏之下：任何滚动位置都常驻可见，防止滑入顶栏被不透明背景遮蔽 */
-    position: sticky;
-    top: var(--header-height, 60px);
-    z-index: 1000;
+    min-height: 0;
 }
-.mrs-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.mrs-right { display: flex; align-items: center; gap: 10px; min-width: 0; flex-shrink: 1; }
+.mrs-left { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
+.mrs-right { display: block; min-width: 0; }
 
 /* 常态/加载：深色底 + 浅灰文字左标——融入暗色界面但清晰可辨 */
 .mrs-bar.mrs-neutral, .mrs-bar.mrs-loading {
@@ -4357,19 +4363,24 @@ body {
 .mrs-asof { font-size: 11px; opacity: 0.8; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .mrs-interp {
     font-size: 12px; opacity: 0.92;
+    display: block;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    max-width: 52vw;
+    max-width: 100%;
 }
-.mrs-caret { font-size: 11px; opacity: 0.7; transition: transform 0.2s; }
+.mrs-caret { margin-left: auto; font-size: 11px; opacity: 0.7; transition: transform 0.2s; }
 .mrs-bar.mrs-open .mrs-caret { transform: rotate(180deg); }
 
-/* 依据面板：Bloomberg终端风 */
+/* 依据面板：Bloomberg终端风（侧边栏卡片内，窄栏适配） */
 .mrs-panel {
     background: #1a1d23;
-    border-bottom: 1px solid var(--border-color);
-    padding: 14px 18px 16px;
+    border-top: 1px solid var(--border-color);
+    padding: 12px 14px 14px;
     color: var(--text-primary);
     font-size: 13px;
+}
+.mrs-sidebar-card .mrs-panel-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
 }
 .mrs-panel-grid {
     display: grid;
