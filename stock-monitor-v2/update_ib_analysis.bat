@@ -7,34 +7,16 @@ setlocal
 set "SCRIPT_DIR=%~dp0"
 cd /d "%SCRIPT_DIR%"
 
-REM 探测Python：PATH(python3/python/py启动器) → 常见安装目录
-set "PYTHON_PATH="
-for %%P in (python3 python py) do (
-    if not defined PYTHON_PATH (
-        %%P --version >nul 2>&1
-        if not errorlevel 1 set "PYTHON_PATH=%%P"
-    )
-)
-if not defined PYTHON_PATH (
-    for %%D in ("%LOCALAPPDATA%\Programs\Python\Python312" "%LOCALAPPDATA%\Programs\Python\Python311" "%LOCALAPPDATA%\Programs\Python\Python310" "%USERPROFILE%\anaconda3" "%USERPROFILE%\miniconda3" "C:\ProgramData\anaconda3" "C:\ProgramData\miniconda3") do (
-        if not defined PYTHON_PATH (
-            if exist "%%~D\python.exe" set "PYTHON_PATH=%%~D\python.exe"
-        )
-    )
-)
-if not defined PYTHON_PATH (
-    echo [错误] 双击环境找不到Python。
-    echo.
-    echo 最快的办法：打开你平时启动股票系统的那个命令行窗口
-    echo （比如 Anaconda Prompt / 开始菜单里的Python命令行），
-    echo 输入以下命令后回车：
-    echo.
-    echo     python update_ib_analysis.py
-    echo.
-    echo 或者：把本bat拖进那个窗口里回车执行。
+REM Python解释器：仓库venv优先（update.bat维护，依赖齐全），兜底py启动器
+set "PYTHON_PATH=py"
+if exist "%SCRIPT_DIR%venv\Scripts\python.exe" set "PYTHON_PATH=%SCRIPT_DIR%venv\Scripts\python.exe"
+%PYTHON_PATH% --version >nul 2>&1
+if errorlevel 1 (
+    echo [错误] Python不可用：venv\Scripts\python.exe 和 py 启动器都没找到
     pause
     exit /b 1
 )
+
 echo 使用Python: %PYTHON_PATH%
 %PYTHON_PATH% --version
 

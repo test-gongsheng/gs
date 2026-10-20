@@ -8,10 +8,14 @@ setlocal
 set "SCRIPT_DIR=%~dp0"
 cd /d "%SCRIPT_DIR%"
 
+set "PYTHON_PATH=py"
+if exist "%SCRIPT_DIR%venv\Scripts\python.exe" set "PYTHON_PATH=%SCRIPT_DIR%venv\Scripts\python.exe"
+
+
 if not exist "%SCRIPT_DIR%logs" mkdir "%SCRIPT_DIR%logs"
 
 echo [%date% %time%] 开始刷新持仓价格... >> logs\price_refresh.log
-python refresh_stocks_prices.py %* >> logs\price_refresh.log 2>&1
+%PYTHON_PATH% refresh_stocks_prices.py %* >> logs\price_refresh.log 2>&1
 set "EXIT_CODE=%ERRORLEVEL%"
 echo [%date% %time%] 结束，退出码 %EXIT_CODE% >> logs\price_refresh.log
 

@@ -8,19 +8,13 @@ echo.
 
 REM 获取当前脚本所在目录
 set "SCRIPT_DIR=%~dp0"
-set "PYTHON_PATH=python3"
-
-REM 检查Python是否可用
+set "PYTHON_PATH=py"
+if exist "%SCRIPT_DIR%venv\Scripts\python.exe" set "PYTHON_PATH=%SCRIPT_DIR%venv\Scripts\python.exe"
 %PYTHON_PATH% --version >nul 2>&1
 if errorlevel 1 (
-    echo [错误] 未找到 python3，尝试使用 python...
-    set "PYTHON_PATH=python"
-    %PYTHON_PATH% --version >nul 2>&1
-    if errorlevel 1 (
-        echo [错误] 未找到Python，请确保Python已安装并添加到PATH
-        pause
-        exit /b 1
-    )
+    echo [错误] Python不可用：venv\Scripts\python.exe 和 py 启动器都没找到
+    pause
+    exit /b 1
 )
 
 echo [✓] Python路径: %PYTHON_PATH%
