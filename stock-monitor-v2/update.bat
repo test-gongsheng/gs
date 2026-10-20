@@ -49,6 +49,11 @@ if exist "%REPO_DIR%\data\stocks.db" (
     set /a "BACKUP_COUNT+=1"
 )
 
+if exist "%REPO_DIR%\reports\ib_analysis_latest.md" (
+    copy /Y "%REPO_DIR%\reports\ib_analysis_latest.md" "%DATA_DIR%\ib_analysis_latest.md.bak" >nul
+    echo [Info] IB report backed up
+)
+
 if exist "%REPO_DIR%\reports\portfolio_analysis_latest.json" (
     copy /Y "%REPO_DIR%\reports\portfolio_analysis_latest.json" "%DATA_DIR%\report.json.bak" >nul
     echo [OK] report saved
@@ -187,6 +192,12 @@ if exist "%DATA_DIR%\stocks.db.bak" (
     copy /Y "%DATA_DIR%\stocks.db.bak" "%REPO_DIR%\data\stocks.db" >nul
     echo [OK] stocks.db restored
     set /a "RESTORE_COUNT+=1"
+)
+
+if exist "%DATA_DIR%\ib_analysis_latest.md.bak" (
+    if not exist "%REPO_DIR%\reports" mkdir "%REPO_DIR%\reports"
+    copy /Y "%DATA_DIR%\ib_analysis_latest.md.bak" "%REPO_DIR%\reports\ib_analysis_latest.md" >nul
+    echo [OK] ib report restored
 )
 
 echo [Info] %RESTORE_COUNT% files restored
