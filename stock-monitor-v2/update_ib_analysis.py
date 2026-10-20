@@ -15,6 +15,14 @@ import requests
 # 添加项目路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# Windows GBK控制台兼容：emoji等不可编码字符降级为'?'，防UnicodeEncodeError崩溃
+if sys.platform == 'win32':
+    for _s in (sys.stdout, sys.stderr):
+        try:
+            _s.reconfigure(errors='replace')
+        except Exception:
+            pass
+
 from app import load_data
 
 # 报告文件路径

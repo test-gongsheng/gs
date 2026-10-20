@@ -10,9 +10,18 @@ import os
 import json
 import time
 import re
+import sys
 import requests
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
+
+# Windows GBK控制台兼容：emoji等不可编码字符降级为'?'，防UnicodeEncodeError崩溃
+if sys.platform == 'win32':
+    for _s in (sys.stdout, sys.stderr):
+        try:
+            _s.reconfigure(errors='replace')
+        except Exception:
+            pass
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 os.makedirs(DATA_DIR, exist_ok=True)

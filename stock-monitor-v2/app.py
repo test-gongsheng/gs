@@ -5,6 +5,14 @@ import os
 import sys
 import time
 import threading
+
+# Windows GBK控制台兼容：emoji等不可编码字符降级为'?'，防UnicodeEncodeError崩溃
+if sys.platform == 'win32':
+    for _s in (sys.stdout, sys.stderr):
+        try:
+            _s.reconfigure(errors='replace')
+        except Exception:
+            pass
 from datetime import datetime, timedelta
 from utils.stock_quote import get_stock_quotes, get_dynamic_axis_price
 from utils.exchange_rate import get_cny_hkd_rate, get_yesterday_cny_hkd_rate, convert_hkd_to_cny
