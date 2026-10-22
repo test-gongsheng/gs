@@ -145,9 +145,21 @@ def generate_position_tactics(stock: Dict, kline: List[Dict]) -> List[str]:
     if not kline or len(kline) < 5:
         return lines
 
-    pnl_pct = (price - cost) / cost * 100
-    mkt_val = price * shares
-    pnl_amt = (price - cost) * shares
+    # 【币种修复 2026-10-22】港股通成本为人民币口径；港股现价(HKD)须折算人民币后计算盈亏/市值
+    price_cny = price
+    fx_note = ''
+    if stock.get('market') == '港股':
+        try:
+            from utils.exchange_rate import get_cny_hkd_rate
+            _fx = get_cny_hkd_rate() or 1.1753
+        except Exception:
+            _fx = 1.1753
+        price_cny = price / _fx
+        fx_note = f"（现价HK${price:.2f}÷汇率{_fx:.4f}≈¥{price_cny:.2f}，人民币口径[推算]）"
+
+    pnl_pct = (price_cny - cost) / cost * 100
+    mkt_val = price_cny * shares
+    pnl_amt = (price_cny - cost) * shares
 
     # ── 0. 读上期浮亏做对比（趋势感知）──
     prev_note = ''
@@ -171,7 +183,7 @@ def generate_position_tactics(stock: Dict, kline: List[Dict]) -> List[str]:
 
     # ── 1. 持仓快照 ──
     status = '浮盈' if pnl_pct > 0 else '浮亏'
-    lines.append(f"- **持仓快照：** 市值约{_fmt_wan(mkt_val)}，{status}约{_fmt_wan(abs(pnl_amt))}（{pnl_pct:+.1f}%{prev_note}）")
+    lines.append(f"- **持仓快照：** 市值约{_fmt_wan(mkt_val)}{fx_note}，{status}约{_fmt_wan(abs(pnl_amt))}（{pnl_pct:+.1f}%{prev_note}）")
 
     # ── 2. 关键点位 ──
     levels = analyze_key_levels(kline, price)

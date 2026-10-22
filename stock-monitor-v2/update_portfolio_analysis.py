@@ -303,12 +303,23 @@ def analyze_stock_detailed(stock: Dict, realtime_price: float = 0, realtime_axis
     
     # 【修复】使用传入的实时价格，而不是从 stock 读取
     current_price = realtime_price if realtime_price > 0 else stock.get('current_price', 0)
+
+    # 【币种修复 2026-10-22】港股通成本avg_cost为人民币口径，港股现价(HKD)须折算为人民币后再比较
+    price_cny = current_price
+    fx_rate = None
+    if market == '港股' and current_price > 0:
+        try:
+            from utils.exchange_rate import get_cny_hkd_rate
+            fx_rate = get_cny_hkd_rate() or 1.1753
+        except Exception:
+            fx_rate = 1.1753
+        price_cny = current_price / fx_rate
     
     # 【修复】使用传入的实时中轴价格
     axis_price = realtime_axis if realtime_axis > 0 else get_real_axis_price(code, market, current_price)
     
-    # 基础计算
-    market_value = current_price * shares
+    # 基础计算（统一人民币口径：港股市值=HKD现价÷汇率×股数）
+    market_value = price_cny * shares
     cost_value = avg_cost * shares
     pnl = market_value - cost_value
     pnl_percent = round(pnl / cost_value * 100, 2) if cost_value > 0 else 0
@@ -423,11 +434,15 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
     tech_texts = generate_technical_analysis_text(tech_data, name, current_price) if generate_technical_analysis_text else {}
     
     # 1. 数据来源
+    _px_src = (f"HK${current_price:.2f}（≈¥{price_cny:.2f}，1 CNY={fx_rate:.4f} HKD）"
+               if market == '港股' else f"RMB{current_price:.2f}")
+    _unit = 'HK$' if market == '港股' else 'RMB'
+    _cost_note = '人民币口径·港股通券商导出' if market == '港股' else '您的实际买入均价'
     data_sources = [
-        f"**当前价格**: RMB{current_price:.2f}（{market}实时行情）",
-        f"**中轴价格**: RMB{axis_price:.2f}（基于近90日均价计算）",
-        f"**持仓成本**: RMB{avg_cost:.2f}（您的实际买入均价）",
-        f"**网格触发**: 买入≤RMB{trigger_buy} / 卖出≥RMB{trigger_sell}（中轴价格±8%）",
+        f"**当前价格**: {_px_src}（{market}实时行情）",
+        f"**中轴价格**: {_unit}{axis_price:.2f}（基于近90日均价计算）",
+        f"**持仓成本**: RMB{avg_cost:.2f}（{_cost_note}）",
+        f"**网格触发**: 买入≤{_unit}{trigger_buy} / 卖出≥{_unit}{trigger_sell}（中轴价格±8%）",
     ]
     
     # 添加技术指标数据源
@@ -487,7 +502,7 @@ def generate_stock_analysis_detail(name: str, code: str, market: str,
             )
     
     # 持仓盈亏分析
-    cost_deviation = round((current_price - avg_cost) / avg_cost * 100, 2) if avg_cost > 0 else 0
+    cost_deviation = round((price_cny - avg_cost) / avg_cost * 100, 2) if avg_cost > 0 else 0
     if pnl > 0:
         analysis_logic.append(
             f"**持仓盈亏**: 当前浮盈RMB{pnl:,.2f}（+{pnl_percent}%），"

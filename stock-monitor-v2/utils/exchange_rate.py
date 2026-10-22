@@ -59,18 +59,18 @@ def get_cny_hkd_rate() -> Optional[float]:
         if len(parts) >= 2:
             hkd_to_cny = float(parts[1])  # 1港币 = ?人民币
             # 转换为 1人民币 = ?港币
-            cny_to_hkd = 1 / hkd_to_cny if hkd_to_cny > 0 else 1.0836
+            cny_to_hkd = 1 / hkd_to_cny if hkd_to_cny > 0 else 1.1753
             
             _exchange_cache['rate'] = round(cny_to_hkd, 4)
             _exchange_cache['timestamp'] = datetime.now()
             print(f"[汇率] 1 CNY = {_exchange_cache['rate']} HKD (1 HKD = {hkd_to_cny} CNY)")
             return _exchange_cache['rate']
         
-        # 备用：使用官方中间价 1港币=0.9229人民币 -> 1人民币=1.0836港币
-        return 1.0836
+        # 备用：使用近似中间价 1港币≈0.8508人民币 -> 1人民币≈1.1753港币（2026-10-22校准）
+        return 1.1753
     except Exception as e:
         print(f"[汇率] 获取失败，使用默认: {e}")
-        return 1.0836  # 默认汇率：1港币=0.9229人民币
+        return 1.1753  # 默认汇率：1港币≈0.8508人民币（2026-10-22校准）
 
 
 def get_yesterday_cny_hkd_rate() -> Optional[float]:
@@ -126,11 +126,11 @@ def get_yesterday_cny_hkd_rate() -> Optional[float]:
             print(f"昨日收盘汇率: 1 CNY = {rate} HKD")
             return rate
         
-        # 备用：使用官方中间价 1港币=0.9229人民币 -> 1人民币=1.0836港币
-        return 1.0836
+        # 备用：使用近似中间价 1港币≈0.8508人民币 -> 1人民币≈1.1753港币（2026-10-22校准）
+        return 1.1753
     except Exception as e:
         print(f"[汇率] 获取昨日汇率失败: {e}")
-        return 1.0836  # 默认昨日收盘汇率
+        return 1.1753  # 默认昨日收盘汇率（2026-10-22校准）
 
 
 def convert_hkd_to_cny(hkd_amount: float, rate: float = None) -> float:

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 持仓股深度日报生成器 V3
-独立模块，不依赖后端服务，对标豆包/专业投研水平
+独立模块,不依赖后端服务,对标豆包/专业投研水平
 """
 
 import os
@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 
-# 假期窗口回补（非交易日新闻/事件补录），文件缺失时降级为无此功能
+# 假期窗口回补(非交易日新闻/事件补录),文件缺失时降级为无此功能
 try:
     import holiday_catchup as _holiday_catchup
 except Exception:
@@ -22,7 +22,7 @@ except Exception:
 # ========== 配置 ==========
 BASE_DIR = os.path.dirname(__file__)
 REPORTS_DIR = os.path.join(BASE_DIR, 'reports')
-DATA_DIR = os.path.join(BASE_DIR, 'data')  # __main__ 里事件引擎刷新依赖此常量（此前缺失导致刷新静默失败）
+DATA_DIR = os.path.join(BASE_DIR, 'data')  # __main__ 里事件引擎刷新依赖此常量(此前缺失导致刷新静默失败)
 os.makedirs(REPORTS_DIR, exist_ok=True)
 
 _session = requests.Session()
@@ -48,9 +48,9 @@ SECTOR_MAP = {
     '09988':  '互联网-电商/云',
 }
 
-# 板块指数代码（腾讯格式）
+# 板块指数代码(腾讯格式)
 SECTOR_INDEX = {
-    '半导体设备与服务': 'sh000001',  # 临时用大盘替代，后续优化
+    '半导体设备与服务': 'sh000001',  # 临时用大盘替代,后续优化
     '半导体-存储': 'sh000001',
     '半导体-GPU': 'sh000001',
     '光伏设备': 'sh000001',
@@ -92,7 +92,7 @@ def _safe_float(s):
 
 
 def is_trading_time(market: str = 'A股') -> bool:
-    """判断当前是否处于交易时段（周一至周五；A股 9:30-11:30/13:00-15:00，港股 9:30-12:00/13:00-16:00）"""
+    """判断当前是否处于交易时段(周一至周五;A股 9:30-11:30/13:00-15:00,港股 9:30-12:00/13:00-16:00)"""
     now = datetime.now()
     if now.weekday() >= 5:
         return False
@@ -103,7 +103,7 @@ def is_trading_time(market: str = 'A股') -> bool:
 
 
 def _format_amount(amount_yuan: float) -> str:
-    """成交额格式化：元 -> 亿/万"""
+    """成交额格式化:元 -> 亿/万"""
     if not amount_yuan or amount_yuan <= 0:
         return 'N/A'
     if amount_yuan >= 100000000:
@@ -114,7 +114,7 @@ def _format_amount(amount_yuan: float) -> str:
 
 
 def get_tencent_quote(code: str, market: str = 'A股') -> Optional[Dict]:
-    """腾讯实时行情（支持A股和港股）"""
+    """腾讯实时行情(支持A股和港股)"""
     try:
         tc = normalize_tencent_code(code, market)
         url = f"http://qt.gtimg.cn/q={tc}"
@@ -126,12 +126,12 @@ def get_tencent_quote(code: str, market: str = 'A股') -> Optional[Dict]:
         parts = m.group(1).split('~')
         if len(parts) < 10:
             return None
-        
+
         is_hk = tc.startswith('hk')
 
         # A股和港股的字段位置不同
         if is_hk:
-            # 港股字段映射（腾讯港股API格式与A股不同）
+            # 港股字段映射(腾讯港股API格式与A股不同)
             # 实测: parts[31]=涨跌额, parts[32]=涨跌幅%, parts[33]=最高, parts[34]=最低
             #       parts[36]=成交量, parts[37]=成交额(港元,全额)
             price = _safe_float(parts[3])
@@ -143,7 +143,7 @@ def get_tencent_quote(code: str, market: str = 'A股') -> Optional[Dict]:
             low = _safe_float(parts[34]) if len(parts) > 34 else 0
             volume = int(_safe_float(parts[36])) if len(parts) > 36 else 0
             turnover = _safe_float(parts[37]) if len(parts) > 37 else 0
-            amount = turnover  # 港股成交额为全额（元）
+            amount = turnover  # 港股成交额为全额(元)
             turnover_rate = None  # 腾讯港股接口无换手率
         else:
             # A股字段映射
@@ -157,9 +157,9 @@ def get_tencent_quote(code: str, market: str = 'A股') -> Optional[Dict]:
             change = _safe_float(parts[31]) if len(parts) > 31 else 0
             change_pct = _safe_float(parts[32]) if len(parts) > 32 else 0
             turnover = _safe_float(parts[37]) if len(parts) > 37 else 0
-            amount = turnover * 10000  # A股成交额单位为万元，转为元
+            amount = turnover * 10000  # A股成交额单位为万元,转为元
             turnover_rate = _safe_float(parts[38]) if len(parts) > 38 else None
-        
+
         return {
             'name': parts[1],
             'price': price,
@@ -196,7 +196,7 @@ def get_tencent_kline(code: str, market: str = 'A股', days: int = 120) -> List[
             result = []
             for item in kline_data:
                 if len(item) >= 6:
-                    # 腾讯K线行格式: [date, open, close, high, low, volume]——index3=high, index4=low
+                    # 腾讯K线行格式: [date, open, close, high, low, volume]--index3=high, index4=low
                     result.append({
                         'date': item[0],
                         'open': float(item[1]),
@@ -211,14 +211,14 @@ def get_tencent_kline(code: str, market: str = 'A股', days: int = 120) -> List[
     return []
 
 
-# ========== 盘中增强四模块（对标豆包盘中报告质量） ==========
+# ========== 盘中增强四模块(对标豆包盘中报告质量) ==========
 
 def get_minute_timeline(code: str, market: str = 'A股') -> Optional[Dict]:
     """
-    腾讯分时数据通道：web.ifzq.gtimg.cn/appstock/app/minute/query
+    腾讯分时数据通道:web.ifzq.gtimg.cn/appstock/app/minute/query
     返回 {'date': 'YYYYMMDD', 'prev_close': float,
           'points': [(HHMM, price, cum_vol手, cum_amount元), ...]}
-    失败返回 None（调用方降级为快照口径，绝不写"无数据"糊弄）。
+    失败返回 None(调用方降级为快照口径,绝不写"无数据"糊弄)。
     """
     try:
         tc = normalize_tencent_code(code, market)
@@ -252,9 +252,9 @@ def get_minute_timeline(code: str, market: str = 'A股') -> Optional[Dict]:
 
 def _minute_amount_trend(points: List[tuple], session_split: str = 'auto') -> str:
     """
-    按分钟增量成交额判断量能节奏：
-    - 盘中（auto）：首30分钟 vs 最近30分钟每分钟均额对比
-    - 全天（closed）：上午(<=11:30) vs 下午(>=13:00)每分钟均额对比
+    按分钟增量成交额判断量能节奏:
+    - 盘中(auto):首30分钟 vs 最近30分钟每分钟均额对比
+    - 全天(closed):上午(<=11:30) vs 下午(>=13:00)每分钟均额对比
     返回 "量能明显递减" / "量能逐步放大" / "量能相对平稳"
     """
     if len(points) < 20:
@@ -290,10 +290,10 @@ def _minute_amount_trend(points: List[tuple], session_split: str = 'auto') -> st
 
 def render_intraday_rhythm(code: str, market: str, quote: Dict) -> List[str]:
     """
-    模块①：盘中节奏叙事（分时级别）。
-    - 交易时段且分时数据为今日 → "盘中节奏（截至HH:MM）"，时间轴用实时值
-    - 非交易时段/分时数据为历史日期 → "全天节奏"，自动降级为收盘复盘口径
-    - 分时数据拿不到 → 用昨收/今开/最高/最低+现价+时间戳写简化节奏（快照口径，注明）
+    模块1:盘中节奏叙事(分时级别)。
+    - 交易时段且分时数据为今日 → "盘中节奏(截至HH:MM)",时间轴用实时值
+    - 非交易时段/分时数据为历史日期 → "全天节奏",自动降级为收盘复盘口径
+    - 分时数据拿不到 → 用昨收/今开/最高/最低+现价+时间戳写简化节奏(快照口径,注明)
     """
     lines: List[str] = []
     tl = get_minute_timeline(code, market)
@@ -310,9 +310,9 @@ def render_intraday_rhythm(code: str, market: str, quote: Dict) -> List[str]:
     if tl and tl.get('points'):
         pts = tl['points']
         is_today = (tl.get('date') == today)
-        label = f"盘中节奏（截至{pts[-1][0][:2]}:{pts[-1][0][2:]}）" if (is_today and in_trade) \
-            else (f"全天节奏（{tl.get('date', '')}收盘复盘）" if not is_today else "全天节奏（收盘复盘）")
-        lines.append(f"**{label}：**")
+        label = f"盘中节奏(截至{pts[-1][0][:2]}:{pts[-1][0][2:]})" if (is_today and in_trade) \
+            else (f"全天节奏({tl.get('date', '')}收盘复盘)" if not is_today else "全天节奏(收盘复盘)")
+        lines.append(f"**{label}:**")
 
         open_pt = pts[0]
         hi_pt = max(pts, key=lambda x: x[1])
@@ -322,7 +322,7 @@ def render_intraday_rhythm(code: str, market: str, quote: Dict) -> List[str]:
         def _fmt(t: str) -> str:
             return f"{t[:2]}:{t[2:]}"
 
-        # 快照极值可能高于/低于分钟序列（分钟线只记每分钟末价，极值可能落在分钟内或集合竞价）
+        # 快照极值可能高于/低于分钟序列(分钟线只记每分钟末价,极值可能落在分钟内或集合竞价)
         q_hi = quote.get('high', 0) or 0
         q_lo = quote.get('low', 0) or 0
         hi_price = max(hi_pt[1], q_hi)
@@ -335,7 +335,7 @@ def render_intraday_rhythm(code: str, market: str, quote: Dict) -> List[str]:
         if prev_close > 0:
             gap_pct = (open_pt[1] - prev_close) / prev_close * 100
             gap_word = '高开' if gap_pct > 0.1 else ('低开' if gap_pct < -0.1 else '平开')
-            gap_txt = f"（较昨收¥{prev_close:.2f}{gap_word}{abs(gap_pct):.2f}%）"
+            gap_txt = f"(较昨收¥{prev_close:.2f}{gap_word}{abs(gap_pct):.2f}%)"
         seg.append(f"{_fmt(open_pt[0])} 开 ¥{open_pt[1]:.2f}{gap_txt}")
         if hi_price > open_pt[1] * 1.001:
             if hi_from_quote:
@@ -350,7 +350,7 @@ def render_intraday_rhythm(code: str, market: str, quote: Dict) -> List[str]:
         seg.append(f"现报 ¥{last_pt[1]:.2f}")
         lines.append(' → '.join(seg) + '。')
 
-        # 结构定性：按 高点/低点 先后与现价位置（极值优先用快照口径，更真实）
+        # 结构定性:按 高点/低点 先后与现价位置(极值优先用快照口径,更真实)
         if prev_close > 0 and hi_price > lo_price:
             amp = (hi_price - lo_price) / prev_close * 100
             pos_in_range = (last_pt[1] - lo_price) / (hi_price - lo_price) * 100
@@ -358,7 +358,7 @@ def render_intraday_rhythm(code: str, market: str, quote: Dict) -> List[str]:
             lo_time = lo_pt[0]
             struct_bits = []
             if hi_time <= open_pt[0] and last_pt[1] < open_pt[1] * 0.995:
-                struct_bits.append('高开后回落，重心逐步下移' if last_pt[0] == lo_pt[0]
+                struct_bits.append('高开后回落,重心逐步下移' if last_pt[0] == lo_pt[0]
                                    else '高开回落后低位震荡')
             elif hi_time < lo_time:
                 struct_bits.append('冲高回落' if last_pt[1] < hi_price * 0.995 else '高位震荡')
@@ -366,45 +366,45 @@ def render_intraday_rhythm(code: str, market: str, quote: Dict) -> List[str]:
                 struct_bits.append('探底回升' if last_pt[1] > lo_price * 1.005 else '低位徘徊')
             struct_bits.append(f"日内振幅{amp:.1f}%")
             struct_bits.append(f"现价处于日内区间{'上' if pos_in_range >= 60 else '下' if pos_in_range <= 40 else '中'}部"
-                               f"（{pos_in_range:.0f}%分位）")
+                               f"({pos_in_range:.0f}%分位)")
             trend = _minute_amount_trend(pts, 'auto' if (is_today and in_trade) else 'closed')
             if trend:
                 struct_bits.append(trend)
-            lines.append('，'.join(struct_bits) + '。')
+            lines.append(','.join(struct_bits) + '。')
     else:
-        # 优雅降级：快照口径简化节奏（绝不用"无数据"糊弄）
+        # 优雅降级:快照口径简化节奏(绝不用"无数据"糊弄)
         now_str = now.strftime('%H:%M')
         label = '盘中节奏' if in_trade else '全天节奏'
-        lines.append(f"**{label}（快照口径，截至{now_str}）：**")
+        lines.append(f"**{label}(快照口径,截至{now_str}):**")
         seg = []
         if prev_close > 0 and open_p > 0:
             gap_pct = (open_p - prev_close) / prev_close * 100
             gap_word = '高开' if gap_pct > 0.1 else ('低开' if gap_pct < -0.1 else '平开')
-            seg.append(f"今开 ¥{open_p:.2f}（较昨收¥{prev_close:.2f}{gap_word}{abs(gap_pct):.2f}%）")
+            seg.append(f"今开 ¥{open_p:.2f}(较昨收¥{prev_close:.2f}{gap_word}{abs(gap_pct):.2f}%)")
         if hi_p > 0 and lo_p > 0:
             seg.append(f"盘中最高 ¥{hi_p:.2f} / 最低 ¥{lo_p:.2f}")
         if cur_p > 0:
             seg.append(f"现报 ¥{cur_p:.2f}")
-        lines.append('，'.join(seg) + '。')
+        lines.append(','.join(seg) + '。')
         if hi_p > lo_p > 0 and prev_close > 0:
             amp = (hi_p - lo_p) / prev_close * 100
             pos_in_range = (cur_p - lo_p) / (hi_p - lo_p) * 100 if hi_p > lo_p else 50
-            lines.append(f"日内振幅{amp:.1f}%，现价处于日内区间"
+            lines.append(f"日内振幅{amp:.1f}%,现价处于日内区间"
                          f"{'上' if pos_in_range >= 60 else '下' if pos_in_range <= 40 else '中'}部。"
-                         f"（分钟级分时数据暂缺，以上为快照点位还原）")
+                         f"(分钟级分时数据暂缺,以上为快照点位还原)")
     lines.append('')
     return lines
 
 
 def get_daily_bars_full(code: str, market: str = 'A股', days: int = 5) -> List[Dict]:
     """
-    近N个交易日日线（含今日盘中未完成K线），字段：
+    近N个交易日日线(含今日盘中未完成K线),字段:
     date/open/close/high/low/pct_chg(%)/amount(元)/turnover_rate(%)
-    优先 akshare 东财接口（涨跌幅/成交额/换手率为真实交易所口径）；
-    失败降级腾讯K线：涨跌幅由收盘价推算、成交额=量×收盘价近似（标注 estimated=True）。
+    优先 akshare 东财接口(涨跌幅/成交额/换手率为真实交易所口径);
+    失败降级腾讯K线:涨跌幅由收盘价推算、成交额=量×收盘价近似(标注 estimated=True)。
     """
     bars: List[Dict] = []
-    # 优先 akshare 东财接口（涨跌幅/成交额/换手率为真实口径；港股无换手率则为 None）
+    # 优先 akshare 东财接口(涨跌幅/成交额/换手率为真实口径;港股无换手率则为 None)
     try:
         import akshare as ak
         if market == '港股':
@@ -432,8 +432,8 @@ def get_daily_bars_full(code: str, market: str = 'A股', days: int = 5) -> List[
                 })
             return bars
     except Exception as e:
-        print(f"[三日形态] akshare日线失败 {code}: {e}，降级腾讯K线近似")
-    # 降级通道：腾讯K线（成交额为近似值；港股成交量单位是股，A股是手）
+        print(f"[三日形态] akshare日线失败 {code}: {e},降级腾讯K线近似")
+    # 降级通道:腾讯K线(成交额为近似值;港股成交量单位是股,A股是手)
     try:
         from utils.stock_quote import get_stock_kline as _uk
         kl = _uk(code, market, days=days + 1, max_retries=1)
@@ -451,7 +451,7 @@ def get_daily_bars_full(code: str, market: str = 'A股', days: int = 5) -> List[
             'high': item['high'],
             'low': item['low'],
             'pct_chg': pct,
-            'amount': item['volume'] * vol_unit * close,  # 近似：成交量×收盘价
+            'amount': item['volume'] * vol_unit * close,  # 近似:成交量×收盘价
             'turnover_rate': None,
             'estimated': True,
         })
@@ -461,16 +461,16 @@ def get_daily_bars_full(code: str, market: str = 'A股', days: int = 5) -> List[
 
 def classify_3day_pattern(code: str, market: str = 'A股') -> Tuple[str, List[str]]:
     """
-    模块②：三日形态定性（规则引擎，真实日线数据，禁止编造）。
-    模式库：动能三连衰减（涨停→天量滞涨→冲高回落）/ 三连阳 / 三连阴 /
-            缩量回踩 / 放量突破 / 横盘蓄势 / 震荡整理（兜底）。
-    返回 (形态名, [判定依据行])；依据行全部带真实数字。
+    模块2:三日形态定性(规则引擎,真实日线数据,禁止编造)。
+    模式库:动能三连衰减(涨停→天量滞涨→冲高回落)/ 三连阳 / 三连阴 /
+            缩量回踩 / 放量突破 / 横盘蓄势 / 震荡整理(兜底)。
+    返回 (形态名, [判定依据行]);依据行全部带真实数字。
     """
     bars = get_daily_bars_full(code, market, days=3)
     if len(bars) < 3:
-        return '数据不足', ['近3个交易日日线数据不完整，形态定性跳过。']
+        return '数据不足', ['近3个交易日日线数据不完整,形态定性跳过。']
     d1, d2, d3 = bars[-3], bars[-2], bars[-1]
-    est_note = '（成交额为量×价近似值）' if any(b.get('estimated') for b in bars) else ''
+    est_note = '(成交额为量×价近似值)' if any(b.get('estimated') for b in bars) else ''
 
     def _amt(b):
         return _format_amount(b.get('amount', 0))
@@ -486,20 +486,20 @@ def classify_3day_pattern(code: str, market: str = 'A股') -> Tuple[str, List[st
     a1, a2, a3 = d1.get('amount', 0), d2.get('amount', 0), d3.get('amount', 0)
 
     basis: List[str] = []
-    basis.append(f"{_day_tag(d1)}：{'+' if p1 >= 0 else ''}{p1:.2f}%（成交{_amt(d1)}{_tr(d1)}）")
-    basis.append(f"{_day_tag(d2)}：{'+' if p2 >= 0 else ''}{p2:.2f}%（成交{_amt(d2)}{_tr(d2)}）")
-    today_note = '，盘中口径' if is_trading_time(market) and d3['date'] == datetime.now().strftime('%Y-%m-%d') else ''
-    basis.append(f"{_day_tag(d3)}：{'+' if p3 >= 0 else ''}{p3:.2f}%（成交{_amt(d3)}{_tr(d3)}{today_note}）")
+    basis.append(f"{_day_tag(d1)}:{'+' if p1 >= 0 else ''}{p1:.2f}%(成交{_amt(d1)}{_tr(d1)})")
+    basis.append(f"{_day_tag(d2)}:{'+' if p2 >= 0 else ''}{p2:.2f}%(成交{_amt(d2)}{_tr(d2)})")
+    today_note = ',盘中口径' if is_trading_time(market) and d3['date'] == datetime.now().strftime('%Y-%m-%d') else ''
+    basis.append(f"{_day_tag(d3)}:{'+' if p3 >= 0 else ''}{p3:.2f}%(成交{_amt(d3)}{_tr(d3)}{today_note})")
     if est_note:
-        basis.append(est_note.strip('（）'))
+        basis.append(est_note.strip('()'))
 
-    # --- 规则引擎（按优先级） ---
+    # --- 规则引擎(按优先级) ---
     limit_up = p1 >= 9.8 or (code.startswith(('30', '68')) and p1 >= 19.5)
     d2_climax_vol = a2 >= max(a1, a2, a3) and a2 > 0 and a1 > 0 and a2 >= a1 * 1.3
     d2_stall = abs(p2) < 2.0
     d3_upper_shadow = d3['high'] > d3['open'] and d3['close'] < d3['high'] * 0.995
     if limit_up and d2_climax_vol and d2_stall and d3_upper_shadow:
-        return '动能三连衰减（涨停→天量滞涨→冲高回落）', basis
+        return '动能三连衰减(涨停→天量滞涨→冲高回落)', basis
 
     if p3 > 3 and a3 >= max(a1, a2, a3) and d3['close'] >= max(d1['close'], d2['close']):
         return '放量突破', basis
@@ -515,7 +515,7 @@ def classify_3day_pattern(code: str, market: str = 'A股') -> Tuple[str, List[st
         return '三连阴', basis
 
     if p3 < 0 and 0 < a3 < a2 < a1 * 1.05 and a3 < a2 * 0.9:
-        basis.append('量能逐日萎缩而价格回踩，属缩量回调结构')
+        basis.append('量能逐日萎缩而价格回踩,属缩量回调结构')
         return '缩量回踩', basis
 
     if abs(p1) < 1.5 and abs(p2) < 1.5 and abs(p3) < 1.5:
@@ -525,7 +525,7 @@ def classify_3day_pattern(code: str, market: str = 'A股') -> Tuple[str, List[st
 
 
 def _get_index_change_pct(index_code: str) -> Optional[Tuple[str, float]]:
-    """指数实时涨跌幅（腾讯指数行情，代码如 sh000300/sz399006/hkHSI）"""
+    """指数实时涨跌幅(腾讯指数行情,代码如 sh000300/sz399006/hkHSI)"""
     try:
         url = f"http://qt.gtimg.cn/q={index_code}"
         r = _session.get(url, timeout=10)
@@ -543,8 +543,8 @@ def _get_index_change_pct(index_code: str) -> Optional[Tuple[str, float]]:
 
 def _get_fresh_sector_change(sector: str) -> Optional[Tuple[str, float]]:
     """
-    从 data/market_sentiment.json 取当日板块平均涨跌幅（仅当文件日期为今日才新鲜可用）。
-    板块名匹配：情绪文件板块名 与 持仓板块名 互相包含即算命中（如 "半导体" ⊂ "半导体设备与服务"）。
+    从 data/market_sentiment.json 取当日板块平均涨跌幅(仅当文件日期为今日才新鲜可用)。
+    板块名匹配:情绪文件板块名 与 持仓板块名 互相包含即算命中(如 "半导体" ⊂ "半导体设备与服务")。
     """
     try:
         path = os.path.join(DATA_DIR, 'market_sentiment.json')
@@ -563,10 +563,10 @@ def _get_fresh_sector_change(sector: str) -> Optional[Tuple[str, float]]:
 
 def render_sector_divergence(code: str, market: str, stock_change_pct: float) -> List[str]:
     """
-    模块③：板块背离量化。个股涨幅 vs 参照系涨幅差（百分点）。
-    参照系优先级：①当日情绪引擎板块均涨幅（新鲜才用）②大盘基准指数：
-    A股主板→沪深300；创业板(300/301)→创业板指+沪深300；科创(688)→科创50+沪深300；港股→恒生指数。
-    每行写清参照系与差值，结尾给"强于/弱于X.XX个百分点"判断句。
+    模块3:板块背离量化。个股涨幅 vs 参照系涨幅差(百分点)。
+    参照系优先级:1当日情绪引擎板块均涨幅(新鲜才用)2大盘基准指数:
+    A股主板→沪深300;创业板(300/301)→创业板指+沪深300;科创(688)→科创50+沪深300;港股→恒生指数。
+    每行写清参照系与差值,结尾给"强于/弱于X.XX个百分点"判断句。
     """
     lines: List[str] = []
     sector = SECTOR_MAP.get(code, '')
@@ -596,44 +596,45 @@ def render_sector_divergence(code: str, market: str, stock_change_pct: float) ->
     if not refs:
         return lines
 
-    lines.append(f"**板块背离量化（个股 vs 参照系）：**")
+    lines.append(f"**板块背离量化(个股 vs 参照系):**")
     for name, ref_pct in refs:
         diff = stock_change_pct - ref_pct
         word = '强于' if diff >= 0 else '弱于'
         lines.append(f"- 个股 {'+' if stock_change_pct >= 0 else ''}{stock_change_pct:.2f}% vs "
                      f"{name} {'+' if ref_pct >= 0 else ''}{ref_pct:.2f}% → "
                      f"**{word}{abs(diff):.2f}个百分点**")
-    # 总结判断句（用第一个参照系）
+    # 总结判断句(用第一个参照系)
     first_name, first_pct = refs[0]
     diff0 = stock_change_pct - first_pct
     word0 = '强于' if diff0 >= 0 else '弱于'
-    extra = '，题材情绪独立于大盘运行' if abs(diff0) >= 3 else ''
-    lines.append(f"- 判定：个股今日{word0}{first_name}{abs(diff0):.2f}个百分点{extra}。")
+    extra = ',题材情绪独立于大盘运行' if abs(diff0) >= 3 else ''
+    lines.append(f"- 判定:个股今日{word0}{first_name}{abs(diff0):.2f}个百分点{extra}。")
 
-    # 【归因分解 2026-09-29】把涨跌幅拆成 系统性(beta) + 个股超额 两部分——
-    # 回答"跌这么多是大盘带的还是个股自己的"这个用户最关心的问题，
-    # 避免把系统性大跌误归因于个股事件（或反之）。
+    # 【归因分解 2026-09-29】把涨跌幅拆成 系统性(beta) + 个股超额 两部分--
+    # 回答"跌这么多是大盘带的还是个股自己的"这个用户最关心的问题,
+    # 避免把系统性大跌误归因于个股事件(或反之)。
     abs_move = abs(stock_change_pct)
     if abs_move >= 2 and abs(diff0) <= 2:
-        lines.append(f"- **归因：主因是系统性波动（大盘beta）**——"
+        lines.append(f"- **归因:主因是系统性波动(大盘beta)**--"
                      f"{'下跌' if stock_change_pct < 0 else '上涨'}{abs_move:.2f}%中"
-                     f"约{abs(first_pct):.2f}个百分点由{first_name}贡献，"
-                     f"个股自身因素（消息/资金/情绪）影响有限（超额{diff0:+.2f}pp），"
+                     f"约{abs(first_pct):.2f}个百分点由{first_name}贡献,"
+                     f"个股自身因素(消息/资金/情绪)影响有限(超额{diff0:+.2f}pp),"
                      f"不宜把当日{'跌' if stock_change_pct < 0 else '涨'}势简单归因于个股事件。")
     elif abs_move >= 2 and diff0 <= -3:
-        lines.append(f"- **归因：个股利空为主导**——{first_name}仅{'+' if first_pct >= 0 else ''}{first_pct:.2f}%"
-                     f"，个股却{stock_change_pct:+.2f}%，超额{diff0:.2f}pp说明有独立于板块的"
-                     f"个股级压力（消息/减持/解禁/业绩），需重点排查公司层面事件。")
+        lines.append(f"- **归因:个股层面显著承压(超额{diff0:.2f}pp)**--{first_name}仅{'+' if first_pct >= 0 else ''}{first_pct:.2f}%"
+                     f",个股却{stock_change_pct:+.2f}%。注意:个股承压≠个股利空--"
+                     f"需结合'一、事件影响追踪'的验证闭环区分:若近期利空事件均未兑现,"
+                     f"则超额下跌更可能源于资金面(南向/主力资金流出,见资金流向节),而非公司基本面恶化。")
     elif abs_move >= 2 and diff0 >= 3:
-        lines.append(f"- **归因：个股独立走强**——{first_name}{first_pct:+.2f}%背景下"
-                     f"个股{stock_change_pct:+.2f}%，超额+{diff0:.2f}pp，"
-                     f"驱动因素来自个股自身（订单/利好/资金抱团），板块环境并非主因。")
+        lines.append(f"- **归因:个股独立走强**--{first_name}{first_pct:+.2f}%背景下"
+                     f"个股{stock_change_pct:+.2f}%,超额+{diff0:.2f}pp,"
+                     f"驱动因素来自个股自身(订单/利好/资金抱团),板块环境并非主因。")
     lines.append('')
     return lines
 
 
 def get_stock_news(code: str) -> List[Dict]:
-    """个股新闻（akshare）"""
+    """个股新闻(akshare)"""
     try:
         import akshare as ak
         df = ak.stock_news_em(symbol=code)
@@ -664,20 +665,20 @@ def calculate_macd(prices: List[float], fast: int = 12, slow: int = 26, signal: 
     """MACD指标"""
     if len(prices) < slow + signal:
         return {}
-    
+
     def ema(data: List[float], n: int) -> List[float]:
         multiplier = 2 / (n + 1)
         ema_values = [data[0]]
         for price in data[1:]:
             ema_values.append((price - ema_values[-1]) * multiplier + ema_values[-1])
         return ema_values
-    
+
     ema_fast = ema(prices, fast)
     ema_slow = ema(prices, slow)
     dif = [f - s for f, s in zip(ema_fast, ema_slow)]
     dea = ema(dif, signal)
     macd_hist = [2 * (d - a) for d, a in zip(dif[-len(dea):], dea)]
-    
+
     return {
         'dif': round(dif[-1], 3),
         'dea': round(dea[-1], 3),
@@ -705,24 +706,24 @@ def calculate_rsi(prices: List[float], period: int = 14) -> float:
 
 
 def calculate_support_resistance(kline: List[Dict], days: int = 20) -> Dict:
-    """计算支撑/压力位（近期高低点密集区）"""
+    """计算支撑/压力位(近期高低点密集区)"""
     recent = kline[-days:] if len(kline) >= days else kline
     if not recent:
         return {}
-    
+
     lows = [d['low'] for d in recent]
     highs = [d['high'] for d in recent]
     closes = [d['close'] for d in recent]
-    
-    # 支撑位：近期低点 + 整数关
+
+    # 支撑位:近期低点 + 整数关
     support1 = round(min(lows[-5:]), 2)  # 近5日最低
     support2 = round(min(lows), 2)        # 近20日最低
     support3 = round(int(min(lows)), 2)   # 整数关
-    
-    # 压力位：近期高点
+
+    # 压力位:近期高点
     resistance1 = round(max(highs[-5:]), 2)  # 近5日最高
     resistance2 = round(max(highs), 2)        # 近20日最高
-    
+
     return {
         'support_near': support1,
         'support_mid': support2,
@@ -743,10 +744,10 @@ def calculate_volume_ratio(kline: List[Dict]) -> Dict:
     today_vol = kline[-1]['volume']
     avg_5d = sum(d['volume'] for d in kline[-6:-1]) / 5
     avg_20d = sum(d['volume'] for d in kline[-21:-1]) / 20 if len(kline) >= 21 else avg_5d
-    
+
     ratio_5d = today_vol / avg_5d if avg_5d > 0 else 0
     ratio_20d = today_vol / avg_20d if avg_20d > 0 else 0
-    
+
     status = '缩量'
     if ratio_5d > 2:
         status = '显著放量'
@@ -754,7 +755,7 @@ def calculate_volume_ratio(kline: List[Dict]) -> Dict:
         status = '放量'
     elif ratio_5d > 0.8:
         status = '正常量能'
-    
+
     return {
         'today_vol': today_vol,
         'avg_5d': int(avg_5d),
@@ -770,38 +771,38 @@ def calculate_all_indicators(kline: List[Dict]) -> Dict:
     closes = [d['close'] for d in kline]
     if len(closes) < 60:
         return {}
-    
+
     ma5 = calculate_ma(closes, 5)
     ma10 = calculate_ma(closes, 10)
     ma20 = calculate_ma(closes, 20)
     ma60 = calculate_ma(closes, 60)
-    
+
     macd = calculate_macd(closes)
     rsi14 = calculate_rsi(closes, 14)
     rsi6 = calculate_rsi(closes, 6)
-    
+
     sr = calculate_support_resistance(kline)
     vol = calculate_volume_ratio(kline)
-    
+
     # 均线排列判断
     if ma5 and ma10 and ma20 and ma60:
         current_ma5, current_ma10 = ma5[-1], ma10[-1]
         current_ma20, current_ma60 = ma20[-1], ma60[-1]
-        
+
         if current_ma5 > current_ma10 > current_ma20 > current_ma60:
             ma_trend = '多头排列'
         elif current_ma5 < current_ma10 < current_ma20 < current_ma60:
             ma_trend = '空头排列'
         else:
             ma_trend = '震荡排列'
-        
+
         price_vs_ma5 = (closes[-1] - current_ma5) / current_ma5 * 100
         price_vs_ma20 = (closes[-1] - current_ma20) / current_ma20 * 100
     else:
         ma_trend = '数据不足'
         price_vs_ma5 = 0
         price_vs_ma20 = 0
-    
+
     return {
         'ma': {
             '5': round(ma5[-1], 2) if ma5 else 0,
@@ -820,8 +821,8 @@ def calculate_all_indicators(kline: List[Dict]) -> Dict:
 
 
 def _key_levels_with_basis(kline: List[Dict]) -> List[tuple]:
-    """关键价位+依据表（全部基于真实K线计算，禁编造）：
-    返回 [(label, price, basis), ...]，按价位降序，供报告表格渲染"""
+    """关键价位+依据表(全部基于真实K线计算,禁编造):
+    返回 [(label, price, basis), ...],按价位降序,供报告表格渲染"""
     if not kline or len(kline) < 5:
         return []
     rows = []
@@ -833,17 +834,17 @@ def _key_levels_with_basis(kline: List[Dict]) -> List[tuple]:
     lo5 = min(recent5, key=lambda d: d['low'])
     hi20 = max(recent20, key=lambda d: d['high'])
     lo20 = min(recent20, key=lambda d: d['low'])
-    rows.append(('近端压力', round(hi5['high'], 2), f"近5日高点（{hi5['date'][5:]}）"))
-    rows.append(('中期压力', round(hi20['high'], 2), f"近20日高点（{hi20['date'][5:]}，前高）"))
+    rows.append(('近端压力', round(hi5['high'], 2), f"近5日高点({hi5['date'][5:]})"))
+    rows.append(('中期压力', round(hi20['high'], 2), f"近20日高点({hi20['date'][5:]},前高)"))
 
     if len(kline) >= 20:
         ma20 = sum(d['close'] for d in kline[-20:]) / 20
-        rows.append(('MA20', round(ma20, 2), '20日收盘均值，趋势分水岭'))
+        rows.append(('MA20', round(ma20, 2), '20日收盘均值,趋势分水岭'))
     if len(kline) >= 60:
         ma60 = sum(d['close'] for d in kline[-60:]) / 60
-        rows.append(('MA60', round(ma60, 2), '60日收盘均值，中期牛熊线'))
+        rows.append(('MA60', round(ma60, 2), '60日收盘均值,中期牛熊线'))
 
-    # 中轴价格（用户核心指标）：与报告其他章节同口径，用完整K线计算
+    # 中轴价格(用户核心指标):与报告其他章节同口径,用完整K线计算
     try:
         from utils.stock_quote import calculate_axis_price
         axis = calculate_axis_price(kline)
@@ -855,17 +856,17 @@ def _key_levels_with_basis(kline: List[Dict]) -> List[tuple]:
 
     cur = kline[-1]['close']
     rows.append(('整数关口', float(int(cur)), f'¥{int(cur)}整数位心理关口'))
-    rows.append(('近端支撑', round(lo5['low'], 2), f"近5日低点（{lo5['date'][5:]}）"))
-    rows.append(('中期支撑', round(lo20['low'], 2), f"近20日低点（{lo20['date'][5:]}，前低）"))
+    rows.append(('近端支撑', round(lo5['low'], 2), f"近5日低点({lo5['date'][5:]})"))
+    rows.append(('中期支撑', round(lo20['low'], 2), f"近20日低点({lo20['date'][5:]},前低)"))
 
-    # 箱体：近20日20%/80%分位（平台上沿/下沿）
+    # 箱体:近20日20%/80%分位(平台上沿/下沿)
     if len(kline) >= 20:
         lows20 = sorted(d['low'] for d in recent20)
         highs20 = sorted(d['high'] for d in recent20)
         box_b = round(lows20[int(len(lows20) * 0.2)], 2)
         box_t = round(highs20[int(len(highs20) * 0.8)], 2)
-        rows.append(('箱体下沿', box_b, '近20日低点20%分位（平台下沿）'))
-        rows.append(('箱体上沿', box_t, '近20日高点80%分位（平台上沿）'))
+        rows.append(('箱体下沿', box_b, '近20日低点20%分位(平台下沿)'))
+        rows.append(('箱体上沿', box_t, '近20日高点80%分位(平台上沿)'))
 
     rows.sort(key=lambda r: r[1], reverse=True)
     return rows
@@ -877,66 +878,66 @@ def analyze_technical(indicators: Dict, current_price: float) -> Dict:
     """技术面综合分析"""
     if not indicators:
         return {'status': '数据不足', 'summary': '技术指标计算失败'}
-    
+
     ma = indicators.get('ma', {})
     macd = indicators.get('macd', {})
     rsi = indicators.get('rsi', {})
     sr = indicators.get('support_resistance', {})
     vol = indicators.get('volume', {})
-    
+
     signals = []
-    
+
     # MA分析
     if ma.get('5') and current_price < ma['5']:
-        signals.append('股价跌破MA5，短期趋势走弱')
+        signals.append('股价跌破MA5,短期趋势走弱')
     if ma.get('20') and current_price < ma['20']:
-        signals.append('股价跌破MA20，中期趋势承压')
+        signals.append('股价跌破MA20,中期趋势承压')
     if ma.get('60') and current_price < ma['60']:
-        signals.append('股价跌破MA60，中长期趋势转空')
-    
+        signals.append('股价跌破MA60,中长期趋势转空')
+
     # MACD分析
     if macd.get('hist'):
         if macd['hist'] > 0 and macd.get('prev_hist', 0) > 0:
             if macd['hist'] > macd['prev_hist']:
-                signals.append('MACD红柱扩大，多头动能增强')
+                signals.append('MACD红柱扩大,多头动能增强')
             else:
-                signals.append('MACD红柱缩小，多头动能减弱')
+                signals.append('MACD红柱缩小,多头动能减弱')
         elif macd['hist'] < 0 and macd.get('prev_hist', 0) < 0:
             if macd['hist'] < macd['prev_hist']:
-                signals.append('MACD绿柱扩大，空头动能增强')
+                signals.append('MACD绿柱扩大,空头动能增强')
             else:
-                signals.append('MACD绿柱缩小，空头动能减弱')
+                signals.append('MACD绿柱缩小,空头动能减弱')
         elif macd['hist'] > 0 and macd.get('prev_hist', 0) < 0:
-            signals.append('MACD金叉，短期转多')
+            signals.append('MACD金叉,短期转多')
         elif macd['hist'] < 0 and macd.get('prev_hist', 0) > 0:
-            signals.append('MACD死叉，短期转空')
-    
+            signals.append('MACD死叉,短期转空')
+
     # RSI分析
     rsi14 = rsi.get('rsi14', 50)
     if rsi14 > 70:
-        signals.append(f'RSI={rsi14}，进入超买区')
+        signals.append(f'RSI={rsi14},进入超买区')
     elif rsi14 < 30:
-        signals.append(f'RSI={rsi14}，进入超卖区')
+        signals.append(f'RSI={rsi14},进入超卖区')
     elif rsi14 < 40:
-        signals.append(f'RSI={rsi14}，偏弱')
+        signals.append(f'RSI={rsi14},偏弱')
     elif rsi14 > 60:
-        signals.append(f'RSI={rsi14}，偏强')
-    
+        signals.append(f'RSI={rsi14},偏强')
+
     # 量能分析
     if vol.get('status'):
-        signals.append(f"量能状态: {vol['status']}（量比{vol.get('ratio_5d', 0):.2f}）")
-    
+        signals.append(f"量能状态: {vol['status']}(量比{vol.get('ratio_5d', 0):.2f})")
+
     # 综合判断
     bullish_count = sum(1 for s in signals if any(k in s for k in ['金叉', '增强', '偏强', '超卖']))
     bearish_count = sum(1 for s in signals if any(k in s for k in ['死叉', '减弱', '偏弱', '超买', '走弱', '承压', '转空']))
-    
+
     if bearish_count > bullish_count + 1:
         overall = '偏弱'
     elif bullish_count > bearish_count + 1:
         overall = '偏强'
     else:
         overall = '震荡'
-    
+
     return {
         'status': overall,
         'signals': signals,
@@ -948,42 +949,42 @@ def analyze_technical(indicators: Dict, current_price: float) -> Dict:
 def generate_scenarios(current_price: float, avg_cost: float, indicators: Dict) -> Dict:
     """情景推演"""
     sr = indicators.get('support_resistance', {})
-    
+
     # 基于支撑压力位做情景分析
     support_near = sr.get('support_near', current_price * 0.95)
     support_mid = sr.get('support_mid', current_price * 0.90)
     resistance_near = sr.get('resistance_near', current_price * 1.05)
     resistance_far = sr.get('resistance_far', current_price * 1.10)
-    
+
     # 乐观情景
     optimistic_target = round(resistance_far * 1.05, 2) if resistance_far > current_price else round(current_price * 1.10, 2)
     optimistic_pct = (optimistic_target - current_price) / current_price * 100
-    
+
     # 悲观情景
     pessimistic_target = min(support_mid, current_price * 0.90)
     pessimistic_pct = (pessimistic_target - current_price) / current_price * 100
-    
+
     return {
         'optimistic': {
             'target': round(optimistic_target, 2),
             'pct': round(optimistic_pct, 1),
-            'condition': f'放量突破{resistance_near}，板块情绪回暖',
+            'condition': f'放量突破{resistance_near},板块情绪回暖',
         },
         'neutral': {
             'range': f"{round(support_near, 2)}-{round(resistance_near, 2)}",
-            'condition': '维持震荡，等待方向选择',
+            'condition': '维持震荡,等待方向选择',
         },
         'pessimistic': {
             'target': round(pessimistic_target, 2),
             'pct': round(pessimistic_pct, 1),
-            'condition': f"跌破{support_near}支撑，技术面恶化",
+            'condition': f"跌破{support_near}支撑,技术面恶化",
         },
     }
 
 
-# ========== 研报级增强：聚合信号与一致预期（A/C/D 需求） ==========
+# ========== 研报级增强:聚合信号与一致预期(A/C/D 需求) ==========
 
-# A/H 两地上市映射（A股代码 -> 腾讯格式H股代码）；2026-09-21 已用 utils 行情逐一核验名称与价格可取
+# A/H 两地上市映射(A股代码 -> 腾讯格式H股代码);2026-09-21 已用 utils 行情逐一核验名称与价格可取
 AH_H_MAP = {
     '301308': '09976',  # 江波龙 / 江波龙(H)
     '601600': '02600',  # 中国铝业 / 中国铝业(H)
@@ -992,7 +993,7 @@ AH_H_MAP = {
 
 
 def _parse_news_dt(s: str) -> Optional[datetime]:
-    """解析新闻/事件时间字符串，失败返回 None"""
+    """解析新闻/事件时间字符串,失败返回 None"""
     if not s:
         return None
     s = str(s).strip()[:19]
@@ -1005,7 +1006,7 @@ def _parse_news_dt(s: str) -> Optional[datetime]:
 
 
 def _load_event_impact() -> Dict:
-    """读取 data/event_impact.json，失败返回空 dict"""
+    """读取 data/event_impact.json,失败返回空 dict"""
     try:
         path = os.path.join(DATA_DIR, 'event_impact.json')
         with open(path, 'r', encoding='utf-8') as f:
@@ -1017,15 +1018,15 @@ def _load_event_impact() -> Dict:
 
 def buyback_signal(code: str) -> Optional[str]:
     """
-    回购追踪（C-1）：合并两个数据源——
-    1. buyback_archive.json：事件引擎永久归档的回购公告（不受14天TTL限制）
-    2. event_impact.json 近90天个股事件：兜底捕捉最新尚未归档的回购动态
-    正则提取回购金额并累计；识别'计划/拟回购'额度后计算执行比例。
-    提取不到任何回购金额时返回 None（调用方不展示该信号）。
+    回购追踪(C-1):合并两个数据源--
+    1. buyback_archive.json:事件引擎永久归档的回购公告(不受14天TTL限制)
+    2. event_impact.json 近90天个股事件:兜底捕捉最新尚未归档的回购动态
+    正则提取回购金额并累计;识别'计划/拟回购'额度后计算执行比例。
+    提取不到任何回购金额时返回 None(调用方不展示该信号)。
     """
     cutoff = datetime.now() - timedelta(days=90)
 
-    # ---- 数据源1：永久回购归档 ----
+    # ---- 数据源1:永久回购归档 ----
     archived_executed = 0.0
     archived_planned = 0.0
     archive_hits = 0
@@ -1036,7 +1037,7 @@ def buyback_signal(code: str) -> Optional[str]:
                 _archive = json.load(_af)
             for entry in (_archive.get(code) or []):
                 t = _parse_news_dt(entry.get('time', ''))
-                # 归档只保留近90天内的条目（与信号窗口一致）
+                # 归档只保留近90天内的条目(与信号窗口一致)
                 if t is not None and t >= cutoff:
                     archived_executed += entry.get('executed_yi', 0)
                     archived_planned = max(archived_planned, entry.get('planned_yi', 0))
@@ -1044,7 +1045,7 @@ def buyback_signal(code: str) -> Optional[str]:
     except Exception:
         pass
 
-    # ---- 数据源2：近90天事件（兜底，归档可能滞后一天） ----
+    # ---- 数据源2:近90天事件(兜底,归档可能滞后一天) ----
     data = _load_event_impact()
     events = (data.get('stock_events') or {}).get(code) or []
 
@@ -1054,7 +1055,7 @@ def buyback_signal(code: str) -> Optional[str]:
     def _to_yi(v: float, unit: str) -> float:
         return v if unit == '亿' else v / 10000.0
 
-    # 已归档标题集合，用于去重（同一公告不双计）
+    # 已归档标题集合,用于去重(同一公告不双计)
     try:
         _archived_titles = {e.get('title', '') for e in
                             (json.load(open(_archive_file, encoding='utf-8')).get(code) or [])
@@ -1071,9 +1072,9 @@ def buyback_signal(code: str) -> Optional[str]:
             continue
         title = e.get('title', '')
         if title in _archived_titles:
-            continue  # 已归档，不重复累计
+            continue  # 已归档,不重复累计
         text = f"{title}\n{e.get('content', '')}"
-        # 标题与正文常重复同一金额，按事件内 (数值,单位) 去重，防止双计
+        # 标题与正文常重复同一金额,按事件内 (数值,单位) 去重,防止双计
         seen_amt = set()
         for m in plan_re.finditer(text):
             key = (m.group(1), m.group(2))
@@ -1097,18 +1098,18 @@ def buyback_signal(code: str) -> Optional[str]:
     if total_hits == 0 and planned <= 0:
         return None
     if executed > 0 and planned > 0:
-        return (f"回购追踪：近90日累计回购约{executed:.1f}亿元"
-                f"（占{planned:.1f}亿计划额的{executed / planned * 100:.0f}%）")
+        return (f"回购追踪:近90日累计回购约{executed:.1f}亿元"
+                f"(占{planned:.1f}亿计划额的{executed / planned * 100:.0f}%)")
     if executed > 0:
-        return f"回购追踪：近90日累计回购约{executed:.1f}亿元"
-    return f"回购追踪：近90日披露回购计划约{planned:.1f}亿元（尚在执行初期，暂无落地金额）"
+        return f"回购追踪:近90日累计回购约{executed:.1f}亿元"
+    return f"回购追踪:近90日披露回购计划约{planned:.1f}亿元(尚在执行初期,暂无落地金额)"
 
 
 def ah_premium_signal(code: str, a_price: float) -> Optional[str]:
     """
-    A/H 比价（C-2，仅 AH_H_MAP 中的持仓）：H股价按 utils 汇率折人民币后与A股价比较。
-    汇率取 utils.exchange_rate.get_cny_hkd_rate()（1 CNY = ? HKD），失败兜底 1.0836。
-    返回如 "A/H价格比1.26，H股较A股折价21%"；H股贵于A股时明确标注倒挂。
+    A/H 比价(C-2,仅 AH_H_MAP 中的持仓):H股价按 utils 汇率折人民币后与A股价比较。
+    汇率取 utils.exchange_rate.get_cny_hkd_rate()(1 CNY = ? HKD),失败兜底 1.0836。
+    返回如 "A/H价格比1.26,H股较A股折价21%";H股贵于A股时明确标注倒挂。
     """
     h_code = AH_H_MAP.get(code)
     if not h_code or not a_price or a_price <= 0:
@@ -1123,24 +1124,24 @@ def ah_premium_signal(code: str, a_price: float) -> Optional[str]:
     except Exception:
         rate = None
     if not rate or rate <= 0:
-        rate = 1.0836  # 近似口径：1 CNY ≈ 1.0836 HKD（1 HKD ≈ 0.923 CNY）
+        rate = 1.0836  # 近似口径:1 CNY ≈ 1.0836 HKD(1 HKD ≈ 0.923 CNY)
     h_price_cny = h_quote['price'] / rate
     if h_price_cny <= 0:
         return None
     ratio = a_price / h_price_cny
     if ratio >= 1:
         discount = (1 - 1 / ratio) * 100
-        return (f"A/H比价：A/H价格比{ratio:.2f}，H股（¥{h_price_cny:.2f}等值）"
+        return (f"A/H比价:A/H价格比{ratio:.2f},H股(¥{h_price_cny:.2f}等值)"
                 f"较A股折价{discount:.0f}%")
     premium = (1 / ratio - 1) * 100
-    return (f"A/H比价：A/H价格比{ratio:.2f}，H股（¥{h_price_cny:.2f}等值）"
-            f"较A股溢价{premium:.0f}%（A/H倒挂，H股更贵）")
+    return (f"A/H比价:A/H价格比{ratio:.2f},H股(¥{h_price_cny:.2f}等值)"
+            f"较A股溢价{premium:.0f}%(A/H倒挂,H股更贵)")
 
 
 def unlock_signal_90d(code: str, current_price: float) -> Optional[str]:
     """
-    未来解禁（C-3）：akshare stock_restricted_release_queue_em 拉取解禁队列，
-    统计未来90天解禁（日期/数量/市值）。接口不可用或无解禁时返回 None。
+    未来解禁(C-3):akshare stock_restricted_release_queue_em 拉取解禁队列,
+    统计未来90天解禁(日期/数量/市值)。接口不可用或无解禁时返回 None。
     """
     try:
         import akshare as ak
@@ -1172,21 +1173,21 @@ def unlock_signal_90d(code: str, current_price: float) -> Optional[str]:
         try:
             ratios = [float(r) for r in future['占总市值比例'].tolist() if str(r) not in ('nan', 'None')]
             if ratios:
-                ratio_txt = f"，合计占总市值{sum(ratios) * 100:.1f}%"
+                ratio_txt = f",合计占总市值{sum(ratios) * 100:.1f}%"
         except Exception:
             pass
-        return (f"未来解禁：未来90天{len(future)}笔解禁（最近{first_date}），"
-                f"合计约{shares_total / 10000:.0f}万股（约{mv_total / 100000000:.1f}亿元{ratio_txt}）")
+        return (f"未来解禁:未来90天{len(future)}笔解禁(最近{first_date}),"
+                f"合计约{shares_total / 10000:.0f}万股(约{mv_total / 100000000:.1f}亿元{ratio_txt})")
     except Exception as e:
         print(f'[聚合信号] 解禁队列获取失败 {code}: {e}')
         return None
 
 
-# 未抓取标记：区分"调用方未传参"与"抓取结果本身就是None"（如港股无覆盖），避免重复请求
+# 未抓取标记:区分"调用方未传参"与"抓取结果本身就是None"(如港股无覆盖),避免重复请求
 _NOT_FETCHED = object()
 
 
-# 国际投行关键词（新闻/电报扫描用，覆盖常见外资行中英文简称）
+# 国际投行关键词(新闻/电报扫描用,覆盖常见外资行中英文简称)
 INTL_IB_NEWS_KEYWORDS = (
     '高盛', '摩根士丹利', '大摩', '摩根大通', '小摩', '瑞银', '花旗', '美银',
     '汇丰', '野村', '大和', '星展', '麦格理', '巴克莱', '法巴', '德银', '德意志银行',
@@ -1195,7 +1196,7 @@ INTL_IB_NEWS_KEYWORDS = (
 
 
 def _name_variants(stock_name: str) -> List[str]:
-    """个股名称变体：'比亚迪' -> ['比亚迪']；'腾讯控股' -> ['腾讯控股', '腾讯']；'中国铝业' -> ['中国铝业']"""
+    """个股名称变体:'比亚迪' -> ['比亚迪'];'腾讯控股' -> ['腾讯控股', '腾讯'];'中国铝业' -> ['中国铝业']"""
     n = str(stock_name or '').strip()
     if not n:
         return []
@@ -1208,9 +1209,9 @@ def _name_variants(stock_name: str) -> List[str]:
 
 def _scan_intl_ib_telegraphs(stock_name: str, days: int = 7, max_hits: int = 3) -> List[Dict]:
     """
-    扫描本地财联社电报池（data/news_pool_YYYY-MM-DD.json，近N天存在的文件）：
-    国际投行关键词 × 个股名称变体 双条件命中，返回带来源日期的摘录。
-    电报由事件引擎每日落盘；文件缺失/损坏时静默降级为空列表。
+    扫描本地财联社电报池(data/news_pool_YYYY-MM-DD.json,近N天存在的文件):
+    国际投行关键词 × 个股名称变体 双条件命中,返回带来源日期的摘录。
+    电报由事件引擎每日落盘;文件缺失/损坏时静默降级为空列表。
     """
     import glob
     hits: List[Dict] = []
@@ -1247,15 +1248,15 @@ def render_consensus_section(code: str, cons=_NOT_FETCHED, current_price: float 
                              market: str = 'A股', news_list: list = None,
                              stock_name: str = '') -> List[str]:
     """
-    投行一致预期章节（B需求，卖方研报写法，全中文）。
-    A股：utils/consensus.get_consensus（同花顺盈利预测+东财研报，国内券商口径）。
-    港股：utils/consensus.get_hk_consensus（东财港股盈利预测，含高盛/大摩/瑞银/花旗等
-          国际投行目标价与评级，分国际/中资两组统计）。
-    数据不可得时整章降级为"暂无机构一致预期数据"，绝不编造。
-    传入 cons 可避免重复请求（与综合研判章节共用同一份数据）。
-    current_price：模块④市盈率列=现价/EPS均值；未传或≤0时不渲染PE列。
-    news_list：A股个股新闻，用于摘录国际投行观点（港股直接有结构化数据，不需要）。
-    stock_name：个股名称，用于财联社电报池扫描时的名称匹配。
+    投行一致预期章节(B需求,卖方研报写法,全中文)。
+    A股:utils/consensus.get_consensus(同花顺盈利预测+东财研报,国内券商口径)。
+    港股:utils/consensus.get_hk_consensus(东财港股盈利预测,含高盛/大摩/瑞银/花旗等
+          国际投行目标价与评级,分国际/中资两组统计)。
+    数据不可得时整章降级为"暂无机构一致预期数据",绝不编造。
+    传入 cons 可避免重复请求(与综合研判章节共用同一份数据)。
+    current_price:模块4市盈率列=现价/EPS均值;未传或≤0时不渲染PE列。
+    news_list:A股个股新闻,用于摘录国际投行观点(港股直接有结构化数据,不需要)。
+    stock_name:个股名称,用于财联社电报池扫描时的名称匹配。
     """
     lines: List[str] = []
     if cons is _NOT_FETCHED:
@@ -1271,7 +1272,7 @@ def render_consensus_section(code: str, cons=_NOT_FETCHED, current_price: float 
             cons = None
 
     if not cons:
-        lines.append('**一致预期：** 暂无机构一致预期数据（该股可能无机构覆盖，相关接口无数据）。')
+        lines.append('**一致预期:** 暂无机构一致预期数据(该股可能无机构覆盖,相关接口无数据)。')
         lines.append('')
         return lines
 
@@ -1283,59 +1284,59 @@ def render_consensus_section(code: str, cons=_NOT_FETCHED, current_price: float 
 
     # 1) 一致预期
     if cur:
-        yoy_txt = f"（同比{'+' if yoy and yoy >= 0 else ''}{yoy:.1f}%）" if yoy is not None else ''
+        yoy_txt = f"(同比{'+' if yoy and yoy >= 0 else ''}{yoy:.1f}%)" if yoy is not None else ''
         eps_txt = ''
         if cur.get('eps_mean') is not None:
             eps_txt = f"、EPS均值{cur['eps_mean']:.2f}元"
         lines.append(
-            f"**一致预期：** {cons.get('org_count', 0)}家机构预测{cur.get('year', '')}年"
+            f"**一致预期:** {cons.get('org_count', 0)}家机构预测{cur.get('year', '')}年"
             f"净利润均值{cur.get('profit_mean', 0):.2f}亿元{yoy_txt}{eps_txt}。"
         )
-        # 模块④：一致预期表（含市盈率列 = 现价/EPS均值）
+        # 模块4:一致预期表(含市盈率列 = 现价/EPS均值)
         if current_price and current_price > 0 and years:
             in_trade_c = is_trading_time(market)
-            price_src = '腾讯实时行情现价' if in_trade_c else '最近收盘价（非交易时段快照）'
+            price_src = '腾讯实时行情现价' if in_trade_c else '最近收盘价(非交易时段快照)'
             lines.append('')
             lines.append(f"| 年份 | 净利润均值(亿元) | 预测机构数 | EPS均值(元) | 市盈率(按{cur_sym}{current_price:.2f}) |")
             lines.append(f"|------|------|------|------|------|")
             for y in years:
                 eps = y.get('eps_mean')
-                pe_txt = f"{current_price / eps:.1f}" if eps else '—'
+                pe_txt = f"{current_price / eps:.1f}" if eps else '-'
                 lines.append(
                     f"| {y.get('year', '')} | {y.get('profit_mean', 0):.2f} | "
                     f"{y.get('org_count', 0)}家 | "
-                    f"{f'{eps:.2f}' if eps else '—'} | {pe_txt} |"
+                    f"{f'{eps:.2f}' if eps else '-'} | {pe_txt} |"
                 )
             lines.append('')
-            lines.append(f"- 市盈率口径：现价{cur_sym}{current_price:.2f}（{price_src}）÷ 当年机构一致预期EPS均值；"
-                         f"'—'表示该年无EPS预测数据。" + ('EPS/净利为各券商原始币种口径，可能混用人民币与港币。' if is_hk else ''))
+            lines.append(f"- 市盈率口径:现价{cur_sym}{current_price:.2f}({price_src})÷ 当年机构一致预期EPS均值;"
+                         f"'-'表示该年无EPS预测数据。" + ('EPS/净利为各券商原始币种口径,可能混用人民币与港币。' if is_hk else ''))
         if len(years) > 1:
             nxt = years[1]
             lines.append(
-                f"- 远期预测：{nxt.get('year', '')}年净利均值{nxt.get('profit_mean', 0):.2f}亿元"
-                f"（{nxt.get('org_count', 0)}家），{years[2].get('year', '')}年净利均值"
-                f"{years[2].get('profit_mean', 0):.2f}亿元（{years[2].get('org_count', 0)}家）。"
+                f"- 远期预测:{nxt.get('year', '')}年净利均值{nxt.get('profit_mean', 0):.2f}亿元"
+                f"({nxt.get('org_count', 0)}家),{years[2].get('year', '')}年净利均值"
+                f"{years[2].get('profit_mean', 0):.2f}亿元({years[2].get('org_count', 0)}家)。"
                 if len(years) > 2 else
-                f"- 远期预测：{nxt.get('year', '')}年净利均值{nxt.get('profit_mean', 0):.2f}亿元"
-                f"（{nxt.get('org_count', 0)}家）。"
+                f"- 远期预测:{nxt.get('year', '')}年净利均值{nxt.get('profit_mean', 0):.2f}亿元"
+                f"({nxt.get('org_count', 0)}家)。"
             )
     # 2) 分歧度
     div = cons.get('divergence')
     if div is not None and cur:
-        div_txt = f"**分歧度：** 最高预测{cur.get('profit_max', 0):.2f}亿 vs 最低预测{cur.get('profit_min', 0):.2f}亿，"
+        div_txt = f"**分歧度:** 最高预测{cur.get('profit_max', 0):.2f}亿 vs 最低预测{cur.get('profit_min', 0):.2f}亿,"
         if div >= 2:
-            div_txt += f"相差{div:.2f}倍——预测分歧大，中期盈利路径不确定，一致预期的置信度打折。"
+            div_txt += f"相差{div:.2f}倍--预测分歧大,中期盈利路径不确定,一致预期的置信度打折。"
         else:
-            div_txt += f"相差{div:.2f}倍，预测区间相对收敛。"
+            div_txt += f"相差{div:.2f}倍,预测区间相对收敛。"
         lines.append(div_txt)
         bb = cons.get('bull_bear')
         if bb and bb.get('high') and bb.get('low'):
             lines.append(
-                f"- 多空代表（当年研报EPS预测）：最乐观{bb['high']['org']}"
-                f"（{bb['high']['eps']:.2f}元，{bb['high']['date']}）vs "
-                f"最谨慎{bb['low']['org']}（{bb['low']['eps']:.2f}元，{bb['low']['date']}）。"
+                f"- 多空代表(当年研报EPS预测):最乐观{bb['high']['org']}"
+                f"({bb['high']['eps']:.2f}元,{bb['high']['date']})vs "
+                f"最谨慎{bb['low']['org']}({bb['low']['eps']:.2f}元,{bb['low']['date']})。"
             )
-    # 2.5) 港股专属：国际投行目标价与分组统计
+    # 2.5) 港股专属:国际投行目标价与分组统计
     if is_hk:
         tp = cons.get('target_price')
         if tp and current_price and current_price > 0:
@@ -1343,30 +1344,30 @@ def render_consensus_section(code: str, cons=_NOT_FETCHED, current_price: float 
             up_max = (tp['max'] - current_price) / current_price * 100
             up_min = (tp['min'] - current_price) / current_price * 100
             lines.append(
-                f"**目标价（近365天{tp['count']}份，港币）：** 均值{cur_sym}{tp['mean']:.2f}"
-                f"（较现价{'+' if up_mean >= 0 else ''}{up_mean:.1f}%）、"
-                f"最高{cur_sym}{tp['max']:.2f}（{'+' if up_max >= 0 else ''}{up_max:.1f}%）、"
-                f"最低{cur_sym}{tp['min']:.2f}（{'+' if up_min >= 0 else ''}{up_min:.1f}%）。"
+                f"**目标价(近365天{tp['count']}份,港币):** 均值{cur_sym}{tp['mean']:.2f}"
+                f"(较现价{'+' if up_mean >= 0 else ''}{up_mean:.1f}%)、"
+                f"最高{cur_sym}{tp['max']:.2f}({'+' if up_max >= 0 else ''}{up_max:.1f}%)、"
+                f"最低{cur_sym}{tp['min']:.2f}({'+' if up_min >= 0 else ''}{up_min:.1f}%)。"
             )
         def _grp_line(label: str, g: Dict) -> str:
             tm = g.get('target_mean')
             if tm is not None:
-                rng = (f"（区间{cur_sym}{g['target_min']:.2f}~{cur_sym}{g['target_max']:.2f}）"
+                rng = (f"(区间{cur_sym}{g['target_min']:.2f}~{cur_sym}{g['target_max']:.2f})"
                        if g.get('target_min') is not None and g.get('target_max') is not None else '')
-                tgt_part = f"目标价均值{cur_sym}{tm:.2f}{rng}，"
+                tgt_part = f"目标价均值{cur_sym}{tm:.2f}{rng},"
             else:
                 tgt_part = ''
-            return (f"**{label}（{g['count']}家）：** {tgt_part}"
+            return (f"**{label}({g['count']}家):** {tgt_part}"
                     f"评级 看多{g['bull']}/中性{g['neutral']}/看空{g['bear']}。")
 
         intl = cons.get('intl_summary')
         cn = cons.get('cn_summary')
         if intl:
             lines.append(_grp_line('国际投行', intl))
-            lines.append(f"- 覆盖机构：{'、'.join(intl['names'])}。")
+            lines.append(f"- 覆盖机构:{'、'.join(intl['names'])}。")
         if cn:
             lines.append(_grp_line('中资投行', cn))
-    # 3) 分机构盈利预测明细表（近180天覆盖机构，每机构取最新研报口径）
+    # 3) 分机构盈利预测明细表(近180天覆盖机构,每机构取最新研报口径)
     org_eps = cons.get('org_eps') or []
     if org_eps:
         years_hdr = sorted({y for o in org_eps for y in o.get('eps', {}).keys()})
@@ -1386,36 +1387,36 @@ def render_consensus_section(code: str, cons=_NOT_FETCHED, current_price: float 
             if is_hk:
                 cells.append(o.get('type', ''))
                 tgt = o.get('target_price')
-                cells.append(f"{cur_sym}{tgt:.2f}" if tgt is not None else '—')
+                cells.append(f"{cur_sym}{tgt:.2f}" if tgt is not None else '-')
             elif any(x.get('type') == '国际投行' for x in org_eps):
                 cells.append(o.get('type', ''))
             cells += [o.get('rating', ''), o.get('date', '')]
             for y in years_hdr:
                 v = o.get('eps', {}).get(y)
-                cells.append(f'{v:.2f}' if v is not None else '—')
+                cells.append(f'{v:.2f}' if v is not None else '-')
             lines.append('| ' + ' | '.join(cells) + ' |')
         lines.append('')
         if is_hk:
-            lines.append(f"- 上表为东财港股盈利预测口径，按券商最新更新排列（国际投行在前）；"
-                         f"EPS单位元/股，各券商币种口径可能混用人民币与港币；目标价为港币。")
+            lines.append(f"- 上表为东财港股盈利预测口径,按券商最新更新排列(国际投行在前);"
+                         f"EPS单位元/股,各券商币种口径可能混用人民币与港币;目标价为港币。")
         else:
-            lines.append(f"- 上表为近180天覆盖该股的分机构盈利预测（东财研报口径，每机构取最新一份）；"
-                         f"同花顺盈利预测为{cons.get('org_count', 0)}家机构汇总，因部分机构未发东财收录研报，"
+            lines.append(f"- 上表为近180天覆盖该股的分机构盈利预测(东财研报口径,每机构取最新一份);"
+                         f"同花顺盈利预测为{cons.get('org_count', 0)}家机构汇总,因部分机构未发东财收录研报,"
                          f"两家口径的机构数可能不一致。")
     # 4) 评级
     ratings = cons.get('rating_90d') or {}
     total_r = cons.get('rating_total_90d', 0)
     if total_r > 0:
         parts = '、'.join(f"{k}{v}" for k, v in sorted(ratings.items(), key=lambda x: -x[1]))
-        lines.append(f"**评级（近90天）：** 共{total_r}家，{parts}。")
+        lines.append(f"**评级(近90天):** 共{total_r}家,{parts}。")
     else:
-        lines.append('**评级（近90天）：** 暂无新研报覆盖。')
+        lines.append('**评级(近90天):** 暂无新研报覆盖。')
     for r in (cons.get('recent_reports') or [])[:3]:
         tp_tag = f" 目标价{cur_sym}{r['target_price']:.2f}" if is_hk and r.get('target_price') is not None else ''
         lines.append(f"- {r['date']} {r['org']}【{r['rating']}】{r['title']}{tp_tag}")
-    # 5) A股专属：公开新闻中的国际投行观点摘录。
-    #    免费接口无A股外资行结构化一致预期，用两个通道补位：
-    #    ① 个股新闻（东财，实时） ② 财联社电报池（本地近7天，事件引擎每日落盘）
+    # 5) A股专属:公开新闻中的国际投行观点摘录。
+    #    免费接口无A股外资行结构化一致预期,用两个通道补位:
+    #    1 个股新闻(东财,实时) 2 财联社电报池(本地近7天,事件引擎每日落盘)
     if not is_hk:
         ib_items: List[Dict] = []
         seen_t = set()
@@ -1433,10 +1434,10 @@ def render_consensus_section(code: str, cons=_NOT_FETCHED, current_price: float 
                 ib_items.append(h)
                 seen_t.add(h['title'])
         if ib_items:
-            lines.append('**国际投行观点（新闻监测）：**')
+            lines.append('**国际投行观点(新闻监测):**')
             for it in ib_items[:4]:
-                lines.append(f"- {it['time']} {it['source']}：{it['title']}")
-            lines.append('- 注：A股暂无免费结构化国际投行一致预期数据源，以上为公开新闻/电报摘录，非汇总评级。')
+                lines.append(f"- {it['time']} {it['source']}:{it['title']}")
+            lines.append('- 注:A股暂无免费结构化国际投行一致预期数据源,以上为公开新闻/电报摘录,非汇总评级。')
     lines.append('')
     return lines
 
@@ -1445,17 +1446,17 @@ def render_verdict_section(code: str, market: str, current_price: float,
                            kline: List[Dict], indicators: Dict,
                            consensus: Optional[Dict] = None) -> List[str]:
     """
-    综合研判章节（D需求）：纯规则引擎，不调用LLM。
-    五象限输入：①事件面（近10日个股+概念事件利好/利空净值）②资金面（近5日主力净流入）
-              ③技术面（MA20 + 中轴价格位置）④估值面（一致预期分歧度，缺失跳过）
-              ⑤情绪面（板块情绪分位数：过热减分/冰点加分）。
-    判定：偏多 / 中性偏谨慎 / 偏空注意防守（禁止无条件下强多/强空）。
-    传入 consensus 可避免重复请求（与投行一致预期章节共用同一份数据）。
+    综合研判章节(D需求):纯规则引擎,不调用LLM。
+    五象限输入:1事件面(近10日个股+概念事件利好/利空净值)2资金面(近5日主力净流入)
+              3技术面(MA20 + 中轴价格位置)4估值面(一致预期分歧度,缺失跳过)
+              5情绪面(板块情绪分位数:过热减分/冰点加分)。
+    判定:偏多 / 中性偏谨慎 / 偏空注意防守(禁止无条件下强多/强空)。
+    传入 consensus 可避免重复请求(与投行一致预期章节共用同一份数据)。
     """
     reasons: List[str] = []
     score = 0
 
-    # ① 事件面
+    # 1 事件面
     data = _load_event_impact()
     cutoff = datetime.now() - timedelta(days=10)
     pos = neg = 0
@@ -1482,12 +1483,12 @@ def render_verdict_section(code: str, market: str, current_price: float,
     ev_score = 1 if ev_net >= 1 else (-1 if ev_net <= -1 else 0)
     score += ev_score
     reasons.append(
-        f"事件面：近10日该股+所属概念事件净值{ev_net:+d}"
-        f"（偏利好{pos}项 / 偏利空{neg}项）"
-        + ("，消息面有明确催化。" if ev_score > 0 else "，消息面存在压制。" if ev_score < 0 else "，消息面平淡。")
+        f"事件面:近10日该股+所属概念事件净值{ev_net:+d}"
+        f"(偏利好{pos}项 / 偏利空{neg}项)"
+        + (",消息面有明确催化。" if ev_score > 0 else ",消息面存在压制。" if ev_score < 0 else ",消息面平淡。")
     )
 
-    # ①-b 事件验证闭环命中率（d1/d3/d5已结案样本，纯参考展示，不直接改分）
+    # 1-b 事件验证闭环命中率(d1/d3/d5已结案样本,纯参考展示,不直接改分)
     try:
         from utils import event_verifier
         _stats = event_verifier.load_stats()
@@ -1495,8 +1496,8 @@ def render_verdict_section(code: str, market: str, current_price: float,
         _st = (_stats.get('stocks') or {}).get(code)
         if _st and _st.get('total'):
             _hit_bits.append(
-                f"该股已结案{_st['total']}次，命中率{_st['hit_rate'] * 100:.0f}%"
-                f"（有效{_st['hits']}/部分兑现{_st['partial']}/证伪{_st['falsified']}）")
+                f"该股已结案{_st['total']}次,命中率{_st['hit_rate'] * 100:.0f}%"
+                f"(有效{_st['hits']}/部分兑现{_st['partial']}/证伪{_st['falsified']})")
         _theme_seen = set()
         for _e in event_verifier.verifications_for_code(code):
             _tn = event_verifier._theme_of(_e.get('title', ''))
@@ -1507,13 +1508,13 @@ def render_verdict_section(code: str, market: str, current_price: float,
             if _tb and _tb.get('total'):
                 _hit_bits.append(
                     f"主题【{_tn}】近{_tb['total']}次信号命中率{_tb['hit_rate'] * 100:.0f}%"
-                    f"（部分兑现{_tb['partial']}/证伪{_tb['falsified']}）")
+                    f"(部分兑现{_tb['partial']}/证伪{_tb['falsified']})")
         if _hit_bits:
-            reasons.append('事件验证命中率（d1/d3/d5闭环，仅统计已结案样本）：' + '；'.join(_hit_bits) + '。')
+            reasons.append('事件验证命中率(d1/d3/d5闭环,仅统计已结案样本):' + ';'.join(_hit_bits) + '。')
     except Exception:
         pass  # 验证闭环数据缺失时不阻塞研判
 
-    # ② 资金面
+    # 2 资金面
     fund_sum = None
     fund_pos_days = 0
     fund_days = 0
@@ -1531,14 +1532,14 @@ def render_verdict_section(code: str, market: str, current_price: float,
             fund_score = 1 if fund_sum > 0 else -1
             score += fund_score
             reasons.append(
-                f"资金面：近{fund_days}日主力净流入合计{fund_sum / 100000000:+.2f}亿"
-                f"（{fund_pos_days}日为正）"
-                + ("，资金在进场。" if fund_score > 0 else "，资金在撤离。")
+                f"资金面:近{fund_days}日主力净流入合计{fund_sum / 100000000:+.2f}亿"
+                f"({fund_pos_days}日为正)"
+                + (",资金在进场。" if fund_score > 0 else ",资金在撤离。")
             )
         else:
-            reasons.append('资金面：流向数据暂不可用，该象限不计分。')
+            reasons.append('资金面:流向数据暂不可用,该象限不计分。')
 
-    # ③ 技术面
+    # 3 技术面
     ma20 = (indicators.get('ma') or {}).get('20')
     axis_price = None
     try:
@@ -1553,7 +1554,7 @@ def render_verdict_section(code: str, market: str, current_price: float,
         dev = (current_price - ma20) / ma20 * 100
         score += 1 if current_price >= ma20 else -1
         tech_bits.append(
-            f"{'站上' if current_price >= ma20 else '跌破'}MA20（{dev:+.1f}%）"
+            f"{'站上' if current_price >= ma20 else '跌破'}MA20({dev:+.1f}%)"
         )
     if axis_price and current_price > 0:
         dev_axis = (current_price - axis_price) / axis_price * 100
@@ -1561,25 +1562,25 @@ def render_verdict_section(code: str, market: str, current_price: float,
         tech_bits.append(
             f"中轴价格¥{axis_price:.2f}上方{dev_axis:+.1f}%"
             if current_price >= axis_price else
-            f"跌破中轴价格¥{axis_price:.2f}（{dev_axis:+.1f}%）"
+            f"跌破中轴价格¥{axis_price:.2f}({dev_axis:+.1f}%)"
         )
     if tech_bits:
-        reasons.append(f"技术面：现价¥{current_price:.2f}，" + '，'.join(tech_bits) + '。')
+        reasons.append(f"技术面:现价¥{current_price:.2f}," + ','.join(tech_bits) + '。')
     else:
-        reasons.append(f"技术面：现价¥{current_price:.2f}，均线/中轴数据不足，该象限弱化处理。")
+        reasons.append(f"技术面:现价¥{current_price:.2f},均线/中轴数据不足,该象限弱化处理。")
 
-    # ④ 估值面（一致预期分歧度，共用已抓取的数据避免重复请求）
+    # 4 估值面(一致预期分歧度,共用已抓取的数据避免重复请求)
     div = (consensus or {}).get('divergence')
     if div is not None:
         if div >= 2:
             score -= 1
-            reasons.append(f"估值面：机构预测分歧度{div:.2f}倍（≥2倍），一致预期内部打架，按不确定处理。")
+            reasons.append(f"估值面:机构预测分歧度{div:.2f}倍(≥2倍),一致预期内部打架,按不确定处理。")
         else:
-            reasons.append(f"估值面：机构预测分歧度{div:.2f}倍，盈利路径共识尚可。")
+            reasons.append(f"估值面:机构预测分歧度{div:.2f}倍,盈利路径共识尚可。")
     else:
-        reasons.append('估值面：无一致预期数据，该象限不计分。')
+        reasons.append('估值面:无一致预期数据,该象限不计分。')
 
-    # ⑤ 情绪面（板块情绪分位数：过热减分/冰点加分，挂钩浮动仓策略）
+    # 5 情绪面(板块情绪分位数:过热减分/冰点加分,挂钩浮动仓策略)
     try:
         from emotion_engine import sector_sentiment_percentile
         _ssp = sector_sentiment_percentile(code)
@@ -1590,42 +1591,42 @@ def render_verdict_section(code: str, market: str, current_price: float,
             if _pct >= 85:
                 score -= 1
                 reasons.append(
-                    f"情绪面：{_sec}板块情绪分位{_pct:.0f}%（过热区，近60日最高分档），"
-                    f"现价情绪溢价已高，事件催化兑现大半，浮动仓不宜追高，以持有/兑现为主。")
+                    f"情绪面:{_sec}板块情绪分位{_pct:.0f}%(过热区,近60日最高分档),"
+                    f"现价情绪溢价已高,事件催化兑现大半,浮动仓不宜追高,以持有/兑现为主。")
             elif _pct <= 15:
                 score += 1
                 reasons.append(
-                    f"情绪面：{_sec}板块情绪分位{_pct:.0f}%（冰点区，近60日最低分档），"
-                    f"恐慌释放较充分，若无新增利空，错杀窗口利于逢低布局浮动仓。")
+                    f"情绪面:{_sec}板块情绪分位{_pct:.0f}%(冰点区,近60日最低分档),"
+                    f"恐慌释放较充分,若无新增利空,错杀窗口利于逢低布局浮动仓。")
             else:
                 reasons.append(
-                    f"情绪面：{_sec}板块情绪分位{_pct:.0f}%（中性区间），"
-                    f"情绪既非亢奋也非恐慌，事件驱动按自身逻辑定价。")
+                    f"情绪面:{_sec}板块情绪分位{_pct:.0f}%(中性区间),"
+                    f"情绪既非亢奋也非恐慌,事件驱动按自身逻辑定价。")
         else:
-            reasons.append('情绪面：板块情绪历史数据不足（累计<10个交易日），暂不分位。')
+            reasons.append('情绪面:板块情绪历史数据不足(累计<10个交易日),暂不分位。')
     except Exception:
-        reasons.append('情绪面：情绪引擎数据不可用，该象限不计分。')
+        reasons.append('情绪面:情绪引擎数据不可用,该象限不计分。')
 
-    # 判定（保守规则 + 硬条件兜底）
+    # 判定(保守规则 + 硬条件兜底)
     deep_below_axis = bool(axis_price and current_price < axis_price * 0.92)
     fund_all_out = bool(fund_sum is not None and fund_days > 0 and fund_pos_days == 0 and fund_sum < 0)
     bull_combo = (ev_net >= 1 and fund_sum is not None and fund_sum > 0 and ma20
                   and current_price >= ma20)
     if ev_net <= -2 or fund_all_out or deep_below_axis:
-        verdict = '偏空，注意防守'
+        verdict = '偏空,注意防守'
     elif bull_combo:
         verdict = '偏多'
     elif score >= 2:
         verdict = '偏多'
     elif score <= -2:
-        verdict = '偏空，注意防守'
+        verdict = '偏空,注意防守'
     else:
         verdict = '中性偏谨慎'
 
     lines = [
-        f"**综合研判：{verdict}。**",
+        f"**综合研判:{verdict}。**",
         '',
-        '**为什么是这个判断（五象限规则引擎，非AI拍脑袋）：**',
+        '**为什么是这个判断(五象限规则引擎,非AI拍脑袋):**',
     ]
     for i, r in enumerate(reasons, 1):
         lines.append(f"{i}. {r}")
@@ -1633,7 +1634,7 @@ def render_verdict_section(code: str, market: str, current_price: float,
     return lines
 
 
-# ========== 指标快照（技术面瘦身：只输出相对昨日变化的信号） ==========
+# ========== 指标快照(技术面瘦身:只输出相对昨日变化的信号) ==========
 
 def _tech_snapshot_path(code: str) -> str:
     return os.path.join(DATA_DIR, f'tech_snapshot_{code}.json')
@@ -1657,14 +1658,14 @@ def _save_tech_snapshot(code: str, state: Dict) -> None:
 
 
 def _current_tech_state(indicators: Dict, tech_analysis: Dict, pattern: str) -> Dict:
-    """提取当日技术面状态签名（用于次日对比）"""
+    """提取当日技术面状态签名(用于次日对比)"""
     ma = indicators.get('ma') or {}
     macd = indicators.get('macd') or {}
     rsi = indicators.get('rsi') or {}
     return {
         'pattern': pattern,
         'ma_trend': indicators.get('ma_trend', ''),
-        'above_ma20': bool(ma.get('20') and True),  # 占位，真实比较用price_vs_ma
+        'above_ma20': bool(ma.get('20') and True),  # 占位,真实比较用price_vs_ma
         'macd_signal': macd.get('signal', ''),
         'macd_hist_sign': 'pos' if (macd.get('hist') or 0) >= 0 else 'neg',
         'rsi_zone': 'overbought' if (rsi.get('rsi14') or 50) > 70 else 'oversold' if (rsi.get('rsi14') or 50) < 30 else 'neutral',
@@ -1675,8 +1676,8 @@ def _current_tech_state(indicators: Dict, tech_analysis: Dict, pattern: str) -> 
 def render_changed_signals(code: str, indicators: Dict, tech_analysis: Dict,
                            pattern: str, current_price: float) -> List[str]:
     """
-    只输出相对昨日有变化的技术信号；无快照（首次运行）则输出全部并标注基线。
-    这是技术面瘦身核心：日均线值每日机械罗列是噪音，变化才有信息量。
+    只输出相对昨日有变化的技术信号;无快照(首次运行)则输出全部并标注基线。
+    这是技术面瘦身核心:日均线值每日机械罗列是噪音,变化才有信息量。
     """
     lines: List[str] = []
     prev = _load_tech_snapshot(code)
@@ -1696,11 +1697,11 @@ def render_changed_signals(code: str, indicators: Dict, tech_analysis: Dict,
         if old != new:
             changes.append(fmt_old_new(old, new))
 
-    # 三日形态由调用方输出（generate_deep_report 的章节头），这里只负责变化项
+    # 三日形态由调用方输出(generate_deep_report 的章节头),这里只负责变化项
     if baseline:
-        lines.append(f"（首日建立技术基线，今日起只播报变化项）")
+        lines.append(f"(首日建立技术基线,今日起只播报变化项)")
 
-    # MA趋势变化（多头/空头/缠绕）
+    # MA趋势变化(多头/空头/缠绕)
     if baseline:
         if ma:
             pos = []
@@ -1708,11 +1709,11 @@ def render_changed_signals(code: str, indicators: Dict, tech_analysis: Dict,
                 v = ma.get(n)
                 if v:
                     pos.append(f"MA{n}{'↑' if current_price >= v else '↓'}")
-            changes.append(f"均线基线：{'/'.join(pos)}，排列 {cur['ma_trend']}")
+            changes.append(f"均线基线:{'/'.join(pos)},排列 {cur['ma_trend']}")
     elif prev.get('ma_trend') != cur['ma_trend']:
         changes.append(f"均线排列由「{prev.get('ma_trend', '?')}」转为「{cur['ma_trend']}」")
 
-    # 现价穿越MA20/MA60（由快照中的上下关系判断）
+    # 现价穿越MA20/MA60(由快照中的上下关系判断)
     if not baseline and ma:
         for n in ('20', '60'):
             v = ma.get(n)
@@ -1722,12 +1723,12 @@ def render_changed_signals(code: str, indicators: Dict, tech_analysis: Dict,
             now_above = current_price >= v
             was_above = prev.get(key)
             if was_above is not None and was_above != now_above:
-                changes.append(f"现价{'站上' if now_above else '跌破'}MA{n}（¥{v:.2f}）")
+                changes.append(f"现价{'站上' if now_above else '跌破'}MA{n}(¥{v:.2f})")
             cur[key] = now_above  # 写回供保存
 
     # MACD信号变化
     if baseline:
-        changes.append(f"MACD基线：{cur['macd_signal']}（DIF={macd.get('dif')}, DEA={macd.get('dea')}, 柱={macd.get('hist')}）")
+        changes.append(f"MACD基线:{cur['macd_signal']}(DIF={macd.get('dif')}, DEA={macd.get('dea')}, 柱={macd.get('hist')})")
     else:
         if prev.get('macd_signal') != cur['macd_signal']:
             changes.append(f"MACD信号由「{prev.get('macd_signal', '?')}」转为「{cur['macd_signal']}」")
@@ -1735,22 +1736,22 @@ def render_changed_signals(code: str, indicators: Dict, tech_analysis: Dict,
             changes.append(f"MACD柱状图由{'红' if cur['macd_hist_sign'] == 'pos' else '绿'}翻"
                            f"{'绿' if cur['macd_hist_sign'] == 'neg' else '红'}")
 
-    # RSI区间变化（只在跨阈值时播报）
+    # RSI区间变化(只在跨阈值时播报)
     if baseline:
-        changes.append(f"RSI(14)基线：{rsi.get('rsi14')}（{cur['rsi_zone']}）")
+        changes.append(f"RSI(14)基线:{rsi.get('rsi14')}({cur['rsi_zone']})")
     elif prev.get('rsi_zone') != cur['rsi_zone']:
         zn = {'overbought': '超买区(>70)', 'oversold': '超卖区(<30)', 'neutral': '中性区'}
         changes.append(f"RSI(14)={rsi.get('rsi14')} 由{zn.get(prev.get('rsi_zone'), '?')}进入{zn.get(cur['rsi_zone'])}")
 
     if changes:
-        lines.append("**信号变化（相对昨日）：**" if not baseline else "**基线快照：**")
+        lines.append("**信号变化(相对昨日):**" if not baseline else "**基线快照:**")
         for c in changes:
             lines.append(f"- {c}")
     else:
-        lines.append("**信号变化：** 今日各指标状态与昨日一致，无新增穿越/翻转信号（均线、MACD、RSI均延续既有状态）。")
+        lines.append("**信号变化:** 今日各指标状态与昨日一致,无新增穿越/翻转信号(均线、MACD、RSI均延续既有状态)。")
     lines.append("")
 
-    # 保存今日状态（含价格与MA关系，供明日穿越检测）
+    # 保存今日状态(含价格与MA关系,供明日穿越检测)
     for n in ('20', '60'):
         v = (indicators.get('ma') or {}).get(n)
         if v and current_price > 0:
@@ -1762,21 +1763,21 @@ def render_changed_signals(code: str, indicators: Dict, tech_analysis: Dict,
 # ========== 报告生成 ==========
 
 def generate_deep_report(stock: Dict, report_date: str = None) -> str:
-    """生成单只股票深度日报（Markdown）"""
+    """生成单只股票深度日报(Markdown)"""
     code = stock['code']
     name = stock['name']
     market = stock['market']
     avg_cost = stock.get('avg_cost', 0)
     shares = stock.get('shares', 0)
     report_date = report_date or datetime.now().strftime('%Y-%m-%d')
-    
+
     print(f"\n[分析] {name}({code}) 深度报告生成中...")
-    
+
     # 1. 获取实时行情
     quote = get_tencent_quote(code, market)
     if not quote:
         return f"# {name}({code}) 报告生成失败\n\n无法获取实时行情数据。"
-    
+
     current_price = quote['price']
     prev_close = quote['prev_close']
     change = quote['change']
@@ -1785,133 +1786,179 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
     low = quote['low']
     volume_shares = quote["volume"] * 100 if market != "港股" else quote["volume"]
     volume = volume_shares
-    
-    # 2. 获取K线数据（优先 utils 版：proxy.finance.qq.com 通道可用，且高低价字段已修正）
+
+    # 2. 获取K线数据(优先 utils 版:proxy.finance.qq.com 通道可用,且高低价字段已修正)
     try:
         from utils.stock_quote import get_stock_kline as _util_kline
         kline = _util_kline(code, market, days=120, max_retries=2)
     except Exception as _ke:
-        print(f"[K线] utils通道异常，回退本地通道 {code}: {_ke}")
+        print(f"[K线] utils通道异常,回退本地通道 {code}: {_ke}")
         kline = get_tencent_kline(code, market, days=120)
-    
+
     # 3. 计算技术指标
     indicators = calculate_all_indicators(kline) if kline else {}
-    
+
     # 4. 获取新闻
     news_list = get_stock_news(code)
-    
+
     # 5. 综合分析
     tech_analysis = analyze_technical(indicators, current_price)
     scenarios = generate_scenarios(current_price, avg_cost, indicators)
-    
-    # 持仓计算
-    market_value = current_price * shares
-    pnl = market_value - avg_cost * shares if avg_cost > 0 else 0
-    pnl_pct = pnl / (avg_cost * shares) * 100 if avg_cost > 0 else 0
-    cost_gap = (current_price - avg_cost) / avg_cost * 100 if avg_cost > 0 else 0
-    
+
+    # ===== 币种换算(2026-10-22 根因修复:港股通成本avg_cost为人民币口径,不得与港币现价直接相减)=====
+    # 约定:avg_cost 一律为人民币记账本位币成本(A股本币即人民币;港股=港股通券商导出口径,经用户2026-10-22确认)
+    # 港股现价(HKD)→人民币:price_cny = price / rate,rate含义为 1 CNY = ? HKD
+    fx_rate = None
+    price_cny = current_price
+    if market == '港股':
+        try:
+            from utils.exchange_rate import get_cny_hkd_rate
+            fx_rate = get_cny_hkd_rate() or 1.1753
+        except Exception as _fe:
+            print(f'[汇率] 获取失败,使用默认1.1753: {_fe}')
+            fx_rate = 1.1753
+        price_cny = current_price / fx_rate
+
+    # 持仓计算(统一人民币口径,公式透明)
+    cost_value = avg_cost * shares
+    market_value = price_cny * shares                # 人民币市值
+    pnl = market_value - cost_value if avg_cost > 0 else 0
+    pnl_pct = pnl / cost_value * 100 if cost_value > 0 else 0
+    cost_gap = (price_cny - avg_cost) / avg_cost * 100 if avg_cost > 0 else 0
+
     # 板块
     sector = SECTOR_MAP.get(code, '其他')
-    
+
     # 构建报告
     lines = []
-    
+
     # 标题
     lines.append(f"# 个股日报 / 深度复盘")
     lines.append(f"")
     suffix = 'HK' if market == '港股' else ('SH' if code.startswith('6') else 'SZ')
-    lines.append(f"**{name} {code}.{suffix}** · {report_date} · 研究讨论，不构成投资建议")
+    lines.append(f"**{name} {code}.{suffix}** · {report_date} · 研究讨论,不构成投资建议")
     lines.append(f"")
-    
-    # ===== 持仓状态（实时联动，对标豆包盘中报告头部） =====
+
+    # ===== 持仓状态(实时联动,对标豆包盘中报告头部) =====
     if shares > 0 and avg_cost > 0:
-        head_pnl_pct = (current_price - avg_cost) / avg_cost * 100
-        head_pnl_wan = (current_price - avg_cost) * shares / 10000
+        head_pnl_pct = pnl_pct
+        head_pnl_wan = pnl / 10000
         lines.append(f"## 持仓状态")
         lines.append(f"")
+        _cur_txt = f"HK${current_price:.2f}(≈¥{price_cny:.2f})" if market == '港股' else f"¥{current_price:.2f}"
         if head_pnl_pct >= 0:
-            lines.append(f"**浮盈 +{head_pnl_pct:.1f}%**（约 {head_pnl_wan:.2f} 万元）· 持仓 {shares:,} 股 / 成本 ¥{avg_cost:.2f}")
+            lines.append(f"**浮盈 +{head_pnl_pct:.1f}%**(约 {head_pnl_wan:.2f} 万元)· 持仓 {shares:,} 股 / 成本 ¥{avg_cost:.2f}")
         else:
-            head_back_pct = (avg_cost - current_price) / current_price * 100
-            lines.append(f"**浮亏 {head_pnl_pct:.1f}%**（约 {abs(head_pnl_wan):.2f} 万元）· 回本需 **+{head_back_pct:.1f}%** · 持仓 {shares:,} 股 / 成本 ¥{avg_cost:.2f}")
+            head_back_pct = (avg_cost - price_cny) / price_cny * 100
+            lines.append(f"**浮亏 {head_pnl_pct:.1f}%**(约 {abs(head_pnl_wan):.2f} 万元)· 回本需 **+{head_back_pct:.1f}%** · 持仓 {shares:,} 股 / 成本 ¥{avg_cost:.2f}")
+        lines.append(f"- 现价口径：{_cur_txt}；成本为人民币口径（{'港股通券商导出' if market == '港股' else 'A股本金'}）")
+        if market == '港股' and fx_rate:
+            lines.append(f"- [推算·公式] 盈亏 = (HK${current_price:.2f} ÷ 汇率{fx_rate:.4f} - ¥{avg_cost:.2f}) × {shares:,}股 ≈ **{pnl:+,.0f}元**")
+        else:
+            lines.append(f"- [推算·公式] 盈亏 = (¥{current_price:.2f} - ¥{avg_cost:.2f}) × {shares:,}股 ≈ **{pnl:+,.0f}元**")
         lines.append(f"")
     elif shares > 0:
         lines.append(f"## 持仓状态")
         lines.append(f"")
-        lines.append(f"持仓 {shares:,} 股，成本已为负值（历史盈利覆盖），当前市值约 {current_price * shares / 10000:.2f} 万元。")
+        lines.append(f"持仓 {shares:,} 股,成本已为负值(历史盈利覆盖),当前市值约 {current_price * shares / 10000:.2f} 万元。")
         lines.append(f"")
-    
-    # ===== 盘中快照（交易时段为盘中口径，非交易时段标注收盘快照） =====
+
+    # ===== 盘中快照(交易时段为盘中口径,非交易时段标注收盘快照) =====
     ma20_val = None
     if kline and len(kline) >= 20:
         ma20_val = sum(d['close'] for d in kline[-20:]) / 20
     in_trade = is_trading_time(market)
     snapshot_label = '盘中快照' if in_trade else '收盘快照'
     now_str = datetime.now().strftime('%H:%M')
-    lines.append(f"## {snapshot_label}（{now_str}）")
+    lines.append(f"## {snapshot_label}({now_str})")
     lines.append(f"")
     if not in_trade:
-        lines.append(f"> 非交易时段，以下数据为最近收盘口径。")
+        lines.append(f"> 非交易时段,以下数据为最近收盘口径。")
         lines.append(f"")
     lines.append(f"| 项目 | 数值 |")
     lines.append(f"|------|------|")
-    lines.append(f"| 现价 | ¥{current_price:.2f}（{'+' if change_pct >= 0 else ''}{change_pct:.2f}%） |")
-    lines.append(f"| 盘中区间 | ¥{low:.2f} — ¥{high:.2f} |")
+    lines.append(f"| 现价 | ¥{current_price:.2f}({'+' if change_pct >= 0 else ''}{change_pct:.2f}%) |")
+    lines.append(f"| 盘中区间 | ¥{low:.2f} - ¥{high:.2f} |")
     lines.append(f"| 成交额 | {_format_amount(quote.get('amount'))} |")
     _tr = quote.get('turnover_rate')
     lines.append(f"| 换手率 | {f'{_tr:.2f}%' if _tr is not None else 'N/A'} |")
     if ma20_val:
         _pos_pct = (current_price - ma20_val) / ma20_val * 100
         _pos_txt = f"上方 {_pos_pct:.2f}%" if _pos_pct >= 0 else f"下方 {abs(_pos_pct):.2f}%"
-        lines.append(f"| MA20位置 | {_pos_txt}（MA20 ¥{ma20_val:.2f}） |")
+        lines.append(f"| MA20位置 | {_pos_txt}(MA20 ¥{ma20_val:.2f}) |")
     lines.append(f"")
-    
-    # ===== 盘中节奏叙事（模块①：分时级别，对标豆包盘中报告） =====
+
+    # ===== 盘中节奏叙事(模块1:分时级别,对标豆包盘中报告) =====
     try:
         for _rl in render_intraday_rhythm(code, market, quote):
             lines.append(_rl)
     except Exception as _e:
         print(f'[盘中节奏] 生成失败 {code}: {_e}')
-    
+
     # 核心结论
     lines.append(f"## 核心结论")
     lines.append(f"")
     if avg_cost > 0:
         status_text = "浮盈" if pnl > 0 else "浮亏"
-        lines.append(f"1. **持仓快照：** 您 {shares:,} 股、成本 ¥{avg_cost:.2f}，现价 ¥{current_price:.2f}，**{status_text}约 {abs(pnl_pct):.1f}%、约 ¥{abs(pnl):,.0f} 元**。")
-    lines.append(f"2. **价格与量能：** 今日{'涨' if change >= 0 else '跌'} {abs(change_pct):.2f}%（{'+' if change >= 0 else ''}{change:.2f}元），成交额约 ¥{volume_shares * current_price / 100000000:.2f}亿。{tech_analysis.get('signals', ['暂无'])[0] if tech_analysis.get('signals') else ''}")
-    
+        _p_txt = f"HK${current_price:.2f}(≈¥{price_cny:.2f})" if market == '港股' else f"¥{current_price:.2f}"
+        lines.append(f"1. **持仓快照[库·实时行情+推算]:** 您 {shares:,} 股、成本 ¥{avg_cost:.2f}(人民币口径),现价 {_p_txt},**{status_text}约 {abs(pnl_pct):.1f}%、约 ¥{abs(pnl):,.0f} 元**。")
+    lines.append(f"2. **价格与量能:** 今日{'涨' if change >= 0 else '跌'} {abs(change_pct):.2f}%({'+' if change >= 0 else ''}{change:.2f}元),成交额约 ¥{volume_shares * current_price / 100000000:.2f}亿。{tech_analysis.get('signals', ['暂无'])[0] if tech_analysis.get('signals') else ''}")
+
     # 技术面判断
     tech_status = tech_analysis.get('status', '震荡')
     if '偏弱' in tech_status or '空头' in str(indicators.get('ma_trend', '')):
-        trend_desc = "技术偏弱，短期承压"
+        trend_desc = "技术偏弱,短期承压"
     elif '偏强' in tech_status or '多头' in str(indicators.get('ma_trend', '')):
-        trend_desc = "技术偏强，短期动能向上"
+        trend_desc = "技术偏强,短期动能向上"
     else:
-        trend_desc = "技术震荡，方向未明"
-    lines.append(f"3. **技术区间：** {trend_desc}。")
-    
+        trend_desc = "技术震荡,方向未明"
+    lines.append(f"3. **技术区间:** {trend_desc}。")
+
     if indicators.get('support_resistance'):
         sr = indicators['support_resistance']
-        lines.append(f"4. **关键价位：** 下方支撑 ¥{sr.get('support_near', 'N/A')} / ¥{sr.get('support_mid', 'N/A')}，上方压力 ¥{sr.get('resistance_near', 'N/A')} / ¥{sr.get('resistance_far', 'N/A')}。")
-    
+        lines.append(f"4. **关键价位:** 下方支撑 ¥{sr.get('support_near', 'N/A')} / ¥{sr.get('support_mid', 'N/A')},上方压力 ¥{sr.get('resistance_near', 'N/A')} / ¥{sr.get('resistance_far', 'N/A')}。")
+
     lines.append(f"")
-    
+
+    # ===== 证伪信号前置(2026-10-22 升级:先立好"什么情况证明本报告判断错了")=====
+    try:
+        _low_half = min(d['low'] for d in kline) if kline else None
+        _sr0 = indicators.get('support_resistance', {})
+        _sup0 = _sr0.get('support_near')
+        lines.append(f"## 证伪信号(什么情况证明本报告判断错了)")
+        lines.append(f"")
+        lines.append(f"**价格轨[阈值·分析设定,非市场数据]:**")
+        if _sup0:
+            _down_txt = f"跌破 ¥{_sup0}(近端支撑)且收盘不能收回 → 短线偏弱判断证伪"
+            if _low_half:
+                _down_txt += f",下看 ¥{_low_half:.2f}(近半年低点,距现价 {(_low_half/current_price-1)*100:.1f}%)"
+            lines.append(f"- {_down_txt}")
+        if ma20_val:
+            lines.append(f"- 放量站上 MA20(¥{ma20_val:.2f})→ 短线偏弱判断证伪,转入修复行情")
+        lines.append(f"**基本面轨:** 财报/事件验证点见第十三节AI实时研判第5小节--证伪信号触发时,逻辑止损优先于价格纪律。")
+        lines.append(f"")
+    except Exception as _e:
+        print(f'[证伪信号] 生成失败 {code}: {_e}')
+
     # 持仓快照表格
     lines.append(f"## 持仓快照")
     lines.append(f"")
     lines.append(f"| 项目 | 数值 |")
     lines.append(f"|------|------|")
-    lines.append(f"| 持仓成本 | ¥{avg_cost:.2f}（您提供/券商导出） |")
-    lines.append(f"| 现价 | ¥{current_price:.2f} |")
+    _cost_src = '人民币口径·港股通券商导出' if market == '港股' else '人民币·您提供/券商导出'
+    lines.append(f"| 持仓成本 | ¥{avg_cost:.2f}({_cost_src}) |")
+    if market == '港股' and fx_rate:
+        lines.append(f"| 汇率[库·新浪外汇] | 1 CNY = {fx_rate:.4f} HKD |")
+    _px_row = f"HK${current_price:.2f}(≈¥{price_cny:.2f})" if market == '港股' else f"¥{current_price:.2f}"
+    lines.append(f"| 现价[库·腾讯行情] | {_px_row} |")
     if avg_cost > 0:
         lines.append(f"| 浮亏/盈幅度 | **{'+' if pnl_pct >= 0 else ''}{pnl_pct:.1f}%** |")
         lines.append(f"| 持仓市值 | 约 ¥{market_value:,.0f} |")
         lines.append(f"| 累计浮亏/盈 | 约 ¥{pnl:,.0f} |")
     lines.append(f"| 所属板块 | {sector} |")
     lines.append(f"")
-    
-    # ===== 事件影响追踪（含解禁风险 + 聚合信号 + 事件有效性档案） =====
+
+    # ===== 事件影响追踪(含解禁风险 + 聚合信号 + 事件有效性档案) =====
     try:
         from event_tracker import format_event_for_report
         event_lines = format_event_for_report(stock['code'])
@@ -1920,12 +1967,12 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
         for el in event_lines:
             lines.append(el)
 
-        # 事件有效性档案：该股历史同类事件的事后应验统计（命中率+次日平均走势）
+        # 事件有效性档案:该股历史同类事件的事后应验统计(命中率+次日平均走势)
         try:
             from utils.event_verifier import effectiveness_profile
             _profile = effectiveness_profile(code)
             if _profile:
-                lines.append('**事件有效性档案（该股历史同类事件的事后应验，d1实盘口径）：**')
+                lines.append('**事件有效性档案(该股历史同类事件的事后应验,d1实盘口径):**')
                 lines.append('')
                 lines.append('| 事件主题 | 样本数 | 方向命中率 | 次日平均涨跌 | 事件方向平均应验 | 最近发生 |')
                 lines.append('|------|------|------|------|------|------|')
@@ -1933,16 +1980,16 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
                     _hr = f"{_p['hit_rate']*100:.0f}%"
                     _d1 = f"{_p['avg_d1_pct']:+.2f}%"
                     _mv = f"{_p['avg_move_pct']:+.2f}%"
-                    _dir_cn = {'positive': '利好', 'negative': '利空', 'neutral': '中性', None: '—'}.get(_p['direction'], '—')
-                    lines.append(f"| {_theme} | {_p['total']} | {_hr} | {_d1} | {_mv}（{_dir_cn}类） | {_p['latest']} |")
+                    _dir_cn = {'positive': '利好', 'negative': '利空', 'neutral': '中性', None: '-'}.get(_p['direction'], '-')
+                    lines.append(f"| {_theme} | {_p['total']} | {_hr} | {_d1} | {_mv}({_dir_cn}类) | {_p['latest']} |")
                 lines.append('')
-                lines.append('- 命中率=事件发生后d1涨跌幅达预期方向(≥2%)的比例；'
-                             '「事件方向平均应验」按事件标注方向归一（利好事件取+次日涨跌、利空取-），'
-                             '持续为负说明该类事件的方向判断对该股基本失灵，看到同类新闻应降低权重。')
+                lines.append('- 命中率=事件发生后d1涨跌幅达预期方向(≥2%)的比例;'
+                             '「事件方向平均应验」按事件标注方向归一(利好事件取+次日涨跌、利空取-),'
+                             '持续为负说明该类事件的方向判断对该股基本失灵,看到同类新闻应降低权重。')
                 lines.append('')
         except Exception as _e:
             print(f'[事件档案] 生成失败 {code}: {_e}')
-        # C需求：消息面聚合信号（回购追踪 / A/H比价 / 未来解禁），全部真实数据，取不到就不显示
+        # C需求:消息面聚合信号(回购追踪 / A/H比价 / 未来解禁),全部真实数据,取不到就不显示
         agg_signals = []
         try:
             _bb = buyback_signal(code)
@@ -1963,18 +2010,18 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
         except Exception as _e:
             print(f'[聚合信号] 未来解禁异常 {code}: {_e}')
         if agg_signals:
-            lines.append('**聚合信号（近90日维度）：**')
+            lines.append('**聚合信号(近90日维度):**')
             for sig in agg_signals:
                 lines.append(f"- {sig}")
             lines.append('')
     except Exception as e:
         pass  # 事件模块未运行时不阻塞报告
 
-    # ===== 市场情绪对持仓的影响（第三、四层） =====
+    # ===== 市场情绪对持仓的影响(第三、四层) =====
     try:
         from emotion_engine import format_sentiment_for_report
         sentiment_lines = format_sentiment_for_report(stock['code'])
-        lines.append(f"## 二、市场情绪对持仓的影响——{stock.get('name', stock['code'])}")
+        lines.append(f"## 二、市场情绪对持仓的影响[库·情绪引擎]--{stock.get('name', stock['code'])}")
         lines.append(f"")
         for sl in sentiment_lines:
             lines.append(sl)
@@ -1983,38 +2030,48 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
         import traceback
         print(f'[DeepAnalysis] 情绪章节生成失败: {e}')
         traceback.print_exc()
-    
+
     lines.append(f"## 三、今日行情、量能与资金流向")
     lines.append(f"")
-    lines.append(f"**价格走势：** {report_date} {'盘中' if in_trade else '收盘'} ¥{current_price:.2f}，{'涨' if change >= 0 else '跌'} {abs(change_pct):.2f}%，日内区间 ¥{low:.2f}-¥{high:.2f}。")
-    
-    # ===== 板块背离量化（模块③：个股 vs 板块/大盘基准，百分点差值） =====
+    lines.append(f"**价格走势:** {report_date} {'盘中' if in_trade else '收盘'} ¥{current_price:.2f},{'涨' if change >= 0 else '跌'} {abs(change_pct):.2f}%,日内区间 ¥{low:.2f}-¥{high:.2f}。")
+
+    # ===== 板块背离量化(模块3:个股 vs 板块/大盘基准,百分点差值) =====
     try:
         for _dl in render_sector_divergence(code, market, change_pct):
             lines.append(_dl)
     except Exception as _e:
         print(f'[板块背离] 生成失败 {code}: {_e}')
-    
-    # ===== 交易日历前瞻（长假窗口/下一交易日/关键日倒计时） =====
+
+    # ===== 交易日历前瞻(长假窗口/下一交易日/关键日倒计时) =====
     try:
         from utils.trading_calendar import render_calendar_lines
         _cal = render_calendar_lines()
         if _cal:
-            lines.append('**日历前瞻：**')
+            lines.append('**日历前瞻:**')
             for _cl in _cal:
                 lines.append(_cl)
             lines.append('')
     except Exception as _e:
         print(f'[日历前瞻] 生成失败 {code}: {_e}')
-    
+
     if indicators.get('volume'):
         vol = indicators['volume']
-        _amt = vol['today_vol'] * 100 * current_price  # today_vol单位为手，×100换算成股
+        # 2026-10-22 修复:A股K线量单位为"手"(×100=股),港股K线量单位直接为"股"--原代码统一按手×100导致港股成交额放大100倍
+        if market == '港股':
+            _today_v = vol['today_vol'] / 10000
+            _avg5_v = vol['avg_5d'] / 10000
+            _v_unit = '万股'
+            _amt = vol['today_vol'] * current_price
+        else:
+            _today_v = vol['today_vol'] / 10000
+            _avg5_v = vol['avg_5d'] / 10000
+            _v_unit = '万手'
+            _amt = vol['today_vol'] * 100 * current_price
         _amt_txt = f"¥{_amt/100000000:.2f}亿" if _amt >= 100000000 else f"¥{_amt/10000:.0f}万"
-        lines.append(f"**量能分析：** 今日成交约 {vol['today_vol']/10000:.1f}万手（约{_amt_txt}），近5日均量约 {vol['avg_5d']/10000:.1f}万手，量比约 {vol['ratio_5d']:.2f}，属于**{vol['status']}**。**")
-    
-    # ===== 资金流向（东财fflow接口；服务器IP可能被封，需优雅降级） =====
-    lines.append(f"**资金流向：**")
+        lines.append(f"**量能分析[推算·公式]:** 今日成交约 {_today_v:.1f}{_v_unit}(约{_amt_txt}),近5日均量约 {_avg5_v:.1f}{_v_unit},量比约 {vol['ratio_5d']:.2f}(=今日量÷近5日均量),属于**{vol['status']}**。**")
+
+    # ===== 资金流向(东财fflow接口;服务器IP可能被封,需优雅降级) =====
+    lines.append(f"**资金流向:**")
     if market == '港股':
         lines.append(f"- 港股资金流暂不支持。")
     else:
@@ -2029,8 +2086,8 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
             for item in recent_flow:
                 v = item['main'] / 100000000
                 sign = '+' if v >= 0 else ''
-                today_tag = '（今日盘中）' if item.get('is_today') else ''
-                lines.append(f"- {item['date'][5:]}：主力净流入 {sign}{v:.2f} 亿{today_tag}")
+                today_tag = '(今日盘中)' if item.get('is_today') else ''
+                lines.append(f"- {item['date'][5:]}:主力净流入 {sign}{v:.2f} 亿{today_tag}")
             turns = []
             for i in range(1, len(recent_flow)):
                 prev_d, cur_d = recent_flow[i-1], recent_flow[i]
@@ -2039,27 +2096,27 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
                 elif prev_d['main'] >= 0 > cur_d['main']:
                     turns.append(f"{cur_d['date'][5:]} 由净流入转为净流出")
             if turns:
-                lines.append(f"- 趋势转折：{'；'.join(turns)}。")
+                lines.append(f"- 趋势转折:{';'.join(turns)}。")
         else:
-            lines.append(f"- 资金流向数据暂不可用（数据源受限）")
-    lines.append(f"")
-    
-    # 技术面（瘦身版：三日形态+信号变化+关键价位执行参考，砍掉机械指标罗列）
-    lines.append(f"## 四、执行参考（技术面）")
+            lines.append(f"- 资金流向数据暂不可用(数据源受限)")
     lines.append(f"")
 
-    # ===== 三日形态定性（模块②：近3日日线规则引擎，本质是变化检测，保留） =====
+    # 技术面(瘦身版:三日形态+信号变化+关键价位执行参考,砍掉机械指标罗列)
+    lines.append(f"## 四、执行参考(技术面)")
+    lines.append(f"")
+
+    # ===== 三日形态定性(模块2:近3日日线规则引擎,本质是变化检测,保留) =====
     _pattern = '未知'
     try:
         _pattern, _basis = classify_3day_pattern(code, market)
-        lines.append(f"**三日形态：{_pattern}**")
+        lines.append(f"**三日形态:{_pattern}**")
         for _b in _basis:
             lines.append(f"- {_b}")
         lines.append(f"")
     except Exception as _e:
         print(f'[三日形态] 生成失败 {code}: {_e}')
 
-    # ===== 信号变化（指标快照对比：均线/MACD/RSI 只播报相对昨日的变化，不再逐日罗列） =====
+    # ===== 信号变化(指标快照对比:均线/MACD/RSI 只播报相对昨日的变化,不再逐日罗列) =====
     try:
         for _sl in render_changed_signals(code, indicators, tech_analysis, _pattern, current_price):
             lines.append(_sl)
@@ -2069,7 +2126,7 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
     sr = indicators.get('support_resistance', {})
     kl_rows = _key_levels_with_basis(kline)
     if kl_rows:
-        lines.append(f"**关键价位与依据（执行参考，基于近60日真实K线计算）：**")
+        lines.append(f"**关键价位与依据(执行参考,基于近60日真实K线计算):**")
         lines.append(f"")
         lines.append(f"| 位置 | 价位 | 依据 |")
         lines.append(f"|------|------|------|")
@@ -2077,20 +2134,20 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
             lines.append(f"| {label} | ¥{price:.2f} | {basis} |")
         if sr:
             lines.append(f"")
-            lines.append(f"- 箱体区间: ¥{sr['box_bottom']}-¥{sr['box_top']}；"
+            lines.append(f"- 箱体区间: ¥{sr['box_bottom']}-¥{sr['box_top']};"
                          f"现价 ¥{current_price:.2f} 处于"
                          f"{'箱体上半区' if current_price >= (sr['box_bottom'] + sr['box_top']) / 2 else '箱体下半区'}。")
         lines.append(f"")
     elif sr:
-        lines.append(f"**关键价格区间：**")
-        lines.append(f"- 近期支撑: ¥{sr['support_near']}（近5日低点）/ ¥{sr['support_mid']}（近20日低点）/ ¥{sr['support_strong']}（整数关）")
-        lines.append(f"- 近期压力: ¥{sr['resistance_near']}（近5日高点）/ ¥{sr['resistance_far']}（近20日高点）")
+        lines.append(f"**关键价格区间:**")
+        lines.append(f"- 近期支撑: ¥{sr['support_near']}(近5日低点)/ ¥{sr['support_mid']}(近20日低点)/ ¥{sr['support_strong']}(整数关)")
+        lines.append(f"- 近期压力: ¥{sr['resistance_near']}(近5日高点)/ ¥{sr['resistance_far']}(近20日高点)")
         lines.append(f"- 箱体区间: ¥{sr['box_bottom']}-¥{sr['box_top']}")
         lines.append(f"")
 
-    # 信号汇总（规则引擎新增信号，非逐日重复项）
+    # 信号汇总(规则引擎新增信号,非逐日重复项)
     if tech_analysis.get('signals'):
-        lines.append(f"**其他信号：**")
+        lines.append(f"**其他信号:**")
         for sig in tech_analysis['signals']:
             lines.append(f"- {sig}")
         lines.append(f"")
@@ -2100,34 +2157,34 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
     lines.append(f"")
     lines.append(f"**当前技术状态: {tech_analysis.get('status', '震荡')}**")
     lines.append(f"")
-    
+
     if scenarios:
-        lines.append(f"**情景判断：**")
+        lines.append(f"**情景判断:**")
         lines.append(f"")
-        lines.append(f"- **乐观情景：** 若 {scenarios['optimistic']['condition']}，目标位 ¥{scenarios['optimistic']['target']}（+{scenarios['optimistic']['pct']:.1f}%）。")
-        lines.append(f"- **中性情景：** {scenarios['neutral']['condition']}，区间 {scenarios['neutral']['range']}。")
-        lines.append(f"- **悲观情景：** 若 {scenarios['pessimistic']['condition']}，目标位 ¥{scenarios['pessimistic']['target']}（{scenarios['pessimistic']['pct']:.1f}%）。")
+        lines.append(f"- **乐观情景:** 若 {scenarios['optimistic']['condition']},目标位 ¥{scenarios['optimistic']['target']}(+{scenarios['optimistic']['pct']:.1f}%)。")
+        lines.append(f"- **中性情景:** {scenarios['neutral']['condition']},区间 {scenarios['neutral']['range']}。")
+        lines.append(f"- **悲观情景:** 若 {scenarios['pessimistic']['condition']},目标位 ¥{scenarios['pessimistic']['target']}({scenarios['pessimistic']['pct']:.1f}%)。")
         lines.append(f"")
-    
+
     # 针对持仓的评估
     if avg_cost > 0:
         if current_price < avg_cost * 0.85:
-            lines.append(f"**持仓评估：** 当前价格距成本线仍有 {abs(cost_gap):.1f}% 差距，处于深度浮亏状态。")
-            lines.append(f"- 若看好中长期逻辑，可在支撑位附近考虑补仓摊薄成本；")
-            lines.append(f"- 若跌破 ¥{scenarios.get('pessimistic', {}).get('target', sr.get('support_mid', current_price*0.9))}，需重新评估持仓逻辑。")
+            lines.append(f"**持仓评估:** 当前价格距成本线仍有 {abs(cost_gap):.1f}% 差距,处于深度浮亏状态。")
+            lines.append(f"- 若看好中长期逻辑,可在支撑位附近考虑补仓摊薄成本;")
+            lines.append(f"- 若跌破 ¥{scenarios.get('pessimistic', {}).get('target', sr.get('support_mid', current_price*0.9))},需重新评估持仓逻辑。")
         elif current_price < avg_cost:
-            lines.append(f"**持仓评估：** 当前价格距成本线 {abs(cost_gap):.1f}%，处于小幅浮亏。")
-            lines.append(f"- 关注能否放量突破 ¥{scenarios.get('optimistic', {}).get('target', sr.get('resistance_near', current_price*1.05))} 修复至成本线上方；")
-            lines.append(f"- 若持续在成本下方震荡，需评估时间成本。")
+            lines.append(f"**持仓评估:** 当前价格距成本线 {abs(cost_gap):.1f}%,处于小幅浮亏。")
+            lines.append(f"- 关注能否放量突破 ¥{scenarios.get('optimistic', {}).get('target', sr.get('resistance_near', current_price*1.05))} 修复至成本线上方;")
+            lines.append(f"- 若持续在成本下方震荡,需评估时间成本。")
         else:
-            lines.append(f"**持仓评估：** 当前已盈利 {cost_gap:.1f}%。")
-            lines.append(f"- 关注 ¥{scenarios.get('optimistic', {}).get('target', sr.get('resistance_near', current_price*1.05))} 附近的压力，注意止盈节奏。")
+            lines.append(f"**持仓评估:** 当前已盈利 {cost_gap:.1f}%。")
+            lines.append(f"- 关注 ¥{scenarios.get('optimistic', {}).get('target', sr.get('resistance_near', current_price*1.05))} 附近的压力,注意止盈节奏。")
     lines.append(f"")
-    
-    # ===== 投行一致预期（B需求：卖方研报级机构预测/分歧度/评级/目标价） =====
-    # 港股走 get_hk_consensus（东财港股盈利预测，含高盛/大摩/瑞银等国际投行目标价）；
-    # A股走 get_consensus（同花顺+东财，国内券商口径），另从个股新闻摘录国际投行观点
-    lines.append(f"## 六、投行一致预期（机构盈利预测与评级）")
+
+    # ===== 投行一致预期(B需求:卖方研报级机构预测/分歧度/评级/目标价) =====
+    # 港股走 get_hk_consensus(东财港股盈利预测,含高盛/大摩/瑞银等国际投行目标价);
+    # A股走 get_consensus(同花顺+东财,国内券商口径),另从个股新闻摘录国际投行观点
+    lines.append(f"## 六、投行一致预期[库·东财一致预期](机构盈利预测与评级)")
     lines.append(f"")
     try:
         if market == '港股':
@@ -2140,10 +2197,10 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
         _cons = None
     for cl in render_consensus_section(code, _cons, current_price, market, news_list, name):
         lines.append(cl)
-    
-    # 持仓实战分析（豆包式综合研判层）
-    # 注意：必须传入带【本次实时现价】的持仓副本——stocks.json 里的 current_price
-    # 是旧快照，直接用会导致市值/浮亏/压力支撑位判定整段过期（与报告头部自相矛盾）
+
+    # 持仓实战分析(豆包式综合研判层)
+    # 注意:必须传入带【本次实时现价】的持仓副本--stocks.json 里的 current_price
+    # 是旧快照,直接用会导致市值/浮亏/压力支撑位判定整段过期(与报告头部自相矛盾)
     try:
         from tactics import generate_position_tactics
         _stock_tactics = dict(stock)
@@ -2157,13 +2214,39 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
             lines.append(f"")
     except Exception as e:
         print(f'[Tactics] 实战分析生成失败: {e}')
-    
+
+    # ===== 操作档位（条件触发）+ 反模式清单（2026-10-22 对标豆包升级，替代单一路线建议）=====
+    if shares > 0 and avg_cost > 0:
+        try:
+            _sr2 = indicators.get('support_resistance', {})
+            _sup = _sr2.get('support_near')
+            _res = _sr2.get('resistance_near')
+            _low_half2 = min(d['low'] for d in kline) if kline else None
+            lines.append(f"**操作档位（条件触发，非买卖指令）[阈值·分析设定]：**")
+            lines.append(f"")
+            lines.append(f"| 档位 | 触发条件 | 动作倾向 |")
+            lines.append(f"|------|----------|----------|")
+            _a_cond = f"守住 ¥{_sup}（近端支撑）且资金无明确期限" if _sup else "守住近端支撑且资金无明确期限"
+            lines.append(f"| A 持有验证 | {_a_cond} | 持仓不动，等待下一个财报/事件验证节点 |")
+            _b_cond = f"反弹至 ¥{ma20_val:.2f}（MA20）附近且仓位偏重或资金有期限" if ma20_val else "反弹至近端压力且仓位偏重"
+            lines.append(f"| B 反弹降险 | {_b_cond} | 分批减仓1/3–1/2，降低单一标的敞口 |")
+            _c_cond = f"放量跌破 ¥{_low_half2:.2f}（近半年低点）" if _low_half2 else "放量跌破年内低点"
+            lines.append(f"| C 破位纪律 | {_c_cond} | 减仓纪律优先于抄底，等企稳信号（放量止跌/回购/财报超预期）再回补 |")
+            lines.append(f"")
+            lines.append(f"**反模式（不做清单）：**")
+            lines.append(f"- ✗ 恐慌性单日清仓——系统性大跌日容易卖在阶段低点")
+            lines.append(f"- ✗ 下跌途中摊低成本——企稳信号（放量收复支撑/MA20）出现前，加仓=在最大不确定性节点放大赌注")
+            lines.append(f"- ✗ 无量反弹追补——量比<1的反弹按反抽处理，不追")
+            lines.append(f"")
+        except Exception as _e:
+            print(f'[操作档位] 生成失败 {code}: {_e}')
+
     # 风险提示（多源清单：负向事件/高波动/深破中轴/解禁/AH折价/技术信号，3-5条）
     lines.append(f"## 八、短期风险提示")
     lines.append(f"")
     risks = []
 
-    # ① 负向事件（事件引擎近10日 direction=negative）
+    # 1 负向事件(事件引擎近10日 direction=negative)
     try:
         _ev_data = _load_event_impact()
         _cutoff = datetime.now() - timedelta(days=10)
@@ -2173,25 +2256,25 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
             if _e.get('direction') == 'negative' and (_t is None or _t >= _cutoff):
                 _neg_evts.append(_e)
         if _neg_evts:
-            risks.append(f"**事件风险：** 近10日有 {len(_neg_evts)} 项偏利空事件"
-                         f"（如「{_neg_evts[0].get('title', '')[:26]}」），情绪面受压制，"
+            risks.append(f"**事件风险:** 近10日有 {len(_neg_evts)} 项偏利空事件"
+                         f"(如「{_neg_evts[0].get('title', '')[:26]}」),情绪面受压制,"
                          f"关注事件验证闭环给出的d1/d3/d5判定再决定去留。")
     except Exception as _e:
         print(f'[风险提示] 负向事件聚合失败 {code}: {_e}')
 
-    # ② 深破中轴（用户中轴价格策略核心风控线：偏离 < -8%）
+    # 2 深破中轴(用户中轴价格策略核心风控线:偏离 < -8%)
     try:
         from utils.stock_quote import calculate_axis_price as _calc_axis
         _axis = _calc_axis(kline) if kline else {}
         _ap = _axis.get('axis_price')
         if _ap and current_price < _ap * 0.92:
             _dev = (current_price - _ap) / _ap * 100
-            risks.append(f"**中轴偏离：** 现价 ¥{current_price:.2f} 较深跌破中轴价 ¥{_ap:.2f}"
-                         f"（{_dev:+.1f}%），按中轴价格策略属趋势性走弱信号，谨慎加仓。")
+            risks.append(f"**中轴偏离:** 现价 ¥{current_price:.2f} 较深跌破中轴价 ¥{_ap:.2f}"
+                         f"({_dev:+.1f}%),按中轴价格策略属趋势性走弱信号,谨慎加仓。")
     except Exception as _e:
         print(f'[风险提示] 中轴偏离计算失败 {code}: {_e}')
 
-    # ③ 高波动评分（近60日年化波动率 > 60% 为高波动阈值）
+    # 3 高波动评分(近60日年化波动率 > 60% 为高波动阈值)
     if kline and len(kline) >= 20:
         _closes = [d['close'] for d in kline[-60:]]
         _avg = sum(_closes) / len(_closes)
@@ -2199,102 +2282,105 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
             _var = sum((c - _avg) ** 2 for c in _closes) / len(_closes)
             _vol_ann = (_var ** 0.5) / _avg * (252 ** 0.5) * 100
             if _vol_ann > 60:
-                risks.append(f"**波动风险：** 近60日年化波动率约 {_vol_ann:.0f}%"
-                             f"（高于60%高波动阈值），日内振幅大，补仓与做T需预留缓冲带。")
+                risks.append(f"**波动风险:** 近60日年化波动率约 {_vol_ann:.0f}%"
+                             f"(高于60%高波动阈值),日内振幅大,补仓与做T需预留缓冲带。")
 
-    # ④ 解禁预警（未来90天，akshare接口，取不到自动跳过）
+    # 4 解禁预警(未来90天,akshare接口,取不到自动跳过)
     try:
         _uk = unlock_signal_90d(code, current_price)
         if _uk:
-            risks.append(f"**解禁风险：** {_uk}")
+            risks.append(f"**解禁风险:** {_uk}")
     except Exception as _e:
         print(f'[风险提示] 解禁信号失败 {code}: {_e}')
 
-    # ⑤ A/H 折价（仅 AH_H_MAP 中的A股持仓）
+    # 5 A/H 折价(仅 AH_H_MAP 中的A股持仓)
     try:
         _ah = ah_premium_signal(code, current_price)
         if _ah:
-            risks.append(f"**A/H比价风险：** {_ah}，跨市场定价分歧可能带来波动。")
+            risks.append(f"**A/H比价风险:** {_ah},跨市场定价分歧可能带来波动。")
     except Exception as _e:
         print(f'[风险提示] A/H信号失败 {code}: {_e}')
 
-    # ⑥ 技术/回撤类（既有规则保留，补齐到3条）
+    # 6 技术/回撤类(既有规则保留,补齐到3条)
     _tech_risks = []
     if indicators.get('macd') and indicators['macd'].get('hist', 0) < 0:
-        _tech_risks.append("**技术风险：** MACD处于空头区域，短期动能向下。")
+        _tech_risks.append("**技术风险:** MACD处于空头区域,短期动能向下。")
     if indicators.get('rsi') and indicators['rsi'].get('rsi14', 50) < 35:
-        _tech_risks.append("**超卖风险：** RSI进入超卖区，虽可能反弹，但也可能延续弱势。")
+        _tech_risks.append("**超卖风险:** RSI进入超卖区,虽可能反弹,但也可能延续弱势。")
     if indicators.get('volume') and indicators['volume'].get('ratio_5d', 1) < 0.6:
-        _tech_risks.append("**流动性风险：** 量能萎缩，交投清淡，大单进出可能造成较大冲击。")
+        _tech_risks.append("**流动性风险:** 量能萎缩,交投清淡,大单进出可能造成较大冲击。")
     if avg_cost > 0 and current_price < avg_cost * 0.85:
-        _tech_risks.append("**回撤风险：** 当前浮亏较深，若继续下跌可能触发止损情绪集中释放。")
+        _tech_risks.append("**回撤风险:** 当前浮亏较深,若继续下跌可能触发止损情绪集中释放。")
     for _tr in _tech_risks:
         if len(risks) >= 5:
             break
         risks.append(_tr)
 
     if not risks:
-        risks.append("**一般性风险：** 市场整体波动、板块轮动、宏观经济政策变化等。")
+        risks.append("**一般性风险:** 市场整体波动、板块轮动、宏观经济政策变化等。")
 
     for risk in risks[:5]:
         lines.append(f"{risk}")
     lines.append(f"")
-    
+
     # 消息面
     if news_list:
         lines.append(f"## 九、近期消息摘要")
         lines.append(f"")
         for i, news in enumerate(news_list[:5], 1):
-            lines.append(f"{i}. **{news['title']}**（{news['source']} {news['time']}）")
+            _src = news['source'] or '未知来源'
+            # 证据分级（2026-10-22）：交易所/公告/监管=一手，其余一律媒体级，不与库级数据混排
+            _tier = '[一手]' if any(k in _src for k in ('交易所', '公告', '证监会', '港交所', '联交所', '公司')) else '[媒体]'
+            lines.append(f"{i}. **{news['title']}**（{_tier}·{_src} {news['time']}）")
             if news['content']:
                 lines.append(f"   {news['content'][:100]}...")
         lines.append(f"")
 
-    # 窗口期事件补录（非交易日）：长假/周末窗口由 holiday_catchup 自动回补后进池，这里按持仓匹配渲染
+    # 窗口期事件补录(非交易日):长假/周末窗口由 holiday_catchup 自动回补后进池,这里按持仓匹配渲染
     for _wl in _render_window_events_section(code, name):
         lines.append(_wl)
-    
-    # ===== 综合研判（D需求：五象限规则引擎，报告收尾、免责声明之前） =====
+
+    # ===== 综合研判(D需求:五象限规则引擎,报告收尾、免责声明之前) =====
     try:
-        lines.append(f"## 十一、综合研判")
+        lines.append(f"## 十一、综合研判[规则引擎判定]")
         lines.append(f"")
         for vl in render_verdict_section(code, market, current_price, kline, indicators, _cons):
             lines.append(vl)
     except Exception as _e:
         print(f'[综合研判] 生成失败 {code}: {_e}')
-    
-    # 信息来源清单（本报告实际引用的数据源，一行一个）
+
+    # 信息来源清单(本报告实际引用的数据源,一行一个)
     src_list = [
-        '腾讯财经 qt.gtimg.cn（实时行情/盘中快照）',
-        '腾讯K线 proxy.finance.qq.com（历史K线/均线/关键价位/中轴价格）',
-        '东方财富（个股新闻/主力资金流向）',
-        '财联社电报+头条通道（事件引擎：个股/板块/宏观主题事件）',
+        '腾讯财经 qt.gtimg.cn(实时行情/盘中快照)',
+        '腾讯K线 proxy.finance.qq.com(历史K线/均线/关键价位/中轴价格)',
+        '东方财富(个股新闻/主力资金流向)',
+        '财联社电报+头条通道(事件引擎:个股/板块/宏观主题事件)',
     ]
     try:
         if _cons:
-            src_list.append('东方财富研报一致预期（机构盈利预测/评级/分歧度）')
+            src_list.append('东方财富研报一致预期(机构盈利预测/评级/分歧度)')
     except Exception:
         pass
     try:
         from utils import event_verifier as _evv4
         if _evv4.load_watchlist():
-            src_list.append('事件验证闭环 data/event_verification.json（d1/d3/d5有效性验证/命中率）')
+            src_list.append('事件验证闭环 data/event_verification.json(d1/d3/d5有效性验证/命中率)')
     except Exception:
         pass
     try:
         from event_tracker import load_buyback_archive
         if load_buyback_archive().get(code):
-            src_list.append('回购公告归档 buyback_archive.json（近90日回购聚合信号）')
+            src_list.append('回购公告归档 buyback_archive.json(近90日回购聚合信号)')
     except Exception:
         pass
     if any('主力净流入' in l for l in lines):
-        src_list.append('主力资金流向已实际渲染（东财fflow接口）')
+        src_list.append('主力资金流向已实际渲染(东财fflow接口)')
     if any('节奏' in l for l in lines):
-        src_list.append('腾讯分时接口 web.ifzq.gtimg.cn（盘中节奏/分时叙事，缺失时降级快照点位）')
+        src_list.append('腾讯分时接口 web.ifzq.gtimg.cn(盘中节奏/分时叙事,缺失时降级快照点位)')
     if any('三日形态定性' in l for l in lines):
-        src_list.append('东财日线 akshare（三日形态：涨跌幅/成交额/换手率，失败降级腾讯K线近似值）')
+        src_list.append('东财日线 akshare(三日形态:涨跌幅/成交额/换手率,失败降级腾讯K线近似值)')
     if any('板块背离量化' in l for l in lines):
-        src_list.append('基准指数实时行情（沪深300/创业板指/科创50/恒生指数，板块背离量化参照系）')
+        src_list.append('基准指数实时行情(沪深300/创业板指/科创50/恒生指数,板块背离量化参照系)')
     lines.append(f"## 十二、信息来源清单")
     lines.append(f"")
     for _s in src_list:
@@ -2303,16 +2389,24 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
 
     # 免责声明
     lines.append(f"---")
-    lines.append(f"**免责声明：** 以上内容由AI辅助生成，仅用于信息整理和投研辅助，不构成投资建议。历史数据不代表未来表现，请基于自身风险承受能力独立判断。")
+    lines.append(f"**免责声明:** 以上内容由AI辅助生成,仅用于信息整理和投研辅助,不构成投资建议。历史数据不代表未来表现,请基于自身风险承受能力独立判断。")
     lines.append(f"")
-    lines.append(f"**数据来源：** 腾讯财经（实时行情/K线）、东方财富（新闻/资金流向）。")
-    
+    lines.append(f"**数据来源：** 腾讯财经（实时行情/K线）、东方财富（新闻/资金流向）、新浪财经（汇率）——均已分级标注。")
+    lines.append(f"")
+    lines.append(f"**证据分级说明（2026-10-22 新增）：**")
+    lines.append(f"- `[库]` 行情终端/交易所原始数据（腾讯行情、新浪外汇、东财一致预期）——可信度最高")
+    lines.append(f"- `[一手]` 公司公告/财报/官方披露——可信度高")
+    lines.append(f"- `[媒体]` 财联社/上证报/东财资讯等媒体口径，未独立核实，权重从低")
+    lines.append(f"- `[推算]` 本系统公式计算（附公式），币种换算见持仓快照")
+    lines.append(f"- `[阈值]` 分析设定的人为规则（操作档位/证伪位），非市场数据")
+    lines.append(f"- 价格均为挂牌币种数值（港股=港元，报告内¥为系统显示约定）；持仓盈亏/市值已统一为人民币口径（港股按当日汇率折算）")
+
     return '\n'.join(lines)
 
 
 # ========== 批量生成 ==========
 
-# 窗口期事件方向判断关键词（规则引擎，不编造：标题无明晰信号一律判中性/low）
+# 窗口期事件方向判断关键词(规则引擎,不编造:标题无明晰信号一律判中性/low)
 _WIN_POS_KW = ['盈利', '中标', '订单', '涨价', '扩产', '突破', '认证', '利好', '回升', '增长',
                '创新高', '签约', '量产', '回购', '落地', '投产', '满产', '扩表']
 _WIN_NEG_KW = ['减持', '解禁', '处罚', '问询', '警示', '下滑', '亏损', '诉讼', '违约', '冲突',
@@ -2321,7 +2415,7 @@ _WIN_NEG_KW = ['减持', '解禁', '处罚', '问询', '警示', '下滑', '亏�
 
 def _window_impact_judgment(item: Dict) -> Tuple[str, str, str]:
     """窗口期单条新闻的"事件→影响路径"方向判断。
-    返回 (方向, 置信度, 依据)。名称命中+信号词明确→medium；仅概念命中或信号模糊→low。"""
+    返回 (方向, 置信度, 依据)。名称命中+信号词明确→medium;仅概念命中或信号模糊→low。"""
     title = str(item.get('title', ''))
     pos = [k for k in _WIN_POS_KW if k in title]
     neg = [k for k in _WIN_NEG_KW if k in title]
@@ -2340,11 +2434,11 @@ def _window_impact_judgment(item: Dict) -> Tuple[str, str, str]:
         bits.append(f"命中主题{'/'.join(item['themes'][:2])}")
     if item.get('matched'):
         bits.append(f"命中词{'/'.join(item['matched'][:3])}")
-    return direction, conf, ('；' + '，'.join(bits)) if bits else ''
+    return direction, conf, (';' + ','.join(bits)) if bits else ''
 
 
 def _render_window_events_section(code: str, stock_name: str) -> List[str]:
-    """## 十、窗口期事件补录（非交易日）：读 holiday_catchup 最近一次回补标记，
+    """## 十、窗口期事件补录(非交易日):读 holiday_catchup 最近一次回补标记,
     从窗口期池文件里匹配该股新闻并给出方向判断。无回补记录或无命中时渲染占位说明。"""
     lines: List[str] = []
     try:
@@ -2356,9 +2450,9 @@ def _render_window_events_section(code: str, stock_name: str) -> List[str]:
         start, end = last['window_start'], last.get('window_end') or start
         gap = last.get('gap_days')
         items = _holiday_catchup.window_items_for_stock(code, stock_name, start, end, max_items=8)
-        lines.append(f"## 十、窗口期事件补录（非交易日）")
+        lines.append(f"## 十、窗口期事件补录(非交易日)")
         lines.append(f"")
-        lines.append(f"> 数据窗口：{start} ~ {end}（非交易日窗口{gap or '?'}天，由 holiday_catchup 自动回补）")
+        lines.append(f"> 数据窗口:{start} ~ {end}(非交易日窗口{gap or '?'}天,由 holiday_catchup 自动回补)")
         lines.append(f"")
         if not items:
             lines.append(f"窗口期未采集到该股相关重大事件。")
@@ -2366,8 +2460,8 @@ def _render_window_events_section(code: str, stock_name: str) -> List[str]:
             return lines
         for i, it in enumerate(items, 1):
             direction, conf, logic = _window_impact_judgment(it)
-            lines.append(f"{i}. **{it['title']}**（{it.get('source', '')} {str(it.get('time', ''))[:10]}）")
-            lines.append(f"   → 影响判断：{direction}（置信度{conf}）{logic}")
+            lines.append(f"{i}. **{it['title']}**({it.get('source', '')} {str(it.get('time', ''))[:10]})")
+            lines.append(f"   → 影响判断:{direction}(置信度{conf}){logic}")
         lines.append(f"")
     except Exception as e:
         print(f'[窗口期事件补录] 渲染失败 {code}: {e}')
@@ -2375,8 +2469,8 @@ def _render_window_events_section(code: str, stock_name: str) -> List[str]:
 
 
 def _maybe_holiday_catchup():
-    """报告生成前检测非交易日窗口缺口（≥2天）并自动回补新闻池与事件。
-    环境变量 HOLIDAY_CATCHUP=0 可禁用。任何失败只告警，绝不中断报告生成。"""
+    """报告生成前检测非交易日窗口缺口(≥2天)并自动回补新闻池与事件。
+    环境变量 HOLIDAY_CATCHUP=0 可禁用。任何失败只告警,绝不中断报告生成。"""
     if os.environ.get('HOLIDAY_CATCHUP', '1') == '0':
         return
     try:
@@ -2385,10 +2479,10 @@ def _maybe_holiday_catchup():
         info = _holiday_catchup.detect_gap()
         gap = info.get('gap_days') or 0
         if gap >= 2:
-            print(f'[DeepAnalysis] 检测到假期窗口缺口{gap}天，自动回补：{info.get("missing_dates")}')
+            print(f'[DeepAnalysis] 检测到假期窗口缺口{gap}天,自动回补:{info.get("missing_dates")}')
             _holiday_catchup.run_catchup()
     except Exception as e:
-        print(f'[DeepAnalysis] 假期窗口回补失败（不影响报告）: {e}')
+        print(f'[DeepAnalysis] 假期窗口回补失败(不影响报告): {e}')
 
 def load_portfolio() -> List[Dict]:
     """加载持仓数据"""
@@ -2404,34 +2498,34 @@ def load_portfolio() -> List[Dict]:
 
 def generate_all_reports(target_codes: List[str] = None):
     """生成全部持仓深度报告"""
-    # 入口兜底：无论从脚本还是其他模块调用，都先保证窗口回补已执行（幂等，无缺口秒过）
+    # 入口兜底:无论从脚本还是其他模块调用,都先保证窗口回补已执行(幂等,无缺口秒过)
     _maybe_holiday_catchup()
     stocks = load_portfolio()
     if target_codes:
         stocks = [s for s in stocks if s['code'] in target_codes]
-    
+
     report_date = datetime.now().strftime('%Y-%m-%d')
-    
+
     for stock in stocks:
         code = stock['code']
         name = stock['name']
-        
+
         report = generate_deep_report(stock, report_date)
-        
+
         # 保存Markdown
         md_path = os.path.join(REPORTS_DIR, f'deep_analysis_{code}_{report_date}.md')
         with open(md_path, 'w', encoding='utf-8') as f:
             f.write(report)
         print(f"[保存] {name}({code}) -> {md_path}")
-    
+
     print(f"\n[完成] 共生成 {len(stocks)} 份深度报告")
 
 
 if __name__ == '__main__':
     import sys
-    
-    # 先生成事件数据（财联社电报+东财新闻+板块归因），报告第五节要用
-    # 不区分指定股票/全量，事件分析本身是全局的
+
+    # 先生成事件数据(财联社电报+东财新闻+板块归因),报告第五节要用
+    # 不区分指定股票/全量,事件分析本身是全局的
     try:
         import json as _json
         _df = _json.load(open(os.path.join(DATA_DIR, 'stocks.json'), encoding='utf-8'))
@@ -2439,9 +2533,9 @@ if __name__ == '__main__':
         print('[DeepAnalysis] 先跑事件引擎刷新事件数据...')
         run_event_analysis(_df.get('stocks', []))
     except Exception as e:
-        print(f'[DeepAnalysis] 事件引擎刷新失败（用旧数据继续）: {e}')
+        print(f'[DeepAnalysis] 事件引擎刷新失败(用旧数据继续): {e}')
 
-    # 事件引擎刷新后再检测假期窗口缺口（避免合并进 event_impact.json 的窗口事件被刷新覆盖）
+    # 事件引擎刷新后再检测假期窗口缺口(避免合并进 event_impact.json 的窗口事件被刷新覆盖)
     _maybe_holiday_catchup()
 
     if len(sys.argv) > 1:
