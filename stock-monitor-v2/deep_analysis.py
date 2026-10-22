@@ -1935,10 +1935,35 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
             lines.append(f"- {_down_txt}")
         if ma20_val:
             lines.append(f"- 放量站上 MA20(¥{ma20_val:.2f})→ 短线偏弱判断证伪,转入修复行情")
-        lines.append(f"**基本面轨:** 财报/事件验证点见第十三节AI实时研判第5小节--证伪信号触发时,逻辑止损优先于价格纪律。")
+        lines.append(f"**基本面轨:** 财报/事件验证点见第八节AI实时研判第5小节--证伪信号触发时,逻辑止损优先于价格纪律。")
         lines.append(f"")
     except Exception as _e:
         print(f'[证伪信号] 生成失败 {code}: {_e}')
+
+    # ===== 操作档位（条件触发）+ 反模式清单（2026-10-22 对标豆包升级；结构精简后从"持仓实战分析"独立为头部决策节）=====
+    if shares > 0 and avg_cost > 0:
+        try:
+            _sr2 = indicators.get('support_resistance', {})
+            _sup = _sr2.get('support_near')
+            _low_half2 = min(d['low'] for d in kline) if kline else None
+            lines.append(f"## 操作档位与反模式（条件触发，非买卖指令）[阈值·分析设定]")
+            lines.append(f"")
+            lines.append(f"| 档位 | 触发条件 | 动作倾向 |")
+            lines.append(f"|------|----------|----------|")
+            _a_cond = f"守住 ¥{_sup}（近端支撑）且资金无明确期限" if _sup else "守住近端支撑且资金无明确期限"
+            lines.append(f"| A 持有验证 | {_a_cond} | 持仓不动，等待下一个财报/事件验证节点 |")
+            _b_cond = f"反弹至 ¥{ma20_val:.2f}（MA20）附近且仓位偏重或资金有期限" if ma20_val else "反弹至近端压力且仓位偏重"
+            lines.append(f"| B 反弹降险 | {_b_cond} | 分批减仓1/3–1/2，降低单一标的敞口 |")
+            _c_cond = f"放量跌破 ¥{_low_half2:.2f}（近半年低点）" if _low_half2 else "放量跌破年内低点"
+            lines.append(f"| C 破位纪律 | {_c_cond} | 减仓纪律优先于抄底，等企稳信号（放量止跌/回购/财报超预期）再回补 |")
+            lines.append(f"")
+            lines.append(f"**反模式（不做清单）：**")
+            lines.append(f"- ✗ 恐慌性单日清仓——系统性大跌日容易卖在阶段低点")
+            lines.append(f"- ✗ 下跌途中摊低成本——企稳信号（放量收复支撑/MA20）出现前，加仓=在最大不确定性节点放大赌注")
+            lines.append(f"- ✗ 无量反弹追补——量比<1的反弹按反抽处理，不追")
+            lines.append(f"")
+        except Exception as _e:
+            print(f'[操作档位] 生成失败 {code}: {_e}')
 
     # 持仓快照表格
     lines.append(f"## 持仓快照")
@@ -2017,21 +2042,7 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
     except Exception as e:
         pass  # 事件模块未运行时不阻塞报告
 
-    # ===== 市场情绪对持仓的影响(第三、四层) =====
-    try:
-        from emotion_engine import format_sentiment_for_report
-        sentiment_lines = format_sentiment_for_report(stock['code'])
-        lines.append(f"## 二、市场情绪对持仓的影响[库·情绪引擎]--{stock.get('name', stock['code'])}")
-        lines.append(f"")
-        for sl in sentiment_lines:
-            lines.append(sl)
-        lines.append(f"")
-    except Exception as e:
-        import traceback
-        print(f'[DeepAnalysis] 情绪章节生成失败: {e}')
-        traceback.print_exc()
-
-    lines.append(f"## 三、今日行情、量能与资金流向")
+    lines.append(f"## 二、今日行情、量能与资金流向")
     lines.append(f"")
     lines.append(f"**价格走势:** {report_date} {'盘中' if in_trade else '收盘'} ¥{current_price:.2f},{'涨' if change >= 0 else '跌'} {abs(change_pct):.2f}%,日内区间 ¥{low:.2f}-¥{high:.2f}。")
 
@@ -2101,90 +2112,10 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
             lines.append(f"- 资金流向数据暂不可用(数据源受限)")
     lines.append(f"")
 
-    # 技术面(瘦身版:三日形态+信号变化+关键价位执行参考,砍掉机械指标罗列)
-    lines.append(f"## 四、执行参考(技术面)")
-    lines.append(f"")
-
-    # ===== 三日形态定性(模块2:近3日日线规则引擎,本质是变化检测,保留) =====
-    _pattern = '未知'
-    try:
-        _pattern, _basis = classify_3day_pattern(code, market)
-        lines.append(f"**三日形态:{_pattern}**")
-        for _b in _basis:
-            lines.append(f"- {_b}")
-        lines.append(f"")
-    except Exception as _e:
-        print(f'[三日形态] 生成失败 {code}: {_e}')
-
-    # ===== 信号变化(指标快照对比:均线/MACD/RSI 只播报相对昨日的变化,不再逐日罗列) =====
-    try:
-        for _sl in render_changed_signals(code, indicators, tech_analysis, _pattern, current_price):
-            lines.append(_sl)
-    except Exception as _e:
-        print(f'[信号变化] 生成失败 {code}: {_e}')
-
-    sr = indicators.get('support_resistance', {})
-    kl_rows = _key_levels_with_basis(kline)
-    if kl_rows:
-        lines.append(f"**关键价位与依据(执行参考,基于近60日真实K线计算):**")
-        lines.append(f"")
-        lines.append(f"| 位置 | 价位 | 依据 |")
-        lines.append(f"|------|------|------|")
-        for label, price, basis in kl_rows:
-            lines.append(f"| {label} | ¥{price:.2f} | {basis} |")
-        if sr:
-            lines.append(f"")
-            lines.append(f"- 箱体区间: ¥{sr['box_bottom']}-¥{sr['box_top']};"
-                         f"现价 ¥{current_price:.2f} 处于"
-                         f"{'箱体上半区' if current_price >= (sr['box_bottom'] + sr['box_top']) / 2 else '箱体下半区'}。")
-        lines.append(f"")
-    elif sr:
-        lines.append(f"**关键价格区间:**")
-        lines.append(f"- 近期支撑: ¥{sr['support_near']}(近5日低点)/ ¥{sr['support_mid']}(近20日低点)/ ¥{sr['support_strong']}(整数关)")
-        lines.append(f"- 近期压力: ¥{sr['resistance_near']}(近5日高点)/ ¥{sr['resistance_far']}(近20日高点)")
-        lines.append(f"- 箱体区间: ¥{sr['box_bottom']}-¥{sr['box_top']}")
-        lines.append(f"")
-
-    # 信号汇总(规则引擎新增信号,非逐日重复项)
-    if tech_analysis.get('signals'):
-        lines.append(f"**其他信号:**")
-        for sig in tech_analysis['signals']:
-            lines.append(f"- {sig}")
-        lines.append(f"")
-
-    # 综合评估与情景推演
-    lines.append(f"## 五、综合评估与情景推演")
-    lines.append(f"")
-    lines.append(f"**当前技术状态: {tech_analysis.get('status', '震荡')}**")
-    lines.append(f"")
-
-    if scenarios:
-        lines.append(f"**情景判断:**")
-        lines.append(f"")
-        lines.append(f"- **乐观情景:** 若 {scenarios['optimistic']['condition']},目标位 ¥{scenarios['optimistic']['target']}(+{scenarios['optimistic']['pct']:.1f}%)。")
-        lines.append(f"- **中性情景:** {scenarios['neutral']['condition']},区间 {scenarios['neutral']['range']}。")
-        lines.append(f"- **悲观情景:** 若 {scenarios['pessimistic']['condition']},目标位 ¥{scenarios['pessimistic']['target']}({scenarios['pessimistic']['pct']:.1f}%)。")
-        lines.append(f"")
-
-    # 针对持仓的评估
-    if avg_cost > 0:
-        if current_price < avg_cost * 0.85:
-            lines.append(f"**持仓评估:** 当前价格距成本线仍有 {abs(cost_gap):.1f}% 差距,处于深度浮亏状态。")
-            lines.append(f"- 若看好中长期逻辑,可在支撑位附近考虑补仓摊薄成本;")
-            lines.append(f"- 若跌破 ¥{scenarios.get('pessimistic', {}).get('target', sr.get('support_mid', current_price*0.9))},需重新评估持仓逻辑。")
-        elif current_price < avg_cost:
-            lines.append(f"**持仓评估:** 当前价格距成本线 {abs(cost_gap):.1f}%,处于小幅浮亏。")
-            lines.append(f"- 关注能否放量突破 ¥{scenarios.get('optimistic', {}).get('target', sr.get('resistance_near', current_price*1.05))} 修复至成本线上方;")
-            lines.append(f"- 若持续在成本下方震荡,需评估时间成本。")
-        else:
-            lines.append(f"**持仓评估:** 当前已盈利 {cost_gap:.1f}%。")
-            lines.append(f"- 关注 ¥{scenarios.get('optimistic', {}).get('target', sr.get('resistance_near', current_price*1.05))} 附近的压力,注意止盈节奏。")
-    lines.append(f"")
-
     # ===== 投行一致预期(B需求:卖方研报级机构预测/分歧度/评级/目标价) =====
     # 港股走 get_hk_consensus(东财港股盈利预测,含高盛/大摩/瑞银等国际投行目标价);
     # A股走 get_consensus(同花顺+东财,国内券商口径),另从个股新闻摘录国际投行观点
-    lines.append(f"## 六、投行一致预期[库·东财一致预期](机构盈利预测与评级)")
+    lines.append(f"## 三、投行一致预期[库·东财一致预期](机构盈利预测与评级)")
     lines.append(f"")
     try:
         if market == '港股':
@@ -2198,51 +2129,8 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
     for cl in render_consensus_section(code, _cons, current_price, market, news_list, name):
         lines.append(cl)
 
-    # 持仓实战分析(豆包式综合研判层)
-    # 注意:必须传入带【本次实时现价】的持仓副本--stocks.json 里的 current_price
-    # 是旧快照,直接用会导致市值/浮亏/压力支撑位判定整段过期(与报告头部自相矛盾)
-    try:
-        from tactics import generate_position_tactics
-        _stock_tactics = dict(stock)
-        _stock_tactics['current_price'] = current_price
-        tactics_lines = generate_position_tactics(_stock_tactics, kline)
-        if tactics_lines:
-            lines.append(f"## 七、持仓实战分析")
-            lines.append(f"")
-            for tl in tactics_lines:
-                lines.append(tl)
-            lines.append(f"")
-    except Exception as e:
-        print(f'[Tactics] 实战分析生成失败: {e}')
-
-    # ===== 操作档位（条件触发）+ 反模式清单（2026-10-22 对标豆包升级，替代单一路线建议）=====
-    if shares > 0 and avg_cost > 0:
-        try:
-            _sr2 = indicators.get('support_resistance', {})
-            _sup = _sr2.get('support_near')
-            _res = _sr2.get('resistance_near')
-            _low_half2 = min(d['low'] for d in kline) if kline else None
-            lines.append(f"**操作档位（条件触发，非买卖指令）[阈值·分析设定]：**")
-            lines.append(f"")
-            lines.append(f"| 档位 | 触发条件 | 动作倾向 |")
-            lines.append(f"|------|----------|----------|")
-            _a_cond = f"守住 ¥{_sup}（近端支撑）且资金无明确期限" if _sup else "守住近端支撑且资金无明确期限"
-            lines.append(f"| A 持有验证 | {_a_cond} | 持仓不动，等待下一个财报/事件验证节点 |")
-            _b_cond = f"反弹至 ¥{ma20_val:.2f}（MA20）附近且仓位偏重或资金有期限" if ma20_val else "反弹至近端压力且仓位偏重"
-            lines.append(f"| B 反弹降险 | {_b_cond} | 分批减仓1/3–1/2，降低单一标的敞口 |")
-            _c_cond = f"放量跌破 ¥{_low_half2:.2f}（近半年低点）" if _low_half2 else "放量跌破年内低点"
-            lines.append(f"| C 破位纪律 | {_c_cond} | 减仓纪律优先于抄底，等企稳信号（放量止跌/回购/财报超预期）再回补 |")
-            lines.append(f"")
-            lines.append(f"**反模式（不做清单）：**")
-            lines.append(f"- ✗ 恐慌性单日清仓——系统性大跌日容易卖在阶段低点")
-            lines.append(f"- ✗ 下跌途中摊低成本——企稳信号（放量收复支撑/MA20）出现前，加仓=在最大不确定性节点放大赌注")
-            lines.append(f"- ✗ 无量反弹追补——量比<1的反弹按反抽处理，不追")
-            lines.append(f"")
-        except Exception as _e:
-            print(f'[操作档位] 生成失败 {code}: {_e}')
-
-    # 风险提示（多源清单：负向事件/高波动/深破中轴/解禁/AH折价/技术信号，3-5条）
-    lines.append(f"## 八、短期风险提示")
+    # ===== 投行一致预期(B需求:卖方研报级机构预测/分歧度/评级/目标价) =====
+    lines.append(f"## 四、短期风险提示")
     lines.append(f"")
     risks = []
 
@@ -2325,7 +2213,7 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
 
     # 消息面
     if news_list:
-        lines.append(f"## 九、近期消息摘要")
+        lines.append(f"## 五、近期消息摘要")
         lines.append(f"")
         for i, news in enumerate(news_list[:5], 1):
             _src = news['source'] or '未知来源'
@@ -2342,50 +2230,12 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
 
     # ===== 综合研判(D需求:五象限规则引擎,报告收尾、免责声明之前) =====
     try:
-        lines.append(f"## 十一、综合研判[规则引擎判定]")
+        lines.append(f"## 七、综合研判[规则引擎判定]")
         lines.append(f"")
         for vl in render_verdict_section(code, market, current_price, kline, indicators, _cons):
             lines.append(vl)
     except Exception as _e:
         print(f'[综合研判] 生成失败 {code}: {_e}')
-
-    # 信息来源清单(本报告实际引用的数据源,一行一个)
-    src_list = [
-        '腾讯财经 qt.gtimg.cn(实时行情/盘中快照)',
-        '腾讯K线 proxy.finance.qq.com(历史K线/均线/关键价位/中轴价格)',
-        '东方财富(个股新闻/主力资金流向)',
-        '财联社电报+头条通道(事件引擎:个股/板块/宏观主题事件)',
-    ]
-    try:
-        if _cons:
-            src_list.append('东方财富研报一致预期(机构盈利预测/评级/分歧度)')
-    except Exception:
-        pass
-    try:
-        from utils import event_verifier as _evv4
-        if _evv4.load_watchlist():
-            src_list.append('事件验证闭环 data/event_verification.json(d1/d3/d5有效性验证/命中率)')
-    except Exception:
-        pass
-    try:
-        from event_tracker import load_buyback_archive
-        if load_buyback_archive().get(code):
-            src_list.append('回购公告归档 buyback_archive.json(近90日回购聚合信号)')
-    except Exception:
-        pass
-    if any('主力净流入' in l for l in lines):
-        src_list.append('主力资金流向已实际渲染(东财fflow接口)')
-    if any('节奏' in l for l in lines):
-        src_list.append('腾讯分时接口 web.ifzq.gtimg.cn(盘中节奏/分时叙事,缺失时降级快照点位)')
-    if any('三日形态定性' in l for l in lines):
-        src_list.append('东财日线 akshare(三日形态:涨跌幅/成交额/换手率,失败降级腾讯K线近似值)')
-    if any('板块背离量化' in l for l in lines):
-        src_list.append('基准指数实时行情(沪深300/创业板指/科创50/恒生指数,板块背离量化参照系)')
-    lines.append(f"## 十二、信息来源清单")
-    lines.append(f"")
-    for _s in src_list:
-        lines.append(f"- {_s}")
-    lines.append(f"")
 
     # 免责声明
     lines.append(f"---")
@@ -2450,7 +2300,7 @@ def _render_window_events_section(code: str, stock_name: str) -> List[str]:
         start, end = last['window_start'], last.get('window_end') or start
         gap = last.get('gap_days')
         items = _holiday_catchup.window_items_for_stock(code, stock_name, start, end, max_items=8)
-        lines.append(f"## 十、窗口期事件补录(非交易日)")
+        lines.append(f"## 六、窗口期事件补录(非交易日)")
         lines.append(f"")
         lines.append(f"> 数据窗口:{start} ~ {end}(非交易日窗口{gap or '?'}天,由 holiday_catchup 自动回补)")
         lines.append(f"")

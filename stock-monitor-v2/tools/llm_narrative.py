@@ -31,7 +31,7 @@ DATA = ROOT / "data"
 CURATED = ROOT / "data" / "curated_impacts.json"
 OPENCLAW_CFG = Path("/root/.openclaw/openclaw.json")
 
-SECTION_HEAD = "## 十三、AI实时研判（LLM深度分析）"
+SECTION_HEAD = "## 八、AI实时研判（LLM深度分析）"
 DISCLAIMER_MARK = "**免责声明：**"
 
 
