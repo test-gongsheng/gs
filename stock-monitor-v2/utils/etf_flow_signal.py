@@ -378,6 +378,24 @@ def refresh_daily_data() -> None:
         if not fdate:
             return
         fdate = fdate[-1]
+    # 价格增量抓取：收盘价是净流入计算的必需输入，必须先于覆盖守卫执行。
+    # 修复(2026-10-23)：fetch_etf_prices.py 原先仅在首次引导被 subprocess 调用，
+    # 历史≥60天后引导永不触发 → 价格停更 → 守卫跳过 → 历史停更的静默断链
+    # （实测份额每日照采、界面asof却停在2026-10-20）。
+    # 现改为每日增量追新（merge_save 只追加新日期，幂等可重入），失败仅警告不阻断主流程。
+    try:
+        import subprocess
+        r = subprocess.run(
+            [sys.executable, os.path.join(BASE, "utils", "fetch_etf_prices.py")],
+            cwd=BASE, timeout=900, capture_output=True, text=True,
+            encoding="utf-8", errors="replace")
+        for line in (r.stdout or "").strip().splitlines()[-2:]:
+            print(f"  {line}")
+        if r.returncode != 0:
+            print(f"[警告] ETF价格增量抓取失败（沿用既有价格，由下方守卫决定是否跳过）: "
+                  f"{(r.stderr or '').strip()[-200:]}")
+    except Exception as e:
+        print(f"[警告] ETF价格增量抓取异常（沿用既有价格）: {e}")
     # 价格数据必须覆盖新份额日期，否则净流入无法计算（全0日会污染信号）
     closes = load_hs300_closes()
     if fdate not in closes:

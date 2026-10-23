@@ -26,7 +26,10 @@ def _today() -> str:
 
 
 def merge_save(fp: str, bars: list) -> int:
-    """增量合并：本地已有数据时只追加新日期，返回新增根数。bars=[(date,close),...]"""
+    """增量合并：已有数据只追加新日期；但当日本地已有bar时用新值覆盖
+    （盘中抓取会写入未完结bar的当前价，收盘后重跑须以收盘价修正——
+    修复(2026-10-23)：原实现只追加不覆盖，盘中价一旦写入永久残留）。
+    返回新增根数（覆盖不计数）。bars=[(date,close),...]"""
     old = {}
     if os.path.exists(fp):
         try:
@@ -36,11 +39,16 @@ def merge_save(fp: str, bars: list) -> int:
             old = {}
     merged = dict(old)
     n_new = 0
+    n_override = 0
+    today = _today()
     for d, c in bars:
         if d not in merged:
             merged[d] = c
             n_new += 1
-    if n_new > 0 or not os.path.exists(fp):
+        elif d == today:
+            merged[d] = c  # 当日bar：以最新抓取值覆盖（收盘后为收盘价）
+            n_override += 1
+    if n_new > 0 or n_override > 0 or not os.path.exists(fp):
         df = pd.DataFrame(sorted(merged.items()), columns=["date", "close"])
         df.to_csv(fp, index=False)
     return n_new
