@@ -22,7 +22,7 @@
 import io
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
@@ -161,20 +161,28 @@ def collect_shares_szse() -> Tuple[Dict[str, dict], Optional[str]]:
     return result, None
 
 
-def save_daily_shares(date_str: str) -> Optional[str]:
+def save_daily_shares(date_str: str) -> Tuple[Optional[str], bool]:
     """合并两市份额+分类，落盘 data/etf_flow/shares_YYYYMMDD.csv。
 
     文件名以上交所实际统计日期为准（若上交所返回的统计日期与请求日期不符，
     用实际统计日期命名——处理周末/节假日后的日期漂移）。
-    返回落盘文件对应的日期串（YYYYMMDD），失败返回 None。
+    返回 (落盘日期串, 是否新写入)；失败返回 (None, False)。
+    已存在文件绝不重写：深市仅T+1快照、无历史回溯接口，重采会把历史文件的
+    深市列覆盖成最新一天数据（2026-10-26实测：周一重采10-19~22文件，深市
+    份额全被周五快照污染，深市流量归零、历史失真）。
     列：code,name,pool,shares,market
     """
     sse, stat_date = collect_shares_sse(date_str)
     if not sse:
         print(f"[落盘] {date_str} 沪市数据为空，放弃本次采集")
-        return None
+        return None, False
     # 上交所统计日期为准命名文件
     file_date = (stat_date or date_str).replace('-', '')
+    path = os.path.join(DATA_DIR, f'shares_{file_date}.csv')
+    if os.path.exists(path):
+        # 文件已在：SSE历史数据虽可回溯，但深市不能，整文件跳过最稳妥
+        print(f"[落盘] shares_{file_date}.csv 已存在，跳过重采（防深市快照污染）")
+        return file_date, False
     szse, _ = collect_shares_szse()
 
     rows: List[dict] = []
@@ -189,22 +197,23 @@ def save_daily_shares(date_str: str) -> Optional[str]:
 
     os.makedirs(DATA_DIR, exist_ok=True)
     df = pd.DataFrame(rows, columns=['code', 'name', 'pool', 'shares', 'market'])
-    path = os.path.join(DATA_DIR, f'shares_{file_date}.csv')
     df.to_csv(path, index=False, encoding='utf-8-sig')
     print(f"[落盘] {path} 共{len(df)}只（沪市{len(sse)}+深市{len(szse)}）")
-    return file_date
+    return file_date, True
 
 
 if __name__ == '__main__':
-    # 自测：采集最近交易日并打印三池ETF数量和宽基池top5
-    today = datetime.now().strftime('%Y%m%d')
-    fdate = save_daily_shares(today)
-    if fdate is None:
-        # 今天数据未发布时回退到昨天（上交所T+1发布）
-        from datetime import timedelta
-        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y%m%d')
-        print(f"[自测] 今日数据未就绪，回退请求昨日 {yesterday}")
-        fdate = save_daily_shares(yesterday)
+    # 自测：采集最近交易日并打印三池ETF数量和宽基池top5。
+    # 回看最近10个自然日（修复2026-10-26周末漏采：周五份额周六发布，
+    # 周一请求today/yesterday均落空），直到命中交易所已发布的交易日。
+    fdate = None
+    _d = datetime.now()
+    for _ in range(10):
+        _ds = _d.strftime('%Y%m%d')
+        fdate, _wrote = save_daily_shares(_ds)
+        if fdate:
+            break
+        _d -= timedelta(days=1)
     if fdate:
         df = pd.read_csv(os.path.join(DATA_DIR, f'shares_{fdate}.csv'))
         print('\n===== 自测输出 =====')

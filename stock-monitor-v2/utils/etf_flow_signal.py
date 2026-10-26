@@ -346,38 +346,40 @@ def refresh_daily_data() -> None:
     """
     if not _bootstrap_full_history():
         return  # 首次引导失败：本次跳过刷新，主流程继续（main内有历史缺失守卫）
-    today = datetime.now().strftime("%Y%m%d")
-    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y%m%d")
-    candidates = [today, yesterday]
-    existing = [d for d in candidates
-              if os.path.exists(os.path.join(FLOW_DIR, f"shares_{d}.csv"))]
+    # 每日回采（2026-10-26事故修复）：原先按"本地文件存在+历史已覆盖"提前返回，
+    # 且采集候选只有 today/yesterday。但上交所T+1发布、cron仅工作日运行——
+    # 周五份额周六早晨才发布，周一早上请求 today（未发布）/yesterday（非交易日）
+    # 双双落空，周五数据永久漏采（实测2026-10-26 08:50因此停在20261022，用户投诉）。
+    # 现改为：每日按发布顺序回扫最近10个自然日，把交易所已发布但本地缺失的交易日
+    # 份额全部补采（SSE对未发布/非交易日返回空，stat_date命名天然去重）。
     hist_dates = set()
     if os.path.exists(HIST_CSV):
         hist_dates = set(pd.read_csv(HIST_CSV, dtype={"date": str})["date"])
-    # 份额文件已存在且净流入历史已覆盖 → 无需任何动作
-    if existing and all(d in hist_dates for d in existing):
+    collected = []   # 本次新落盘的交易日
+    seen = set()     # 本次已见过的统计日（SSE回退重复时终止扫描）
+    try:
+        from utils.etf_flow import save_daily_shares
+        _d = datetime.now()
+        for _ in range(10):
+            _ds = _d.strftime("%Y%m%d")
+            fd, wrote = save_daily_shares(_ds)
+            if fd:
+                if fd in seen:
+                    break  # SSE已回退到同一统计日，更早日期不会有新数据
+                seen.add(fd)
+                if wrote:
+                    collected.append(fd)
+            _d -= timedelta(days=1)
+    except Exception as e:
+        print(f"[警告] 份额自动采集失败（不影响主流程，沿用既有历史）: {e}")
         return
-    fdate = None
-    if not existing:
-        print(f"[数据刷新] 份额快照缺失（{today}/{yesterday}），尝试自动采集...")
-        try:
-            from utils.etf_flow import save_daily_shares
-            for d in candidates:
-                fdate = save_daily_shares(d)
-                if fdate:
-                    break
-        except Exception as e:
-            print(f"[警告] 份额自动采集失败（不影响主流程，沿用既有历史）: {e}")
-            return
-        if not fdate:
-            print("[警告] 上交所份额数据未就绪（T+1发布），沿用既有历史评估")
-            return
-    else:
-        # 份额在、历史缺（常见于首次挂接），补齐差额日期
-        fdate = [d for d in existing if d not in hist_dates]
-        if not fdate:
-            return
-        fdate = fdate[-1]
+    # 新补采的日期中，尚未进入净流入历史的才需要重建
+    new_dates = [d for d in collected if d not in hist_dates]
+    if not new_dates:
+        latest = max(seen) if seen else None
+        print(f"[数据刷新] 份额已是最新（交易所最新发布 {latest}），无需重建")
+        return
+    fdate = max(new_dates)
     # 价格增量抓取：收盘价是净流入计算的必需输入，必须先于覆盖守卫执行。
     # 修复(2026-10-23)：fetch_etf_prices.py 原先仅在首次引导被 subprocess 调用，
     # 历史≥60天后引导永不触发 → 价格停更 → 守卫跳过 → 历史停更的静默断链
@@ -387,7 +389,7 @@ def refresh_daily_data() -> None:
         import subprocess
         r = subprocess.run(
             [sys.executable, os.path.join(BASE, "utils", "fetch_etf_prices.py")],
-            cwd=BASE, timeout=900, capture_output=True, text=True,
+            cwd=BASE, timeout=1800, capture_output=True, text=True,
             encoding="utf-8", errors="replace")
         for line in (r.stdout or "").strip().splitlines()[-2:]:
             print(f"  {line}")
