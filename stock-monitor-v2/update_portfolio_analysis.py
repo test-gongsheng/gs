@@ -654,7 +654,19 @@ def generate_portfolio_analysis_v2() -> Dict:
     
     data = load_data()
     stocks = data.get('stocks', [])
-    
+
+    # ===== 融资余额每日增量采集(2026-10-30新增;优雅降级,失败仅警告不中断) =====
+    try:
+        from utils.margin_balance import refresh_daily
+        _a_codes = [s['code'] for s in stocks if s.get('market') == 'A股']
+        _mr = refresh_daily(_a_codes)
+        if _mr.get('added'):
+            print(f"[融资余额] 增量采集完成: 新增/修订 {_mr['added']} 条, 涉及 {len(_mr['updated_codes'])} 只")
+        else:
+            print(f"[融资余额] 增量采集完成: 无新增(已覆盖最近交易日)")
+    except Exception as _mre:
+        print(f"[WARN] 融资余额增量采集失败(不阻塞每日任务): {_mre}")
+
     report_date = datetime.now().strftime('%Y-%m-%d')
     
     # 第一步：获取所有股票实时价格并【写回stocks.json】

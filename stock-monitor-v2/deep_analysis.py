@@ -1784,7 +1784,10 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
     change_pct = quote['change_percent']
     high = quote['high']
     low = quote['low']
-    volume_shares = quote["volume"] * 100 if market != "港股" else quote["volume"]
+    # 2026-10-30修复:腾讯A股成交量单位因股而异(002594=手,688795=股),统一用成交额反推自动判定
+    from utils.stock_quote import detect_volume_unit as _detect_vu
+    _vol_unit = _detect_vu(quote)
+    volume_shares = quote["volume"] * (100 if _vol_unit == '手' else 1)
     volume = volume_shares
 
     # 2. 获取K线数据(优先 utils 版:proxy.finance.qq.com 通道可用,且高低价字段已修正)
@@ -1902,7 +1905,9 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
         status_text = "浮盈" if pnl > 0 else "浮亏"
         _p_txt = f"HK${current_price:.2f}(≈¥{price_cny:.2f})" if market == '港股' else f"¥{current_price:.2f}"
         lines.append(f"1. **持仓快照[库·实时行情+推算]:** 您 {shares:,} 股、成本 ¥{avg_cost:.2f}(人民币口径),现价 {_p_txt},**{status_text}约 {abs(pnl_pct):.1f}%、约 ¥{abs(pnl):,.0f} 元**。")
-    lines.append(f"2. **价格与量能:** 今日{'涨' if change >= 0 else '跌'} {abs(change_pct):.2f}%({'+' if change >= 0 else ''}{change:.2f}元),成交额约 ¥{volume_shares * current_price / 100000000:.2f}亿。{tech_analysis.get('signals', ['暂无'])[0] if tech_analysis.get('signals') else ''}")
+    _amt_wan1905 = quote.get('amount_wan') or 0
+    _amt_yi1905 = _amt_wan1905 * 1e4 / 1e8 if _amt_wan1905 > 0 else volume_shares * current_price / 100000000
+    lines.append(f"2. **价格与量能:** 今日{'涨' if change >= 0 else '跌'} {abs(change_pct):.2f}%({'+' if change >= 0 else ''}{change:.2f}元),成交额约 ¥{_amt_yi1905:.2f}亿。{tech_analysis.get('signals', ['暂无'])[0] if tech_analysis.get('signals') else ''}")
 
     # 技术面判断
     tech_status = tech_analysis.get('status', '震荡')
@@ -2039,6 +2044,14 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
             for sig in agg_signals:
                 lines.append(f"- {sig}")
             lines.append('')
+        # ===== 机构动向:十大流通股东变动(2026-10-30新增,插在事件面之后) =====
+        if market != '港股':
+            try:
+                from utils.shareholders import render_holder_lines
+                for _hl in render_holder_lines(code):
+                    lines.append(_hl)
+            except Exception as _he:
+                print(f'[机构动向] 生成失败 {code}: {_he}')
     except Exception as e:
         pass  # 事件模块未运行时不阻塞报告
 
@@ -2067,19 +2080,18 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
 
     if indicators.get('volume'):
         vol = indicators['volume']
-        # 2026-10-22 修复:A股K线量单位为"手"(×100=股),港股K线量单位直接为"股"--原代码统一按手×100导致港股成交额放大100倍
+        # 2026-10-30修复:成交量单位自动判定(手/股),成交额优先取接口amount_wan字段(万元)——
+        # 原A股统一按手×100,对科创板(688795)放大100倍,曾显示"1764亿"(实际17.64亿)
         if market == '港股':
-            _today_v = vol['today_vol'] / 10000
-            _avg5_v = vol['avg_5d'] / 10000
-            _v_unit = '万股'
-            _amt = vol['today_vol'] * current_price
+            _mult = 1
         else:
-            _today_v = vol['today_vol'] / 10000
-            _avg5_v = vol['avg_5d'] / 10000
-            _v_unit = '万手'
-            _amt = vol['today_vol'] * 100 * current_price
+            _mult = 100 if _vol_unit == '手' else 1
+        _today_wan_gu = vol['today_vol'] * _mult / 10000
+        _avg5_wan_gu = vol['avg_5d'] * _mult / 10000
+        _amt_wan = quote.get('amount_wan') or 0
+        _amt = _amt_wan * 1e4 if _amt_wan > 0 else vol['today_vol'] * _mult * current_price
         _amt_txt = f"¥{_amt/100000000:.2f}亿" if _amt >= 100000000 else f"¥{_amt/10000:.0f}万"
-        lines.append(f"**量能分析[推算·公式]:** 今日成交约 {_today_v:.1f}{_v_unit}(约{_amt_txt}),近5日均量约 {_avg5_v:.1f}{_v_unit},量比约 {vol['ratio_5d']:.2f}(=今日量÷近5日均量),属于**{vol['status']}**。**")
+        lines.append(f"**量能分析[推算·公式]:** 今日成交约 {_today_wan_gu:.1f}万股(约{_amt_txt}),近5日均量约 {_avg5_wan_gu:.1f}万股,量比约 {vol['ratio_5d']:.2f}(=今日量÷近5日均量),属于**{vol['status']}**。**")
 
     # ===== 资金流向(东财fflow接口;服务器IP可能被封,需优雅降级) =====
     lines.append(f"**资金流向:**")
@@ -2109,7 +2121,18 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
             if turns:
                 lines.append(f"- 趋势转折:{';'.join(turns)}。")
         else:
-            lines.append(f"- 资金流向数据暂不可用(数据源受限)")
+            lines.append(f"- 主力资金流向数据暂不可用(东财fflow数据源受限)。")
+    # ===== 融资余额(交易所两融,2026-10-30新增模块;港股不适用) =====
+    if market != '港股':
+        try:
+            from utils.margin_balance import render_margin_lines
+            for _ml in render_margin_lines(code):
+                lines.append(_ml)
+        except Exception as _me:
+            print(f'[融资余额] 生成失败 {code}: {_me}')
+            lines.append(f"- 融资余额数据暂不可用(交易所两融接口受限)")
+    else:
+        lines.append(f"- A股两融(融资余额)数据不适用于港股。")
     lines.append(f"")
 
     # ===== 投行一致预期(B需求:卖方研报级机构预测/分歧度/评级/目标价) =====
@@ -2128,6 +2151,14 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
         _cons = None
     for cl in render_consensus_section(code, _cons, current_price, market, news_list, name):
         lines.append(cl)
+    # ===== 最新研报捕获+假设拆解(2026-10-30新增,挂在投行一致预期章节末尾) =====
+    if market != '港股':
+        try:
+            from utils.research_report import render_report_lines
+            for _rl in render_report_lines(code, cons=_cons):
+                lines.append(_rl)
+        except Exception as _re:
+            print(f'[研报拆解] 生成失败 {code}: {_re}')
 
     # ===== 投行一致预期(B需求:卖方研报级机构预测/分歧度/评级/目标价) =====
     lines.append(f"## 四、短期风险提示")
