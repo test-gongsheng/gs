@@ -241,6 +241,9 @@ def get_stock_quotes(stocks: List[Dict]) -> Dict[str, Dict]:
             change = float(parts[31]) if len(parts) > 31 and parts[31] else (price - prev_close)
             change_percent = float(parts[32]) if len(parts) > 32 and parts[32] else 0
             volume = int(float(parts[36])) if len(parts) > 36 and parts[36] else 0
+            amount_wan = float(parts[37]) if len(parts) > 37 and parts[37] else 0
+            if code_map[tencent_code][1] == '港股':
+                amount_wan /= 10000  # 港股parts[37]单位为元,A股为万元,统一成万元
             quote_time = parts[30] if len(parts) > 30 and parts[30] else ''
             
             original_code, market = code_map[tencent_code]
@@ -255,6 +258,7 @@ def get_stock_quotes(stocks: List[Dict]) -> Dict[str, Dict]:
                 'change': change,
                 'change_percent': change_percent,
                 'volume': volume,
+                'amount_wan': amount_wan,
                 'quote_time': quote_time,
                 'market': market
             }
@@ -306,6 +310,9 @@ def get_quote_from_tencent(code: str, market: str = 'A股') -> Optional[Dict]:
         change = float(parts[31]) if len(parts) > 31 and parts[31] else (price - prev_close)
         change_percent = float(parts[32]) if len(parts) > 32 and parts[32] else 0
         volume = int(float(parts[36])) if len(parts) > 36 and parts[36] else 0
+        amount_wan = float(parts[37]) if len(parts) > 37 and parts[37] else 0
+        if market == '港股':
+            amount_wan /= 10000  # 港股parts[37]单位为元,A股为万元,统一成万元
         quote_time = parts[30] if len(parts) > 30 and parts[30] else ''
         
         return {
@@ -318,6 +325,7 @@ def get_quote_from_tencent(code: str, market: str = 'A股') -> Optional[Dict]:
             'change': change,
             'change_percent': change_percent,
             'volume': volume,
+            'amount_wan': amount_wan,
             'quote_time': quote_time,
             'market': market
         }
@@ -623,3 +631,25 @@ if __name__ == '__main__':
             print(f"{code}: {quote['name']} 价格:{quote['price']} 涨跌:{quote['change_percent']:.2f}%")
         else:
             print(f"{code}: 获取失败")
+
+
+def detect_volume_unit(quote: dict) -> str:
+    """判定腾讯行情成交量的单位是'手'还是'股'。
+
+    2026-10-30实测:腾讯qt接口A股成交量单位因股而异——002594/601600为'手',
+    688795(科创板)为'股'。用成交额÷价 反推应然成交量(股),与原始值比较:
+    原始×100≈应然→'手';原始≈应然→'股'。
+    成交额兼容两种字段:amount(元,deep_analysis.get_tencent_quote)/amount_wan(万元,stock_quote)。
+    成交额缺失时退回老规则(港股=股,A股=手)。
+    """
+    raw = quote.get('volume') or 0
+    p = quote.get('price') or 0
+    amt_yuan = quote.get('amount') or 0
+    if amt_yuan <= 0:
+        amt_yuan = (quote.get('amount_wan') or 0) * 1e4
+    if raw > 0 and amt_yuan > 0 and p > 0:
+        implied_shares = amt_yuan / p
+        if implied_shares > 0 and abs(raw * 100 - implied_shares) / implied_shares < 0.30:
+            return '手'
+        return '股'
+    return '股' if quote.get('market') == '港股' else '手'

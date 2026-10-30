@@ -1905,8 +1905,13 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
         status_text = "浮盈" if pnl > 0 else "浮亏"
         _p_txt = f"HK${current_price:.2f}(≈¥{price_cny:.2f})" if market == '港股' else f"¥{current_price:.2f}"
         lines.append(f"1. **持仓快照[库·实时行情+推算]:** 您 {shares:,} 股、成本 ¥{avg_cost:.2f}(人民币口径),现价 {_p_txt},**{status_text}约 {abs(pnl_pct):.1f}%、约 ¥{abs(pnl):,.0f} 元**。")
-    _amt_wan1905 = quote.get('amount_wan') or 0
-    _amt_yi1905 = _amt_wan1905 * 1e4 / 1e8 if _amt_wan1905 > 0 else volume_shares * current_price / 100000000
+    _amt_yi1905 = 0.0
+    if (quote.get('amount') or 0) > 0:
+        _amt_yi1905 = quote['amount'] / 1e8
+    elif (quote.get('amount_wan') or 0) > 0:
+        _amt_yi1905 = quote['amount_wan'] * 1e4 / 1e8
+    else:
+        _amt_yi1905 = volume_shares * current_price / 100000000
     lines.append(f"2. **价格与量能:** 今日{'涨' if change >= 0 else '跌'} {abs(change_pct):.2f}%({'+' if change >= 0 else ''}{change:.2f}元),成交额约 ¥{_amt_yi1905:.2f}亿。{tech_analysis.get('signals', ['暂无'])[0] if tech_analysis.get('signals') else ''}")
 
     # 技术面判断
@@ -2088,8 +2093,14 @@ def generate_deep_report(stock: Dict, report_date: str = None) -> str:
             _mult = 100 if _vol_unit == '手' else 1
         _today_wan_gu = vol['today_vol'] * _mult / 10000
         _avg5_wan_gu = vol['avg_5d'] * _mult / 10000
-        _amt_wan = quote.get('amount_wan') or 0
-        _amt = _amt_wan * 1e4 if _amt_wan > 0 else vol['today_vol'] * _mult * current_price
+        _amt_yuan = quote.get('amount') or 0  # deep_analysis.get_tencent_quote: 元
+        _amt_wan = quote.get('amount_wan') or 0  # stock_quote: 万元
+        if _amt_yuan > 0:
+            _amt = _amt_yuan
+        elif _amt_wan > 0:
+            _amt = _amt_wan * 1e4
+        else:
+            _amt = vol['today_vol'] * _mult * current_price
         _amt_txt = f"¥{_amt/100000000:.2f}亿" if _amt >= 100000000 else f"¥{_amt/10000:.0f}万"
         lines.append(f"**量能分析[推算·公式]:** 今日成交约 {_today_wan_gu:.1f}万股(约{_amt_txt}),近5日均量约 {_avg5_wan_gu:.1f}万股,量比约 {vol['ratio_5d']:.2f}(=今日量÷近5日均量),属于**{vol['status']}**。**")
 
