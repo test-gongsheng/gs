@@ -1,0 +1,811 @@
+{
+ "updated_at": "2026-11-26 11:00:31",
+ "data_asof": {
+  "market_regime": "20261125",
+  "event_verification": "2026-11-19 11:10:21"
+ },
+ "thresholds": {
+  "freeze": -15,
+  "unfreeze": 25
+ },
+ "stocks": {
+  "000559": {
+   "code": "000559",
+   "score": 9,
+   "state": "range",
+   "strategy_frozen": false,
+   "position_limit": 1.0,
+   "ma_trend": "多头排列(价在MA20下方)",
+   "ma_asof": "2026-11-26",
+   "signals": [
+    {
+     "key": "etf_flow",
+     "label": "ETF资金流",
+     "state": "positive",
+     "score": 60,
+     "weight": 25,
+     "detail": "底部信号确认（宽基5日+1934亿/单日+459亿，资金在吸筹）",
+     "asof": "20261125"
+    },
+    {
+     "key": "margin",
+     "label": "融资余额",
+     "state": "negative",
+     "score": -40,
+     "weight": 15,
+     "detail": "融资余额持续下降5天（20日-15.1%），杠杆在出清，尚未止跌",
+     "asof": "2026-11-25"
+    },
+    {
+     "key": "industrial_capital",
+     "label": "产业资本",
+     "state": "stale",
+     "score": 0,
+     "weight": 0,
+     "detail": "股东数据截至2026-10-24，已33天未更新",
+     "asof": "2026-10-24"
+    },
+    {
+     "key": "research",
+     "label": "投行评级",
+     "state": "neutral",
+     "score": 0,
+     "weight": 15,
+     "detail": "近90天无研报覆盖",
+     "asof": "2026-10-30"
+    },
+    {
+     "key": "event_verification",
+     "label": "事件验证率",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "板块新闻验证率27%（机器人产业(27%,n=45)），一般",
+     "asof": "2026-11-19 11:10:21"
+    }
+   ],
+   "conclusion": "中轴策略正常运行（信号分+9，震荡区间）。但注意：融资余额偏弱。均线多头排列(价在MA20下方)，仓位上限100%。按中轴±8%区间操作，不重仓。"
+  },
+  "000878": {
+   "code": "000878",
+   "score": 9,
+   "state": "range",
+   "strategy_frozen": false,
+   "position_limit": 0.5,
+   "ma_trend": "空头排列(价在MA20下方)",
+   "ma_asof": "2026-11-26",
+   "signals": [
+    {
+     "key": "etf_flow",
+     "label": "ETF资金流",
+     "state": "positive",
+     "score": 60,
+     "weight": 25,
+     "detail": "底部信号确认（宽基5日+1934亿/单日+459亿，资金在吸筹）",
+     "asof": "20261125"
+    },
+    {
+     "key": "margin",
+     "label": "融资余额",
+     "state": "negative",
+     "score": -40,
+     "weight": 15,
+     "detail": "融资余额持续下降5天（20日-15.0%），杠杆在出清，尚未止跌",
+     "asof": "2026-11-25"
+    },
+    {
+     "key": "industrial_capital",
+     "label": "产业资本",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "股东变动数据不足（至少需要两期对比）",
+     "asof": null
+    },
+    {
+     "key": "research",
+     "label": "投行评级",
+     "state": "neutral",
+     "score": 0,
+     "weight": 15,
+     "detail": "近90天无研报覆盖",
+     "asof": ""
+    },
+    {
+     "key": "event_verification",
+     "label": "事件验证率",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "相关主题样本不足",
+     "asof": "2026-11-19 11:10:21"
+    }
+   ],
+   "conclusion": "中轴策略正常运行（信号分+9，震荡区间）。但注意：融资余额偏弱。均线空头排列(价在MA20下方)，仓位上限50%。按中轴±8%区间操作，不重仓。"
+  },
+  "002050": {
+   "code": "002050",
+   "score": 9,
+   "state": "range",
+   "strategy_frozen": false,
+   "position_limit": 0.5,
+   "ma_trend": "空头排列(价在MA20下方)",
+   "ma_asof": "2026-11-26",
+   "signals": [
+    {
+     "key": "etf_flow",
+     "label": "ETF资金流",
+     "state": "positive",
+     "score": 60,
+     "weight": 25,
+     "detail": "底部信号确认（宽基5日+1934亿/单日+459亿，资金在吸筹）",
+     "asof": "20261125"
+    },
+    {
+     "key": "margin",
+     "label": "融资余额",
+     "state": "negative",
+     "score": -40,
+     "weight": 15,
+     "detail": "融资余额持续下降14天（20日-13.2%），杠杆在出清，尚未止跌",
+     "asof": "2026-11-25"
+    },
+    {
+     "key": "industrial_capital",
+     "label": "产业资本",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "股东变动数据不足（至少需要两期对比）",
+     "asof": null
+    },
+    {
+     "key": "research",
+     "label": "投行评级",
+     "state": "neutral",
+     "score": 0,
+     "weight": 15,
+     "detail": "近90天无研报覆盖",
+     "asof": ""
+    },
+    {
+     "key": "event_verification",
+     "label": "事件验证率",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "板块新闻验证率27%（机器人产业(27%,n=45)），一般",
+     "asof": "2026-11-19 11:10:21"
+    }
+   ],
+   "conclusion": "中轴策略正常运行（信号分+9，震荡区间）。但注意：融资余额偏弱。均线空头排列(价在MA20下方)，仓位上限50%。按中轴±8%区间操作，不重仓。"
+  },
+  "002594": {
+   "code": "002594",
+   "score": 10,
+   "state": "range",
+   "strategy_frozen": false,
+   "position_limit": 0.5,
+   "ma_trend": "空头排列(价在MA20下方)",
+   "ma_asof": "2026-11-26",
+   "signals": [
+    {
+     "key": "etf_flow",
+     "label": "ETF资金流",
+     "state": "positive",
+     "score": 60,
+     "weight": 25,
+     "detail": "底部信号确认（宽基5日+1934亿/单日+459亿，资金在吸筹）",
+     "asof": "20261125"
+    },
+    {
+     "key": "margin",
+     "label": "融资余额",
+     "state": "negative",
+     "score": -40,
+     "weight": 15,
+     "detail": "融资余额持续下降13天（20日-10.7%），杠杆在出清，尚未止跌",
+     "asof": "2026-11-25"
+    },
+    {
+     "key": "industrial_capital",
+     "label": "产业资本",
+     "state": "neutral",
+     "score": 0,
+     "weight": 5.0,
+     "detail": "股东结构无显著变化（2026-09-30期 vs 上期）",
+     "asof": "2026-10-30"
+    },
+    {
+     "key": "research",
+     "label": "投行评级",
+     "state": "positive",
+     "score": 15,
+     "weight": 7.5,
+     "detail": "招银国际维持「买入」；近90天7家机构覆盖",
+     "asof": "2026-10-30"
+    },
+    {
+     "key": "event_verification",
+     "label": "事件验证率",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "板块新闻验证率27%（机器人产业(27%,n=45)），一般",
+     "asof": "2026-11-19 11:10:21"
+    }
+   ],
+   "conclusion": "中轴策略正常运行（信号分+10，震荡区间）。但注意：融资余额偏弱。均线空头排列(价在MA20下方)，仓位上限50%。按中轴±8%区间操作，不重仓。"
+  },
+  "300229": {
+   "code": "300229",
+   "score": 9,
+   "state": "range",
+   "strategy_frozen": false,
+   "position_limit": 0.5,
+   "ma_trend": "空头排列(价在MA20下方)",
+   "ma_asof": "2026-11-26",
+   "signals": [
+    {
+     "key": "etf_flow",
+     "label": "ETF资金流",
+     "state": "positive",
+     "score": 60,
+     "weight": 25,
+     "detail": "底部信号确认（宽基5日+1934亿/单日+459亿，资金在吸筹）",
+     "asof": "20261125"
+    },
+    {
+     "key": "margin",
+     "label": "融资余额",
+     "state": "negative",
+     "score": -40,
+     "weight": 15,
+     "detail": "融资余额持续下降9天（20日-15.7%），杠杆在出清，尚未止跌",
+     "asof": "2026-11-25"
+    },
+    {
+     "key": "industrial_capital",
+     "label": "产业资本",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "股东变动数据不足（至少需要两期对比）",
+     "asof": null
+    },
+    {
+     "key": "research",
+     "label": "投行评级",
+     "state": "neutral",
+     "score": 0,
+     "weight": 15,
+     "detail": "近90天无研报覆盖",
+     "asof": ""
+    },
+    {
+     "key": "event_verification",
+     "label": "事件验证率",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "板块新闻验证率30%（AI军备(30%,n=105)），一般",
+     "asof": "2026-11-19 11:10:21"
+    }
+   ],
+   "conclusion": "中轴策略正常运行（信号分+9，震荡区间）。但注意：融资余额偏弱。均线空头排列(价在MA20下方)，仓位上限50%。按中轴±8%区间操作，不重仓。"
+  },
+  "300316": {
+   "code": "300316",
+   "score": 12,
+   "state": "range",
+   "strategy_frozen": false,
+   "position_limit": 0.5,
+   "ma_trend": "空头排列(价在MA20下方)",
+   "ma_asof": "2026-11-26",
+   "signals": [
+    {
+     "key": "etf_flow",
+     "label": "ETF资金流",
+     "state": "positive",
+     "score": 60,
+     "weight": 25,
+     "detail": "底部信号确认（宽基5日+1934亿/单日+459亿，资金在吸筹）",
+     "asof": "20261125"
+    },
+    {
+     "key": "margin",
+     "label": "融资余额",
+     "state": "negative",
+     "score": -20,
+     "weight": 15,
+     "detail": "融资余额缓慢下降（20日-22.6%）",
+     "asof": "2026-11-25"
+    },
+    {
+     "key": "industrial_capital",
+     "label": "产业资本",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "股东变动数据不足（至少需要两期对比）",
+     "asof": null
+    },
+    {
+     "key": "research",
+     "label": "投行评级",
+     "state": "neutral",
+     "score": 0,
+     "weight": 15,
+     "detail": "近90天无研报覆盖",
+     "asof": ""
+    },
+    {
+     "key": "event_verification",
+     "label": "事件验证率",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "板块「光伏设备」无对应主题映射",
+     "asof": "2026-11-19 11:10:21"
+    }
+   ],
+   "conclusion": "中轴策略正常运行（信号分+12，震荡区间）。但注意：融资余额偏弱。均线空头排列(价在MA20下方)，仓位上限50%。按中轴±8%区间操作，不重仓。"
+  },
+  "300442": {
+   "code": "300442",
+   "score": 9,
+   "state": "range",
+   "strategy_frozen": false,
+   "position_limit": 0.5,
+   "ma_trend": "空头排列(价在MA20下方)",
+   "ma_asof": "2026-11-26",
+   "signals": [
+    {
+     "key": "etf_flow",
+     "label": "ETF资金流",
+     "state": "positive",
+     "score": 60,
+     "weight": 25,
+     "detail": "底部信号确认（宽基5日+1934亿/单日+459亿，资金在吸筹）",
+     "asof": "20261125"
+    },
+    {
+     "key": "margin",
+     "label": "融资余额",
+     "state": "negative",
+     "score": -40,
+     "weight": 15,
+     "detail": "融资余额持续下降5天（20日-25.4%），杠杆在出清，尚未止跌",
+     "asof": "2026-11-25"
+    },
+    {
+     "key": "industrial_capital",
+     "label": "产业资本",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "股东变动数据不足（至少需要两期对比）",
+     "asof": null
+    },
+    {
+     "key": "research",
+     "label": "投行评级",
+     "state": "neutral",
+     "score": 0,
+     "weight": 15,
+     "detail": "近90天无研报覆盖",
+     "asof": ""
+    },
+    {
+     "key": "event_verification",
+     "label": "事件验证率",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "板块新闻验证率28%（算力基建(27%,n=86)、AI军备(30%,n=105)），一般",
+     "asof": "2026-11-19 11:10:21"
+    }
+   ],
+   "conclusion": "中轴策略正常运行（信号分+9，震荡区间）。但注意：融资余额偏弱。均线空头排列(价在MA20下方)，仓位上限50%。按中轴±8%区间操作，不重仓。"
+  },
+  "301308": {
+   "code": "301308",
+   "score": 9,
+   "state": "range",
+   "strategy_frozen": false,
+   "position_limit": 0.5,
+   "ma_trend": "空头排列(价在MA20下方)",
+   "ma_asof": "2026-11-26",
+   "signals": [
+    {
+     "key": "etf_flow",
+     "label": "ETF资金流",
+     "state": "positive",
+     "score": 60,
+     "weight": 25,
+     "detail": "底部信号确认（宽基5日+1934亿/单日+459亿，资金在吸筹）",
+     "asof": "20261125"
+    },
+    {
+     "key": "margin",
+     "label": "融资余额",
+     "state": "negative",
+     "score": -20,
+     "weight": 15,
+     "detail": "融资余额缓慢下降（20日-27.9%）",
+     "asof": "2026-11-25"
+    },
+    {
+     "key": "industrial_capital",
+     "label": "产业资本",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "股东变动数据不足（至少需要两期对比）",
+     "asof": null
+    },
+    {
+     "key": "research",
+     "label": "投行评级",
+     "state": "neutral",
+     "score": 0,
+     "weight": 15,
+     "detail": "近90天无研报覆盖",
+     "asof": ""
+    },
+    {
+     "key": "event_verification",
+     "label": "事件验证率",
+     "state": "negative",
+     "score": -30,
+     "weight": 10,
+     "detail": "板块新闻验证率仅24%（存储周期(22%,n=36)、算力基建(27%,n=86)），新闻多为噪音，勿当真",
+     "asof": "2026-11-19 11:10:21"
+    }
+   ],
+   "conclusion": "中轴策略正常运行（信号分+9，震荡区间）。但注意：融资余额、事件验证率偏弱。均线空头排列(价在MA20下方)，仓位上限50%。按中轴±8%区间操作，不重仓。"
+  },
+  "601133": {
+   "code": "601133",
+   "score": 14,
+   "state": "range",
+   "strategy_frozen": false,
+   "position_limit": 0.5,
+   "ma_trend": "空头排列(价在MA20下方)",
+   "ma_asof": "2026-11-26",
+   "signals": [
+    {
+     "key": "etf_flow",
+     "label": "ETF资金流",
+     "state": "positive",
+     "score": 60,
+     "weight": 25,
+     "detail": "底部信号确认（宽基5日+1934亿/单日+459亿，资金在吸筹）",
+     "asof": "20261125"
+    },
+    {
+     "key": "margin",
+     "label": "融资余额",
+     "state": "negative",
+     "score": -20,
+     "weight": 15,
+     "detail": "融资余额缓慢下降（20日-14.1%）",
+     "asof": "2026-11-25"
+    },
+    {
+     "key": "industrial_capital",
+     "label": "产业资本",
+     "state": "positive",
+     "score": 30,
+     "weight": 5.0,
+     "detail": "外资新进：UBS AG",
+     "asof": "2026-10-29"
+    },
+    {
+     "key": "research",
+     "label": "投行评级",
+     "state": "neutral",
+     "score": 0,
+     "weight": 15,
+     "detail": "近90天无研报覆盖",
+     "asof": "2026-11-19"
+    },
+    {
+     "key": "event_verification",
+     "label": "事件验证率",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "板块新闻验证率26%（算力基建(27%,n=86)、AI军备(30%,n=105)、存储周期(22%,n=36)、出口管制(27%,n=33)），一般",
+     "asof": "2026-11-19 11:10:21"
+    }
+   ],
+   "conclusion": "中轴策略正常运行（信号分+14，震荡区间）。但注意：融资余额偏弱。均线空头排列(价在MA20下方)，仓位上限50%。按中轴±8%区间操作，不重仓。"
+  },
+  "601600": {
+   "code": "601600",
+   "score": 16,
+   "state": "range",
+   "strategy_frozen": false,
+   "position_limit": 0.5,
+   "ma_trend": "空头排列(价在MA20下方)",
+   "ma_asof": "2026-11-26",
+   "signals": [
+    {
+     "key": "etf_flow",
+     "label": "ETF资金流",
+     "state": "positive",
+     "score": 60,
+     "weight": 25,
+     "detail": "底部信号确认（宽基5日+1934亿/单日+459亿，资金在吸筹）",
+     "asof": "20261125"
+    },
+    {
+     "key": "margin",
+     "label": "融资余额",
+     "state": "neutral",
+     "score": 0,
+     "weight": 15,
+     "detail": "融资余额平稳（20日-0.4%）",
+     "asof": "2026-11-25"
+    },
+    {
+     "key": "industrial_capital",
+     "label": "产业资本",
+     "state": "neutral",
+     "score": 0,
+     "weight": 5.0,
+     "detail": "股东结构无显著变化（2026-09-30期 vs 上期）",
+     "asof": "2026-10-30"
+    },
+    {
+     "key": "research",
+     "label": "投行评级",
+     "state": "positive",
+     "score": 15,
+     "weight": 7.5,
+     "detail": "国金证券维持「买入」；近90天3家机构覆盖",
+     "asof": "2026-10-30"
+    },
+    {
+     "key": "event_verification",
+     "label": "事件验证率",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "相关主题样本不足",
+     "asof": "2026-11-19 11:10:21"
+    }
+   ],
+   "conclusion": "中轴策略正常运行（信号分+16，震荡区间）。均线空头排列(价在MA20下方)，仓位上限50%。按中轴±8%区间操作，不重仓。"
+  },
+  "688795": {
+   "code": "688795",
+   "score": 16,
+   "state": "range",
+   "strategy_frozen": false,
+   "position_limit": 0.5,
+   "ma_trend": "空头排列(价在MA20下方)",
+   "ma_asof": "2026-11-26",
+   "signals": [
+    {
+     "key": "etf_flow",
+     "label": "ETF资金流",
+     "state": "positive",
+     "score": 60,
+     "weight": 25,
+     "detail": "底部信号确认（宽基5日+1934亿/单日+459亿，资金在吸筹）",
+     "asof": "20261125"
+    },
+    {
+     "key": "margin",
+     "label": "融资余额",
+     "state": "negative",
+     "score": -20,
+     "weight": 15,
+     "detail": "融资余额缓慢下降（20日-4.6%）",
+     "asof": "2026-11-25"
+    },
+    {
+     "key": "industrial_capital",
+     "label": "产业资本",
+     "state": "positive",
+     "score": 30,
+     "weight": 5.0,
+     "detail": "外资新进：MORGANSTANLEY&CO.INTERNATIONALPLC.、GOLDMANSACHSBANKEUROPESE－自有资金－QFII、J.P.MorganSecuritiesPLC－自有资金",
+     "asof": "2026-10-29"
+    },
+    {
+     "key": "research",
+     "label": "投行评级",
+     "state": "positive",
+     "score": 30,
+     "weight": 7.5,
+     "detail": "山西证券首次覆盖（2026-10-30），评级「买入」",
+     "asof": "2026-10-30"
+    },
+    {
+     "key": "event_verification",
+     "label": "事件验证率",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "板块新闻验证率26%（算力基建(27%,n=86)、AI军备(30%,n=105)、存储周期(22%,n=36)、出口管制(27%,n=33)），一般",
+     "asof": "2026-11-19 11:10:21"
+    }
+   ],
+   "conclusion": "中轴策略正常运行（信号分+16，震荡区间）。但注意：融资余额偏弱。均线空头排列(价在MA20下方)，仓位上限50%。按中轴±8%区间操作，不重仓。"
+  },
+  "00285": {
+   "code": "00285",
+   "score": 6,
+   "state": "range",
+   "strategy_frozen": false,
+   "position_limit": 0.5,
+   "ma_trend": "空头排列(价在MA20下方)",
+   "ma_asof": "2026-11-26",
+   "signals": [
+    {
+     "key": "etf_flow",
+     "label": "ETF资金流",
+     "state": "positive",
+     "score": 60,
+     "weight": 10,
+     "detail": "底部信号确认（宽基5日+1934亿/单日+459亿，资金在吸筹）",
+     "asof": "20261125"
+    },
+    {
+     "key": "margin",
+     "label": "融资余额",
+     "state": "stale",
+     "score": 0,
+     "weight": 0,
+     "detail": "融资余额数据不足",
+     "asof": null
+    },
+    {
+     "key": "industrial_capital",
+     "label": "产业资本",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "股东变动数据不足（至少需要两期对比）",
+     "asof": null
+    },
+    {
+     "key": "research",
+     "label": "投行评级",
+     "state": "neutral",
+     "score": 0,
+     "weight": 15,
+     "detail": "近90天无研报覆盖",
+     "asof": ""
+    },
+    {
+     "key": "event_verification",
+     "label": "事件验证率",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "板块新闻验证率30%（AI军备(30%,n=105)），一般",
+     "asof": "2026-11-19 11:10:21"
+    }
+   ],
+   "conclusion": "中轴策略正常运行（信号分+6，震荡区间）。均线空头排列(价在MA20下方)，仓位上限50%。按中轴±8%区间操作，不重仓。"
+  },
+  "00700": {
+   "code": "00700",
+   "score": 6,
+   "state": "range",
+   "strategy_frozen": false,
+   "position_limit": 0.5,
+   "ma_trend": "空头排列(价在MA20下方)",
+   "ma_asof": "2026-11-26",
+   "signals": [
+    {
+     "key": "etf_flow",
+     "label": "ETF资金流",
+     "state": "positive",
+     "score": 60,
+     "weight": 10,
+     "detail": "底部信号确认（宽基5日+1934亿/单日+459亿，资金在吸筹）",
+     "asof": "20261125"
+    },
+    {
+     "key": "margin",
+     "label": "融资余额",
+     "state": "stale",
+     "score": 0,
+     "weight": 0,
+     "detail": "融资余额数据不足",
+     "asof": null
+    },
+    {
+     "key": "industrial_capital",
+     "label": "产业资本",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "股东变动数据不足（至少需要两期对比）",
+     "asof": null
+    },
+    {
+     "key": "research",
+     "label": "投行评级",
+     "state": "neutral",
+     "score": 0,
+     "weight": 15,
+     "detail": "近90天无研报覆盖",
+     "asof": ""
+    },
+    {
+     "key": "event_verification",
+     "label": "事件验证率",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "板块新闻验证率30%（AI军备(30%,n=105)），一般",
+     "asof": "2026-11-19 11:10:21"
+    }
+   ],
+   "conclusion": "中轴策略正常运行（信号分+6，震荡区间）。均线空头排列(价在MA20下方)，仓位上限50%。按中轴±8%区间操作，不重仓。"
+  },
+  "09988": {
+   "code": "09988",
+   "score": 6,
+   "state": "range",
+   "strategy_frozen": false,
+   "position_limit": 0.5,
+   "ma_trend": "空头排列(价在MA20下方)",
+   "ma_asof": "2026-11-26",
+   "signals": [
+    {
+     "key": "etf_flow",
+     "label": "ETF资金流",
+     "state": "positive",
+     "score": 60,
+     "weight": 10,
+     "detail": "底部信号确认（宽基5日+1934亿/单日+459亿，资金在吸筹）",
+     "asof": "20261125"
+    },
+    {
+     "key": "margin",
+     "label": "融资余额",
+     "state": "stale",
+     "score": 0,
+     "weight": 0,
+     "detail": "融资余额数据不足",
+     "asof": null
+    },
+    {
+     "key": "industrial_capital",
+     "label": "产业资本",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "股东变动数据不足（至少需要两期对比）",
+     "asof": null
+    },
+    {
+     "key": "research",
+     "label": "投行评级",
+     "state": "neutral",
+     "score": 0,
+     "weight": 15,
+     "detail": "近90天无研报覆盖",
+     "asof": ""
+    },
+    {
+     "key": "event_verification",
+     "label": "事件验证率",
+     "state": "neutral",
+     "score": 0,
+     "weight": 10,
+     "detail": "板块新闻验证率30%（AI军备(30%,n=105)），一般",
+     "asof": "2026-11-19 11:10:21"
+    }
+   ],
+   "conclusion": "中轴策略正常运行（信号分+6，震荡区间）。均线空头排列(价在MA20下方)，仓位上限50%。按中轴±8%区间操作，不重仓。"
+  }
+ }
+}

@@ -667,6 +667,27 @@ def generate_portfolio_analysis_v2() -> Dict:
     except Exception as _mre:
         print(f"[WARN] 融资余额增量采集失败(不阻塞每日任务): {_mre}")
 
+    # ===== 趋势信号引擎(2026-11-26新增;优雅降级,失败仅警告不中断) =====
+    try:
+        from utils.trend_signal import compute_stock_signal, save_json as _ts_save, DATA_DIR as _TS_DATA_DIR, load_json as _ts_load
+        _regime = _ts_load(os.path.join(_TS_DATA_DIR, 'market_regime.json'))
+        _event_stats = _ts_load(os.path.join(_TS_DATA_DIR, 'event_verification_stats.json'))
+        _trend_results = {}
+        for _s in stocks:
+            _c = _s.get('code', '')
+            _m = _s.get('market', 'A股')
+            if _c:
+                _trend_results[_c] = compute_stock_signal(_c, _regime, _event_stats, _m)
+        _ts_output = {
+            'updated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'stocks': _trend_results,
+        }
+        _ts_save(os.path.join(_TS_DATA_DIR, 'trend_signals.json'), _ts_output)
+        _frozen_n = sum(1 for r in _trend_results.values() if r.get('strategy_frozen'))
+        print(f"[趋势信号] 计算完成: {len(_trend_results)}只, 冻结{_frozen_n}只")
+    except Exception as _tre:
+        print(f"[WARN] 趋势信号引擎失败(不阻塞每日任务): {_tre}")
+
     report_date = datetime.now().strftime('%Y-%m-%d')
     
     # 第一步：获取所有股票实时价格并【写回stocks.json】

@@ -426,6 +426,20 @@ def get_stocks():
         import traceback
         traceback.print_exc()
     
+    # 【趋势信号】附加trend_signal字段（2026-11-26新增）
+    # 数据来源: data/trend_signals.json（每日16:50跑批生成）
+    try:
+        _ts_path = os.path.join(os.path.dirname(__file__), 'data', 'trend_signals.json')
+        if os.path.exists(_ts_path):
+            with open(_ts_path, 'r', encoding='utf-8') as _tsf:
+                _trend_signals = json.load(_tsf).get('stocks', {})
+            for _stock in stocks:
+                _tc = _stock.get('code', '')
+                if _tc in _trend_signals:
+                    _stock['trend_signal'] = _trend_signals[_tc]
+    except Exception as _tse:
+        print(f"[get_stocks] 趋势信号附加失败(不阻塞): {_tse}")
+    
     # 为每只股票添加类型和执行数据
     # 【性能修复】股票类型不在请求线程同步算（每次akshare拉124根K线，14只串行要几分钟）
     # 已有值直接用；缺失时用默认值展示，后台线程补算后写回stocks.json
