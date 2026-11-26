@@ -298,6 +298,9 @@
                     <div class="strategy-3c-info" id="strategy3cInfo" style="display: none;">
                     </div>
                     
+                    <!-- 趋势信号面板（2026-11-26新增） -->
+                    <div id="trendSignalPanel" style="display: none;"></div>
+                    
                     <!-- 冷却期信息显示 -->
                     <div class="cooldown-info" id="cooldownInfo" style="display: none;">
                         <i class="fas fa-clock"></i>
@@ -1602,6 +1605,7 @@
     <!-- 新模块: 状态管理 (Step 3) -->
     <script src="{{ url_for('static', filename='js/modules/state.js') }}?v={{ now }}"></script>
     <script src="{{ url_for('static', filename='js/southbound.js') }}?v={{ now }}"></script>
+    <script src="{{ url_for('static', filename='js/trend-signal.js') | autoversion }}"></script>
     <script src="{{ url_for('static', filename='js/app.v3.3.0.js') | autoversion }}"></script>
     <script src="{{ url_for('static', filename='js/import.js') }}?v=3.2.9-fix"></script>
     <script>

@@ -99,7 +99,9 @@ async function init() {
                 atr_pct: s.atr_pct || 0,
                 last_trade_time: s.last_trade_time,
                 last_trade_type: s.last_trade_type,
-                cooldown_days: s.cooldown_days || 20
+                cooldown_days: s.cooldown_days || 20,
+                // 趋势信号（2026-11-26新增，后端/api/stocks附带）
+                trend_signal: s.trend_signal || null
             }));
             loadedFromBackend = true;
             console.log('已从后端 API 加载', appState.stocks.length, '只股票');
@@ -824,6 +826,7 @@ function renderStockList() {
             <div class="stock-info" style="flex: 1.5; text-align: left; display: flex; flex-direction: column; gap: 2px;">
                 <span class="code" style="font-weight: 600; font-size: 0.875rem; color: #e8eaed;">${stock.code}${hkBadge}${alertBadge}${stockTypeBadge}</span>
                 <span class="name" style="font-size: 0.75rem; color: #9ca3af;">${stock.name}</span>
+                ${typeof renderTrendSignalBar === 'function' ? renderTrendSignalBar(stock) : ''}
             </div>
             <div class="stock-price ${isUp ? 'up' : 'down'}" style="flex: 1; text-align: right; font-weight: 600; color: ${isUp ? '#ff4d4f' : '#52c41a'};">
                 ${isHKStock ? (stock.price || 0).toFixed(2) + '<small>HKD</small>' : (stock.price || 0).toFixed(2)}
@@ -917,6 +920,11 @@ function renderStockDetail() {
     // 基础信息
     setText('detailName', safeStock.name);
     setText('detailCode', safeStock.code);
+    
+    // 【趋势信号面板】2026-11-26新增：挂载到专用容器
+    if (typeof mountTrendSignalPanel === 'function') {
+        mountTrendSignalPanel('trendSignalPanel');
+    }
     
     // 设置深度分析报告的股票代码（供模态框使用）
     if (typeof _deepAnalysisStockCode !== 'undefined') {
