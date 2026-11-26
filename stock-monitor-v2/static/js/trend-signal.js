@@ -236,6 +236,15 @@
         const css = document.createElement('style');
         css.id = 'ts-styles';
         css.textContent = `
+            /* ===== 修复：让信号面板独占一行，不挤压左右布局 ===== */
+            .detail-header {
+                flex-wrap: wrap !important;
+            }
+            #trendSignalPanel {
+                flex-basis: 100% !important;
+                width: 100% !important;
+            }
+
             /* ===== 趋势信号：列表状态条 ===== */
             .ts-list-bar {
                 margin-top: 3px;

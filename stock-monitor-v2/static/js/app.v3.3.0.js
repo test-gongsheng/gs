@@ -937,7 +937,7 @@ function renderStockDetail() {
     const strategyLogicText = stockType === 'high_vol' 
         ? '分级冷却：卖出15天/深度-12%/中度-10%' 
         : '自适应冷却：基于实时波动率动态调整(10-30天)';
-    setText('detailStrategy', `${safeStock.strategy}策略 · ${stockTypeText}`);
+    setText('detailStrategy', `${safeStock.strategy} · ${stockTypeText}`);
     
     // 添加策略逻辑说明
     const strategyLogicEl = document.getElementById('strategyLogic');
